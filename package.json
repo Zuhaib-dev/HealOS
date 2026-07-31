@@ -9,6 +9,8 @@
     "packages/*"
   ],
   "scripts": {
+    "services:up": "docker compose up -d",
+    "services:down": "docker compose down",
     "dev": "turbo run dev",
     "dev:client": "turbo run dev --filter=@healos/client",
     "dev:server": "turbo run dev --filter=@healos/server",

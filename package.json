@@ -1,0 +1,34 @@
+{
+  "name": "healos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HealOS — An Operating System for Healthcare. Full-stack Hospital Management System.",
+  "workspaces": [
+    "client",
+    "server",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:client": "turbo run dev --filter=@healos/client",
+    "dev:server": "turbo run dev --filter=@healos/server",
+    "build": "turbo run build",
+    "build:client": "turbo run build --filter=@healos/client",
+    "build:server": "turbo run build --filter=@healos/server",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "clean": "turbo run clean",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+  },
+  "devDependencies": {
+    "turbo": "^2",
+    "prettier": "^3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.0.0"
+}

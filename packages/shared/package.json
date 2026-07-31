@@ -1,0 +1,20 @@
+{
+  "name": "@healos/shared",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HealOS Shared — Types, constants, and validation schemas shared across client & server",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "zod": "^3.24"
+  },
+  "devDependencies": {
+    "typescript": "^5.7"
+  }
+}

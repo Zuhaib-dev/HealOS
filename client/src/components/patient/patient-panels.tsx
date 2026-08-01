@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   Check,
@@ -15,6 +15,16 @@ import {
   UploadCloud,
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import { Badge } from "@/components/ui/badge";
+import {
+  fetchAvailableDoctorsApi,
+  bookAppointmentApi,
+  fetchPatientAppointmentsApi,
+  updateAppointmentStatusApi,
+  DoctorListItem,
+  AppointmentRecord,
+} from "@/lib/api/appointment";
+import { toast } from "sonner";
 import {
   patient,
   upcoming,
@@ -238,41 +248,89 @@ export function OverviewPanel() {
 
 export function BookPanel() {
   const [dept, setDept] = useState(departments[0]!);
-  const [clinician, setClinician] = useState(departments[0]!.clinicians[0]!);
-  const [date, setDate] = useState("2026-08-06");
+  const [doctorsList, setDoctorsList] = useState<DoctorListItem[]>([]);
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState<string | null>(null);
-  const [mode, setMode] = useState<"In person" | "Video">("In person");
+  const [mode, setMode] = useState<"IN_PERSON" | "TELECONSULT">("IN_PERSON");
   const [reason, setReason] = useState("");
-  const [booked, setBooked] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [bookedRecord, setBookedRecord] = useState<AppointmentRecord | null>(null);
+
+  useEffect(() => {
+    const loadDoctors = async () => {
+      try {
+        const res = await fetchAvailableDoctorsApi();
+        if (res.success && res.doctors.length > 0) {
+          setDoctorsList(res.doctors);
+          setSelectedDoctorId(res.doctors[0]!._id);
+        }
+      } catch (err) {
+        console.error("Failed to load available doctors", err);
+      }
+    };
+    loadDoctors();
+  }, []);
+
+  const handleBook = async () => {
+    if (!time || !selectedDoctorId || !reason) {
+      toast.error("Please select a doctor, time slot, and enter a reason for visit.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await bookAppointmentApi({
+        doctorId: selectedDoctorId,
+        department: dept.label,
+        date,
+        timeSlot: time,
+        reason,
+        type: mode,
+      });
+
+      if (res.success && res.appointment) {
+        toast.success("Appointment request submitted successfully!");
+        setBookedRecord(res.appointment);
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to book appointment");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const selectedDoctorObj = doctorsList.find((d) => d._id === selectedDoctorId);
 
   return (
     <section>
       <PanelHeader
         index="02 / new visit"
         title="Book an appointment"
-        note="Pick a department, clinician and free slot. You will get a confirmation message and any preparation instructions."
+        note="Pick a department, clinician and free slot. You will get a confirmation message and preparation instructions."
       />
 
-      {booked ? (
+      {bookedRecord ? (
         <div className="p-5 sm:p-8">
-          <div className="hairline max-w-xl p-6">
-            <Check className="text-brass size-6" />
-            <p className="mt-3 font-mono text-xl">Appointment requested</p>
+          <div className="hairline max-w-xl p-6 rounded-lg bg-card/50">
+            <Check className="text-emerald-500 size-6" />
+            <p className="mt-3 font-mono text-xl font-bold">Appointment Confirmed & Requested</p>
             <p className="text-muted-foreground mt-2 text-sm">
-              {dept.label} with {clinician} on {date} at {time} · {mode}. You will get a
-              confirmation within an hour; it will appear under Appointments as pending until the
-              department confirms.
+              Appointment for <strong>{bookedRecord.department}</strong> with <strong>Dr. {bookedRecord.doctor.name}</strong> on <strong>{bookedRecord.date}</strong> at <strong>{bookedRecord.timeSlot}</strong>.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1 font-mono">
+              Status: <span className="text-amber-500 font-bold">{bookedRecord.status}</span> · Visit Type: {bookedRecord.type}
             </p>
             <div className="mt-5 flex gap-2">
               <ActionButton
                 tone="solid"
                 onClick={() => {
-                  setBooked(false);
+                  setBookedRecord(null);
                   setTime(null);
                   setReason("");
                 }}
               >
-                Book another
+                Book another visit
               </ActionButton>
             </div>
           </div>
@@ -280,19 +338,16 @@ export function BookPanel() {
       ) : (
         <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
           <div className="bg-background p-5">
-            <p className="mono-label text-muted-foreground">Department</p>
+            <p className="mono-label text-muted-foreground">1. Select Department</p>
             <div className="mt-2 flex flex-col gap-0.5">
               {departments.map((d) => (
                 <button
                   key={d.id}
                   type="button"
-                  onClick={() => {
-                    setDept(d);
-                    setClinician(d.clinicians[0]!);
-                  }}
-                  className={`mono-label px-3 py-2 text-left transition-colors ${
+                  onClick={() => setDept(d)}
+                  className={`mono-label px-3 py-2 text-left transition-colors cursor-pointer rounded ${
                     dept.id === d.id
-                      ? "bg-accent/10 text-foreground"
+                      ? "bg-accent/15 text-foreground font-semibold"
                       : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.03]"
                   }`}
                 >
@@ -301,59 +356,58 @@ export function BookPanel() {
               ))}
             </div>
 
-            <p className="mono-label text-muted-foreground mt-5">Clinician</p>
+            <p className="mono-label text-muted-foreground mt-5">2. Select Clinician / Doctor</p>
             <select
-              value={clinician}
-              onChange={(e) => setClinician(e.target.value)}
-              className="hairline mono-label mt-2 w-full bg-transparent px-3 py-2.5 outline-none"
+              value={selectedDoctorId}
+              onChange={(e) => setSelectedDoctorId(e.target.value)}
+              className="hairline mono-label mt-2 w-full bg-background px-3 py-2.5 outline-none rounded text-xs font-semibold"
             >
-              {dept.clinicians.map((c) => (
-                <option key={c}>{c}</option>
+              {doctorsList.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name} ({c.specialization})
+                </option>
               ))}
             </select>
 
-            <p className="mono-label text-muted-foreground mt-5">Visit type</p>
+            <p className="mono-label text-muted-foreground mt-5">3. Visit Type</p>
             <div className="mt-2 flex gap-2">
-              {(["In person", "Video"] as const).map((m) => (
+              {(["IN_PERSON", "TELECONSULT"] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => setMode(m)}
-                  className={`mono-label flex-1 px-3 py-2.5 ${
+                  className={`mono-label flex-1 px-3 py-2.5 text-xs font-semibold rounded ${
                     mode === m ? "bg-foreground text-background" : "hairline text-foreground"
                   }`}
                 >
-                  {m}
+                  {m === "IN_PERSON" ? "In Person" : "Video Consultation"}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="bg-background p-5 lg:col-span-2">
-            <p className="mono-label text-muted-foreground">Date</p>
+            <p className="mono-label text-muted-foreground">4. Appointment Date</p>
             <input
               type="date"
               value={date}
+              min={new Date().toISOString().split("T")[0]}
               onChange={(e) => setDate(e.target.value)}
-              className="hairline mono-label mt-2 bg-transparent px-3 py-2.5 outline-none"
+              className="hairline mono-label mt-2 bg-background px-3 py-2.5 outline-none rounded text-xs font-semibold"
             />
 
-            <p className="mono-label text-muted-foreground mt-5">Available slots</p>
+            <p className="mono-label text-muted-foreground mt-5">5. Available Time Slots</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {slotTimes.map((t) => {
-                const taken = bookedTimes.includes(t);
                 return (
                   <button
                     key={t}
                     type="button"
-                    disabled={taken}
                     onClick={() => setTime(t)}
-                    className={`mono-label px-4 py-2.5 transition-colors ${
-                      taken
-                        ? "text-muted-foreground/50 hairline cursor-not-allowed line-through"
-                        : time === t
-                          ? "bg-accent/15 text-brass"
-                          : "hairline hover:bg-foreground/[0.03]"
+                    className={`mono-label px-4 py-2.5 text-xs rounded transition-colors cursor-pointer ${
+                      time === t
+                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
+                        : "hairline hover:bg-foreground/[0.03]"
                     }`}
                   >
                     {t}
@@ -362,32 +416,32 @@ export function BookPanel() {
               })}
             </div>
 
-            <p className="mono-label text-muted-foreground mt-5">Reason for visit</p>
+            <p className="mono-label text-muted-foreground mt-5">6. Reason for Visit & Symptoms</p>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              rows={5}
-              placeholder="Briefly describe your symptoms or what you want reviewed"
-              className="hairline placeholder:text-muted-foreground mt-2 w-full resize-none bg-transparent p-3 text-sm outline-none"
+              rows={4}
+              placeholder="Briefly describe your symptoms, chest pain, fever, or health concerns..."
+              className="hairline placeholder:text-muted-foreground mt-2 w-full resize-none bg-background p-3 text-sm outline-none rounded"
             />
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                disabled={!time}
-                onClick={() => setBooked(true)}
-                className={`mono-label px-4 py-2.5 transition-opacity ${
-                  time
-                    ? "bg-foreground text-background hover:opacity-85"
-                    : "hairline text-muted-foreground cursor-not-allowed"
+                disabled={!time || submitting}
+                onClick={handleBook}
+                className={`mono-label px-5 py-3 rounded font-semibold text-xs transition-opacity cursor-pointer ${
+                  time && !submitting
+                    ? "bg-primary text-primary-foreground hover:opacity-90"
+                    : "hairline text-muted-foreground cursor-not-allowed opacity-60"
                 }`}
               >
-                Request appointment
+                {submitting ? "Booking Appointment..." : "Confirm & Submit Booking →"}
               </button>
-              <span className="mono-label text-muted-foreground">
+              <span className="mono-label text-muted-foreground text-xs">
                 {time
-                  ? `${dept.label} · ${clinician} · ${date} ${time} · ${mode}`
-                  : "select a slot to continue"}
+                  ? `${dept.label} · ${selectedDoctorObj?.name || "Doctor"} · ${date} ${time}`
+                  : "Select a time slot to continue"}
               </span>
             </div>
           </div>
@@ -401,51 +455,115 @@ export function BookPanel() {
 
 export function AppointmentsPanel() {
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
-  const rows = tab === "upcoming" ? upcoming : history;
+  const [loading, setLoading] = useState(true);
+  const [liveAppointments, setLiveAppointments] = useState<AppointmentRecord[]>([]);
+
+  const loadAppointments = async () => {
+    try {
+      setLoading(true);
+      const res = await fetchPatientAppointmentsApi();
+      if (res.success && res.appointments) {
+        setLiveAppointments(res.appointments);
+      }
+    } catch (err) {
+      console.error("Failed to fetch patient appointments", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAppointments();
+  }, []);
+
+  const handleCancel = async (id: string) => {
+    if (!window.confirm("Are you sure you want to cancel this appointment booking?")) return;
+    try {
+      const res = await updateAppointmentStatusApi(id, "CANCELLED");
+      if (res.success) {
+        toast.success("Appointment cancelled");
+        loadAppointments();
+      }
+    } catch (err) {
+      toast.error("Failed to cancel appointment");
+    }
+  };
+
+  const filteredLive = liveAppointments.filter((a) =>
+    tab === "upcoming" ? a.status !== "COMPLETED" && a.status !== "CANCELLED" : a.status === "COMPLETED" || a.status === "CANCELLED"
+  );
 
   return (
     <section>
       <PanelHeader
         index="03 / visits"
-        title="Appointments"
-        note="Everything scheduled and everything that has happened — with the reason recorded at each visit."
+        title="Appointments Desk"
+        note="Everything scheduled and completed visits with your primary physicians."
         actions={
           <>
             <ActionButton tone={tab === "upcoming" ? "solid" : "ghost"} onClick={() => setTab("upcoming")}>
-              Upcoming ({upcoming.length})
+              Upcoming ({filteredLive.length})
             </ActionButton>
             <ActionButton tone={tab === "past" ? "solid" : "ghost"} onClick={() => setTab("past")}>
-              Past ({history.length})
+              Past / Cancelled ({liveAppointments.length - filteredLive.length})
             </ActionButton>
           </>
         }
       />
 
       <div className="flex flex-col gap-px" style={{ background: "var(--hairline)" }}>
-        {rows.map((a) => (
-          <AppointmentRow
-            key={a.id}
-            a={a}
-            actions={
-              tab === "upcoming" ? (
-                <div className="flex gap-2">
-                  <ActionButton>Reschedule</ActionButton>
-                  <ActionButton>
-                    <span className="inline-flex items-center gap-1.5">
-                      <X className="size-3" />
-                      Cancel
-                    </span>
-                  </ActionButton>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <ActionButton>Visit summary</ActionButton>
-                  <ActionButton>Book follow-up</ActionButton>
-                </div>
-              )
-            }
-          />
-        ))}
+        {loading ? (
+          <div className="bg-background p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
+            Loading scheduled appointments...
+          </div>
+        ) : filteredLive.length > 0 ? (
+          filteredLive.map((a) => (
+            <div key={a._id} className="bg-background flex flex-wrap items-center gap-4 px-5 py-4 sm:px-8">
+              <div className="w-28 shrink-0">
+                <p className="mono-label text-brass font-bold">{a.date}</p>
+                <p className="mono-label text-muted-foreground">{a.timeSlot}</p>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">{a.reason}</p>
+                <p className="mono-label text-muted-foreground mt-1">
+                  {a.department} · Dr. {a.doctor.name} ({a.type})
+                </p>
+                {a.notes && (
+                  <p className="text-xs text-emerald-500 font-mono mt-1">
+                    Doctor Note: {a.notes}
+                  </p>
+                )}
+              </div>
+              <Badge
+                variant="outline"
+                className={`mono-label text-xs px-2.5 py-1 uppercase font-bold ${
+                  a.status === "CONFIRMED"
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                    : a.status === "COMPLETED"
+                    ? "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30"
+                    : a.status === "CANCELLED"
+                    ? "bg-destructive/15 text-destructive border-destructive/30"
+                    : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                }`}
+              >
+                {a.status}
+              </Badge>
+              {a.status === "PENDING" || a.status === "CONFIRMED" ? (
+                <button
+                  type="button"
+                  onClick={() => handleCancel(a._id)}
+                  className="hairline mono-label text-destructive hover:bg-destructive/10 px-3 py-1.5 rounded text-xs transition-colors"
+                >
+                  Cancel Visit
+                </button>
+              ) : null}
+            </div>
+          ))
+        ) : (
+          <div className="bg-background p-8 text-center mono-label text-xs text-muted-foreground">
+            No {tab} appointments found.
+          </div>
+        )}
       </div>
     </section>
   );

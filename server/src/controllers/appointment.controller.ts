@@ -1,0 +1,227 @@
+import { Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
+import { Appointment, AppointmentStatus, AppointmentType, User, UserRole, ProfessionalProfile } from "../models";
+import { z } from "zod";
+
+const bookAppointmentSchema = z.object({
+  doctorId: z.string().min(1, "Doctor selection is required"),
+  department: z.string().min(1, "Department is required"),
+  date: z.string().min(1, "Appointment date is required"),
+  timeSlot: z.string().min(1, "Time slot is required"),
+  reason: z.string().min(3, "Reason for visit is required"),
+  type: z.enum([AppointmentType.IN_PERSON, AppointmentType.TELECONSULT, AppointmentType.EMERGENCY]).default(AppointmentType.IN_PERSON),
+});
+
+const updateStatusSchema = z.object({
+  status: z.enum([AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED]),
+  notes: z.string().optional(),
+});
+
+// 1. Patient Books Appointment
+export const bookAppointment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const patientId = req.user?._id;
+
+    const parsed = bookAppointmentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid booking data",
+        errors: parsed.error.format(),
+      });
+      return;
+    }
+
+    const { doctorId, department, date, timeSlot, reason, type } = parsed.data;
+
+    // Verify doctor exists
+    const doctorObj = await User.findById(doctorId);
+    if (!doctorObj || (doctorObj.role !== UserRole.DOCTOR && doctorObj.role !== UserRole.RADIOLOGIST && doctorObj.role !== UserRole.ADMIN)) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Selected physician not found or unavailable",
+      });
+      return;
+    }
+
+    // Check if slot is already booked for this doctor
+    const existingBooking = await Appointment.findOne({
+      doctor: doctorId,
+      date,
+      timeSlot,
+      status: { $ne: AppointmentStatus.CANCELLED },
+    });
+
+    if (existingBooking) {
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: "This doctor is already booked for the selected time slot. Please select another slot.",
+      });
+      return;
+    }
+
+    const appointment = await Appointment.create({
+      patient: patientId,
+      doctor: doctorId,
+      department,
+      date,
+      timeSlot,
+      reason,
+      type,
+      status: AppointmentStatus.PENDING,
+    });
+
+    const populated = await Appointment.findById(appointment._id)
+      .populate("doctor", "name email avatarUrl phone")
+      .populate("patient", "name email phone avatarUrl");
+
+    res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: "Appointment booked successfully!",
+      appointment: populated,
+    });
+  } catch (error) {
+    console.error("Error in bookAppointment:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error while booking appointment",
+    });
+  }
+};
+
+// 2. Fetch Patient's Appointments
+export const getPatientAppointments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const patientId = req.user?._id;
+
+    const appointments = await Appointment.find({ patient: patientId })
+      .populate("doctor", "name email avatarUrl phone role")
+      .sort({ createdAt: -1 });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      count: appointments.length,
+      appointments,
+    });
+  } catch (error) {
+    console.error("Error in getPatientAppointments:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error while fetching appointments",
+    });
+  }
+};
+
+// 3. Fetch Doctor's Assigned Appointments
+export const getDoctorAppointments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const doctorId = req.user?._id;
+
+    const appointments = await Appointment.find({ doctor: doctorId })
+      .populate("patient", "name email phone avatarUrl")
+      .sort({ date: 1, timeSlot: 1 });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      count: appointments.length,
+      appointments,
+    });
+  } catch (error) {
+    console.error("Error in getDoctorAppointments:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error while fetching doctor appointments",
+    });
+  }
+};
+
+// 4. Update Appointment Status & Add Notes (Doctor / Admin / Patient Cancel)
+export const updateAppointmentStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const parsed = updateStatusSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid status update data",
+        errors: parsed.error.format(),
+      });
+      return;
+    }
+
+    const appointment = await Appointment.findById(id);
+    if (!appointment) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Appointment record not found",
+      });
+      return;
+    }
+
+    appointment.status = parsed.data.status;
+    if (parsed.data.notes) {
+      appointment.notes = parsed.data.notes;
+    }
+
+    await appointment.save();
+
+    const updated = await Appointment.findById(id)
+      .populate("doctor", "name email avatarUrl")
+      .populate("patient", "name email avatarUrl");
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: `Appointment status updated to ${parsed.data.status}`,
+      appointment: updated,
+    });
+  } catch (error) {
+    console.error("Error in updateAppointmentStatus:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error while updating appointment status",
+    });
+  }
+};
+
+// 5. Get List of Available Doctors for Booking
+export const getAvailableDoctors = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const doctors = await User.find({
+      role: { $in: [UserRole.DOCTOR, UserRole.RADIOLOGIST, UserRole.ADMIN] },
+    }).select("name email phone avatarUrl role");
+
+    // Enhance with professional specialization if available
+    const doctorProfiles = await ProfessionalProfile.find({
+      user: { $in: doctors.map((d) => d._id) },
+    });
+
+    const doctorMap = new Map();
+    doctorProfiles.forEach((p) => doctorMap.set(p.user.toString(), p));
+
+    const result = doctors.map((doc) => {
+      const prof = doctorMap.get(doc._id.toString());
+      return {
+        _id: doc._id,
+        name: doc.name,
+        email: doc.email,
+        phone: doc.phone,
+        avatarUrl: doc.avatarUrl,
+        role: doc.role,
+        specialization: prof?.specialization || "General Medicine",
+        degree: prof?.degree || "MD / MBBS",
+      };
+    });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      doctors: result,
+    });
+  } catch (error) {
+    console.error("Error in getAvailableDoctors:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error while fetching available doctors",
+    });
+  }
+};

@@ -1,7 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Check, TriangleAlert, PenLine, Send } from "lucide-react";
+import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import {
+  fetchDoctorAppointmentsApi,
+  updateAppointmentStatusApi,
+  AppointmentRecord,
+} from "@/lib/api/appointment";
+import { toast } from "sonner";
 import {
   shiftStats,
   rounds,
@@ -234,61 +240,177 @@ export function RoundsPanel() {
 
 /* ---------- 03 · Clinic list ---------- */
 
+/* ---------- 03 · Clinic list ---------- */
+
 export function ClinicPanel() {
+  const [loading, setLoading] = useState(true);
+  const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const loadAppointments = async () => {
+    try {
+      setLoading(true);
+      const res = await fetchDoctorAppointmentsApi();
+      if (res.success && res.appointments) {
+        setAppointments(res.appointments);
+      }
+    } catch (err) {
+      console.error("Failed to load doctor appointments", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAppointments();
+  }, []);
+
+  const handleUpdateStatus = async (id: string, status: "CONFIRMED" | "COMPLETED" | "CANCELLED") => {
+    let notes: string | undefined = undefined;
+
+    if (status === "COMPLETED") {
+      const input = window.prompt("Add clinical consultation note for patient file:");
+      if (input !== null) notes = input;
+    }
+
+    try {
+      setBusyId(id);
+      const res = await updateAppointmentStatusApi(id, status, notes);
+      if (res.success) {
+        toast.success(`Appointment marked as ${status}`);
+        loadAppointments();
+      }
+    } catch (err) {
+      toast.error("Failed to update appointment status");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <div>
       <PanelHeader
         index="03 / clinic"
-        title="Clinic list"
-        note="Today's outpatient slots, who is in the room and who is still waiting."
-        actions={<ActionButton tone="solid">Call next patient</ActionButton>}
+        title="Assigned Clinic Appointments"
+        note="Live patient consultation queue assigned to your clinical schedule."
+        actions={<ActionButton tone="solid" onClick={() => loadAppointments()}>Refresh schedule</ActionButton>}
       />
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px]">
           <thead className="hairline-b">
             <tr>
-              <Th>Time</Th>
+              <Th>Date & Time</Th>
               <Th>Patient</Th>
-              <Th>MRN</Th>
-              <Th>Reason</Th>
-              <Th>Type</Th>
-              <Th>State</Th>
+              <Th>Department</Th>
+              <Th>Reason / Symptoms</Th>
+              <Th>Visit Type</Th>
+              <Th>Status & Action</Th>
             </tr>
           </thead>
           <tbody>
-            {clinic.map((c) => (
-              <tr key={c.time} className="hairline-b">
-                <Td>
-                  <span className="mono-label">{c.time}</span>
-                </Td>
-                <Td>
-                  <span className="font-medium">{c.patient}</span>
-                </Td>
-                <Td>
-                  <span className="mono-label text-muted-foreground">{c.mrn}</span>
-                </Td>
-                <Td>{c.reason}</Td>
-                <Td>
-                  <span className="mono-label text-muted-foreground">{c.kind}</span>
-                </Td>
-                <Td>
-                  {c.state === "in-room" ? (
-                    <span className="flex items-center gap-2">
-                      <span className="bg-accent size-1.5 animate-pulse rounded-full" />
-                      <Pill tone="ok">in room</Pill>
-                    </span>
-                  ) : c.state === "waiting" ? (
-                    <Pill tone="warn">waiting</Pill>
-                  ) : c.state === "no-show" ? (
-                    <Pill tone="bad">no show</Pill>
-                  ) : c.state === "done" ? (
-                    <Pill tone="mute">seen</Pill>
-                  ) : (
-                    <Pill tone="mute">upcoming</Pill>
-                  )}
-                </Td>
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
+                  Loading clinical schedule...
+                </td>
               </tr>
-            ))}
+            ) : appointments.length > 0 ? (
+              appointments.map((a) => {
+                const pat = typeof a.patient === "object" ? a.patient : null;
+                const isBusy = busyId === a._id;
+
+                return (
+                  <tr key={a._id} className="hairline-b">
+                    <Td>
+                      <span className="mono-label font-bold text-brass">{a.date}</span>
+                      <p className="mono-label text-muted-foreground text-xs">{a.timeSlot}</p>
+                    </Td>
+                    <Td>
+                      <span className="font-medium text-foreground">{pat?.name || "Patient"}</span>
+                      <p className="mono-label text-muted-foreground text-[11px]">{pat?.phone || pat?.email}</p>
+                    </Td>
+                    <Td>
+                      <span className="mono-label font-semibold">{a.department}</span>
+                    </Td>
+                    <Td>
+                      <p className="text-sm font-medium">{a.reason}</p>
+                      {a.notes && (
+                        <p className="text-xs text-emerald-500 font-mono mt-0.5">Note: {a.notes}</p>
+                      )}
+                    </Td>
+                    <Td>
+                      <span className="mono-label text-muted-foreground">{a.type}</span>
+                    </Td>
+                    <Td>
+                      <div className="flex items-center gap-2">
+                        {a.status === "PENDING" && (
+                          <>
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => handleUpdateStatus(a._id, "CONFIRMED")}
+                              className="hairline mono-label bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 px-2.5 py-1 text-xs rounded hover:opacity-80"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => handleUpdateStatus(a._id, "CANCELLED")}
+                              className="hairline mono-label text-destructive px-2 py-1 text-xs rounded hover:bg-destructive/10"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+
+                        {a.status === "CONFIRMED" && (
+                          <>
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => handleUpdateStatus(a._id, "COMPLETED")}
+                              className="hairline mono-label bg-primary/15 text-primary border-primary/30 px-2.5 py-1 text-xs rounded font-bold hover:opacity-80"
+                            >
+                              Mark Completed
+                            </button>
+                          </>
+                        )}
+
+                        {a.status === "COMPLETED" && (
+                          <Pill tone="ok">COMPLETED</Pill>
+                        )}
+
+                        {a.status === "CANCELLED" && (
+                          <Pill tone="bad">CANCELLED</Pill>
+                        )}
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              })
+            ) : (
+              clinic.map((c) => (
+                <tr key={c.time} className="hairline-b">
+                  <Td>
+                    <span className="mono-label">{c.time}</span>
+                  </Td>
+                  <Td>
+                    <span className="font-medium">{c.patient}</span>
+                  </Td>
+                  <Td>
+                    <span className="mono-label text-muted-foreground">{c.mrn}</span>
+                  </Td>
+                  <Td>{c.reason}</Td>
+                  <Td>
+                    <span className="mono-label text-muted-foreground">{c.kind}</span>
+                  </Td>
+                  <Td>
+                    <Pill tone="mute">upcoming</Pill>
+                  </Td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

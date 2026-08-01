@@ -6,14 +6,7 @@ import Link from "next/link";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuthStore } from "@/store/use-auth-store";
-import { LogOut, User as UserIcon, Shield } from "lucide-react";
-
-const nav = [
-  { label: "Modules", href: "#modules" },
-  { label: "Evidence", href: "#evidence" },
-  { label: "Field notes", href: "#notes" },
-  { label: "Questions", href: "#questions" },
-];
+import { LogOut, User as UserIcon } from "lucide-react";
 
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -43,63 +36,65 @@ export function SiteHeader() {
 
   return (
     <header
-      className={`bg-background/85 sticky top-0 z-50 backdrop-blur-md transition-colors ${
-        scrolled ? "hairline-b" : "border-b border-transparent"
+      className={`bg-background/90 sticky top-0 z-50 backdrop-blur-md transition-colors ${
+        scrolled ? "hairline-b shadow-sm" : "border-b border-transparent"
       }`}
     >
-      <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-6 px-5 sm:px-8">
-        <a href="#top" className="flex items-center" aria-label="HealOS home">
-          <HealOSLogo size={30} />
-        </a>
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-5 sm:px-8">
+        {/* Brand Logo */}
+        <Link href="/" className="flex items-center gap-2" aria-label="HealOS home">
+          <HealOSLogo size={32} />
+        </Link>
 
-        <span className="mono-label text-muted-foreground hidden md:inline">v4.2 / rev 0918</span>
-
-        <nav className="ml-auto hidden items-center gap-8 lg:flex">
-          {nav.map((item, i) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="mono-label text-muted-foreground hover:text-foreground group relative transition-colors"
-            >
-              <span className="text-accent/70 mr-2">{String(i + 1).padStart(2, "0")}</span>
-              {item.label}
-            </a>
-          ))}
-        </nav>
-
-        <div className="ml-auto flex items-center gap-2 lg:ml-0">
+        {/* Center Navigation Links */}
+        <nav className="hidden items-center gap-6 lg:flex">
+          <a
+            href="#features"
+            className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors"
+          >
+            Features
+          </a>
           <Link
             href="/doctor"
-            className="mono-label text-muted-foreground hover:text-foreground hidden px-2 transition-colors sm:inline-block"
+            className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors"
           >
             Clinicians
           </Link>
           <Link
             href="/patient"
-            className="mono-label text-muted-foreground hover:text-foreground hidden px-2 transition-colors sm:inline-block"
+            className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors"
           >
             Patients
           </Link>
           <Link
             href="/radiology"
-            className="mono-label text-muted-foreground hover:text-foreground hidden px-2 transition-colors lg:inline-block"
+            className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors"
           >
             Radiology
           </Link>
           <Link
             href="/admin"
-            className="mono-label text-muted-foreground hover:text-foreground hidden px-2 transition-colors sm:inline-block"
+            className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors"
           >
             Console
           </Link>
+          <Link
+            href="/contact"
+            className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors"
+          >
+            Contact
+          </Link>
+        </nav>
 
+        {/* Right Actions */}
+        <div className="flex items-center gap-3">
           <ThemeToggle />
 
           {isAuthenticated && user ? (
-            <div className="flex items-center gap-3 ml-2">
+            <div className="flex items-center gap-3">
               <Link
                 href={getDashboardHref(user.role)}
-                className="bg-primary/10 border-primary/30 border text-primary mono-label hidden px-3.5 py-2 text-xs font-semibold hover:bg-primary/20 transition-all sm:flex items-center gap-2"
+                className="bg-primary/10 border-primary/30 border text-primary mono-label px-3.5 py-2 text-xs font-semibold hover:bg-primary/20 transition-all flex items-center gap-2 rounded-md"
               >
                 <UserIcon className="size-3.5" />
                 {user.name.split(" ")[0]} ({user.role})
@@ -108,72 +103,106 @@ export function SiteHeader() {
                 type="button"
                 onClick={logout}
                 title="Sign Out"
-                className="hairline text-muted-foreground hover:text-foreground p-2 transition-colors"
+                className="hairline text-muted-foreground hover:text-foreground p-2 transition-colors rounded-md"
               >
                 <LogOut className="size-4" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 ml-2">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => openAuthModal("login")}
-                className="mono-label text-muted-foreground hover:text-foreground px-3 py-2 text-xs transition-colors"
+                className="mono-label text-foreground hover:text-brass px-3.5 py-2 text-xs font-semibold transition-colors"
               >
                 Sign In
               </button>
               <button
                 type="button"
                 onClick={() => openAuthModal("register")}
-                className="bg-foreground text-background mono-label hidden px-4 py-2.5 text-xs transition-opacity hover:opacity-85 sm:inline-block cursor-pointer"
+                className="bg-primary text-primary-foreground mono-label px-4 py-2 text-xs font-semibold transition-opacity hover:opacity-90 rounded-md cursor-pointer"
               >
                 Get Started →
               </button>
             </div>
           )}
 
+          {/* Mobile Menu Button */}
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle navigation"
-            className="hairline-t hairline-b text-muted-foreground px-3 py-2 lg:hidden"
+            className="hairline text-muted-foreground px-3 py-2 lg:hidden rounded-md"
           >
-            <span className="mono-label">{open ? "Close" : "Menu"}</span>
+            <span className="mono-label text-xs">{open ? "Close" : "Menu"}</span>
           </button>
         </div>
       </div>
 
+      {/* Mobile Drawer */}
       {open && (
         <motion.nav
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "auto", opacity: 1 }}
-          className="hairline-t overflow-hidden lg:hidden"
+          className="hairline-t bg-background overflow-hidden lg:hidden"
         >
-          <div className="mx-auto max-w-[1400px] px-5 py-4 sm:px-8">
-            {nav.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className="mono-label hairline-b text-muted-foreground block py-4"
-              >
-                {item.label}
-              </a>
-            ))}
-            <Link href="/contact" onClick={() => setOpen(false)} className="mono-label hairline-b text-muted-foreground block py-4">
+          <div className="mx-auto max-w-[1400px] px-5 py-4 sm:px-8 space-y-2">
+            <a
+              href="#features"
+              onClick={() => setOpen(false)}
+              className="mono-label hairline-b text-muted-foreground block py-3 text-xs"
+            >
+              Features
+            </a>
+            <Link
+              href="/doctor"
+              onClick={() => setOpen(false)}
+              className="mono-label hairline-b text-muted-foreground block py-3 text-xs"
+            >
+              Clinicians Workspace
+            </Link>
+            <Link
+              href="/patient"
+              onClick={() => setOpen(false)}
+              className="mono-label hairline-b text-muted-foreground block py-3 text-xs"
+            >
+              Patient Portal
+            </Link>
+            <Link
+              href="/radiology"
+              onClick={() => setOpen(false)}
+              className="mono-label hairline-b text-muted-foreground block py-3 text-xs"
+            >
+              Radiology & Imaging
+            </Link>
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="mono-label hairline-b text-muted-foreground block py-3 text-xs"
+            >
+              Admin Console
+            </Link>
+            <Link
+              href="/contact"
+              onClick={() => setOpen(false)}
+              className="mono-label hairline-b text-muted-foreground block py-3 text-xs"
+            >
               Contact
             </Link>
+
             {!isAuthenticated ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  openAuthModal("login");
-                }}
-                className="mono-label text-brass block py-4"
-              >
-                Sign In →
-              </button>
+              <div className="pt-2 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    openAuthModal("login");
+                  }}
+                  className="mono-label bg-primary text-primary-foreground w-full py-3 text-xs font-semibold rounded-md"
+                >
+                  Sign In
+                </button>
+              </div>
             ) : (
               <button
                 type="button"
@@ -181,7 +210,7 @@ export function SiteHeader() {
                   setOpen(false);
                   logout();
                 }}
-                className="mono-label text-destructive block py-4"
+                className="mono-label text-destructive block py-3 text-xs"
               >
                 Sign Out
               </button>

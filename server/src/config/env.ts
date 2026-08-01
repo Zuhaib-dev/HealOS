@@ -2,11 +2,24 @@
 // HealOS Server — Environment Configuration
 // ============================================
 import dotenv from "dotenv";
+import fs from "fs";
 import path from "path";
 
-// Force load .env from current dir and root dir
-dotenv.config();
-dotenv.config({ path: path.resolve(process.cwd(), "../.env") });
+const cwd = process.cwd();
+const serverRoot = path.basename(cwd) === "server" ? cwd : path.join(cwd, "server");
+const repoRoot = fs.existsSync(path.join(serverRoot, "package.json")) ? path.dirname(serverRoot) : cwd;
+const originalEnvKeys = new Set(Object.keys(process.env));
+
+dotenv.config({ path: path.join(repoRoot, ".env") });
+
+const serverEnv = dotenv.config({ path: path.join(serverRoot, ".env") });
+if (serverEnv.parsed) {
+  for (const [key, value] of Object.entries(serverEnv.parsed)) {
+    if (!originalEnvKeys.has(key)) {
+      process.env[key] = value;
+    }
+  }
+}
 
 import { z } from "zod";
 

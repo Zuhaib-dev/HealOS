@@ -14,7 +14,7 @@ export const connectDB = async (): Promise<void> => {
       socketTimeoutMS: 45000,
     });
 
-    console.log(`✅ MongoDB connected: ${conn.connection.host}`);
+    console.log(`✅ MongoDB connected: ${conn.connection.host}/${conn.connection.name}`);
 
     // Connection event listeners
     mongoose.connection.on("error", (err) => {

@@ -20,6 +20,6 @@ RUN npx turbo run build --filter=@healos/shared
 
 WORKDIR /app/server
 
-EXPOSE 5000
+EXPOSE 5001
 
 CMD ["npm", "run", "dev"]

@@ -44,10 +44,10 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=5001
-      - MONGODB_URI=mongodb://mongodb:27017/healos
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017/healos}
       - REDIS_URL=redis://redis:6379
       - CLIENT_URL=http://localhost:3000
-      - JWT_SECRET=dev-jwt-secret-change-in-production
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-production}
       - JWT_EXPIRES_IN=7d
     depends_on:
       - mongodb
@@ -68,7 +68,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:5001/api/v1
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:5001/api/v1}
       - NEXT_PUBLIC_APP_URL=http://localhost:3000
     depends_on:
       - server

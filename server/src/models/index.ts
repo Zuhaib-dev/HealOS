@@ -1,10 +1,12 @@
 // ============================================
 // HealOS Server — Mongoose Models
 // ============================================
+
+export * from "./user.model";
+export * from "./professional-profile.model";
+
 // Add model files here as features are built:
-// - user.model.ts
 // - patient.model.ts
-// - doctor.model.ts
 // - department.model.ts
 // - appointment.model.ts
 // - prescription.model.ts
@@ -22,4 +24,3 @@
 // - announcement.model.ts
 // - blog-post.model.ts
 // - system-settings.model.ts
-export {};

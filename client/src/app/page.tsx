@@ -1,3 +1,5 @@
+"use client";
+
 import { SiteHeader } from "@/components/landing/site-header";
 import { Hero } from "@/components/landing/hero";
 import { Features } from "@/components/landing/features";

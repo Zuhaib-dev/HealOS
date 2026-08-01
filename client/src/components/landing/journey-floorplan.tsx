@@ -127,8 +127,8 @@ export function JourneyFloorplan({ className }: { className?: string }) {
             animate={{ offsetDistance: ["0%", "100%"] } as never}
             transition={{ duration: 11, repeat: Infinity, ease: "linear" }}
           >
-            <circle r="9" className="fill-accent" opacity={0.18} />
-            <circle r="4" className="fill-accent" />
+            <circle cx="0" cy="0" r="9" className="fill-accent" opacity={0.18} />
+            <circle cx="0" cy="0" r="4" className="fill-accent" />
           </motion.g>
           <motion.g
             style={{ offsetPath: `path("${PATH}")` } as never}
@@ -136,7 +136,7 @@ export function JourneyFloorplan({ className }: { className?: string }) {
             transition={{ duration: 11, repeat: Infinity, ease: "linear", delay: 4.5 }}
             opacity={0.6}
           >
-            <circle r="3" className="fill-primary-glow" />
+            <circle cx="0" cy="0" r="3" className="fill-primary-glow" />
           </motion.g>
         </>
       )}

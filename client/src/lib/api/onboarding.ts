@@ -22,6 +22,19 @@ export interface ProfessionalProfileData {
   createdAt: string;
 }
 
+export interface PatientProfileData {
+  _id?: string;
+  dob?: string;
+  gender?: "MALE" | "FEMALE" | "OTHER";
+  bloodGroup?: "A+" | "A-" | "B+" | "B-" | "O+" | "O-" | "AB+" | "AB-";
+  emergencyPhone?: string;
+  emergencyContactName?: string;
+  allergies?: string[];
+  medicalHistory?: string;
+  address?: string;
+  isComplete: boolean;
+}
+
 export interface ApplyRolePayload {
   requestedRole: "DOCTOR" | "RADIOLOGIST";
   degree: string;
@@ -30,6 +43,23 @@ export interface ApplyRolePayload {
   licenseNumber: string;
   documentUrls?: string[];
 }
+
+export const updatePatientProfileApi = async (payload: Partial<PatientProfileData>) => {
+  const response = await apiClient.put<{
+    success: boolean;
+    message: string;
+    profile: PatientProfileData;
+  }>("/onboarding/patient-profile", payload);
+  return response.data;
+};
+
+export const fetchPatientProfileApi = async () => {
+  const response = await apiClient.get<{
+    success: boolean;
+    profile: PatientProfileData | null;
+  }>("/onboarding/patient-profile");
+  return response.data;
+};
 
 export const applyForClinicianRoleApi = async (payload: ApplyRolePayload) => {
   const response = await apiClient.post("/onboarding/apply", payload);

@@ -8,16 +8,13 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useAuthStore, AuthUser } from "@/store/use-auth-store";
+import { useAuthStore } from "@/store/use-auth-store";
 import {
-  User as UserIcon,
-  ShieldCheck,
   LogOut,
   ChevronDown,
   LayoutDashboard,
@@ -26,7 +23,8 @@ import {
   Sun,
   Moon,
   CheckCircle2,
-  Lock,
+  Heart,
+  UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,7 +35,6 @@ export function UserProfileMenu() {
 
   if (!user) return null;
 
-  // Compute initials (e.g., "Sarah Jenkins" -> "SJ")
   const getInitials = (name: string) => {
     if (!name) return "U";
     const parts = name.trim().split(" ");
@@ -171,13 +168,23 @@ export function UserProfileMenu() {
             </Link>
           </DropdownMenuItem>
 
+          <DropdownMenuItem asChild>
+            <Link
+              href="/onboarding"
+              className="flex items-center gap-2.5 p-2 text-xs font-medium cursor-pointer rounded-md hover:bg-muted/60 transition-colors"
+            >
+              <Heart className="size-4 text-rose-500" />
+              <span>Patient Health Profile Setup</span>
+            </Link>
+          </DropdownMenuItem>
+
           {user.role === "USER" && (
             <DropdownMenuItem asChild>
               <Link
                 href="/onboarding"
                 className="flex items-center gap-2.5 p-2 text-xs font-medium cursor-pointer rounded-md hover:bg-muted/60 transition-colors"
               >
-                <Stethoscope className="size-4 text-brass" />
+                <Stethoscope className="size-4 text-emerald-500" />
                 <span>Apply as Clinician / Doctor</span>
               </Link>
             </DropdownMenuItem>

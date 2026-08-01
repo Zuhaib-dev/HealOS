@@ -2,6 +2,8 @@ import { Router } from "express";
 import { 
   applyForRole, 
   getMyStatus,
+  updatePatientProfile,
+  getPatientProfile,
   getPendingRequests, 
   approveRequest, 
   rejectRequest 
@@ -12,16 +14,17 @@ import { UserRole } from "../models";
 const router = Router();
 
 // ==========================================
-// User Routes
+// User Routes (Patient & Clinician Application)
 // ==========================================
-// Any authenticated user can apply & check their application status
+router.put("/patient-profile", verifyToken, updatePatientProfile);
+router.get("/patient-profile", verifyToken, getPatientProfile);
+
 router.post("/apply", verifyToken, applyForRole);
 router.get("/my-status", verifyToken, getMyStatus);
 
 // ==========================================
 // Admin Routes
 // ==========================================
-// Only Admins can manage onboarding requests
 router.use(verifyToken, requireRole([UserRole.ADMIN]));
 
 router.get("/requests", getPendingRequests);

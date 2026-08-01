@@ -23,6 +23,7 @@ interface AuthState {
   // Actions
   setAuth: (user: AuthUser, token: string) => void;
   setUser: (user: AuthUser) => void;
+  updateUser: (partialUser: Partial<AuthUser>) => void;
   setToken: (token: string) => void;
   logout: () => void;
   openAuthModal: (tab?: "login" | "register") => void;
@@ -47,6 +48,11 @@ export const useAuthStore = create<AuthState>()(
         }),
 
       setUser: (user) => set({ user }),
+
+      updateUser: (partialUser) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...partialUser } : null,
+        })),
 
       setToken: (token) => set({ token }),
 

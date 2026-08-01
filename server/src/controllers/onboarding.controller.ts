@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { ProfessionalProfile, ProfileStatus, User, UserRole } from "../models";
+import { ProfessionalProfile, ProfileStatus, PatientProfile, User, UserRole } from "../models";
 import { z } from "zod";
 
 const applyOnboardingSchema = z.object({
@@ -16,7 +16,82 @@ const rejectOnboardingSchema = z.object({
   rejectionReason: z.string().min(5, "Please provide a detailed rejection reason"),
 });
 
-// 1. User applies for a professional role (Doctor or Radiologist)
+const updatePatientProfileSchema = z.object({
+  dob: z.string().optional(),
+  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
+  bloodGroup: z.enum(["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]).optional(),
+  emergencyPhone: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  allergies: z.array(z.string()).optional(),
+  medicalHistory: z.string().optional(),
+  address: z.string().optional(),
+});
+
+// ==========================================
+// 1. Patient Profile Onboarding
+// ==========================================
+export const updatePatientProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?._id;
+    const parsed = updatePatientProfileSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid patient profile data",
+        errors: parsed.error.format(),
+      });
+      return;
+    }
+
+    let profile = await PatientProfile.findOne({ user: userId });
+    if (!profile) {
+      profile = new PatientProfile({ user: userId });
+    }
+
+    Object.assign(profile, parsed.data);
+    profile.isComplete = true;
+    await profile.save();
+
+    if (parsed.data.emergencyPhone) {
+      await User.findByIdAndUpdate(userId, { phone: parsed.data.emergencyPhone });
+    }
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Patient health profile updated successfully",
+      profile,
+    });
+  } catch (error) {
+    console.error("Error in updatePatientProfile:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error while updating patient profile",
+    });
+  }
+};
+
+export const getPatientProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?._id;
+    const profile = await PatientProfile.findOne({ user: userId });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      profile: profile || null,
+    });
+  } catch (error) {
+    console.error("Error in getPatientProfile:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error while fetching patient profile",
+    });
+  }
+};
+
+// ==========================================
+// 2. Clinician / Doctor Role Application
+// ==========================================
 export const applyForRole = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?._id;
@@ -31,7 +106,6 @@ export const applyForRole = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Check if user already has an active pending or approved profile
     const existingProfile = await ProfessionalProfile.findOne({
       user: userId,
       status: { $in: [ProfileStatus.PENDING, ProfileStatus.UNDER_REVIEW, ProfileStatus.APPROVED] },
@@ -67,7 +141,6 @@ export const applyForRole = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-// 2. Fetch logged-in user's own application status
 export const getMyStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?._id;
@@ -86,7 +159,9 @@ export const getMyStatus = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-// 3. Admin lists all pending requests
+// ==========================================
+// 3. Admin Approval Operations
+// ==========================================
 export const getPendingRequests = async (_req: Request, res: Response): Promise<void> => {
   try {
     const profiles = await ProfessionalProfile.find({
@@ -107,7 +182,6 @@ export const getPendingRequests = async (_req: Request, res: Response): Promise<
   }
 };
 
-// 4. Admin approves request -> Upgrades user role automatically
 export const approveRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -134,7 +208,6 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
     profile.reviewedBy = adminId;
     await profile.save();
 
-    // Automatically upgrade user role in database
     const user = await User.findById(profile.user);
     if (user) {
       user.role = profile.requestedRole;
@@ -155,7 +228,6 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
   }
 };
 
-// 5. Admin rejects request with mandatory rejection reason
 export const rejectRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;

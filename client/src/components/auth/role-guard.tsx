@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { fetchMeApi } from "@/lib/api/auth";
 import { useAuthStore, UserRole } from "@/store/use-auth-store";
 
@@ -12,35 +12,52 @@ interface RoleGuardProps {
 
 export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, user, token, openAuthModal, setUser, logout } = useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
+
   const allowedRoleKey = useMemo(() => allowedRoles?.join("|") ?? "", [allowedRoles]);
   const roles = useMemo(
     () => (allowedRoleKey ? (allowedRoleKey.split("|") as UserRole[]) : []),
     [allowedRoleKey],
   );
+
   const userId = user?.id;
+
+  const isRoleAllowed = (role: string, targetRoles: UserRole[]): boolean => {
+    if (targetRoles.length === 0) return true;
+    const normalized = role.toUpperCase();
+
+    return targetRoles.some((allowed) => {
+      const allowedNorm = allowed.toUpperCase();
+      if (allowedNorm === normalized) return true;
+      if (
+        (allowedNorm === "USER" || allowedNorm === "PATIENT") &&
+        (normalized === "USER" || normalized === "PATIENT" || normalized === "LEGACY_PATIENT")
+      ) {
+        return true;
+      }
+      return false;
+    });
+  };
 
   useEffect(() => {
     let isActive = true;
 
-    const redirectForRole = (role: UserRole) => {
-      switch (role) {
-        case "ADMIN":
-          router.push("/admin");
-          break;
-        case "DOCTOR":
-          router.push("/doctor");
-          break;
-        case "RADIOLOGIST":
-          router.push("/radiology");
-          break;
-        case "patient":
-        case "PATIENT":
-        case "USER":
-        default:
-          router.push("/patient");
-          break;
+    const redirectForRole = (role: string) => {
+      const normalized = role.toUpperCase();
+      let targetPath = "/patient";
+
+      if (normalized === "ADMIN") {
+        targetPath = "/admin";
+      } else if (normalized === "DOCTOR") {
+        targetPath = "/doctor";
+      } else if (normalized === "RADIOLOGIST") {
+        targetPath = "/radiology";
+      }
+
+      if (pathname !== targetPath) {
+        router.push(targetPath);
       }
     };
 
@@ -48,7 +65,9 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
       if (!isAuthenticated || !userId || !token) {
         if (isActive) setIsChecking(false);
         openAuthModal("login");
-        router.push("/");
+        if (pathname !== "/") {
+          router.push("/");
+        }
         return;
       }
 
@@ -62,13 +81,15 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
 
         setUser(response.user);
 
-        if (roles.length > 0 && !roles.includes(response.user.role)) {
+        if (!isRoleAllowed(response.user.role, roles)) {
           redirectForRole(response.user.role);
         }
       } catch {
         logout();
         openAuthModal("login");
-        router.push("/");
+        if (pathname !== "/") {
+          router.push("/");
+        }
       } finally {
         if (isActive) setIsChecking(false);
       }
@@ -79,7 +100,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     return () => {
       isActive = false;
     };
-  }, [isAuthenticated, token, userId, roles, router, openAuthModal, setUser, logout]);
+  }, [isAuthenticated, token, userId, allowedRoleKey, pathname, router, openAuthModal, setUser, logout]);
 
   if (isChecking || !isAuthenticated || !user) {
     return (
@@ -91,7 +112,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     );
   }
 
-  if (roles.length > 0 && !roles.includes(user.role)) {
+  if (!isRoleAllowed(user.role, roles)) {
     return null;
   }
 

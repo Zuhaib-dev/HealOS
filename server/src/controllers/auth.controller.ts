@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
@@ -6,6 +7,17 @@ import { User, UserRole, OTP } from "../models";
 import { envConfig } from "../config/env";
 import { sendOtpEmail } from "../utils/mailer";
 import { z } from "zod";
+
+const isDbConnected = (res: Response): boolean => {
+  if (mongoose.connection.readyState !== 1) {
+    res.status(StatusCodes.SERVICE_UNAVAILABLE).json({
+      success: false,
+      message: "MongoDB database is not connected. Please start MongoDB to perform this action.",
+    });
+    return false;
+  }
+  return true;
+};
 
 // ---------------------------
 // Zod Validation Schemas
@@ -125,6 +137,8 @@ export const syncGoogleUser = async (req: Request, res: Response): Promise<void>
 // ---------------------------
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (!isDbConnected(res)) return;
+
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(StatusCodes.BAD_REQUEST).json({

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuthStore } from "@/store/use-auth-store";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -20,19 +20,6 @@ export function SiteHeader() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  const getDashboardHref = (role?: string) => {
-    switch (role) {
-      case "ADMIN":
-        return "/admin";
-      case "DOCTOR":
-        return "/doctor";
-      case "RADIOLOGIST":
-        return "/radiology";
-      default:
-        return "/patient";
-    }
-  };
 
   return (
     <header
@@ -88,26 +75,10 @@ export function SiteHeader() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-3">
-          <ThemeToggle />
+          {!isAuthenticated && <ThemeToggle />}
 
           {isAuthenticated && user ? (
-            <div className="flex items-center gap-3">
-              <Link
-                href={getDashboardHref(user.role)}
-                className="bg-primary/10 border-primary/30 border text-primary mono-label px-3.5 py-2 text-xs font-semibold hover:bg-primary/20 transition-all flex items-center gap-2 rounded-md"
-              >
-                <UserIcon className="size-3.5" />
-                {user.name.split(" ")[0]} ({user.role})
-              </Link>
-              <button
-                type="button"
-                onClick={logout}
-                title="Sign Out"
-                className="hairline text-muted-foreground hover:text-foreground p-2 transition-colors rounded-md"
-              >
-                <LogOut className="size-4" />
-              </button>
-            </div>
+            <UserProfileMenu />
           ) : (
             <div className="flex items-center gap-2">
               <button

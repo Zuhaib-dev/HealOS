@@ -26,6 +26,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isAuthModalOpen: boolean;
   authModalTab: "login" | "register";
+  _hasHydrated: boolean;
   
   // Actions
   setAuth: (user: AuthUser, token: string) => void;
@@ -35,6 +36,7 @@ interface AuthState {
   logout: () => void;
   openAuthModal: (tab?: "login" | "register") => void;
   closeAuthModal: () => void;
+  setHasHydrated: (state: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -45,6 +47,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isAuthModalOpen: false,
       authModalTab: "login",
+      _hasHydrated: false,
 
       setAuth: (user, token) =>
         set({
@@ -77,6 +80,8 @@ export const useAuthStore = create<AuthState>()(
         }),
 
       closeAuthModal: () => set({ isAuthModalOpen: false }),
+
+      setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
     }),
     {
       name: "healos-auth-storage",
@@ -85,6 +90,9 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

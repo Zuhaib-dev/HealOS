@@ -13,7 +13,8 @@ interface RoleGuardProps {
 export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, user, token, openAuthModal, setUser, logout } = useAuthStore();
+  const { isAuthenticated, user, token, _hasHydrated, openAuthModal, setUser, logout } =
+    useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
 
   const allowedRoleKey = useMemo(() => allowedRoles?.join("|") ?? "", [allowedRoles]);
@@ -42,6 +43,9 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
   };
 
   useEffect(() => {
+    // Wait until Zustand state has hydrated from localStorage
+    if (!_hasHydrated) return;
+
     let isActive = true;
 
     const redirectForRole = (role: string) => {
@@ -62,7 +66,8 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     };
 
     const verifySession = async () => {
-      if (!isAuthenticated || !userId || !token) {
+      // 1. Unauthenticated case
+      if (!token) {
         if (isActive) setIsChecking(false);
         openAuthModal("login");
         if (pathname !== "/") {
@@ -81,10 +86,13 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
 
         setUser(response.user);
 
+        // 2. Check Role permissions
         if (!isRoleAllowed(response.user.role, roles)) {
+          // Authorized user visiting wrong portal -> Redirect cleanly WITHOUT opening auth modal!
           redirectForRole(response.user.role);
         }
       } catch {
+        // Only log out if token verification actually failed
         logout();
         openAuthModal("login");
         if (pathname !== "/") {
@@ -100,9 +108,20 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     return () => {
       isActive = false;
     };
-  }, [isAuthenticated, token, userId, allowedRoleKey, pathname, router, openAuthModal, setUser, logout]);
+  }, [
+    _hasHydrated,
+    isAuthenticated,
+    token,
+    userId,
+    allowedRoleKey,
+    pathname,
+    router,
+    openAuthModal,
+    setUser,
+    logout,
+  ]);
 
-  if (isChecking || !isAuthenticated || !user) {
+  if (!_hasHydrated || isChecking || !isAuthenticated || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8 bg-background">
         <div className="mono-label text-muted-foreground animate-pulse text-xs">

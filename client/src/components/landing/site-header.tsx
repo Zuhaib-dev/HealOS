@@ -5,6 +5,8 @@ import { motion } from "motion/react";
 import Link from "next/link";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useAuthStore } from "@/store/use-auth-store";
+import { LogOut, User as UserIcon, Shield } from "lucide-react";
 
 const nav = [
   { label: "Modules", href: "#modules" },
@@ -17,12 +19,27 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
+  const { isAuthenticated, user, openAuthModal, logout } = useAuthStore();
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const getDashboardHref = (role?: string) => {
+    switch (role) {
+      case "ADMIN":
+        return "/admin";
+      case "DOCTOR":
+        return "/doctor";
+      case "RADIOLOGIST":
+        return "/radiology";
+      default:
+        return "/patient";
+    }
+  };
 
   return (
     <header
@@ -75,19 +92,46 @@ export function SiteHeader() {
           >
             Console
           </Link>
-          <Link
-            href="/contact"
-            className="mono-label text-muted-foreground hover:text-foreground hidden px-2 transition-colors sm:inline-block"
-          >
-            Contact
-          </Link>
+
           <ThemeToggle />
-          <a
-            href="#access"
-            className="bg-foreground text-background mono-label hidden px-4 py-2.5 transition-opacity hover:opacity-85 sm:inline-block"
-          >
-            Request access
-          </a>
+
+          {isAuthenticated && user ? (
+            <div className="flex items-center gap-3 ml-2">
+              <Link
+                href={getDashboardHref(user.role)}
+                className="bg-primary/10 border-primary/30 border text-primary mono-label hidden px-3.5 py-2 text-xs font-semibold hover:bg-primary/20 transition-all sm:flex items-center gap-2"
+              >
+                <UserIcon className="size-3.5" />
+                {user.name.split(" ")[0]} ({user.role})
+              </Link>
+              <button
+                type="button"
+                onClick={logout}
+                title="Sign Out"
+                className="hairline text-muted-foreground hover:text-foreground p-2 transition-colors"
+              >
+                <LogOut className="size-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 ml-2">
+              <button
+                type="button"
+                onClick={() => openAuthModal("login")}
+                className="mono-label text-muted-foreground hover:text-foreground px-3 py-2 text-xs transition-colors"
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => openAuthModal("register")}
+                className="bg-foreground text-background mono-label hidden px-4 py-2.5 text-xs transition-opacity hover:opacity-85 sm:inline-block cursor-pointer"
+              >
+                Get Started →
+              </button>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -119,9 +163,29 @@ export function SiteHeader() {
             <Link href="/contact" onClick={() => setOpen(false)} className="mono-label hairline-b text-muted-foreground block py-4">
               Contact
             </Link>
-            <a href="#access" onClick={() => setOpen(false)} className="mono-label text-brass block py-4">
-              Request access →
-            </a>
+            {!isAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  openAuthModal("login");
+                }}
+                className="mono-label text-brass block py-4"
+              >
+                Sign In →
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  logout();
+                }}
+                className="mono-label text-destructive block py-4"
+              >
+                Sign Out
+              </button>
+            )}
           </div>
         </motion.nav>
       )}

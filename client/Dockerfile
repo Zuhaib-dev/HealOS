@@ -15,8 +15,8 @@ RUN npm ci
 COPY packages/shared ./packages/shared
 COPY client ./client
 
-# Build shared library
-RUN npm run build --filter=@healos/shared...
+# Build ONLY the shared library
+RUN npx turbo run build --filter=@healos/shared
 
 WORKDIR /app/client
 

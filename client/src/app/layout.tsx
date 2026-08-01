@@ -1,21 +1,27 @@
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { Toaster } from "@/components/ui/sonner";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Work_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const workSans = Work_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-work-sans",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "HealOS — An Operating System for Healthcare",
+    default: "HealOS — The Operating System for Modern Hospitals",
     template: "%s | HealOS",
   },
   description:
-    "HealOS is a production-ready Hospital Management System for hospitals, clinics, and multi-specialty centers. Manage appointments, patients, doctors, billing, and more.",
+    "HealOS unifies patient records, clinician onboarding, radiology, scheduling and revenue analytics in one secure hospital management platform.",
   keywords: [
     "hospital management",
     "clinic management",
@@ -23,6 +29,7 @@ export const metadata: Metadata = {
     "appointments",
     "patient portal",
     "doctor dashboard",
+    "radiology",
     "HealOS",
   ],
 };
@@ -33,15 +40,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${workSans.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            {children}
+            <Toaster position="top-right" />
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

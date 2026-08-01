@@ -1,18 +1,27 @@
-export default function Home() {
+import { SiteHeader } from "@/components/landing/site-header";
+import { Hero } from "@/components/landing/hero";
+import { Features } from "@/components/landing/features";
+import { PatientJourney } from "@/components/landing/patient-journey";
+import { WhyHealOS } from "@/components/landing/why-healos";
+import { Testimonials } from "@/components/landing/testimonials";
+import { FaqSection } from "@/components/landing/faq-section";
+import { CtaSection } from "@/components/landing/cta-section";
+import { SiteFooter } from "@/components/landing/site-footer";
+
+export default function LandingPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <div className="text-center animate-fade-in">
-        <h1 className="text-5xl font-bold tracking-tight text-foreground">
-          Heal<span className="text-primary">OS</span>
-        </h1>
-        <p className="mt-3 text-lg text-muted-foreground">
-          An Operating System for Healthcare
-        </p>
-        <div className="mt-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <span className="inline-block h-2 w-2 rounded-full bg-success animate-pulse" />
-          System ready — setup complete
-        </div>
-      </div>
-    </main>
+    <div className="bg-background min-h-screen overflow-x-hidden">
+      <SiteHeader />
+      <main>
+        <Hero />
+        <Features />
+        <WhyHealOS />
+        <PatientJourney />
+        <Testimonials />
+        <FaqSection />
+        <CtaSection />
+      </main>
+      <SiteFooter />
+    </div>
   );
 }

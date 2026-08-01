@@ -9,15 +9,16 @@ import {
   updatePhone,
 } from "../controllers/auth.controller";
 import { verifyToken } from "../middleware/auth.middleware";
+import { authRateLimiter, otpRateLimiter } from "../middleware/rate-limit";
 
 const router = Router();
 
 // Public routes
-router.post("/sync", syncGoogleUser);
-router.post("/register", register);
-router.post("/verify-otp", verifyOtp);
-router.post("/resend-otp", resendOtp);
-router.post("/login", login);
+router.post("/sync", authRateLimiter, syncGoogleUser);
+router.post("/register", authRateLimiter, otpRateLimiter, register);
+router.post("/verify-otp", authRateLimiter, verifyOtp);
+router.post("/resend-otp", authRateLimiter, otpRateLimiter, resendOtp);
+router.post("/login", authRateLimiter, login);
 
 // Protected routes (Requires valid JWT)
 router.get("/me", verifyToken, getMe);

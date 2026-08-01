@@ -1,16 +1,6 @@
 import nodemailer from "nodemailer";
 import { envConfig } from "../config/env";
 
-const transporter = nodemailer.createTransport({
-  host: envConfig.SMTP_HOST || "smtp.gmail.com",
-  port: envConfig.SMTP_PORT || 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: envConfig.SMTP_USER,
-    pass: envConfig.SMTP_PASS,
-  },
-});
-
 export const sendOtpEmail = async (email: string, otp: string): Promise<boolean> => {
   try {
     const htmlContent = `
@@ -41,8 +31,18 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<boolean>
       return true;
     }
 
+    const transporter = nodemailer.createTransport({
+      host: envConfig.SMTP_HOST,
+      port: envConfig.SMTP_PORT,
+      secure: envConfig.SMTP_PORT === 465,
+      auth: {
+        user: envConfig.SMTP_USER,
+        pass: envConfig.SMTP_PASS,
+      },
+    });
+
     await transporter.sendMail({
-      from: envConfig.EMAIL_FROM || '"HealOS Support" <noreply@healos.com>',
+      from: envConfig.EMAIL_FROM,
       to: email,
       subject: `[HealOS] Your Verification Code: ${otp}`,
       html: htmlContent,

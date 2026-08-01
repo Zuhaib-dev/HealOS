@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { randomInt, timingSafeEqual } from "crypto";
 import { StatusCodes } from "http-status-codes";
 import { User, UserRole, OTP } from "../models";
 import { envConfig } from "../config/env";
@@ -23,39 +24,39 @@ const isDbConnected = (res: Response): boolean => {
 // Zod Validation Schemas
 // ---------------------------
 const syncGoogleUserSchema = z.object({
-  email: z.string().email(),
-  name: z.string(),
-  googleId: z.string(),
+  email: z.string().trim().toLowerCase().email(),
+  name: z.string().trim().min(1),
+  googleId: z.string().trim().min(1),
   avatarUrl: z.string().optional(),
 });
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  name: z.string().trim().min(2, "Name must be at least 2 characters"),
+  email: z.string().trim().toLowerCase().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const verifyOtpSchema = z.object({
-  email: z.string().email(),
-  otp: z.string().length(6, "OTP must be exactly 6 digits"),
+  email: z.string().trim().toLowerCase().email(),
+  otp: z.string().regex(/^\d{6}$/, "OTP must be exactly 6 digits"),
 });
 
 const resendOtpSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
+  email: z.string().trim().toLowerCase().email(),
+  password: z.string().min(1),
 });
 
 const updatePhoneSchema = z.object({
-  phone: z.string().min(7, "Invalid phone number"),
+  phone: z.string().trim().min(7, "Invalid phone number"),
 });
 
 // Helper to generate 6-digit OTP
 const generate6DigitOtp = (): string => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return randomInt(100000, 1000000).toString();
 };
 
 // Helper to generate JWT Token
@@ -65,11 +66,35 @@ const generateToken = (userId: string, role: UserRole): string => {
   });
 };
 
+const hasValidSyncSecret = (req: Request): boolean => {
+  if (!envConfig.AUTH_SYNC_SECRET) {
+    return envConfig.NODE_ENV !== "production";
+  }
+
+  const providedSecret = req.header("x-auth-sync-secret");
+  if (!providedSecret) return false;
+
+  const expected = Buffer.from(envConfig.AUTH_SYNC_SECRET);
+  const provided = Buffer.from(providedSecret);
+
+  return expected.length === provided.length && timingSafeEqual(expected, provided);
+};
+
 // ---------------------------
 // 1. Sync Google User
 // ---------------------------
 export const syncGoogleUser = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (!isDbConnected(res)) return;
+
+    if (!hasValidSyncSecret(req)) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: "Google auth sync is not authorized.",
+      });
+      return;
+    }
+
     const parsed = syncGoogleUserSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(StatusCodes.BAD_REQUEST).json({
@@ -205,6 +230,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 // ---------------------------
 export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (!isDbConnected(res)) return;
+
     const parsed = verifyOtpSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(StatusCodes.BAD_REQUEST).json({
@@ -273,6 +300,8 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
 // ---------------------------
 export const resendOtp = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (!isDbConnected(res)) return;
+
     const parsed = resendOtpSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(StatusCodes.BAD_REQUEST).json({
@@ -317,6 +346,8 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
 // ---------------------------
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (!isDbConnected(res)) return;
+
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(StatusCodes.BAD_REQUEST).json({

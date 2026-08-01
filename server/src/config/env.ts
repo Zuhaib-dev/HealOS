@@ -11,40 +11,73 @@ dotenv.config({ path: path.resolve(process.cwd(), "../.env") });
 import { z } from "zod";
 
 const DEFAULT_MONGO_URI = "mongodb://127.0.0.1:27017/healos";
+const DEV_JWT_SECRET = "dev-jwt-secret-change-in-production";
+const DEV_REFRESH_SECRET = "dev-refresh-secret-change-in-production";
 
-const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  PORT: z.coerce.number().default(5001),
-  CLIENT_URL: z.string().default("http://localhost:3000"),
+const envSchema = z
+  .object({
+    NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+    PORT: z.coerce.number().default(5001),
+    CLIENT_URL: z.string().default("http://localhost:3000"),
 
-  // MongoDB
-  MONGODB_URI: z.string().default(DEFAULT_MONGO_URI),
+    // MongoDB
+    MONGODB_URI: z.string().default(DEFAULT_MONGO_URI),
 
-  // Redis
-  REDIS_URL: z.string().default("redis://localhost:6379"),
+    // Redis
+    REDIS_URL: z.string().default("redis://localhost:6379"),
 
-  // JWT
-  JWT_SECRET: z.string().default("dev-jwt-secret-change-in-production"),
-  JWT_EXPIRES_IN: z.string().default("7d"),
-  JWT_REFRESH_SECRET: z.string().default("dev-refresh-secret-change-in-production"),
-  JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
+    // JWT
+    JWT_SECRET: z.string().default(DEV_JWT_SECRET),
+    JWT_EXPIRES_IN: z.string().default("7d"),
+    JWT_REFRESH_SECRET: z.string().default(DEV_REFRESH_SECRET),
+    JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
 
-  // Razorpay
-  RAZORPAY_KEY_ID: z.string().optional(),
-  RAZORPAY_KEY_SECRET: z.string().optional(),
+    // Server-to-server auth
+    AUTH_SYNC_SECRET: z.string().optional(),
 
-  // Cloudinary
-  CLOUDINARY_CLOUD_NAME: z.string().optional(),
-  CLOUDINARY_API_KEY: z.string().optional(),
-  CLOUDINARY_API_SECRET: z.string().optional(),
+    // Razorpay
+    RAZORPAY_KEY_ID: z.string().optional(),
+    RAZORPAY_KEY_SECRET: z.string().optional(),
 
-  // Email
-  SMTP_HOST: z.string().default("smtp.gmail.com"),
-  SMTP_PORT: z.coerce.number().default(587),
-  SMTP_USER: z.string().default("***REMOVED_SMTP_USER***"),
-  SMTP_PASS: z.string().default("***REMOVED_SMTP_PASS***"),
-  EMAIL_FROM: z.string().default("HealOS <noreply@healos.com>"),
-});
+    // Cloudinary
+    CLOUDINARY_CLOUD_NAME: z.string().optional(),
+    CLOUDINARY_API_KEY: z.string().optional(),
+    CLOUDINARY_API_SECRET: z.string().optional(),
+
+    // Email
+    SMTP_HOST: z.string().default("smtp.gmail.com"),
+    SMTP_PORT: z.coerce.number().default(587),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+    EMAIL_FROM: z.string().default("HealOS <noreply@healos.com>"),
+  })
+  .superRefine((env, ctx) => {
+    if (env.NODE_ENV !== "production") return;
+
+    if (env.JWT_SECRET === DEV_JWT_SECRET || env.JWT_SECRET.length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["JWT_SECRET"],
+        message: "JWT_SECRET must be set to a strong production secret.",
+      });
+    }
+
+    if (env.JWT_REFRESH_SECRET === DEV_REFRESH_SECRET || env.JWT_REFRESH_SECRET.length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["JWT_REFRESH_SECRET"],
+        message: "JWT_REFRESH_SECRET must be set to a strong production secret.",
+      });
+    }
+
+    if (!env.AUTH_SYNC_SECRET || env.AUTH_SYNC_SECRET.length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["AUTH_SYNC_SECRET"],
+        message: "AUTH_SYNC_SECRET must be set for production Google auth sync.",
+      });
+    }
+  });
 
 const parsed = envSchema.safeParse(process.env);
 

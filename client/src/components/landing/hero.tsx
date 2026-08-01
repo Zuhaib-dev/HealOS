@@ -1,5 +1,11 @@
+"use client";
+
 import { motion } from "motion/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { VitalsInstrument } from "./illustrations";
+import { useAuthStore } from "@/store/use-auth-store";
+import { Calendar, Stethoscope, ArrowRight, ShieldCheck, Activity } from "lucide-react";
 
 const readouts = [
   { k: "Beds live", v: "1 284", d: "94% utilisation" },
@@ -18,8 +24,18 @@ const ticker = [
   "RX · 0 interaction flags",
 ];
 
-
 export function Hero() {
+  const router = useRouter();
+  const { isAuthenticated, user, openAuthModal } = useAuthStore();
+
+  const handleBookAppointment = () => {
+    if (!isAuthenticated) {
+      openAuthModal("login");
+    } else {
+      router.push("/patient");
+    }
+  };
+
   return (
     <section id="top" className="relative overflow-hidden">
       <div className="bg-graph-paper pointer-events-none absolute inset-0 opacity-60" />
@@ -28,9 +44,12 @@ export function Hero() {
       <div className="relative mx-auto max-w-[1400px] px-5 sm:px-8">
         {/* top measurement rule */}
         <div className="hairline-b flex items-center justify-between py-4">
-          <span className="mono-label text-muted-foreground">Hospital operating system</span>
+          <span className="mono-label text-muted-foreground flex items-center gap-2">
+            <span className="bg-emerald-500 inline-block h-2 w-2 rounded-full animate-ping" />
+            Hospital Operating System · Active Clinical Grid
+          </span>
           <span className="mono-label text-muted-foreground hidden sm:inline">
-            Est. 2019 · ISO 27001 · HIPAA
+            ISO 27001 · HIPAA Compliant · 256-Bit Encrypted EHR
           </span>
         </div>
 
@@ -38,14 +57,15 @@ export function Hero() {
           {/* headline column */}
           <div className="hairline-b lg:col-span-7 lg:border-b-0 lg:pr-14 lg:pb-24">
             <div className="pt-14 pb-12 lg:pt-24">
-              <motion.p
+              <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="mono-label text-brass mb-8"
+                className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-emerald-600 dark:text-emerald-400 mono-label text-xs mb-6"
               >
-                001 / Introduction
-              </motion.p>
+                <Activity className="size-3.5" />
+                <span>Next-Gen Healthcare Management & EHR</span>
+              </motion.div>
 
               <h1 className="font-display text-[clamp(2.4rem,6vw,4.6rem)] leading-[0.95] font-bold tracking-[-0.03em]">
                 {["Run the whole", "hospital from", "one instrument."].map((row, i) => (
@@ -80,30 +100,51 @@ export function Hero() {
                 transition={{ duration: 0.7, delay: 0.55 }}
                 className="text-muted-foreground mt-8 max-w-xl text-[1.0625rem] leading-relaxed"
               >
-                HealOS is the record, the roster, the radiology desk and the ledger — one
-                calibrated surface for clinicians who cannot afford a second guess. No
-                spreadsheets. No swivel-chair. No waiting on IT.
+                HealOS connects patient scheduling, doctor consultations, DICOM radiology imaging, and hospital billing into one unified calibrated surface for clinicians and patients.
               </motion.p>
 
+              {/* Action Buttons */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.75 }}
-                className="mt-10 flex flex-wrap items-center gap-3"
+                className="mt-10 flex flex-wrap items-center gap-4"
               >
-                <a
-                  href="#access"
-                  className="bg-foreground text-background mono-label group inline-flex items-center gap-3 px-6 py-4 transition-opacity hover:opacity-85"
+                <button
+                  type="button"
+                  onClick={handleBookAppointment}
+                  className="bg-primary text-primary-foreground mono-label group inline-flex items-center gap-2.5 px-6 py-4 rounded-md font-semibold text-xs transition-all hover:opacity-90 shadow-md cursor-pointer"
                 >
-                  Request access
-                  <span className="transition-transform group-hover:translate-x-1">→</span>
-                </a>
-                <a
-                  href="#modules"
-                  className="mono-label hairline-t hairline-b text-muted-foreground hover:text-foreground inline-flex items-center px-6 py-4 transition-colors"
+                  <Calendar className="size-4 text-primary-foreground" />
+                  Book Doctor Appointment
+                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                </button>
+
+                <Link
+                  href="/onboarding"
+                  className="hairline-t hairline-b border border-border/80 text-foreground hover:border-primary/40 bg-card/50 hover:bg-muted/60 mono-label inline-flex items-center gap-2 px-6 py-4 rounded-md font-semibold text-xs transition-colors"
                 >
-                  Read the spec
-                </a>
+                  <Stethoscope className="size-4 text-emerald-500" />
+                  Clinician Verification & Portal
+                </Link>
+              </motion.div>
+
+              {/* Quick Feature Highlights */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.9 }}
+                className="mt-8 flex flex-wrap items-center gap-4 pt-6 border-t border-border/40 font-mono text-xs text-muted-foreground"
+              >
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="size-4 text-emerald-500" /> Instant OTP Auth
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Activity className="size-4 text-brass" /> Real-Time Telemetry
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="size-4 text-primary" /> 24/7 Patient Booking
+                </span>
               </motion.div>
             </div>
           </div>
@@ -171,7 +212,7 @@ export function Hero() {
         {/* scroll cue */}
         <div className="flex items-center justify-center py-6">
           <motion.a
-            href="#modules"
+            href="#features"
             className="mono-label text-muted-foreground hover:text-foreground flex flex-col items-center gap-2 transition-colors"
             animate={{ y: [0, 6, 0] }}
             transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
@@ -182,6 +223,5 @@ export function Hero() {
         </div>
       </div>
     </section>
-
   );
 }

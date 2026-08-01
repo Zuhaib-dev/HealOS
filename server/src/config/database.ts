@@ -30,8 +30,7 @@ export const connectDB = async (): Promise<void> => {
     });
 
   } catch (error) {
-    console.error("❌ MongoDB connection failed:", error);
-    process.exit(1);
+    console.error("⚠️ MongoDB connection failed. Will retry when database is available:", error);
   }
 };
 

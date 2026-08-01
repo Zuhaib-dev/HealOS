@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/use-auth-store";
+import { fetchPatientProfileApi, PatientProfileData } from "@/lib/api/onboarding";
 import {
   LogOut,
   ChevronDown,
@@ -25,6 +27,7 @@ import {
   CheckCircle2,
   Heart,
   UserCheck,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,7 +36,26 @@ export function UserProfileMenu() {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuthStore();
 
+  const [patientProfile, setPatientProfile] = useState<PatientProfileData | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const checkPatientStatus = async () => {
+      try {
+        const res = await fetchPatientProfileApi();
+        if (res.success && res.profile) {
+          setPatientProfile(res.profile);
+        }
+      } catch (err) {
+        // Silent catch for optional status
+      }
+    };
+    checkPatientStatus();
+  }, [user]);
+
   if (!user) return null;
+
+  const isPatientComplete = Boolean(patientProfile?.isComplete);
 
   const getInitials = (name: string) => {
     if (!name) return "U";
@@ -42,6 +64,13 @@ export function UserProfileMenu() {
       return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     }
     return name.slice(0, 2).toUpperCase();
+  };
+
+  const getRoleLabel = (role: string) => {
+    if (role === "USER") {
+      return isPatientComplete ? "PATIENT" : "NEW USER";
+    }
+    return role;
   };
 
   const getRoleBadgeStyle = (role: string) => {
@@ -54,7 +83,9 @@ export function UserProfileMenu() {
         return "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30";
       case "USER":
       default:
-        return "bg-primary/10 text-primary border-primary/20";
+        return isPatientComplete
+          ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30"
+          : "bg-primary/10 text-primary border-primary/20";
     }
   };
 
@@ -98,8 +129,8 @@ export function UserProfileMenu() {
             <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
               {user.name.split(" ")[0]}
             </span>
-            <span className="mono-label text-[10px] text-muted-foreground mt-0.5">
-              {user.role}
+            <span className="mono-label text-[10px] text-muted-foreground mt-0.5 uppercase">
+              {getRoleLabel(user.role)}
             </span>
           </div>
 
@@ -145,11 +176,11 @@ export function UserProfileMenu() {
             </span>
             <Badge
               variant="outline"
-              className={`mono-label text-[10px] px-2 py-0.5 font-bold ${getRoleBadgeStyle(
+              className={`mono-label text-[10px] px-2 py-0.5 font-bold uppercase ${getRoleBadgeStyle(
                 user.role
               )}`}
             >
-              {user.role}
+              {getRoleLabel(user.role)}
             </Badge>
           </div>
         </div>
@@ -164,20 +195,41 @@ export function UserProfileMenu() {
               className="flex items-center gap-2.5 p-2 text-xs font-medium cursor-pointer rounded-md hover:bg-muted/60 transition-colors"
             >
               <LayoutDashboard className="size-4 text-primary" />
-              <span>Go to {user.role === "USER" ? "Patient Portal" : `${user.role} Console`}</span>
+              <span>
+                Go to {user.role === "USER" ? "Patient Portal" : `${user.role} Console`}
+              </span>
             </Link>
           </DropdownMenuItem>
 
-          <DropdownMenuItem asChild>
-            <Link
-              href="/onboarding"
-              className="flex items-center gap-2.5 p-2 text-xs font-medium cursor-pointer rounded-md hover:bg-muted/60 transition-colors"
-            >
-              <Heart className="size-4 text-rose-500" />
-              <span>Patient Health Profile Setup</span>
-            </Link>
-          </DropdownMenuItem>
+          {/* Conditional Onboarding Prompts */}
+          {!isPatientComplete ? (
+            <DropdownMenuItem asChild>
+              <Link
+                href="/onboarding"
+                className="flex items-center justify-between p-2 text-xs font-medium cursor-pointer rounded-md bg-rose-500/10 hover:bg-rose-500/15 transition-colors border border-rose-500/20 text-rose-600 dark:text-rose-400"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Heart className="size-4 text-rose-500 animate-pulse" />
+                  <span className="font-semibold">Complete Patient Setup</span>
+                </div>
+                <Badge variant="outline" className="text-[9px] bg-rose-500/20 border-rose-500/30 px-1.5 py-0">
+                  Action Required
+                </Badge>
+              </Link>
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem asChild>
+              <Link
+                href="/onboarding"
+                className="flex items-center gap-2.5 p-2 text-xs font-medium cursor-pointer rounded-md hover:bg-muted/60 transition-colors"
+              >
+                <FileText className="size-4 text-rose-500" />
+                <span>My Patient Health Record</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
 
+          {/* Show Clinician Application ONLY for standard users */}
           {user.role === "USER" && (
             <DropdownMenuItem asChild>
               <Link
@@ -203,7 +255,7 @@ export function UserProfileMenu() {
               <span>Contact Phone</span>
             </div>
             <span className="font-mono text-[11px] text-foreground font-semibold">
-              {user.phone || "Not set"}
+              {user.phone || patientProfile?.emergencyPhone || "Not set"}
             </span>
           </DropdownMenuItem>
 

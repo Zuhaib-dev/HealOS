@@ -85,7 +85,7 @@ export function AuthModal() {
         break;
       case "USER":
       default:
-        router.push("/onboarding");
+        router.push("/");
         break;
     }
   };

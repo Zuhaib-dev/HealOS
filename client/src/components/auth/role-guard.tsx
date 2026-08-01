@@ -50,7 +50,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
 
     const redirectForRole = (role: string) => {
       const normalized = role.toUpperCase();
-      let targetPath = "/onboarding";
+      let targetPath = "/";
 
       if (normalized === "ADMIN") {
         targetPath = "/admin";
@@ -61,7 +61,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
       } else if (normalized === "PATIENT" || normalized === "LEGACY_PATIENT") {
         targetPath = "/patient";
       } else if (normalized === "USER") {
-        targetPath = "/onboarding";
+        targetPath = "/";
       }
 
       if (pathname !== targetPath) {

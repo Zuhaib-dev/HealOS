@@ -121,9 +121,12 @@ export default function OnboardingPage() {
     try {
       const res = await updatePatientProfileApi(patientData);
       if (res.success) {
-        toast.success("Patient Health Profile saved successfully!");
+        toast.success("Patient Account & Health Profile saved! Redirecting to Patient Portal...");
         setPatientData(res.profile);
         updateUser({ phone: patientData.emergencyPhone });
+        setTimeout(() => {
+          router.push("/patient");
+        }, 1000);
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to update patient profile");

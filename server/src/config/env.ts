@@ -47,6 +47,7 @@ const envSchema = z
 
     // Server-to-server auth
     AUTH_SYNC_SECRET: z.string().optional(),
+    ADMIN_EMAIL: z.string().optional(),
 
     // Razorpay
     RAZORPAY_KEY_ID: z.string().optional(),

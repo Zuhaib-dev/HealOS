@@ -21,24 +21,17 @@ const app = express();
 
 app.use(helmet());
 
-const allowedOrigins = [
-  envConfig.CLIENT_URL,
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-].filter(Boolean);
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || envConfig.NODE_ENV !== "production") {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS Policy Violation: Origin not allowed"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-}));
+app.use(
+  cors({
+    origin:
+      envConfig.NODE_ENV === "production"
+        ? [envConfig.CLIENT_URL, "http://localhost:3000"].filter(Boolean) as string[]
+        : true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  })
+);
 app.use(compression());
 app.use(morgan(envConfig.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(express.json({ limit: "10mb" }));

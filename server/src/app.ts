@@ -19,14 +19,25 @@ import { API_PREFIX, APP_NAME, APP_VERSION } from "@healos/shared";
 // ---------------------------
 const app = express();
 
-// ---------------------------
-// Global Middleware
-// ---------------------------
 app.use(helmet());
+
+const allowedOrigins = [
+  envConfig.CLIENT_URL,
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+].filter(Boolean);
+
 app.use(cors({
-  origin: envConfig.CLIENT_URL,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || envConfig.NODE_ENV !== "production") {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS Policy Violation: Origin not allowed"));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 }));
 app.use(compression());
 app.use(morgan(envConfig.NODE_ENV === "production" ? "combined" : "dev"));

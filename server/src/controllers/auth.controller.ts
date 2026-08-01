@@ -14,7 +14,7 @@ const syncGoogleUserSchema = z.object({
 
 const generateToken = (userId: string, role: UserRole): string => {
   return jwt.sign({ userId, role }, envConfig.JWT_SECRET, {
-    expiresIn: envConfig.JWT_EXPIRES_IN,
+    expiresIn: envConfig.JWT_EXPIRES_IN as any,
   });
 };
 
@@ -60,7 +60,7 @@ export const syncGoogleUser = async (req: Request, res: Response): Promise<void>
       }
     }
 
-    const token = generateToken(user._id as string, user.role);
+    const token = generateToken(user._id.toString(), user.role);
 
     res.status(StatusCodes.OK).json({
       success: true,

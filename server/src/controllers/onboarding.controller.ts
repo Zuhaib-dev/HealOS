@@ -67,7 +67,7 @@ export const applyForRole = async (req: Request, res: Response): Promise<void> =
 };
 
 // Admin lists all pending requests
-export const getPendingRequests = async (req: Request, res: Response): Promise<void> => {
+export const getPendingRequests = async (_req: Request, res: Response): Promise<void> => {
   try {
     const profiles = await ProfessionalProfile.find({
       status: { $in: [ProfileStatus.PENDING, ProfileStatus.UNDER_REVIEW] }

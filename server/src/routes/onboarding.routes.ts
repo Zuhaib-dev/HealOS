@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { 
   applyForRole, 
+  getMyStatus,
   getPendingRequests, 
   approveRequest, 
   rejectRequest 
@@ -13,8 +14,9 @@ const router = Router();
 // ==========================================
 // User Routes
 // ==========================================
-// Any authenticated user can apply to be a doctor/radiologist
+// Any authenticated user can apply & check their application status
 router.post("/apply", verifyToken, applyForRole);
+router.get("/my-status", verifyToken, getMyStatus);
 
 // ==========================================
 // Admin Routes

@@ -5,18 +5,18 @@ import { z } from "zod";
 
 const applyOnboardingSchema = z.object({
   requestedRole: z.enum([UserRole.DOCTOR, UserRole.RADIOLOGIST]),
-  degree: z.string().min(1),
-  specialization: z.string().min(1),
+  degree: z.string().min(1, "Degree is required"),
+  specialization: z.string().min(1, "Specialization is required"),
   experienceYears: z.number().min(0),
-  licenseNumber: z.string().min(1),
+  licenseNumber: z.string().min(1, "License number is required"),
   documentUrls: z.array(z.string()).default([]),
 });
 
 const rejectOnboardingSchema = z.object({
-  rejectionReason: z.string().min(10, "Please provide a detailed rejection reason"),
+  rejectionReason: z.string().min(5, "Please provide a detailed rejection reason"),
 });
 
-// User applies for a professional role
+// 1. User applies for a professional role (Doctor or Radiologist)
 export const applyForRole = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?._id;
@@ -31,16 +31,17 @@ export const applyForRole = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Check if user already has a pending or approved application
+    // Check if user already has an active pending or approved profile
     const existingProfile = await ProfessionalProfile.findOne({
       user: userId,
-      status: { $in: [ProfileStatus.PENDING, ProfileStatus.UNDER_REVIEW, ProfileStatus.APPROVED] }
+      status: { $in: [ProfileStatus.PENDING, ProfileStatus.UNDER_REVIEW, ProfileStatus.APPROVED] },
     });
 
     if (existingProfile) {
       res.status(StatusCodes.CONFLICT).json({
         success: false,
-        message: `You already have a profile with status: ${existingProfile.status}`,
+        message: `You already have an application with status: ${existingProfile.status}`,
+        profile: existingProfile,
       });
       return;
     }
@@ -49,12 +50,12 @@ export const applyForRole = async (req: Request, res: Response): Promise<void> =
       user: userId,
       ...parsed.data,
       status: ProfileStatus.PENDING,
-      onboardingStep: 1, // Assume step 1 completed
+      onboardingStep: 1,
     });
 
     res.status(StatusCodes.CREATED).json({
       success: true,
-      message: "Application submitted successfully",
+      message: "Clinician application submitted successfully",
       profile: newProfile,
     });
   } catch (error) {
@@ -66,11 +67,30 @@ export const applyForRole = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-// Admin lists all pending requests
+// 2. Fetch logged-in user's own application status
+export const getMyStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?._id;
+    const profile = await ProfessionalProfile.findOne({ user: userId }).sort({ createdAt: -1 });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      profile: profile || null,
+    });
+  } catch (error) {
+    console.error("Error in getMyStatus:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error while fetching status",
+    });
+  }
+};
+
+// 3. Admin lists all pending requests
 export const getPendingRequests = async (_req: Request, res: Response): Promise<void> => {
   try {
     const profiles = await ProfessionalProfile.find({
-      status: { $in: [ProfileStatus.PENDING, ProfileStatus.UNDER_REVIEW] }
+      status: { $in: [ProfileStatus.PENDING, ProfileStatus.UNDER_REVIEW] },
     }).populate("user", "name email phone avatarUrl");
 
     res.status(StatusCodes.OK).json({
@@ -82,12 +102,12 @@ export const getPendingRequests = async (_req: Request, res: Response): Promise<
     console.error("Error in getPendingRequests:", error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Server error while fetching requests",
+      message: "Server error while fetching pending requests",
     });
   }
 };
 
-// Admin approves request
+// 4. Admin approves request -> Upgrades user role automatically
 export const approveRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -110,12 +130,11 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Update profile
     profile.status = ProfileStatus.APPROVED;
     profile.reviewedBy = adminId;
     await profile.save();
 
-    // Update user role
+    // Automatically upgrade user role in database
     const user = await User.findById(profile.user);
     if (user) {
       user.role = profile.requestedRole;
@@ -136,7 +155,7 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
   }
 };
 
-// Admin rejects request
+// 5. Admin rejects request with mandatory rejection reason
 export const rejectRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -168,7 +187,7 @@ export const rejectRequest = async (req: Request, res: Response): Promise<void> 
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: "Profile rejected",
+      message: "Application rejected with reason",
       profile,
     });
   } catch (error) {

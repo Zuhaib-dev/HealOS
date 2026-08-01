@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { motion } from "motion/react";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
   ScanLine,
   ListChecks,
@@ -43,7 +43,7 @@ export function RadiologyShell({
     <div className="bg-background text-foreground min-h-screen">
       <header className="bg-background/90 hairline-b sticky top-0 z-40 backdrop-blur-md">
         <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-3" aria-label="HealOS home">
+          <Link href="/" className="flex items-center gap-3" aria-label="HealOS home">
             <HealOSLogo size={28} />
           </Link>
           <span className="mono-label text-muted-foreground hairline-l hidden pl-4 md:inline">

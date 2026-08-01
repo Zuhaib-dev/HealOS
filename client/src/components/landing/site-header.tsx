@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -50,31 +50,31 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
           <Link
-            to="/doctor"
+            href="/doctor"
             className="mono-label text-muted-foreground hover:text-foreground hidden px-2 transition-colors sm:inline-block"
           >
             Clinicians
           </Link>
           <Link
-            to="/patient"
+            href="/patient"
             className="mono-label text-muted-foreground hover:text-foreground hidden px-2 transition-colors sm:inline-block"
           >
             Patients
           </Link>
           <Link
-            to="/radiology"
+            href="/radiology"
             className="mono-label text-muted-foreground hover:text-foreground hidden px-2 transition-colors lg:inline-block"
           >
             Radiology
           </Link>
           <Link
-            to="/admin"
+            href="/admin"
             className="mono-label text-muted-foreground hover:text-foreground hidden px-2 transition-colors sm:inline-block"
           >
             Console
           </Link>
           <Link
-            to="/contact"
+            href="/contact"
             className="mono-label text-muted-foreground hover:text-foreground hidden px-2 transition-colors sm:inline-block"
           >
             Contact
@@ -114,7 +114,7 @@ export function SiteHeader() {
                 {item.label}
               </a>
             ))}
-            <Link to="/contact" onClick={() => setOpen(false)} className="mono-label hairline-b text-muted-foreground block py-4">
+            <Link href="/contact" onClick={() => setOpen(false)} className="mono-label hairline-b text-muted-foreground block py-4">
               Contact
             </Link>
             <a href="#access" onClick={() => setOpen(false)} className="mono-label text-brass block py-4">

@@ -33,8 +33,8 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
       const allowedNorm = allowed.toUpperCase();
       if (allowedNorm === normalized) return true;
       if (
-        (allowedNorm === "USER" || allowedNorm === "PATIENT") &&
-        (normalized === "USER" || normalized === "PATIENT" || normalized === "LEGACY_PATIENT")
+        allowedNorm === "PATIENT" &&
+        (normalized === "PATIENT" || normalized === "LEGACY_PATIENT")
       ) {
         return true;
       }
@@ -50,7 +50,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
 
     const redirectForRole = (role: string) => {
       const normalized = role.toUpperCase();
-      let targetPath = "/patient";
+      let targetPath = "/onboarding";
 
       if (normalized === "ADMIN") {
         targetPath = "/admin";
@@ -58,6 +58,10 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
         targetPath = "/doctor";
       } else if (normalized === "RADIOLOGIST") {
         targetPath = "/radiology";
+      } else if (normalized === "PATIENT" || normalized === "LEGACY_PATIENT") {
+        targetPath = "/patient";
+      } else if (normalized === "USER") {
+        targetPath = "/onboarding";
       }
 
       if (pathname !== targetPath) {
@@ -88,7 +92,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
 
         // 2. Check Role permissions
         if (!isRoleAllowed(response.user.role, roles)) {
-          // Authorized user visiting wrong portal -> Redirect cleanly WITHOUT opening auth modal!
+          // Authorized user visiting wrong portal -> Redirect cleanly without opening auth modal!
           redirectForRole(response.user.role);
         }
       } catch {

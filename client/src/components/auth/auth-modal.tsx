@@ -70,7 +70,7 @@ export function AuthModal() {
   }, [mode, resendTimer]);
 
   const handleRoleRedirect = (role: string) => {
-    switch (role) {
+    switch (role?.toUpperCase()) {
       case "ADMIN":
         router.push("/admin");
         break;
@@ -80,11 +80,12 @@ export function AuthModal() {
       case "RADIOLOGIST":
         router.push("/radiology");
         break;
-      case "patient":
       case "PATIENT":
+        router.push("/patient");
+        break;
       case "USER":
       default:
-        router.push("/patient");
+        router.push("/onboarding");
         break;
     }
   };

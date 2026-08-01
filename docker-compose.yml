@@ -32,6 +32,51 @@ services:
     networks:
       - healos_network
 
+  # ---------------------------
+  # Express API Backend
+  # ---------------------------
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: healos_server
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongodb:27017/healos
+      - REDIS_URL=redis://redis:6379
+      - CLIENT_URL=http://localhost:3000
+      - JWT_SECRET=dev-jwt-secret-change-in-production
+      - JWT_EXPIRES_IN=7d
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - healos_network
+
+  # ---------------------------
+  # Next.js Client Frontend
+  # ---------------------------
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    container_name: healos_client
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+    depends_on:
+      - server
+    networks:
+      - healos_network
+
 networks:
   healos_network:
     driver: bridge

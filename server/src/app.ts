@@ -64,20 +64,19 @@ app.use(errorHandler);
 // Start Server
 // ---------------------------
 const startServer = async () => {
-  try {
-    // Connect to MongoDB
-    await connectDB();
+  app.listen(envConfig.PORT, () => {
+    console.log(`\n🏥 ${APP_NAME} Server v${APP_VERSION}`);
+    console.log(`🌍 Environment: ${envConfig.NODE_ENV}`);
+    console.log(`🚀 Server running on: http://localhost:${envConfig.PORT}`);
+    console.log(`📡 API available at: http://localhost:${envConfig.PORT}${API_PREFIX}`);
+    console.log(`❤️  Health check: http://localhost:${envConfig.PORT}/health\n`);
+  });
 
-    app.listen(envConfig.PORT, () => {
-      console.log(`\n🏥 ${APP_NAME} Server v${APP_VERSION}`);
-      console.log(`🌍 Environment: ${envConfig.NODE_ENV}`);
-      console.log(`🚀 Server running on: http://localhost:${envConfig.PORT}`);
-      console.log(`📡 API available at: http://localhost:${envConfig.PORT}${API_PREFIX}`);
-      console.log(`❤️  Health check: http://localhost:${envConfig.PORT}/health\n`);
-    });
+  try {
+    await connectDB();
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
-    process.exit(1);
+    console.error("⚠️ MongoDB connection warning:", error);
+    console.log("👉 Please start MongoDB (e.g. `docker compose up -d mongodb`) to enable database features.\n");
   }
 };
 

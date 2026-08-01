@@ -10,15 +10,15 @@ dotenv.config({ path: path.resolve(process.cwd(), "../.env") });
 
 import { z } from "zod";
 
-const DEFAULT_MONGO_ATLAS = "mongodb+srv://***REMOVED_MONGO_URI***/healos?retryWrites=true&w=majority";
+const DEFAULT_MONGO_URI = "mongodb://127.0.0.1:27017/healos";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.coerce.number().default(5001),
   CLIENT_URL: z.string().default("http://localhost:3000"),
 
-  // MongoDB (Defaults to Online Atlas Cluster)
-  MONGODB_URI: z.string().default(DEFAULT_MONGO_ATLAS),
+  // MongoDB
+  MONGODB_URI: z.string().default(DEFAULT_MONGO_URI),
 
   // Redis
   REDIS_URL: z.string().default("redis://localhost:6379"),

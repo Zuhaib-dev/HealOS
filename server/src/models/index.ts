@@ -4,6 +4,7 @@
 
 export * from "./user.model";
 export * from "./professional-profile.model";
+export * from "./otp.model";
 
 // Add model files here as features are built:
 // - patient.model.ts

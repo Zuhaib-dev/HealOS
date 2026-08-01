@@ -18,7 +18,7 @@ export default function PatientPage() {
   const [active, setActive] = useState<PatientSectionId>("overview");
 
   return (
-    <RoleGuard allowedRoles={["USER", "ADMIN", "DOCTOR", "RADIOLOGIST"]}>
+    <RoleGuard allowedRoles={["PATIENT", "patient", "USER", "ADMIN", "DOCTOR", "RADIOLOGIST"]}>
       <PatientShell active={active} onSelect={setActive}>
         {active === "overview" && <OverviewPanel />}
         {active === "book" && <BookPanel />}

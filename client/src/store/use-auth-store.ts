@@ -1,7 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type UserRole = "USER" | "ADMIN" | "DOCTOR" | "RADIOLOGIST" | "RECEPTIONIST";
+export type UserRole =
+  | "PATIENT"
+  | "patient"
+  | "USER"
+  | "ADMIN"
+  | "DOCTOR"
+  | "RADIOLOGIST"
+  | "RECEPTIONIST";
 
 export interface AuthUser {
   id: string;

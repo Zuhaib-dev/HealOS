@@ -26,7 +26,6 @@ import {
   Moon,
   CheckCircle2,
   Heart,
-  UserCheck,
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -46,7 +45,7 @@ export function UserProfileMenu() {
         if (res.success && res.profile) {
           setPatientProfile(res.profile);
         }
-      } catch (err) {
+      } catch {
         // Silent catch for optional status
       }
     };
@@ -67,6 +66,9 @@ export function UserProfileMenu() {
   };
 
   const getRoleLabel = (role: string) => {
+    if (role === "PATIENT" || role === "patient") {
+      return "PATIENT";
+    }
     if (role === "USER") {
       return isPatientComplete ? "PATIENT" : "NEW USER";
     }
@@ -81,6 +83,8 @@ export function UserProfileMenu() {
         return "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
       case "RADIOLOGIST":
         return "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30";
+      case "patient":
+      case "PATIENT":
       case "USER":
       default:
         return isPatientComplete
@@ -196,7 +200,7 @@ export function UserProfileMenu() {
             >
               <LayoutDashboard className="size-4 text-primary" />
               <span>
-                Go to {user.role === "USER" ? "Patient Portal" : `${user.role} Console`}
+                Go to {user.role === "USER" || user.role === "PATIENT" || user.role === "patient" ? "Patient Portal" : `${user.role} Console`}
               </span>
             </Link>
           </DropdownMenuItem>
@@ -230,7 +234,7 @@ export function UserProfileMenu() {
           )}
 
           {/* Show Clinician Application ONLY for standard users */}
-          {user.role === "USER" && (
+          {(user.role === "USER" || user.role === "PATIENT" || user.role === "patient") && (
             <DropdownMenuItem asChild>
               <Link
                 href="/onboarding"

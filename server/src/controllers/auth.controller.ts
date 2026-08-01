@@ -61,10 +61,39 @@ const generate6DigitOtp = (): string => {
 
 // Helper to generate JWT Token
 const generateToken = (userId: string, role: UserRole): string => {
-  return jwt.sign({ userId, role }, envConfig.JWT_SECRET, {
+  return jwt.sign({ userId, role: normalizeUserRole(role) }, envConfig.JWT_SECRET, {
     expiresIn: envConfig.JWT_EXPIRES_IN as any,
   });
 };
+
+const normalizeUserRole = (role: string): UserRole => {
+  if (role === UserRole.LEGACY_PATIENT || role === UserRole.USER) return UserRole.PATIENT;
+
+  const upperRole = role.toUpperCase();
+  if (Object.values(UserRole).includes(upperRole as UserRole)) {
+    return upperRole as UserRole;
+  }
+
+  return UserRole.PATIENT;
+};
+
+const serializeAuthUser = (user: {
+  _id: unknown;
+  name: string;
+  email: string;
+  role: string;
+  avatarUrl?: string;
+  phone?: string;
+  isEmailVerified: boolean;
+}) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  role: normalizeUserRole(user.role),
+  avatarUrl: user.avatarUrl,
+  phone: user.phone,
+  isEmailVerified: user.isEmailVerified,
+});
 
 const hasValidSyncSecret = (req: Request): boolean => {
   if (!envConfig.AUTH_SYNC_SECRET) {
@@ -116,7 +145,7 @@ export const syncGoogleUser = async (req: Request, res: Response): Promise<void>
         googleId,
         avatarUrl,
         isEmailVerified: true, // Google OAuth users are implicitly verified
-        role: UserRole.USER,
+        role: UserRole.PATIENT,
       });
     } else {
       let updated = false;
@@ -133,20 +162,13 @@ export const syncGoogleUser = async (req: Request, res: Response): Promise<void>
       }
     }
 
-    const token = generateToken(user._id.toString(), user.role);
+    const normalizedRole = normalizeUserRole(user.role);
+    const token = generateToken(user._id.toString(), normalizedRole);
 
     res.status(StatusCodes.OK).json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatarUrl: user.avatarUrl,
-        phone: user.phone,
-        isEmailVerified: user.isEmailVerified,
-      },
+      user: serializeAuthUser(user),
     });
   } catch (error) {
     console.error("Error in syncGoogleUser:", error);
@@ -199,7 +221,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         email,
         password: hashedPassword,
         isEmailVerified: false,
-        role: UserRole.USER,
+        role: UserRole.PATIENT,
       });
     }
 
@@ -270,21 +292,14 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
     await OTP.deleteMany({ email });
 
     // Issue JWT token
-    const token = generateToken(user._id.toString(), user.role);
+    const normalizedRole = normalizeUserRole(user.role);
+    const token = generateToken(user._id.toString(), normalizedRole);
 
     res.status(StatusCodes.OK).json({
       success: true,
       message: "Email verified successfully",
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatarUrl: user.avatarUrl,
-        phone: user.phone,
-        isEmailVerified: user.isEmailVerified,
-      },
+      user: serializeAuthUser(user),
     });
   } catch (error) {
     console.error("Error in verifyOtp:", error);
@@ -393,21 +408,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const token = generateToken(user._id.toString(), user.role);
+    const normalizedRole = normalizeUserRole(user.role);
+    const token = generateToken(user._id.toString(), normalizedRole);
 
     res.status(StatusCodes.OK).json({
       success: true,
       message: "Logged in successfully",
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatarUrl: user.avatarUrl,
-        phone: user.phone,
-        isEmailVerified: user.isEmailVerified,
-      },
+      user: serializeAuthUser(user),
     });
   } catch (error) {
     console.error("Error in login:", error);
@@ -433,7 +441,7 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
 
     res.status(StatusCodes.OK).json({
       success: true,
-      user: req.user,
+      user: serializeAuthUser(req.user),
     });
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -474,13 +482,7 @@ export const updatePhone = async (req: Request, res: Response): Promise<void> =>
     res.status(StatusCodes.OK).json({
       success: true,
       message: "Phone number updated successfully",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
-      },
+      user: serializeAuthUser(user),
     });
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({

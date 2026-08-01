@@ -35,6 +35,8 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
         case "RADIOLOGIST":
           router.push("/radiology");
           break;
+        case "patient":
+        case "PATIENT":
         case "USER":
         default:
           router.push("/patient");

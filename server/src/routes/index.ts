@@ -38,7 +38,8 @@ apiRouter.get("/", (_req, res) => {
 // Mount Feature Routers
 // ---------------------------
 // Uncomment as features are built:
-// import { authRouter } from "./auth.routes.js";
+import authRouter from "./auth.routes";
+import onboardingRouter from "./onboarding.routes";
 // import { userRouter } from "./user.routes.js";
 // import { patientRouter } from "./patient.routes.js";
 // import { doctorRouter } from "./doctor.routes.js";
@@ -50,7 +51,8 @@ apiRouter.get("/", (_req, res) => {
 // import { billingRouter } from "./billing.routes.js";
 // import { adminRouter } from "./admin.routes.js";
 
-// apiRouter.use("/auth", authRouter);
+apiRouter.use("/auth", authRouter);
+apiRouter.use("/onboarding", onboardingRouter);
 // apiRouter.use("/users", userRouter);
 // apiRouter.use("/patients", patientRouter);
 // apiRouter.use("/doctors", doctorRouter);

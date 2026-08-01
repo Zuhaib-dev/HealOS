@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { randomInt, timingSafeEqual } from "crypto";
+import { randomInt } from "crypto";
 import { StatusCodes } from "http-status-codes";
 import { User, UserRole, OTP } from "../models";
 import { envConfig } from "../config/env";
@@ -67,14 +67,13 @@ const generateToken = (userId: string, role: UserRole): string => {
 };
 
 const normalizeUserRole = (role: string): UserRole => {
-  if (role === UserRole.LEGACY_PATIENT || role === UserRole.USER) return UserRole.PATIENT;
-
+  if (!role) return UserRole.USER;
   const upperRole = role.toUpperCase();
+  if (upperRole === "PATIENT" || role === "patient") return UserRole.PATIENT;
   if (Object.values(UserRole).includes(upperRole as UserRole)) {
     return upperRole as UserRole;
   }
-
-  return UserRole.PATIENT;
+  return UserRole.USER;
 };
 
 const serializeAuthUser = (user: {
@@ -99,18 +98,11 @@ const hasValidSyncSecret = (req: Request): boolean => {
   if (!envConfig.AUTH_SYNC_SECRET) {
     return envConfig.NODE_ENV !== "production";
   }
-
-  const providedSecret = req.header("x-auth-sync-secret");
-  if (!providedSecret) return false;
-
-  const expected = Buffer.from(envConfig.AUTH_SYNC_SECRET);
-  const provided = Buffer.from(providedSecret);
-
-  return expected.length === provided.length && timingSafeEqual(expected, provided);
+  return req.headers["x-sync-secret"] === envConfig.AUTH_SYNC_SECRET;
 };
 
 // ---------------------------
-// 1. Sync Google User
+// 1. Google OAuth Sync Endpoint
 // ---------------------------
 export const syncGoogleUser = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -119,7 +111,7 @@ export const syncGoogleUser = async (req: Request, res: Response): Promise<void>
     if (!hasValidSyncSecret(req)) {
       res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
-        message: "Google auth sync is not authorized.",
+        message: "Unauthorized sync request",
       });
       return;
     }
@@ -145,7 +137,7 @@ export const syncGoogleUser = async (req: Request, res: Response): Promise<void>
         googleId,
         avatarUrl,
         isEmailVerified: true, // Google OAuth users are implicitly verified
-        role: UserRole.PATIENT,
+        role: UserRole.USER,
       });
     } else {
       let updated = false;
@@ -221,7 +213,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         email,
         password: hashedPassword,
         isEmailVerified: false,
-        role: UserRole.PATIENT,
+        role: UserRole.USER,
       });
     }
 

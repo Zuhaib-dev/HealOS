@@ -53,8 +53,15 @@ export const updatePatientProfile = async (req: Request, res: Response): Promise
     profile.isComplete = true;
     await profile.save();
 
-    if (parsed.data.emergencyPhone) {
-      await User.findByIdAndUpdate(userId, { phone: parsed.data.emergencyPhone });
+    const userObj = await User.findById(userId);
+    if (userObj) {
+      if (userObj.role === UserRole.USER) {
+        userObj.role = UserRole.PATIENT;
+      }
+      if (parsed.data.emergencyPhone) {
+        userObj.phone = parsed.data.emergencyPhone;
+      }
+      await userObj.save();
     }
 
     res.status(StatusCodes.OK).json({

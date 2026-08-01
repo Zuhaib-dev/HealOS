@@ -1,10 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export enum UserRole {
-  PATIENT = "PATIENT",
-  LEGACY_PATIENT = "patient",
-  // Legacy role name kept so existing accounts and old tokens continue to work.
   USER = "USER",
+  PATIENT = "PATIENT",
   ADMIN = "ADMIN",
   DOCTOR = "DOCTOR",
   RADIOLOGIST = "RADIOLOGIST",
@@ -34,7 +32,7 @@ const userSchema = new Schema<IUser>(
     role: {
       type: String,
       enum: Object.values(UserRole),
-      default: UserRole.PATIENT,
+      default: UserRole.USER,
     },
     isEmailVerified: { type: Boolean, default: false },
     avatarUrl: { type: String },

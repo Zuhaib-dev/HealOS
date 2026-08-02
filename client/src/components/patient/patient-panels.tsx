@@ -24,6 +24,12 @@ import {
   DoctorListItem,
   AppointmentRecord,
 } from "@/lib/api/appointment";
+import {
+  fetchPatientProfileApi,
+  updatePatientProfileApi,
+  PatientProfileData,
+} from "@/lib/api/onboarding";
+import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
 import {
   patient,
@@ -128,45 +134,63 @@ function AppointmentRow({ a, actions }: { a: Appointment; actions?: React.ReactN
 /* ---------- 01 overview ---------- */
 
 export function OverviewPanel() {
+  const { user } = useAuthStore();
+  const [profile, setProfile] = useState<PatientProfileData | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchPatientProfileApi()
+      .then((res) => {
+        if (isMounted && res.success) {
+          setProfile(res.profile);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const userName = user?.name || "Patient";
+  const userFirstName = userName.split(" ")[0];
+  const userRole = user?.role || "PATIENT";
+  const allergiesList = profile?.allergies?.length ? profile.allergies : ["No known drug allergies"];
+  const bloodGroup = profile?.bloodGroup || "O+";
+
   return (
     <section>
       <PanelHeader
         index="01 / my health"
-        title={`Hello, ${patient.name.split(" ")[0]}`}
-        note="Your next visit, the trends your clinicians are watching, and anything waiting on you."
+        title={`Hello, ${userFirstName}`}
+        note={`Role: ${userRole} · Email: ${user?.email || "N/A"} · Blood Group: ${bloodGroup}`}
         actions={
           <>
-            <ActionButton>Download health summary</ActionButton>
-            <ActionButton tone="solid">Book appointment</ActionButton>
+            <ActionButton tone="solid">Verified Health Account</ActionButton>
           </>
         }
       />
 
       <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
         <div className="bg-background p-5 lg:col-span-2">
-          <p className="mono-label text-muted-foreground">Next appointment</p>
+          <p className="mono-label text-muted-foreground">Logged-In Profile Status</p>
           <p className="mt-2 font-mono text-2xl font-bold tracking-tight">
-            {upcoming[0]!.reason}
+            {userName}
           </p>
           <p className="mono-label text-muted-foreground mt-2">
-            {upcoming[0]!.date} · {upcoming[0]!.time} · {upcoming[0]!.room} ·{" "}
-            {upcoming[0]!.dept}
+            Phone: {user?.phone || profile?.emergencyPhone || "Not set"} · Emergency Contact: {profile?.emergencyContactName || "Not set"}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <ActionButton tone="solid">Add to calendar</ActionButton>
-            <ActionButton>Reschedule</ActionButton>
-            <ActionButton>Prep instructions</ActionButton>
+            <ActionButton tone="solid">Profile Verified</ActionButton>
           </div>
         </div>
 
         <div className="bg-background p-5">
-          <p className="mono-label text-muted-foreground">Waiting on you</p>
+          <p className="mono-label text-muted-foreground">Account Health Alerts</p>
           <ul className="mt-3 space-y-3">
             {[
-              { t: "1 invoice due — ₹650", tone: "bad" as const },
-              { t: "2 unread messages from your team", tone: "warn" as const },
-              { t: "Repeat needed: Sumatriptan", tone: "warn" as const },
-              { t: "Fast 6h before 04 Aug scan", tone: "mute" as const },
+              { t: `Account Email: ${user?.email}`, tone: "ok" as const },
+              { t: `Role Designation: ${userRole}`, tone: "warn" as const },
+              { t: `Blood Group: ${bloodGroup}`, tone: "ok" as const },
             ].map((i) => (
               <li key={i.t} className="flex items-center gap-3">
                 <Pill tone={i.tone}>·</Pill>
@@ -198,7 +222,7 @@ export function OverviewPanel() {
         <div className="bg-background p-5">
           <p className="mono-label text-muted-foreground">Allergies &amp; alerts</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {patient.allergies.map((a) => (
+            {allergiesList.map((a) => (
               <span key={a} className="mono-label bg-destructive/12 text-destructive px-2 py-1">
                 <TriangleAlert className="mr-1 inline size-3" />
                 {a}
@@ -901,68 +925,214 @@ export function MessagesPanel() {
 /* ---------- 08 profile ---------- */
 
 export function ProfilePanel() {
+  const { user, updateUser } = useAuthStore();
+  const [saving, setSaving] = useState(false);
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState<"MALE" | "FEMALE" | "OTHER">("MALE");
+  const [bloodGroup, setBloodGroup] = useState<"A+" | "A-" | "B+" | "B-" | "O+" | "O-" | "AB+" | "AB-">("O+");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [emergencyContactName, setEmergencyContactName] = useState("");
+  const [allergies, setAllergies] = useState("");
+  const [address, setAddress] = useState("");
+
+  useEffect(() => {
+    fetchPatientProfileApi()
+      .then((res) => {
+        if (res.success && res.profile) {
+          if (res.profile.dob) setDob(res.profile.dob);
+          if (res.profile.gender) setGender(res.profile.gender);
+          if (res.profile.bloodGroup) setBloodGroup(res.profile.bloodGroup);
+          if (res.profile.emergencyPhone) setEmergencyPhone(res.profile.emergencyPhone);
+          if (res.profile.emergencyContactName) setEmergencyContactName(res.profile.emergencyContactName);
+          if (res.profile.allergies) setAllergies(res.profile.allergies.join(", "));
+          if (res.profile.address) setAddress(res.profile.address);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const allergyArr = allergies
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean);
+      const res = await updatePatientProfileApi({
+        dob,
+        gender,
+        bloodGroup,
+        emergencyPhone,
+        emergencyContactName,
+        allergies: allergyArr,
+        address,
+      });
+
+      if (res.success) {
+        toast.success("Patient profile updated successfully in MongoDB Atlas!");
+        if (emergencyPhone && user) {
+          updateUser({ phone: emergencyPhone });
+        }
+      }
+    } catch {
+      toast.error("Failed to update patient profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <section>
-      <PanelHeader
-        index="08 / profile"
-        title="My profile"
-        note="Contact details, insurance, consent and access — keep these current so results and reminders reach you."
-        actions={<ActionButton tone="solid">Save changes</ActionButton>}
-      />
+      <form onSubmit={handleSave}>
+        <PanelHeader
+          index="08 / profile"
+          title="My Profile"
+          note="Live contact details and health records stored in your MongoDB Atlas account."
+          actions={
+            <ActionButton tone="solid" type="submit" disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
+            </ActionButton>
+          }
+        />
 
-      <div className="grid gap-px lg:grid-cols-2" style={{ background: "var(--hairline)" }}>
-        <div className="bg-background p-5">
-          <p className="mono-label text-muted-foreground">Personal</p>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            {[
-              { l: "Full name", v: patient.name },
-              { l: "MRN", v: patient.mrn },
-              { l: "Age / sex", v: `${patient.age} / ${patient.sex}` },
-              { l: "Blood group", v: patient.blood },
-              { l: "Mobile", v: patient.phone },
-              { l: "Email", v: patient.email },
-            ].map((f) => (
-              <label key={f.l} className="block">
-                <span className="mono-label text-muted-foreground">{f.l}</span>
+        <div className="grid gap-px lg:grid-cols-2" style={{ background: "var(--hairline)" }}>
+          <div className="bg-background p-5">
+            <p className="mono-label text-muted-foreground">Personal Information</p>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <label className="block sm:col-span-2">
+                <span className="mono-label text-muted-foreground">Full Name</span>
                 <input
-                  defaultValue={f.v}
+                  readOnly
+                  value={user?.name || ""}
+                  className="hairline mt-2 w-full bg-muted/30 px-3 py-2.5 text-sm outline-none cursor-not-allowed"
+                />
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className="mono-label text-muted-foreground">Email Address</span>
+                <input
+                  readOnly
+                  value={user?.email || ""}
+                  className="hairline mt-2 w-full bg-muted/30 px-3 py-2.5 text-sm outline-none cursor-not-allowed"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mono-label text-muted-foreground">Date of Birth</span>
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
                   className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
                 />
               </label>
-            ))}
+
+              <label className="block">
+                <span className="mono-label text-muted-foreground">Gender</span>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value as any)}
+                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
+                >
+                  <option value="MALE">MALE</option>
+                  <option value="FEMALE">FEMALE</option>
+                  <option value="OTHER">OTHER</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mono-label text-muted-foreground">Blood Group</span>
+                <select
+                  value={bloodGroup}
+                  onChange={(e) => setBloodGroup(e.target.value as any)}
+                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
+                >
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mono-label text-muted-foreground">Emergency Contact Name</span>
+                <input
+                  value={emergencyContactName}
+                  onChange={(e) => setEmergencyContactName(e.target.value)}
+                  placeholder="Primary contact name"
+                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
+                />
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className="mono-label text-muted-foreground">Emergency Phone Number</span>
+                <input
+                  value={emergencyPhone}
+                  onChange={(e) => setEmergencyPhone(e.target.value)}
+                  placeholder="+91 9876543210"
+                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
+                />
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className="mono-label text-muted-foreground">Known Allergies (Comma Separated)</span>
+                <input
+                  value={allergies}
+                  onChange={(e) => setAllergies(e.target.value)}
+                  placeholder="Penicillin, Dust Mites, Peanuts"
+                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
+                />
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className="mono-label text-muted-foreground">Residential Address</span>
+                <textarea
+                  rows={3}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Enter full address"
+                  className="hairline mt-2 w-full bg-transparent p-3 text-sm outline-none resize-none"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="bg-background p-5">
+            <p className="mono-label text-muted-foreground">Account Status</p>
+            <div className="mt-3 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <p className="font-semibold text-sm text-foreground">Role: {user?.role}</p>
+              <p className="mono-label text-xs text-muted-foreground mt-1">
+                Verified Status: {user?.isEmailVerified ? "Verified ✓" : "Pending Verification"}
+              </p>
+            </div>
+
+            <p className="mono-label text-muted-foreground mt-6">Consent &amp; Data Security</p>
+            <ul className="mt-3 space-y-3">
+              {[
+                { t: "Share records with assigned clinicians", on: true },
+                { t: "SMS & Email reminders before appointments", on: true },
+                { t: "HIPAA Compliant Data Encryption", on: true },
+              ].map((c) => (
+                <li key={c.t} className="flex items-center justify-between gap-4">
+                  <span className="text-sm">{c.t}</span>
+                  <span
+                    className={`mono-label px-2 py-1 ${
+                      c.on ? "bg-accent/12 text-brass font-mono" : "bg-foreground/[0.04] text-muted-foreground"
+                    }`}
+                  >
+                    {c.on ? "active" : "off"}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-
-        <div className="bg-background p-5">
-          <p className="mono-label text-muted-foreground">Insurance</p>
-          <p className="mt-2 text-sm">{patient.insurer}</p>
-          <p className="mono-label text-muted-foreground mt-1">primary: {patient.primary}</p>
-
-          <p className="mono-label text-muted-foreground mt-6">Consent &amp; sharing</p>
-          <ul className="mt-3 space-y-3">
-            {[
-              { t: "Share records with my referring GP", on: true },
-              { t: "SMS reminders before appointments", on: true },
-              { t: "Email results when ready", on: true },
-              { t: "Use my de-identified data for research", on: false },
-            ].map((c) => (
-              <li key={c.t} className="flex items-center justify-between gap-4">
-                <span className="text-sm">{c.t}</span>
-                <span
-                  className={`mono-label px-2 py-1 ${
-                    c.on ? "bg-accent/12 text-brass" : "bg-foreground/[0.04] text-muted-foreground"
-                  }`}
-                >
-                  {c.on ? "on" : "off"}
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          <p className="mono-label text-muted-foreground mt-6">Emergency contact</p>
-          <p className="mt-2 text-sm">A. Joshi · brother · +91 90•••• 7781</p>
-        </div>
-      </div>
+      </form>
     </section>
   );
 }

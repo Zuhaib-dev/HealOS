@@ -181,17 +181,24 @@ export function PanelHeader({
 export function ActionButton({
   children,
   tone = "ghost",
+  type = "button",
+  disabled = false,
   onClick,
 }: {
   children: ReactNode;
   tone?: "ghost" | "solid";
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
   onClick?: () => void;
 }) {
   return (
     <button
-      type="button"
+      type={type}
+      disabled={disabled}
       onClick={onClick}
       className={`mono-label px-3.5 py-2 transition-opacity hover:opacity-80 ${
+        disabled ? "opacity-50 cursor-not-allowed" : ""
+      } ${
         tone === "solid" ? "bg-foreground text-background" : "hairline text-foreground"
       }`}
     >

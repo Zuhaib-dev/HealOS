@@ -12,6 +12,7 @@ import { envConfig } from "./config/env.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { notFoundHandler } from "./middleware/not-found.js";
 import { apiRouter } from "./routes/index.js";
+import path from "path";
 import { API_PREFIX, APP_NAME, APP_VERSION } from "@healos/shared";
 
 // ---------------------------
@@ -36,6 +37,9 @@ app.use(compression());
 app.use(morgan(envConfig.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Serve uploaded files statically
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // ---------------------------
 // Health Check

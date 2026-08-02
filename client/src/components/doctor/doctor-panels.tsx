@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import { useAuthStore } from "@/store/use-auth-store";
 import {
   fetchDoctorAppointmentsApi,
   updateAppointmentStatusApi,
@@ -58,13 +59,14 @@ function Vitals({ series }: { series: number[] }) {
       return `${x},${y.toFixed(1)}`;
     })
     .join(" ");
+
   return (
-    <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="h-8 w-24">
+    <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-8 w-24 shrink-0">
       <motion.polyline
         points={pts}
         fill="none"
         stroke="var(--color-accent)"
-        strokeWidth="1.4"
+        strokeWidth="1.6"
         vectorEffect="non-scaling-stroke"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
@@ -87,6 +89,7 @@ function acuityPill(a: "critical" | "guarded" | "stable") {
 /* ---------- 01 · Shift board ---------- */
 
 export function ShiftPanel() {
+  const { user } = useAuthStore();
   const critical = rounds.filter((r) => r.acuity === "critical");
   const tasks = rounds.flatMap((r) => r.tasks.map((t) => ({ t, who: r.name, bed: r.bed })));
 
@@ -94,8 +97,8 @@ export function ShiftPanel() {
     <div>
       <PanelHeader
         index="01 / shift"
-        title="Shift board"
-        note="Where your attention is owed right now — deteriorating patients, unsigned results and the tasks still open."
+        title={`Shift Board — Dr. ${user?.name || "Clinician"}`}
+        note={`Duty Designation: ${user?.role || "DOCTOR"} · Email: ${user?.email || "N/A"}`}
         actions={
           <>
             <ActionButton>Print round sheet</ActionButton>

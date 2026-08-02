@@ -13,6 +13,7 @@ import {
   Eye,
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import { useAuthStore } from "@/store/use-auth-store";
 import {
   worklist,
   documents,
@@ -90,6 +91,7 @@ function ScannerGlyph({ active }: { active: boolean }) {
 /* ---------- 01 worklist ---------- */
 
 export function WorklistPanel() {
+  const { user } = useAuthStore();
   const [filter, setFilter] = useState<"all" | "stat" | "unreported">("all");
   const rows = worklist.filter((w) =>
     filter === "all"
@@ -103,8 +105,8 @@ export function WorklistPanel() {
     <section>
       <PanelHeader
         index="01 / worklist"
-        title="Modality worklist"
-        note="Every requested study with priority, room, turnaround against SLA and the reporting radiologist."
+        title={`Modality Worklist — Dr. ${user?.name || "Radiologist"}`}
+        note={`Duty Specialist: ${user?.role || "RADIOLOGIST"} · PACS Server: ${user?.email || "Connected"}`}
         actions={
           <>
             <ActionButton onClick={() => setFilter("all")}>All ({worklist.length})</ActionButton>

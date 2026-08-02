@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Search, Bell } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 
 export type WorkspaceSection = {
   id: string;
@@ -69,13 +70,7 @@ export function WorkspaceShell({
           </button>
           <ThemeToggle />
           <div className="hairline-l hidden items-center gap-3 pl-4 sm:flex">
-            <div className="text-right">
-              <p className="mono-label leading-none">{user.name}</p>
-              <p className="mono-label text-muted-foreground leading-none">{user.role}</p>
-            </div>
-            <div className="bg-accent/15 text-brass mono-label grid size-9 place-items-center">
-              {user.initials}
-            </div>
+            <UserProfileMenu />
           </div>
         </div>
       </header>

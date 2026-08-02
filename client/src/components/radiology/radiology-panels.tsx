@@ -24,6 +24,8 @@ import {
   bookingSlots,
   type WorklistItem,
 } from "./radiology-data";
+import { fetchPendingOrdersApi, updateOrderStatusApi, uploadDiagnosticReportApi, DiagnosticOrderRecord } from "@/lib/api/radiology";
+import { toast } from "sonner";
 
 /* ---------- primitives ---------- */
 
@@ -53,8 +55,8 @@ function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
 }
 
-function priorityTone(p: WorklistItem["priority"]) {
-  return p === "stat" ? "bad" : p === "urgent" ? "warn" : "mute";
+function priorityTone(p: DiagnosticOrderRecord["priority"]) {
+  return p === "STAT" ? "bad" : p === "URGENT" ? "warn" : "mute";
 }
 
 /** Animated scanner glyph — hand-drawn SVG, no raster assets. */
@@ -93,12 +95,39 @@ function ScannerGlyph({ active }: { active: boolean }) {
 export function WorklistPanel() {
   const { user } = useAuthStore();
   const [filter, setFilter] = useState<"all" | "stat" | "unreported">("all");
-  const rows = worklist.filter((w) =>
+  const [orders, setOrders] = useState<DiagnosticOrderRecord[]>([]);
+
+  const loadOrders = async () => {
+    try {
+      const res = await fetchPendingOrdersApi();
+      if (res.status === "success") setOrders(res.data.orders);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
+  const handleUpdateStatus = async (id: string, newStatus: "IN_PROGRESS" | "COMPLETED" | "CANCELLED") => {
+    try {
+      const res = await updateOrderStatusApi(id, newStatus);
+      if (res.status === "success") {
+        toast.success(`Order status updated to ${newStatus}`);
+        loadOrders();
+      }
+    } catch (e) {
+      toast.error("Failed to update status");
+    }
+  };
+
+  const rows = orders.filter((w) =>
     filter === "all"
       ? true
       : filter === "stat"
-        ? w.priority === "stat"
-        : !["reported", "verified"].includes(w.status),
+        ? w.priority === "STAT"
+        : w.status !== "COMPLETED",
   );
 
   return (
@@ -109,7 +138,7 @@ export function WorklistPanel() {
         note={`Duty Specialist: ${user?.role || "RADIOLOGIST"} · PACS Server: ${user?.email || "Connected"}`}
         actions={
           <>
-            <ActionButton onClick={() => setFilter("all")}>All ({worklist.length})</ActionButton>
+            <ActionButton onClick={() => setFilter("all")}>All ({orders.length})</ActionButton>
             <ActionButton onClick={() => setFilter("stat")}>Stat</ActionButton>
             <ActionButton tone="solid" onClick={() => setFilter("unreported")}>
               Unreported
@@ -144,23 +173,21 @@ export function WorklistPanel() {
           </thead>
           <tbody>
             {rows.map((w) => {
-              const breach = w.tatMin > w.slaMin;
               return (
-                <tr key={w.accession} className="hairline-b hover:bg-foreground/[0.02]">
+                <tr key={w._id} className="hairline-b hover:bg-foreground/[0.02]">
                   <Td>
-                    <span className="mono-label">{w.accession}</span>
+                    <span className="mono-label truncate block w-24" title={w._id}>{w._id}</span>
                   </Td>
                   <Td>
-                    <p className="font-medium">{w.patient}</p>
+                    <p className="font-medium">{w.patient?.firstName} {w.patient?.lastName}</p>
                     <p className="mono-label text-muted-foreground">
-                      {w.mrn} · {w.age}
-                      {w.sex}
+                      {w.patient?.gender}
                     </p>
                   </Td>
                   <Td>
-                    <p>{w.study}</p>
+                    <p>{w.testName}</p>
                     <p className="mono-label text-muted-foreground">
-                      {w.modality} · requested {w.requested}
+                      {w.testType} · requested {new Date(w.createdAt).toLocaleDateString()}
                     </p>
                   </Td>
                   <Td>
@@ -168,22 +195,19 @@ export function WorklistPanel() {
                   </Td>
                   <Td>
                     <span className="mono-label inline-flex items-center gap-2">
-                      {w.status === "in-room" && (
+                      {w.status === "IN_PROGRESS" && (
                         <span className="bg-accent size-1.5 animate-pulse rounded-full" />
                       )}
                       {w.status}
                     </span>
                   </Td>
                   <Td>
-                    <span className="mono-label">{w.room}</span>
+                    {w.status === "PENDING" && (
+                      <button onClick={() => handleUpdateStatus(w._id, "IN_PROGRESS")} className="text-xs bg-accent/20 text-accent px-2 py-1 rounded">Mark In Progress</button>
+                    )}
                   </Td>
                   <Td>
-                    <Pill tone={breach ? "bad" : "ok"}>
-                      {w.tatMin}m / {w.slaMin}m
-                    </Pill>
-                  </Td>
-                  <Td>
-                    <span className="mono-label text-muted-foreground">{w.radiologist}</span>
+                    <span className="mono-label text-muted-foreground">{w.doctor?.firstName} {w.doctor?.lastName}</span>
                   </Td>
                 </tr>
               );
@@ -217,12 +241,21 @@ function humanSize(bytes: number) {
 export function UploadPanel() {
   const [dragging, setDragging] = useState(false);
   const [items, setItems] = useState<Upload[]>([]);
-  const [accession, setAccession] = useState(worklist[0]!.accession);
-  const [kind, setKind] = useState("PDF report");
+  const [orders, setOrders] = useState<DiagnosticOrderRecord[]>([]);
+  const [orderId, setOrderId] = useState("");
+  const [comments, setComments] = useState("");
+  const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const timers = useRef<number[]>([]);
 
-  useEffect(() => () => timers.current.forEach((t) => window.clearInterval(t)), []);
+  useEffect(() => {
+    fetchPendingOrdersApi().then(res => {
+      if (res.status === "success") {
+        const pending = res.data.orders.filter(o => o.status !== "COMPLETED");
+        setOrders(pending);
+        if (pending.length > 0 && !orderId) setOrderId(pending[0]._id);
+      }
+    }).catch(console.error);
+  }, []);
 
   function addFiles(files: FileList | null) {
     if (!files) return;
@@ -234,31 +267,44 @@ export function UploadPanel() {
         id: `${Date.now()}-${i}`,
         name: f.name,
         size: f.size,
-        progress: badType || tooBig ? 0 : 4,
+        progress: badType || tooBig ? 0 : 0,
         error: badType
           ? "unsupported type — pdf, dcm, zip, jpg, png only"
           : tooBig
             ? "over 25 MB limit"
             : undefined,
+        file: f,
       };
     });
     setItems((prev) => [...next, ...prev]);
+  }
 
-    next
-      .filter((n) => !n.error)
-      .forEach((n) => {
-        const t = window.setInterval(() => {
-          setItems((prev) =>
-            prev.map((it) =>
-              it.id === n.id && it.progress < 100
-                ? { ...it, progress: Math.min(100, it.progress + Math.random() * 18 + 6) }
-                : it,
-            ),
-          );
-        }, 320);
-        timers.current.push(t);
-        window.setTimeout(() => window.clearInterval(t), 9000);
-      });
+  const handleUpload = async () => {
+    if (!orderId) {
+      toast.error("Please select an order to attach to.");
+      return;
+    }
+    const validItems = items.filter(i => !i.error && i.progress === 0);
+    if (validItems.length === 0) return;
+
+    setUploading(true);
+    for (const item of validItems) {
+      try {
+        const formData = new FormData();
+        formData.append("reportFile", (item as any).file);
+        formData.append("comments", comments);
+        
+        const res = await uploadDiagnosticReportApi(orderId, formData);
+        if (res.status === "success") {
+          toast.success(`${item.name} uploaded successfully!`);
+          setItems(prev => prev.map(p => p.id === item.id ? { ...p, progress: 100 } : p));
+        }
+      } catch (e) {
+        toast.error(`Failed to upload ${item.name}`);
+        setItems(prev => prev.map(p => p.id === item.id ? { ...p, error: "Upload failed" } : p));
+      }
+    }
+    setUploading(false);
   }
 
   const done = items.filter((i) => !i.error && i.progress >= 100).length;
@@ -268,7 +314,7 @@ export function UploadPanel() {
       <PanelHeader
         index="02 / intake"
         title="Upload reports &amp; images"
-        note="Attach signed PDF reports, scanned requests, prior studies or DICOM series to an accession. Files are checked for type and size before they enter the study record."
+        note="Attach signed PDF reports, scanned requests, prior studies or DICOM series to an order. Files are checked for type and size before they enter the study record."
         actions={
           <>
             <ActionButton onClick={() => setItems([])}>Clear list</ActionButton>
@@ -313,7 +359,7 @@ export function UploadPanel() {
             <p className="mt-4 font-mono text-lg">Drop report files here</p>
             <p className="text-muted-foreground mt-1 max-w-md text-sm">
               PDF, DICOM (.dcm), zipped series, JPG or PNG · up to 25 MB per file. Uploads are
-              attached to the selected accession and audit-logged.
+              attached to the selected order and audit-logged.
             </p>
             <button
               type="button"
@@ -328,9 +374,15 @@ export function UploadPanel() {
             <p className="mono-label text-muted-foreground">
               {items.length} queued · {done} attached
             </p>
-            <p className="mono-label text-muted-foreground">
-              destination: {accession} / {kind}
-            </p>
+            {items.some(i => !i.error && i.progress === 0) && (
+              <button 
+                onClick={handleUpload}
+                disabled={uploading}
+                className="bg-accent text-accent-foreground px-4 py-1.5 rounded text-sm font-medium hover:bg-accent/90 disabled:opacity-50"
+              >
+                {uploading ? "Uploading..." : "Upload Queued Files"}
+              </button>
+            )}
           </div>
 
           <div className="mt-3 flex flex-col gap-px" style={{ background: "var(--hairline)" }}>
@@ -387,34 +439,25 @@ export function UploadPanel() {
 
         <div className="bg-background p-5">
           <p className="mono-label text-muted-foreground">Attach to</p>
-          <label className="mono-label text-muted-foreground mt-4 block">Accession</label>
+          <label className="mono-label text-muted-foreground mt-4 block">Order</label>
           <select
-            value={accession}
-            onChange={(e) => setAccession(e.target.value)}
+            value={orderId}
+            onChange={(e) => setOrderId(e.target.value)}
             className="hairline mono-label mt-2 w-full bg-transparent px-3 py-2.5 outline-none"
           >
-            {worklist.map((w) => (
-              <option key={w.accession} value={w.accession}>
-                {w.accession} — {w.patient} ({w.modality})
+            {orders.map((w) => (
+              <option key={w._id} value={w._id}>
+                {w._id.slice(-6)} — {w.patient?.firstName} {w.patient?.lastName} ({w.testName})
               </option>
-            ))}
-          </select>
-
-          <label className="mono-label text-muted-foreground mt-4 block">Document type</label>
-          <select
-            value={kind}
-            onChange={(e) => setKind(e.target.value)}
-            className="hairline mono-label mt-2 w-full bg-transparent px-3 py-2.5 outline-none"
-          >
-            {["PDF report", "Scanned request", "Prior report", "DICOM series", "Consent"].map((k) => (
-              <option key={k}>{k}</option>
             ))}
           </select>
 
           <label className="mono-label text-muted-foreground mt-4 block">Note for record</label>
           <textarea
             rows={4}
-            placeholder="e.g. outside imaging brought on CD by relative"
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            placeholder="e.g. sample collected, all clear"
             className="hairline placeholder:text-muted-foreground mt-2 w-full resize-none bg-transparent p-3 text-sm outline-none"
           />
 
@@ -423,8 +466,7 @@ export function UploadPanel() {
             <ul className="mono-label mt-2 space-y-1.5">
               {[
                 "type + size validation",
-                "patient / accession match",
-                "PHI watermark on export",
+                "patient / order match",
                 "immutable audit entry",
               ].map((c) => (
                 <li key={c} className="flex items-center gap-2">

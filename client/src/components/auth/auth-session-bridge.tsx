@@ -22,7 +22,10 @@ export function AuthSessionBridge() {
       backendSession?.backendToken &&
       backendSession.backendUser
     ) {
-      setAuth(backendSession.backendUser, backendSession.backendToken);
+      const storeToken = useAuthStore.getState().token;
+      if (!storeToken) {
+        setAuth(backendSession.backendUser, backendSession.backendToken);
+      }
     }
   }, [session, status, setAuth]);
 

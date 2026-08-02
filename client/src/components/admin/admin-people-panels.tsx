@@ -5,9 +5,11 @@ import { ActionButton, PanelHeader } from "./admin-shell";
 import {
   fetchAdminUsersApi,
   fetchAdminPatientsApi,
+  updateUserRoleApi,
   AdminUserData,
   AdminPatientData,
 } from "@/lib/api/admin";
+import { toast } from "sonner";
 import {
   users as mockUsers,
   patients as mockPatients,
@@ -111,6 +113,20 @@ export function UsersPanel() {
     loadUsers();
   }, []);
 
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      const res = await updateUserRoleApi(userId, newRole);
+      if (res.success) {
+        toast.success(`User role updated to ${newRole} in real-time!`);
+        setDbUsers((prev) =>
+          prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u))
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update user role");
+    }
+  };
+
   const verifiedCount = dbUsers.filter((u) => u.isEmailVerified).length;
 
   return (
@@ -201,8 +217,18 @@ export function UsersPanel() {
                       <span className="mono-label text-muted-foreground">{u.email}</span>
                     </Td>
                     <Td>
-                      <span className="block font-semibold text-primary">{u.role}</span>
-                      <span className="mono-label text-muted-foreground">General</span>
+                      <select
+                        value={u.role}
+                        onChange={(e) => handleRoleChange(u._id, e.target.value)}
+                        className="mono-label bg-background border border-border/70 text-xs rounded px-2 py-1 font-semibold text-primary focus:outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer"
+                      >
+                        <option value="USER">USER</option>
+                        <option value="PATIENT">PATIENT</option>
+                        <option value="DOCTOR">DOCTOR</option>
+                        <option value="RADIOLOGIST">RADIOLOGIST</option>
+                        <option value="ADMIN">ADMIN</option>
+                      </select>
+                      <span className="mono-label text-muted-foreground block mt-0.5 text-[10px]">Change Role</span>
                     </Td>
                     <Td>
                       {u.isEmailVerified ? (

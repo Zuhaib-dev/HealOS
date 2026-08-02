@@ -69,3 +69,15 @@ export async function fetchFacilityStatsApi() {
   }>("/admin/stats");
   return response.data;
 }
+
+/**
+ * Directly update a user's role (e.g., promote to RADIOLOGIST or DOCTOR)
+ */
+export async function updateUserRoleApi(userId: string, role: string) {
+  const response = await apiClient.patch<{
+    success: boolean;
+    message: string;
+    user: AdminUserData;
+  }>(`/admin/users/${userId}/role`, { role });
+  return response.data;
+}

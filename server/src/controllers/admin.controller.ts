@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { User } from "../models/user.model.js";
+import { User, UserRole } from "../models/user.model.js";
 import { PatientProfile } from "../models/patient-profile.model.js";
 import { ProfessionalProfile } from "../models/professional-profile.model.js";
 import { Appointment } from "../models/appointment.model.js";
+import { emitUserRoleUpdated } from "../socket.js";
 
 /**
  * GET /api/v1/admin/users
@@ -74,6 +75,52 @@ export const getFacilityStats = async (_req: Request, res: Response): Promise<vo
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Server error fetching facility stats",
+    });
+  }
+};
+
+/**
+ * PATCH /api/v1/admin/users/:id/role
+ * Updates a user's role directly (e.g. promoting to RADIOLOGIST or DOCTOR)
+ */
+export const updateUserRole = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!role || !Object.values(UserRole).includes(role)) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid user role specified",
+      });
+      return;
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
+
+    user.role = role;
+    await user.save();
+
+    // Emit socket event for real-time role promotion in client browser
+    emitUserRoleUpdated(user._id.toString(), role);
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: `User ${user.name}'s role updated to ${role} in real-time`,
+      user,
+    });
+  } catch (error) {
+    console.error("Error in updateUserRole:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error while updating user role",
     });
   }
 };

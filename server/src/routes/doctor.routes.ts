@@ -6,7 +6,7 @@ import {
   orderDiagnostic,
   getPatientHistory,
 } from "../controllers/doctor.controller.js";
-import { UserRole } from "../models/index.js";
+import { UserRole } from "../models/user.model.js";
 
 const router = Router();
 

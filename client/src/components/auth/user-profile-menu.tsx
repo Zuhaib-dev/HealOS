@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -106,10 +107,16 @@ export function UserProfileMenu() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     logout();
+    try {
+      await signOut({ redirect: false });
+    } catch {
+      // Ignore if next-auth session is not active
+    }
     toast.success("Signed out successfully");
     router.push("/");
+    router.refresh();
   };
 
   return (

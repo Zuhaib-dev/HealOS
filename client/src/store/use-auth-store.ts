@@ -66,12 +66,20 @@ export const useAuthStore = create<AuthState>()(
 
       setToken: (token) => set({ token }),
 
-      logout: () =>
+      logout: () => {
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.removeItem("healos-auth-storage");
+          } catch {
+            // Ignore storage errors
+          }
+        }
         set({
           user: null,
           token: null,
           isAuthenticated: false,
-        }),
+        });
+      },
 
       openAuthModal: (tab = "login") =>
         set({

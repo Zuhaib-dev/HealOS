@@ -10,7 +10,7 @@ import crypto from "crypto";
 // ==========================================
 export const registerPatientAndCreateToken = async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, phone, dateOfBirth, gender, abhaNumber, payer, policyNumber, department } = req.body;
+    const { firstName, lastName, phone, dateOfBirth, gender, address, department, payer } = req.body;
 
     if (!firstName || !phone || !department) {
       throw new AppError("First name, phone, and department are required", 400);
@@ -30,13 +30,14 @@ export const registerPatientAndCreateToken = async (req: Request, res: Response)
         role: UserRole.PATIENT,
         dateOfBirth: dateOfBirth || null,
         gender: gender || "Other",
+        address,
       });
       await patient.save();
     }
 
     // Assign a random doctor from the requested department (mock logic)
     const doctors = await User.find({ role: UserRole.DOCTOR, department });
-    const doctorId = doctors.length > 0 ? doctors[0]._id : null; // Fallback to null if no doctor in that dept
+    const doctorId = doctors.length > 0 ? doctors[0]?._id : null; // Fallback to null if no doctor in that dept
 
     // Create an Appointment / Token
     const appointment = new Appointment({
@@ -46,14 +47,14 @@ export const registerPatientAndCreateToken = async (req: Request, res: Response)
       date: new Date(),
       timeSlot: "Walk-in",
       reason: "OPD Consultation",
-      status: AppointmentStatus.SCHEDULED,
+      status: AppointmentStatus.CONFIRMED,
     });
     await appointment.save();
 
     // Generate Invoice for OPD Consult
     const invoice = new Invoice({
       patient: patient._id,
-      issuedBy: req.user?.id,
+      receptionist: (req as any).user?._id,
       appointment: appointment._id,
       items: [{ description: "OPD Consultation", amount: 500 }],
       totalAmount: 500,
@@ -80,7 +81,7 @@ export const registerPatientAndCreateToken = async (req: Request, res: Response)
 // ==========================================
 // 2. Get Today's Queue
 // ==========================================
-export const getQueue = async (req: Request, res: Response) => {
+export const getQueue = async (_req: Request, res: Response): Promise<void> => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -107,7 +108,7 @@ export const getQueue = async (req: Request, res: Response) => {
 // ==========================================
 // 3. Get Pending Invoices
 // ==========================================
-export const getPendingBills = async (req: Request, res: Response) => {
+export const getPendingBills = async (_req: Request, res: Response): Promise<void> => {
   try {
     const invoices = await Invoice.find({ status: InvoiceStatus.PENDING })
       .populate("patient", "firstName lastName phone")

@@ -38,7 +38,7 @@ export function RegistrationPanel() {
   useEffect(() => {
     fetchAvailableDoctorsApi().then(res => {
       if (res.success && res.doctors.length > 0) {
-        const depts = Array.from(new Set(res.doctors.map(d => d.department)));
+        const depts = Array.from(new Set(res.doctors.map(d => d.specialization)));
         setDepartments(depts);
         setForm(f => ({ ...f, department: depts[0] }));
       }

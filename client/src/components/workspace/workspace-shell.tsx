@@ -30,7 +30,7 @@ export function WorkspaceShell({
   sections: readonly WorkspaceSection[];
   active: string;
   onSelect: (id: string) => void;
-  user: { name: string; role: string; initials: string };
+  user?: { name: string; role: string; initials: string };
   statusTitle: string;
   statusLine: string;
   statusNote: string;

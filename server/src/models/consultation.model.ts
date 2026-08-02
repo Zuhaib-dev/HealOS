@@ -11,6 +11,7 @@ export interface IMedicine {
   frequency: string;
   duration: string;
   instructions?: string;
+  isDispensed?: boolean;
 }
 
 export interface IConsultation extends Document {
@@ -32,7 +33,8 @@ const medicineSchema = new Schema<IMedicine>({
   frequency: { type: String, required: true },
   duration: { type: String, required: true },
   instructions: { type: String },
-}, { _id: false });
+  isDispensed: { type: Boolean, default: false },
+}, { _id: true });
 
 const consultationSchema = new Schema<IConsultation>(
   {

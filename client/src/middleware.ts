@@ -10,6 +10,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/doctor") ||
     pathname.startsWith("/radiology") ||
     pathname.startsWith("/reception") ||
+    pathname.startsWith("/pharmacy") ||
     pathname.startsWith("/patient") ||
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/dashboard");
@@ -27,6 +28,7 @@ export const config = {
     "/doctor/:path*",
     "/radiology/:path*",
     "/reception/:path*",
+    "/pharmacy/:path*",
     "/patient/:path*",
     "/onboarding/:path*",
     "/dashboard/:path*",

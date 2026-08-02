@@ -83,6 +83,9 @@ export function AuthModal() {
       case "RECEPTIONIST":
         router.push("/reception");
         break;
+      case "PHARMACIST":
+        router.push("/pharmacy");
+        break;
       case "PATIENT":
         router.push("/patient");
         break;

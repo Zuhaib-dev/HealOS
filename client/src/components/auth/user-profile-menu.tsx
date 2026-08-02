@@ -86,6 +86,8 @@ export function UserProfileMenu() {
         return "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30";
       case "RECEPTIONIST":
         return "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30";
+      case "PHARMACIST":
+        return "bg-pink-500/15 text-pink-600 dark:text-pink-400 border-pink-500/30";
       case "patient":
       case "PATIENT":
       case "USER":
@@ -106,6 +108,8 @@ export function UserProfileMenu() {
         return "/radiology";
       case "RECEPTIONIST":
         return "/reception";
+      case "PHARMACIST":
+        return "/pharmacy";
       default:
         return "/patient";
     }

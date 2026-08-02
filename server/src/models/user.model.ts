@@ -7,6 +7,7 @@ export enum UserRole {
   DOCTOR = "DOCTOR",
   RADIOLOGIST = "RADIOLOGIST",
   RECEPTIONIST = "RECEPTIONIST",
+  PHARMACIST = "PHARMACIST",
 }
 
 export interface IUser extends Document {

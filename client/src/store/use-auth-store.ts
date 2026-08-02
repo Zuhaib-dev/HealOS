@@ -8,7 +8,8 @@ export type UserRole =
   | "ADMIN"
   | "DOCTOR"
   | "RADIOLOGIST"
-  | "RECEPTIONIST";
+  | "RECEPTIONIST"
+  | "PHARMACIST";
 
 export interface AuthUser {
   id: string;

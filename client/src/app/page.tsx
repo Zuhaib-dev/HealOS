@@ -29,6 +29,8 @@ export default function LandingPage() {
       router.replace("/doctor");
     } else if (role === "RADIOLOGIST") {
       router.replace("/radiology");
+    } else if (role === "RECEPTIONIST") {
+      router.replace("/reception");
     }
   }, [_hasHydrated, isAuthenticated, user, router]);
 

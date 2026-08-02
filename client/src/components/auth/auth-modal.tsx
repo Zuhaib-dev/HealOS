@@ -80,6 +80,9 @@ export function AuthModal() {
       case "RADIOLOGIST":
         router.push("/radiology");
         break;
+      case "RECEPTIONIST":
+        router.push("/reception");
+        break;
       case "PATIENT":
         router.push("/patient");
         break;

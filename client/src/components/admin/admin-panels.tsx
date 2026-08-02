@@ -162,8 +162,25 @@ function OccupancyGauge() {
   );
 }
 
+import { fetchFacilityStatsApi, FacilityStatsData } from "@/lib/api/admin";
+
 export function OverviewPanel() {
   const { user } = useAuthStore();
+  const [stats, setStats] = useState<FacilityStatsData | null>(null);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const res = await fetchFacilityStatsApi();
+        if (res.success && res.stats) {
+          setStats(res.stats);
+        }
+      } catch (err) {
+        console.error("Failed to load facility stats", err);
+      }
+    };
+    loadStats();
+  }, []);
 
   return (
     <section>
@@ -180,10 +197,10 @@ export function OverviewPanel() {
       />
 
       <div className="hairline-b grid grid-cols-2 lg:grid-cols-4">
-        <Metric label="Active patients" value="418" delta="+6.2% vs last week" />
-        <Metric label="Staff on shift" value="212" delta="+11 since 06:00" />
-        <Metric label="Theatre utilisation" value="84" suffix="%" delta="+3.4 pts" />
-        <Metric label="Revenue MTD" value="$4.71M" delta="+8.9% vs plan" />
+        <Metric label="Registered users" value={stats ? String(stats.totalUsers) : "..."} delta="MongoDB Atlas live" />
+        <Metric label="Active patients" value={stats ? String(stats.totalPatients) : "..."} delta="Health profiles complete" />
+        <Metric label="Approved clinicians" value={stats ? String(stats.totalClinicians) : "..."} delta="Doctors & Radiologists" />
+        <Metric label="Total appointments" value={stats ? String(stats.totalAppointments) : "..."} delta="Booked consultations" />
       </div>
 
       <div className="hairline-b grid lg:grid-cols-[1.6fr_1fr]">

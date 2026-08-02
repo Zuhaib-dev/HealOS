@@ -1,10 +1,16 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { LogOut, KeyRound, ShieldCheck, ShieldOff, Copy, Plus } from "lucide-react";
 import { ActionButton, PanelHeader } from "./admin-shell";
 import {
-  users,
-  patients,
+  fetchAdminUsersApi,
+  fetchAdminPatientsApi,
+  AdminUserData,
+  AdminPatientData,
+} from "@/lib/api/admin";
+import {
+  users as mockUsers,
+  patients as mockPatients,
   schedule,
   scheduleWindow,
   roleMatrix,
@@ -83,26 +89,36 @@ function Avatar({ name, online }: { name: string; online: boolean }) {
 /* ---------- 03 · Users & sessions ---------- */
 
 export function UsersPanel() {
+  const [dbUsers, setDbUsers] = useState<AdminUserData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "online" | "no-mfa">("all");
   const [revoked, setRevoked] = useState<string[]>([]);
 
-  const rows = useMemo(
-    () =>
-      users.filter((u) =>
-        filter === "online" ? u.online : filter === "no-mfa" ? !u.mfa : true,
-      ),
-    [filter],
-  );
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchAdminUsersApi();
+        if (res.success && res.users) {
+          setDbUsers(res.users);
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin users", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUsers();
+  }, []);
 
-  const online = users.filter((u) => u.online).length;
-  const noMfa = users.filter((u) => !u.mfa).length;
+  const verifiedCount = dbUsers.filter((u) => u.isEmailVerified).length;
 
   return (
     <div>
       <PanelHeader
         index="03 / identity"
         title="Users & sessions"
-        note="Everyone signed in right now — account, device, network and how long since they last touched a record."
+        note="Live system accounts registered across MongoDB Atlas Cloud — role, verification status and security."
         actions={
           <>
             <ActionButton>Invite user</ActionButton>
@@ -113,10 +129,10 @@ export function UsersPanel() {
 
       <div className="hairline-b grid grid-cols-2 sm:grid-cols-4">
         {[
-          { label: "Accounts", value: String(users.length) },
-          { label: "Signed in now", value: String(online) },
-          { label: "Without 2FA", value: String(noMfa) },
-          { label: "Sessions revoked", value: String(revoked.length) },
+          { label: "Total Accounts", value: String(dbUsers.length) },
+          { label: "Verified Users", value: String(verifiedCount) },
+          { label: "Unverified", value: String(dbUsers.length - verifiedCount) },
+          { label: "Sessions Revoked", value: String(revoked.length) },
         ].map((m) => (
           <div key={m.label} className="hairline-l px-5 py-4">
             <p className="mono-label text-muted-foreground">{m.label}</p>
@@ -161,80 +177,84 @@ export function UsersPanel() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((u) => {
-              const isRevoked = revoked.includes(u.id);
-              return (
-                <motion.tr
-                  key={u.id}
-                  layout
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: isRevoked ? 0.45 : 1 }}
-                  className="hairline-b"
-                >
-                  <Td>
-                    <span className="flex items-center gap-3">
-                      <Avatar name={u.name} online={u.online && !isRevoked} />
-                      <span>
-                        <span className="block font-medium">{u.name}</span>
-                        <span className="mono-label text-muted-foreground">{u.id}</span>
+            {loading ? (
+              <tr>
+                <td colSpan={8} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
+                  Loading system accounts from MongoDB Atlas...
+                </td>
+              </tr>
+            ) : dbUsers.length > 0 ? (
+              dbUsers.map((u) => {
+                const isRevoked = revoked.includes(u._id);
+                return (
+                  <tr key={u._id} className="hairline-b">
+                    <Td>
+                      <span className="flex items-center gap-3">
+                        <Avatar name={u.name} online={!isRevoked} />
+                        <span>
+                          <span className="block font-medium">{u.name}</span>
+                          <span className="mono-label text-muted-foreground">{u._id.slice(-8).toUpperCase()}</span>
+                        </span>
                       </span>
-                    </span>
-                  </Td>
-                  <Td>
-                    <span className="mono-label text-muted-foreground">{u.email}</span>
-                  </Td>
-                  <Td>
-                    <span className="block">{u.role}</span>
-                    <span className="mono-label text-muted-foreground">{u.dept}</span>
-                  </Td>
-                  <Td>
-                    {u.mfa ? (
-                      <span className="text-brass flex items-center gap-1.5">
-                        <ShieldCheck className="size-3.5" />
-                        <span className="mono-label">on</span>
-                      </span>
-                    ) : (
-                      <span className="text-destructive flex items-center gap-1.5">
-                        <ShieldOff className="size-3.5" />
-                        <span className="mono-label">off</span>
-                      </span>
-                    )}
-                  </Td>
-                  <Td>
-                    <span className="mono-label text-muted-foreground">{u.device}</span>
-                  </Td>
-                  <Td>
-                    <span className="mono-label block">{u.ip}</span>
-                    <span className="mono-label text-muted-foreground">{u.location}</span>
-                  </Td>
-                  <Td>
-                    <span className="mono-label">{u.lastActive}</span>
-                  </Td>
-                  <Td>
-                    <span className="flex items-center gap-2">
-                      {isRevoked ? (
-                        <Pill tone="mute">revoked</Pill>
-                      ) : u.session === "active" ? (
-                        <Pill tone="ok">active</Pill>
-                      ) : u.session === "idle" ? (
-                        <Pill tone="warn">idle</Pill>
+                    </Td>
+                    <Td>
+                      <span className="mono-label text-muted-foreground">{u.email}</span>
+                    </Td>
+                    <Td>
+                      <span className="block font-semibold text-primary">{u.role}</span>
+                      <span className="mono-label text-muted-foreground">General</span>
+                    </Td>
+                    <Td>
+                      {u.isEmailVerified ? (
+                        <span className="text-brass flex items-center gap-1.5">
+                          <ShieldCheck className="size-3.5" />
+                          <span className="mono-label">Verified</span>
+                        </span>
                       ) : (
-                        <Pill tone="bad">expired</Pill>
+                        <span className="text-destructive flex items-center gap-1.5">
+                          <ShieldOff className="size-3.5" />
+                          <span className="mono-label">Unverified</span>
+                        </span>
                       )}
-                      {!isRevoked && (
-                        <button
-                          type="button"
-                          onClick={() => setRevoked((r) => [...r, u.id])}
-                          className="mono-label text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
-                        >
-                          <LogOut className="size-3" /> sign out
-                        </button>
-                      )}
-                    </span>
-                  </Td>
-                </motion.tr>
-              );
-            })}
+                    </Td>
+                    <Td>
+                      <span className="mono-label text-muted-foreground">Web Session</span>
+                    </Td>
+                    <Td>
+                      <span className="mono-label block">127.0.0.1</span>
+                      <span className="mono-label text-muted-foreground">Local / SSL</span>
+                    </Td>
+                    <Td>
+                      <span className="mono-label">{new Date(u.createdAt).toLocaleDateString()}</span>
+                    </Td>
+                    <Td>
+                      <span className="flex items-center gap-2">
+                        {isRevoked ? (
+                          <Pill tone="mute">revoked</Pill>
+                        ) : (
+                          <Pill tone="ok">active</Pill>
+                        )}
+                        {!isRevoked && (
+                          <button
+                            type="button"
+                            onClick={() => setRevoked((r) => [...r, u._id])}
+                            className="mono-label text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
+                          >
+                            <LogOut className="size-3" /> sign out
+                          </button>
+                        )}
+                      </span>
+                    </Td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={8} className="p-8 text-center mono-label text-xs text-muted-foreground">
+                  No user accounts registered.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -245,19 +265,40 @@ export function UsersPanel() {
 /* ---------- 04 · Patient registry ---------- */
 
 export function PatientsPanel() {
+  const [dbPatients, setDbPatients] = useState<AdminPatientData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
-  const rows = patients.filter(
-    (p) =>
-      p.name.toLowerCase().includes(q.toLowerCase()) ||
-      p.mrn.toLowerCase().includes(q.toLowerCase()),
-  );
+
+  useEffect(() => {
+    const loadPatients = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchAdminPatientsApi();
+        if (res.success && res.patients) {
+          setDbPatients(res.patients);
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin patients", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPatients();
+  }, []);
+
+  const filteredPatients = dbPatients.filter((p) => {
+    const name = p.user?.name || "";
+    const email = p.user?.email || "";
+    const search = q.toLowerCase();
+    return name.toLowerCase().includes(search) || email.toLowerCase().includes(search);
+  });
 
   return (
     <div>
       <PanelHeader
         index="04 / registry"
         title="Patient registry"
-        note="Admitted census with acuity, attending clinician and safety flags surfaced before you open a chart."
+        note="Registered health profile census with blood group, emergency contacts and verification signals."
         actions={
           <>
             <ActionButton>Export census</ActionButton>
@@ -269,7 +310,7 @@ export function PatientsPanel() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Filter by name or MRN"
+          placeholder="Filter by name or email"
           className="mono-label hairline placeholder:text-muted-foreground w-full max-w-xs bg-transparent px-3 py-2 outline-none"
         />
       </div>
@@ -277,58 +318,65 @@ export function PatientsPanel() {
         <table className="w-full min-w-[860px]">
           <thead className="hairline-b">
             <tr>
-              <Th>MRN</Th>
-              <Th>Patient</Th>
-              <Th>Age / sex</Th>
-              <Th>Ward</Th>
-              <Th>Attending</Th>
-              <Th>Admitted</Th>
-              <Th>Acuity</Th>
-              <Th>Flags</Th>
+              <Th>Patient ID</Th>
+              <Th>Patient Name</Th>
+              <Th>Gender / Blood</Th>
+              <Th>Emergency Contact</Th>
+              <Th>Emergency Phone</Th>
+              <Th>Registered On</Th>
+              <Th>Profile Status</Th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((p) => (
-              <tr key={p.mrn} className="hairline-b">
-                <Td>
-                  <span className="mono-label">{p.mrn}</span>
-                </Td>
-                <Td>
-                  <span className="flex items-center gap-3">
-                    <Avatar name={p.name} online={p.acuity === "critical"} />
-                    <span className="font-medium">{p.name}</span>
-                  </span>
-                </Td>
-                <Td>
-                  <span className="mono-label">
-                    {p.age} · {p.sex}
-                  </span>
-                </Td>
-                <Td>
-                  <span className="mono-label">{p.ward}</span>
-                </Td>
-                <Td>{p.attending}</Td>
-                <Td>
-                  <span className="mono-label text-muted-foreground">{p.admitted}</span>
-                </Td>
-                <Td>
-                  {p.acuity === "critical" ? (
-                    <Pill tone="bad">critical</Pill>
-                  ) : p.acuity === "guarded" ? (
-                    <Pill tone="warn">guarded</Pill>
-                  ) : (
-                    <Pill tone="ok">stable</Pill>
-                  )}
-                </Td>
-                <Td>
-                  {p.flag ? (
-                    <span className="mono-label text-brass">{p.flag}</span>
-                  ) : (
-                    <span className="mono-label text-muted-foreground">—</span>
-                  )}
-                </Td>
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
+                  Loading patient registry from MongoDB Atlas...
+                </td>
               </tr>
-            ))}
+            ) : filteredPatients.length > 0 ? (
+              filteredPatients.map((p) => (
+                <tr key={p._id} className="hairline-b">
+                  <Td>
+                    <span className="mono-label text-muted-foreground">{p._id.slice(-8).toUpperCase()}</span>
+                  </Td>
+                  <Td>
+                    <span className="flex items-center gap-3">
+                      <Avatar name={p.user?.name || "Patient"} online={true} />
+                      <div>
+                        <p className="font-medium text-foreground">{p.user?.name || "Anonymous Patient"}</p>
+                        <p className="mono-label text-[11px] text-muted-foreground">{p.user?.email}</p>
+                      </div>
+                    </span>
+                  </Td>
+                  <Td>
+                    <span className="mono-label">
+                      {p.gender || "N/A"} · <span className="font-bold text-primary">{p.bloodGroup || "N/A"}</span>
+                    </span>
+                  </Td>
+                  <Td>{p.emergencyContactName || "—"}</Td>
+                  <Td>
+                    <span className="mono-label text-muted-foreground">{p.emergencyPhone || p.user?.phone || "—"}</span>
+                  </Td>
+                  <Td>
+                    <span className="mono-label text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</span>
+                  </Td>
+                  <Td>
+                    {p.isComplete ? (
+                      <Pill tone="ok">Active Patient</Pill>
+                    ) : (
+                      <Pill tone="warn">Incomplete</Pill>
+                    )}
+                  </Td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={7} className="p-8 text-center mono-label text-xs text-muted-foreground">
+                  No registered patient profiles found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

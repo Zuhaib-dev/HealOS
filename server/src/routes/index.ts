@@ -3,9 +3,10 @@
 // ============================================
 import { Router } from "express";
 import { APP_NAME, APP_VERSION } from "@healos/shared";
-import authRouter from "./auth.routes";
-import onboardingRouter from "./onboarding.routes";
-import appointmentRouter from "./appointment.routes";
+import authRouter from "./auth.routes.js";
+import onboardingRouter from "./onboarding.routes.js";
+import appointmentRouter from "./appointment.routes.js";
+import adminRouter from "./admin.routes.js";
 
 export const apiRouter = Router();
 
@@ -22,6 +23,7 @@ apiRouter.get("/", (_req, res) => {
       auth: "/api/v1/auth",
       onboarding: "/api/v1/onboarding",
       appointments: "/api/v1/appointments",
+      admin: "/api/v1/admin",
     },
   });
 });
@@ -32,3 +34,4 @@ apiRouter.get("/", (_req, res) => {
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/onboarding", onboardingRouter);
 apiRouter.use("/appointments", appointmentRouter);
+apiRouter.use("/admin", adminRouter);

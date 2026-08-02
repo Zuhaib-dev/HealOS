@@ -46,6 +46,7 @@ import {
   careTeam,
   type Appointment,
 } from "./patient-data";
+import { fetchPatientDashboardApi, PatientDashboardData } from "@/lib/api/patient";
 
 /* ---------- primitives ---------- */
 
@@ -597,7 +598,43 @@ export function AppointmentsPanel() {
 
 export function ReportsPanel() {
   const [q, setQ] = useState("");
-  const rows = reports.filter((r) =>
+  const [data, setData] = useState<PatientDashboardData | null>(null);
+
+  useEffect(() => {
+    fetchPatientDashboardApi().then(res => {
+      if (res.status === "success") setData(res.data);
+    }).catch(() => {});
+  }, []);
+
+  const orders = data?.diagnosticOrders || [];
+  const reports = data?.diagnosticReports || [];
+
+  const allRecords = [
+    ...orders.map(o => ({
+      id: o._id,
+      name: o.testName,
+      kind: o.testType,
+      dept: o.doctor?.firstName ? `Dr. ${o.doctor.firstName} ${o.doctor.lastName}` : "Doctor",
+      date: new Date(o.createdAt).toLocaleDateString(),
+      status: o.status === "COMPLETED" ? "ready" : "pending",
+      flagged: false,
+      pages: 0,
+      size: ""
+    })),
+    ...reports.map(r => ({
+      id: r._id,
+      name: r.fileName || "Uploaded Report",
+      kind: "REPORT",
+      dept: r.uploadedBy?.firstName ? `${r.uploadedBy.firstName} ${r.uploadedBy.lastName}` : "Lab",
+      date: new Date(r.createdAt).toLocaleDateString(),
+      status: "ready",
+      flagged: false, // We could add logic for flags later
+      pages: 1,
+      size: "PDF"
+    }))
+  ];
+
+  const rows = allRecords.filter((r) =>
     `${r.name} ${r.kind} ${r.dept}`.toLowerCase().includes(q.toLowerCase()),
   );
 
@@ -618,7 +655,7 @@ export function ReportsPanel() {
           className="hairline mono-label placeholder:text-muted-foreground w-full max-w-sm bg-transparent px-3 py-2.5 outline-none"
         />
         <span className="mono-label text-muted-foreground">
-          {reports.filter((r) => r.flagged).length} results outside reference range
+          {rows.length} records found
         </span>
       </div>
 
@@ -660,7 +697,7 @@ export function ReportsPanel() {
                 </Td>
                 <Td>
                   <Pill
-                    tone={r.status === "ready" ? "ok" : r.status === "awaiting sign" ? "warn" : "mute"}
+                    tone={r.status === "ready" ? "ok" : "warn"}
                   >
                     {r.status}
                   </Pill>
@@ -705,6 +742,26 @@ export function ReportsPanel() {
 
 export function MedsPanel() {
   const [requested, setRequested] = useState<Record<string, boolean>>({});
+  const [data, setData] = useState<PatientDashboardData | null>(null);
+
+  useEffect(() => {
+    fetchPatientDashboardApi().then(res => {
+      if (res.status === "success") setData(res.data);
+    }).catch(() => {});
+  }, []);
+
+  const activeMeds = (data?.consultations || []).flatMap(c => 
+    (c.medicines || []).map((m: any) => ({
+      name: m.name,
+      dose: m.dosage,
+      freq: m.frequency,
+      started: new Date(c.createdAt).toLocaleDateString(),
+      prescriber: c.doctor?.firstName ? `Dr. ${c.doctor.firstName} ${c.doctor.lastName}` : "Doctor",
+      state: "active",
+      refillsLeft: 0,
+      instructions: m.instructions
+    }))
+  );
 
   return (
     <section>
@@ -715,9 +772,14 @@ export function MedsPanel() {
       />
 
       <div className="flex flex-col gap-px" style={{ background: "var(--hairline)" }}>
-        {meds.map((m) => (
+        {activeMeds.length === 0 && (
+          <div className="bg-background p-8 text-center mono-label text-xs text-muted-foreground">
+            No active medications found.
+          </div>
+        )}
+        {activeMeds.map((m, i) => (
           <div
-            key={m.name}
+            key={i}
             className="bg-background flex flex-wrap items-center gap-4 px-5 py-4 sm:px-8"
           >
             <div className="min-w-0 flex-1">
@@ -725,20 +787,12 @@ export function MedsPanel() {
               <p className="mono-label text-muted-foreground mt-1">
                 {m.dose} · {m.freq} · since {m.started} · {m.prescriber}
               </p>
+              {m.instructions && (
+                <p className="text-xs text-emerald-500 font-mono mt-1">Instructions: {m.instructions}</p>
+              )}
             </div>
             <Pill tone={m.state === "active" ? "ok" : "mute"}>{m.state}</Pill>
-            <Pill tone={m.refillsLeft === 0 ? "bad" : "warn"}>{m.refillsLeft} repeats</Pill>
-            {m.state === "active" && (
-              <ActionButton
-                tone={requested[m.name] ? "ghost" : "solid"}
-                onClick={() => setRequested((p) => ({ ...p, [m.name]: true }))}
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <RefreshCw className="size-3" />
-                  {requested[m.name] ? "Refill requested" : "Request refill"}
-                </span>
-              </ActionButton>
-            )}
+            <Pill tone="warn">Contact doctor for refills</Pill>
           </div>
         ))}
       </div>

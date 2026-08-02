@@ -11,10 +11,15 @@ export interface IMedicine {
 export interface ConsultationPayload {
   patientId: string;
   appointmentId?: string;
-  chiefComplaint?: string;
-  diagnosis?: string;
-  advice?: string;
+  chiefComplaint: string;
+  diagnosis: string;
+  advice: string;
   medicines: IMedicine[];
+  diagnosticOrders?: {
+    testType: "RADIOLOGY" | "PATHOLOGY";
+    testName: string;
+    clinicalNotes?: string;
+  }[];
   status: "DRAFT" | "COMPLETED";
 }
 

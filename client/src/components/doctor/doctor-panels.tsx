@@ -446,6 +446,7 @@ function ConsultationForm({
   const [diagnosis, setDiagnosis] = useState("");
   const [advice, setAdvice] = useState("");
   const [medicines, setMedicines] = useState<IMedicine[]>([]);
+  const [diagnosticOrders, setDiagnosticOrders] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
 
   // New Medicine Form
@@ -455,6 +456,13 @@ function ConsultationForm({
     frequency: "",
     duration: "",
     instructions: "",
+  });
+
+  // New Diagnostic Order Form
+  const [newOrder, setNewOrder] = useState({
+    testType: "PATHOLOGY" as "PATHOLOGY" | "RADIOLOGY",
+    testName: "",
+    clinicalNotes: "",
   });
 
   const addMedicine = () => {
@@ -470,6 +478,19 @@ function ConsultationForm({
     setMedicines(medicines.filter((_, i) => i !== index));
   };
 
+  const addOrder = () => {
+    if (!newOrder.testName) {
+      toast.error("Please enter a test name");
+      return;
+    }
+    setDiagnosticOrders([...diagnosticOrders, newOrder]);
+    setNewOrder({ testType: "PATHOLOGY", testName: "", clinicalNotes: "" });
+  };
+
+  const removeOrder = (index: number) => {
+    setDiagnosticOrders(diagnosticOrders.filter((_, i) => i !== index));
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -481,6 +502,7 @@ function ConsultationForm({
         diagnosis,
         advice,
         medicines,
+        diagnosticOrders,
         status: "COMPLETED",
       });
       if (res.status === "success") {
@@ -632,6 +654,62 @@ function ConsultationForm({
                 + Add to Prescription
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Diagnostic Orders */}
+        <div className="bg-foreground/[0.02] border border-[var(--hairline)] rounded p-6 mt-6">
+          <h3 className="font-mono font-bold text-lg border-b border-[var(--hairline)] pb-2 mb-4">Diagnostic Orders (Labs / Scans)</h3>
+          
+          {/* Added Orders */}
+          <div className="space-y-2 mb-4">
+            {diagnosticOrders.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No diagnostics ordered.</p>
+            ) : (
+              diagnosticOrders.map((o, i) => (
+                <div key={i} className="flex items-start justify-between bg-background p-3 border border-[var(--hairline)] rounded">
+                  <div>
+                    <span className="mono-label text-xs bg-foreground/[0.06] px-1.5 py-0.5 rounded mr-2">{o.testType}</span>
+                    <span className="font-bold text-sm">{o.testName}</span>
+                    {o.clinicalNotes && <p className="text-xs text-muted-foreground mt-1">Note: {o.clinicalNotes}</p>}
+                  </div>
+                  <button onClick={() => removeOrder(i)} className="text-destructive hover:bg-destructive/10 p-1 rounded transition-colors">
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Add New Order */}
+          <div className="border border-[var(--hairline)] p-4 rounded bg-background">
+             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+               <select
+                 value={newOrder.testType}
+                 onChange={(e) => setNewOrder({ ...newOrder, testType: e.target.value as any })}
+                 className="bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+               >
+                 <option value="PATHOLOGY">Pathology (Lab Test)</option>
+                 <option value="RADIOLOGY">Radiology (Scan/Imaging)</option>
+               </select>
+               <input
+                 type="text"
+                 placeholder="Test Name (e.g. CBC, MRI Brain)"
+                 value={newOrder.testName}
+                 onChange={(e) => setNewOrder({ ...newOrder, testName: e.target.value })}
+                 className="sm:col-span-2 bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+               />
+             </div>
+             <input
+               type="text"
+               placeholder="Clinical Notes / Indications [Optional]"
+               value={newOrder.clinicalNotes}
+               onChange={(e) => setNewOrder({ ...newOrder, clinicalNotes: e.target.value })}
+               className="w-full bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent mb-3"
+             />
+             <button onClick={addOrder} className="w-full bg-primary/10 text-primary font-medium py-2 text-sm hover:bg-primary/20 transition-colors">
+                + Add Diagnostic Order
+             </button>
           </div>
         </div>
       </div>

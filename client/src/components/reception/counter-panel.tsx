@@ -65,7 +65,7 @@ export function CounterPanel() {
                 <Th>Gross</Th>
                 <Th>Coverage</Th>
                 <Th>Net due</Th>
-                <Th />
+                <Th>{" "}</Th>
               </tr>
             </thead>
             <tbody>

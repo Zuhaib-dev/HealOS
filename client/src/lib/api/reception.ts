@@ -1,5 +1,24 @@
 import apiClient from "../api-client";
-import { AppointmentRecord } from "./patient";
+
+export interface AppointmentRecord {
+  _id: string;
+  patient: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+  };
+  doctor: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    department: string;
+  };
+  department: string;
+  date: string;
+  timeSlot: string;
+  status: string;
+}
 
 export interface InvoiceItem {
   description: string;

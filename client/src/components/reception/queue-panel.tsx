@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { Ticket } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { LiveDot, Pill } from "@/components/workspace/ui";
-import { fetchQueueApi } from "@/lib/api/reception";
-import { AppointmentRecord } from "@/lib/api/patient";
+import { fetchQueueApi, AppointmentRecord } from "@/lib/api/reception";
 
 export function QueuePanel() {
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);

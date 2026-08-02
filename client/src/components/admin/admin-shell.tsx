@@ -221,24 +221,26 @@ export function ActionButton({
   tone = "ghost",
   type = "button",
   disabled = false,
+  className,
   onClick,
 }: {
   children: ReactNode;
   tone?: "ghost" | "solid";
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
+  className?: string;
   onClick?: () => void;
 }) {
   return (
     <button
+      onClick={onClick}
       type={type}
       disabled={disabled}
-      onClick={onClick}
-      className={`mono-label px-3.5 py-2 transition-opacity hover:opacity-80 ${
-        disabled ? "opacity-50 cursor-not-allowed" : ""
-      } ${
-        tone === "solid" ? "bg-foreground text-background" : "hairline text-foreground"
-      }`}
+      className={`mono-label inline-flex items-center gap-1.5 px-3 py-1.5 transition-colors disabled:opacity-50 ${
+        tone === "ghost"
+          ? "hover:bg-foreground/[0.04]"
+          : "bg-foreground text-background hover:bg-foreground/90"
+      } ${className || ""}`}
     >
       {children}
     </button>

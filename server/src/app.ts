@@ -54,6 +54,9 @@ app.get("/health", (_req, res) => {
 // ---------------------------
 app.use(API_PREFIX, apiRouter);
 
+import http from "http";
+import { initSocketIO } from "./socket.js";
+
 // ---------------------------
 // Error Handling
 // ---------------------------
@@ -61,14 +64,18 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // ---------------------------
-// Start Server
+// Start Server with Socket.IO
 // ---------------------------
+const server = http.createServer(app);
+initSocketIO(server);
+
 const startServer = async () => {
-  app.listen(envConfig.PORT, () => {
+  server.listen(envConfig.PORT, () => {
     console.log(`\n🏥 ${APP_NAME} Server v${APP_VERSION}`);
     console.log(`🌍 Environment: ${envConfig.NODE_ENV}`);
     console.log(`🚀 Server running on: http://localhost:${envConfig.PORT}`);
     console.log(`📡 API available at: http://localhost:${envConfig.PORT}${API_PREFIX}`);
+    console.log(`⚡ Realtime Socket.IO active at: ws://localhost:${envConfig.PORT}`);
     console.log(`❤️  Health check: http://localhost:${envConfig.PORT}/health\n`);
   });
 
@@ -76,7 +83,6 @@ const startServer = async () => {
     await connectDB();
   } catch (error) {
     console.error("⚠️ MongoDB connection warning:", error);
-    console.log("👉 Please start MongoDB (e.g. `docker compose up -d mongodb`) to enable database features.\n");
   }
 };
 

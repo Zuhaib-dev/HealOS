@@ -27,6 +27,8 @@ const updatePatientProfileSchema = z.object({
   address: z.string().optional(),
 });
 
+import { emitUserRoleUpdated, emitNewOnboardingRequest } from "../socket.js";
+
 // ==========================================
 // 1. Patient Profile Onboarding
 // ==========================================
@@ -57,6 +59,7 @@ export const updatePatientProfile = async (req: Request, res: Response): Promise
     if (userObj) {
       if (userObj.role === UserRole.USER) {
         userObj.role = UserRole.PATIENT;
+        emitUserRoleUpdated(userObj._id.toString(), UserRole.PATIENT);
       }
       if (parsed.data.emergencyPhone) {
         userObj.phone = parsed.data.emergencyPhone;
@@ -133,6 +136,8 @@ export const applyForRole = async (req: Request, res: Response): Promise<void> =
       status: ProfileStatus.PENDING,
       onboardingStep: 1,
     });
+
+    emitNewOnboardingRequest(newProfile);
 
     res.status(StatusCodes.CREATED).json({
       success: true,
@@ -219,6 +224,7 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
     if (user) {
       user.role = profile.requestedRole;
       await user.save();
+      emitUserRoleUpdated(user._id.toString(), profile.requestedRole);
     }
 
     res.status(StatusCodes.OK).json({

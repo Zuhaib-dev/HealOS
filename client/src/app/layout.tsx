@@ -36,6 +36,8 @@ export const metadata: Metadata = {
   ],
 };
 
+import { RealtimeSocketProvider } from "@/components/providers/socket-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -56,7 +58,9 @@ export default function RootLayout({
         >
           <QueryProvider>
             <AuthSessionBridge />
-            {children}
+            <RealtimeSocketProvider>
+              {children}
+            </RealtimeSocketProvider>
             <AuthModal />
             <Toaster position="top-right" />
           </QueryProvider>

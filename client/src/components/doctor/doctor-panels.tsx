@@ -156,7 +156,7 @@ export function ShiftPanel() {
                 key={t.t}
                 className="hairline-b flex cursor-pointer items-center gap-3 py-3 last:border-b-0"
               >
-                <input type="checkbox" className="accent-[var(--color-accent)]" />
+                <input type="checkbox" className="accent-(--color-accent)" />
                 <span className="text-sm">{t.t}</span>
                 <span className="mono-label text-muted-foreground ml-auto">{t.bed}</span>
               </label>
@@ -212,7 +212,7 @@ export function RoundsPanel() {
                   NEWS2 {p.news2}
                 </span>
                 {p.tasks.map((t) => (
-                  <span key={t} className="mono-label bg-foreground/[0.05] px-2 py-1">
+                  <span key={t} className="mono-label bg-foreground/5 px-2 py-1">
                     {t}
                   </span>
                 ))}
@@ -311,7 +311,7 @@ export function ClinicPanel() {
         actions={<ActionButton tone="solid" onClick={() => loadAppointments()}>Refresh schedule</ActionButton>}
       />
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px]">
+        <table className="w-full min-w-180">
           <thead className="hairline-b">
             <tr>
               <Th>Date & Time</Th>
@@ -536,7 +536,7 @@ function ConsultationForm({
       <div className="p-6 max-w-4xl w-full mx-auto space-y-8">
         
         {/* Vitals / Reason */}
-        <div className="bg-foreground/[0.02] border border-[var(--hairline)] rounded p-4">
+        <div className="bg-foreground/2 border border-(--hairline) rounded p-4">
           <p className="mono-label text-muted-foreground mb-1">Reason for Visit</p>
           <p className="font-medium text-foreground">{appointment.reason}</p>
         </div>
@@ -549,7 +549,7 @@ function ConsultationForm({
               <textarea
                 value={chiefComplaint}
                 onChange={(e) => setChiefComplaint(e.target.value)}
-                className="w-full bg-transparent border border-[var(--hairline)] p-3 min-h-[100px] outline-none focus:border-accent"
+                className="w-full bg-transparent border border-(--hairline) p-3 min-h-25 outline-none focus:border-accent"
                 placeholder="Patient presents with..."
               />
             </div>
@@ -559,7 +559,7 @@ function ConsultationForm({
                 type="text"
                 value={diagnosis}
                 onChange={(e) => setDiagnosis(e.target.value)}
-                className="w-full bg-transparent border border-[var(--hairline)] p-3 outline-none focus:border-accent"
+                className="w-full bg-transparent border border-(--hairline) p-3 outline-none focus:border-accent"
                 placeholder="e.g. Acute Viral Pharyngitis"
               />
             </div>
@@ -568,7 +568,7 @@ function ConsultationForm({
               <textarea
                 value={advice}
                 onChange={(e) => setAdvice(e.target.value)}
-                className="w-full bg-transparent border border-[var(--hairline)] p-3 min-h-[100px] outline-none focus:border-accent"
+                className="w-full bg-transparent border border-(--hairline) p-3 min-h-25 outline-none focus:border-accent"
                 placeholder="Dietary changes, rest..."
               />
             </div>
@@ -576,7 +576,7 @@ function ConsultationForm({
 
           {/* Prescription Writer */}
           <div className="space-y-4">
-            <h3 className="font-mono font-bold text-lg border-b border-[var(--hairline)] pb-2">Rx: Prescription</h3>
+            <h3 className="font-mono font-bold text-lg border-b border-(--hairline) pb-2">Rx: Prescription</h3>
             
             {/* Added Medicines */}
             <div className="space-y-2 mb-4">
@@ -584,7 +584,7 @@ function ConsultationForm({
                 <p className="text-sm text-muted-foreground italic">No medicines added.</p>
               ) : (
                 medicines.map((m, i) => (
-                  <div key={i} className="flex items-start justify-between bg-foreground/[0.03] p-3 border border-[var(--hairline)] rounded">
+                  <div key={i} className="flex items-start justify-between bg-foreground/3 p-3 border border-(--hairline) rounded">
                     <div>
                       <p className="font-bold text-sm">{m.name} - <span className="text-muted-foreground">{m.dosage}</span></p>
                       <p className="text-xs text-muted-foreground">{m.frequency} x {m.duration}</p>
@@ -599,7 +599,7 @@ function ConsultationForm({
             </div>
 
             {/* Add New Medicine */}
-            <div className="border border-[var(--hairline)] p-4 rounded bg-background">
+            <div className="border border-(--hairline) p-4 rounded bg-background">
               <p className="mono-label text-xs mb-3 text-brass">Add Medicine (Free Text / Search)</p>
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <input
@@ -607,7 +607,7 @@ function ConsultationForm({
                   placeholder="Drug Name (e.g. Paracetamol)"
                   value={newMed.name}
                   onChange={(e) => setNewMed({ ...newMed, name: e.target.value })}
-                  className="bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+                  className="bg-transparent border border-(--hairline) p-2 text-sm outline-none focus:border-accent"
                   list="common-drugs"
                 />
                 <datalist id="common-drugs">
@@ -626,21 +626,21 @@ function ConsultationForm({
                   placeholder="Dosage (e.g. 500mg)"
                   value={newMed.dosage}
                   onChange={(e) => setNewMed({ ...newMed, dosage: e.target.value })}
-                  className="bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+                  className="bg-transparent border border-(--hairline) p-2 text-sm outline-none focus:border-accent"
                 />
                 <input
                   type="text"
                   placeholder="Frequency (e.g. 1-0-1)"
                   value={newMed.frequency}
                   onChange={(e) => setNewMed({ ...newMed, frequency: e.target.value })}
-                  className="bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+                  className="bg-transparent border border-(--hairline) p-2 text-sm outline-none focus:border-accent"
                 />
                 <input
                   type="text"
                   placeholder="Duration (e.g. 5 days)"
                   value={newMed.duration}
                   onChange={(e) => setNewMed({ ...newMed, duration: e.target.value })}
-                  className="bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+                  className="bg-transparent border border-(--hairline) p-2 text-sm outline-none focus:border-accent"
                 />
               </div>
               <input
@@ -648,7 +648,7 @@ function ConsultationForm({
                 placeholder="Instructions (e.g. After food) [Optional]"
                 value={newMed.instructions}
                 onChange={(e) => setNewMed({ ...newMed, instructions: e.target.value })}
-                className="w-full bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent mb-3"
+                className="w-full bg-transparent border border-(--hairline) p-2 text-sm outline-none focus:border-accent mb-3"
               />
               <button onClick={addMedicine} className="w-full bg-accent/10 text-accent font-medium py-2 text-sm hover:bg-accent/20 transition-colors">
                 + Add to Prescription
@@ -658,8 +658,8 @@ function ConsultationForm({
         </div>
 
         {/* Diagnostic Orders */}
-        <div className="bg-foreground/[0.02] border border-[var(--hairline)] rounded p-6 mt-6">
-          <h3 className="font-mono font-bold text-lg border-b border-[var(--hairline)] pb-2 mb-4">Diagnostic Orders (Labs / Scans)</h3>
+        <div className="bg-foreground/2 border border-(--hairline) rounded p-6 mt-6">
+          <h3 className="font-mono font-bold text-lg border-b border-(--hairline) pb-2 mb-4">Diagnostic Orders (Labs / Scans)</h3>
           
           {/* Added Orders */}
           <div className="space-y-2 mb-4">
@@ -667,9 +667,9 @@ function ConsultationForm({
               <p className="text-sm text-muted-foreground italic">No diagnostics ordered.</p>
             ) : (
               diagnosticOrders.map((o, i) => (
-                <div key={i} className="flex items-start justify-between bg-background p-3 border border-[var(--hairline)] rounded">
+                <div key={i} className="flex items-start justify-between bg-background p-3 border border-(--hairline) rounded">
                   <div>
-                    <span className="mono-label text-xs bg-foreground/[0.06] px-1.5 py-0.5 rounded mr-2">{o.testType}</span>
+                    <span className="mono-label text-xs bg-foreground/6 px-1.5 py-0.5 rounded mr-2">{o.testType}</span>
                     <span className="font-bold text-sm">{o.testName}</span>
                     {o.clinicalNotes && <p className="text-xs text-muted-foreground mt-1">Note: {o.clinicalNotes}</p>}
                   </div>
@@ -682,12 +682,12 @@ function ConsultationForm({
           </div>
 
           {/* Add New Order */}
-          <div className="border border-[var(--hairline)] p-4 rounded bg-background">
+          <div className="border border-(--hairline) p-4 rounded bg-background">
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                <select
                  value={newOrder.testType}
                  onChange={(e) => setNewOrder({ ...newOrder, testType: e.target.value as any })}
-                 className="bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+                 className="bg-transparent border border-(--hairline) p-2 text-sm outline-none focus:border-accent"
                >
                  <option value="PATHOLOGY">Pathology (Lab Test)</option>
                  <option value="RADIOLOGY">Radiology (Scan/Imaging)</option>
@@ -697,7 +697,7 @@ function ConsultationForm({
                  placeholder="Test Name (e.g. CBC, MRI Brain)"
                  value={newOrder.testName}
                  onChange={(e) => setNewOrder({ ...newOrder, testName: e.target.value })}
-                 className="sm:col-span-2 bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+                 className="sm:col-span-2 bg-transparent border border-(--hairline) p-2 text-sm outline-none focus:border-accent"
                />
              </div>
              <input
@@ -705,7 +705,7 @@ function ConsultationForm({
                placeholder="Clinical Notes / Indications [Optional]"
                value={newOrder.clinicalNotes}
                onChange={(e) => setNewOrder({ ...newOrder, clinicalNotes: e.target.value })}
-               className="w-full bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent mb-3"
+               className="w-full bg-transparent border border-(--hairline) p-2 text-sm outline-none focus:border-accent mb-3"
              />
              <button onClick={addOrder} className="w-full bg-primary/10 text-primary font-medium py-2 text-sm hover:bg-primary/20 transition-colors">
                 + Add Diagnostic Order
@@ -766,7 +766,7 @@ export function ResultsPanel() {
         ))}
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px]">
+        <table className="w-full min-w-205">
           <thead className="hairline-b">
             <tr>
               <Th>At</Th>
@@ -849,7 +849,7 @@ export function OrdersPanel() {
         actions={<ActionButton tone="solid">New order</ActionButton>}
       />
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px]">
+        <table className="w-full min-w-190">
           <thead className="hairline-b">
             <tr>
               <Th>Order</Th>
@@ -927,7 +927,7 @@ export function NotesPanel() {
         }
       />
       <div className="grid lg:grid-cols-[220px_1fr]">
-        <div className="hairline-b border-r border-[var(--hairline)] p-4">
+        <div className="hairline-b border-r border-(--hairline) p-4">
           <p className="mono-label text-muted-foreground">Templates</p>
           <div className="mt-3 flex flex-col gap-1">
             {noteTemplates.map((t) => (

@@ -179,7 +179,7 @@ export function UsersPanel() {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1000px]">
+        <table className="w-full min-w-250">
           <thead className="hairline-b">
             <tr>
               <Th>User</Th>
@@ -342,7 +342,7 @@ export function PatientsPanel() {
         />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px]">
+        <table className="w-full min-w-215">
           <thead className="hairline-b">
             <tr>
               <Th>Patient ID</Th>
@@ -432,7 +432,7 @@ export function SchedulePanel() {
         }
       />
       <div className="overflow-x-auto px-5 py-6 sm:px-8">
-        <div className="min-w-[820px]">
+        <div className="min-w-205">
           <div className="mono-label text-muted-foreground flex pl-28">
             {hours.map((h) => (
               <span key={h} className="flex-1">
@@ -471,7 +471,7 @@ export function SchedulePanel() {
                           </span>
                           {s.state === "in-theatre" && (
                             <motion.span
-                              className="bg-accent absolute top-0 right-0 h-full w-[2px]"
+                              className="bg-accent absolute top-0 right-0 h-full w-0.5"
                               animate={{ opacity: [0.2, 1, 0.2] }}
                               transition={{ duration: 2, repeat: Infinity }}
                             />
@@ -512,7 +512,7 @@ export function RolesPanel() {
         actions={<ActionButton tone="solid">New role</ActionButton>}
       />
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px]">
+        <table className="w-full min-w-190">
           <thead className="hairline-b">
             <tr>
               <Th>Role</Th>

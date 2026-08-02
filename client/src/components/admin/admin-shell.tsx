@@ -238,7 +238,7 @@ export function ActionButton({
       disabled={disabled}
       className={`mono-label inline-flex items-center gap-1.5 px-3 py-1.5 transition-colors disabled:opacity-50 ${
         tone === "ghost"
-          ? "hover:bg-foreground/[0.04]"
+          ? "hover:bg-foreground/4"
           : "bg-foreground text-background hover:bg-foreground/90"
       } ${className || ""}`}
     >

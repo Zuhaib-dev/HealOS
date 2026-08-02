@@ -56,7 +56,7 @@ export function CounterPanel() {
 
       <div className="grid gap-px lg:grid-cols-[1fr_320px]" style={{ background: "var(--hairline)" }}>
         <div className="bg-background overflow-x-auto p-0">
-          <table className="w-full min-w-[800px]">
+          <table className="w-full min-w-200">
             <thead className="hairline-b">
               <tr>
                 <Th>Invoice</Th>
@@ -80,7 +80,7 @@ export function CounterPanel() {
                 const net = b.totalAmount - (b.insuranceCoverage || 0);
                 const isPaid = paid[b._id];
                 return (
-                  <tr key={b._id} className={`hairline-b ${isPaid ? "bg-accent/5" : "hover:bg-foreground/[0.02]"}`}>
+                  <tr key={b._id} className={`hairline-b ${isPaid ? "bg-accent/5" : "hover:bg-foreground/2"}`}>
                     <Td>
                       <span className="mono-label">{b._id.slice(-6)}</span>
                     </Td>
@@ -137,7 +137,7 @@ export function CounterPanel() {
                 type="button"
                 onClick={() => setMode(m.id as any)}
                 className={`flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-                  mode === m.id ? "bg-foreground text-background" : "hairline hover:bg-foreground/[0.02]"
+                  mode === m.id ? "bg-foreground text-background" : "hairline hover:bg-foreground/2"
                 }`}
               >
                 <m.icon className="size-4" />

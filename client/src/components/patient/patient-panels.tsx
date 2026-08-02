@@ -373,7 +373,7 @@ export function BookPanel() {
                   className={`mono-label px-3 py-2 text-left transition-colors cursor-pointer rounded ${
                     dept.id === d.id
                       ? "bg-accent/15 text-foreground font-semibold"
-                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.03]"
+                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/3"
                   }`}
                 >
                   {d.label}
@@ -432,7 +432,7 @@ export function BookPanel() {
                     className={`mono-label px-4 py-2.5 text-xs rounded transition-colors cursor-pointer ${
                       time === t
                         ? "bg-primary text-primary-foreground font-bold shadow-sm"
-                        : "hairline hover:bg-foreground/[0.03]"
+                        : "hairline hover:bg-foreground/3"
                     }`}
                   >
                     {t}
@@ -660,7 +660,7 @@ export function ReportsPanel() {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px]">
+        <table className="w-full min-w-215">
           <thead className="hairline-b">
             <tr>
               <Th>Document</Th>
@@ -673,7 +673,7 @@ export function ReportsPanel() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="hairline-b hover:bg-foreground/[0.02]">
+              <tr key={r.id} className="hairline-b hover:bg-foreground/2">
                 <Td>
                   <span className="flex items-center gap-2">
                     <FileText className="text-accent size-3.5 shrink-0" />
@@ -827,7 +827,7 @@ export function BillingPanel() {
       </div>
 
       <div className="hairline-t overflow-x-auto">
-        <table className="w-full min-w-[820px]">
+        <table className="w-full min-w-205">
           <thead className="hairline-b">
             <tr>
               <Th>Invoice</Th>
@@ -842,7 +842,7 @@ export function BillingPanel() {
           </thead>
           <tbody>
             {bills.map((b) => (
-              <tr key={b.id} className="hairline-b hover:bg-foreground/[0.02]">
+              <tr key={b.id} className="hairline-b hover:bg-foreground/2">
                 <Td>
                   <span className="mono-label">{b.ref}</span>
                 </Td>
@@ -921,7 +921,7 @@ export function MessagesPanel() {
             {sent.map((s, i) => (
               <div key={`sent-${i}`} className="bg-background p-5 sm:px-8">
                 <div className="flex items-center gap-3">
-                  <span className="bg-foreground/[0.06] mono-label grid size-8 place-items-center">
+                  <span className="bg-foreground/6 mono-label grid size-8 place-items-center">
                     ME
                   </span>
                   <div>
@@ -1176,7 +1176,7 @@ export function ProfilePanel() {
                   <span className="text-sm">{c.t}</span>
                   <span
                     className={`mono-label px-2 py-1 ${
-                      c.on ? "bg-accent/12 text-brass font-mono" : "bg-foreground/[0.04] text-muted-foreground"
+                      c.on ? "bg-accent/12 text-brass font-mono" : "bg-foreground/4 text-muted-foreground"
                     }`}
                   >
                     {c.on ? "active" : "off"}

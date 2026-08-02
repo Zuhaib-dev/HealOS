@@ -76,7 +76,7 @@ export function WorkspaceShell({
       </header>
 
       <div className="flex">
-        <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 flex-col border-r border-[var(--hairline)] p-3 md:flex">
+        <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 flex-col border-r border-(--hairline) p-3 md:flex">
           <nav className="flex flex-col gap-0.5">
             {sections.map((s, i) => {
               const Icon = s.icon;
@@ -89,13 +89,13 @@ export function WorkspaceShell({
                   className={`mono-label group relative flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
                     isActive
                       ? "bg-accent/10 text-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.03]"
+                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/3"
                   }`}
                 >
                   {isActive && (
                     <motion.span
                       layoutId={`${navId}-nav-marker`}
-                      className="bg-accent absolute top-0 left-0 h-full w-[2px]"
+                      className="bg-accent absolute top-0 left-0 h-full w-0.5"
                     />
                   )}
                   <span className="text-accent/60">{String(i + 1).padStart(2, "0")}</span>

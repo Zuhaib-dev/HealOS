@@ -158,7 +158,7 @@ export function WorklistPanel() {
       </div>
 
       <div className="hairline-t overflow-x-auto">
-        <table className="w-full min-w-[1000px]">
+        <table className="w-full min-w-250">
           <thead className="hairline-b">
             <tr>
               <Th>Accession</Th>
@@ -174,7 +174,7 @@ export function WorklistPanel() {
           <tbody>
             {rows.map((w) => {
               return (
-                <tr key={w._id} className="hairline-b hover:bg-foreground/[0.02]">
+                <tr key={w._id} className="hairline-b hover:bg-foreground/2">
                   <Td>
                     <span className="mono-label truncate block w-24" title={w._id}>{w._id}</span>
                   </Td>
@@ -339,7 +339,7 @@ export function UploadPanel() {
               addFiles(e.dataTransfer.files);
             }}
             className={`relative grid place-items-center border border-dashed px-6 py-12 text-center transition-colors ${
-              dragging ? "border-accent bg-accent/5" : "border-[var(--hairline)]"
+              dragging ? "border-accent bg-accent/5" : "border-(--hairline)"
             }`}
           >
             <input
@@ -406,7 +406,7 @@ export function UploadPanel() {
                   {it.error ? (
                     <p className="mono-label text-destructive mt-1">{it.error}</p>
                   ) : (
-                    <div className="bg-foreground/[0.06] mt-2 h-[3px] w-full">
+                    <div className="bg-foreground/6 mt-2 h-0.75 w-full">
                       <motion.div
                         className="bg-accent h-full"
                         animate={{ width: `${it.progress}%` }}
@@ -530,7 +530,7 @@ export function ReportingPanel() {
                 className={`mono-label px-3 py-2 text-left transition-colors ${
                   tpl.id === t.id
                     ? "bg-accent/10 text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.03]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-foreground/3"
                 }`}
               >
                 {t.label}
@@ -596,7 +596,7 @@ export function ArchivePanel() {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px]">
+        <table className="w-full min-w-225">
           <thead className="hairline-b">
             <tr>
               <Th>File</Th>
@@ -610,7 +610,7 @@ export function ArchivePanel() {
           </thead>
           <tbody>
             {rows.map((d) => (
-              <tr key={d.id} className="hairline-b hover:bg-foreground/[0.02]">
+              <tr key={d.id} className="hairline-b hover:bg-foreground/2">
                 <Td>
                   <span className="flex items-center gap-2">
                     <FileText className="text-accent size-3.5" />

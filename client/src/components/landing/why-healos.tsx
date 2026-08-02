@@ -11,7 +11,7 @@ export function WhyHealOS() {
   return (
     <section id="evidence" className="relative">
       <div className="bg-scanlines pointer-events-none absolute inset-0 opacity-40" />
-      <div className="relative mx-auto max-w-[1400px] px-5 sm:px-8">
+      <div className="relative mx-auto max-w-350 px-5 sm:px-8">
         <div className="hairline-t grid grid-cols-1 lg:grid-cols-12">
           <div className="lg:col-span-5 lg:py-24 lg:pr-14">
             <div className="py-14 lg:py-0">
@@ -56,10 +56,10 @@ export function WhyHealOS() {
                 <span>Workflow load index</span>
                 <span className="flex items-center gap-4">
                   <span className="flex items-center gap-2">
-                    <span className="bg-foreground/25 inline-block h-[3px] w-4" /> before
+                    <span className="bg-foreground/25 inline-block h-0.75 w-4" /> before
                   </span>
                   <span className="text-brass flex items-center gap-2">
-                    <span className="bg-accent inline-block h-[3px] w-4" /> HealOS
+                    <span className="bg-accent inline-block h-0.75 w-4" /> HealOS
                   </span>
                 </span>
               </div>

@@ -18,6 +18,15 @@ export default function ReceptionPage() {
   const [active, setActive] = useState<string>("registration");
   const { user } = useAuthStore();
 
+  const getInitials = (name?: string) => {
+    if (!name) return "FD";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
     <WorkspaceShell
       navId="reception"
@@ -26,7 +35,7 @@ export default function ReceptionPage() {
       sections={sections}
       active={active}
       onSelect={setActive}
-      user={{ name: user?.name || "Front Desk", role: "Front desk · counter 2", initials: "FD" }}
+      user={{ name: user?.name || "Front Desk", role: user?.role || "Front desk", initials: getInitials(user?.name) }}
       statusTitle="Counter"
       statusLine="Counter 2 open"
       statusNote="23 tokens waiting · float balanced"

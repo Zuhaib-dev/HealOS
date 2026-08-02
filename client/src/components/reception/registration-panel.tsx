@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { UserPlus, Check, IdCard } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
@@ -15,7 +15,7 @@ const deskStats = [
   { label: "Insurance captured", value: "96.4%", note: "target 95%" },
 ];
 
-const departments = ["General medicine", "Orthopaedics", "Paediatrics", "Cardiology", "OBG", "ENT"];
+import { fetchAvailableDoctorsApi } from "@/lib/api/appointment";
 
 export function RegistrationPanel() {
   const [form, setForm] = useState({
@@ -26,13 +26,24 @@ export function RegistrationPanel() {
     dateOfBirth: "",
     gender: "",
     address: "",
-    department: departments[0]!,
+    department: "",
     payer: "self",
     policyNumber: "",
   });
   
   const [loading, setLoading] = useState(false);
   const [issued, setIssued] = useState<any>(null); // To store response data
+  const [departments, setDepartments] = useState<string[]>(["General medicine"]);
+
+  useEffect(() => {
+    fetchAvailableDoctorsApi().then(res => {
+      if (res.success && res.doctors.length > 0) {
+        const depts = Array.from(new Set(res.doctors.map(d => d.department)));
+        setDepartments(depts);
+        setForm(f => ({ ...f, department: depts[0] }));
+      }
+    }).catch(console.error);
+  }, []);
 
   const field = (k: keyof typeof form, label: string, placeholder = "") => (
     <label className="mono-label text-muted-foreground block">

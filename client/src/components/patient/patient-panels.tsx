@@ -616,7 +616,7 @@ export function ReportsPanel() {
       kind: o.testType,
       dept: o.doctor?.firstName ? `Dr. ${o.doctor.firstName} ${o.doctor.lastName}` : "Doctor",
       date: new Date(o.createdAt).toLocaleDateString(),
-      status: o.status === "COMPLETED" ? "ready" : "pending",
+      status: o.status === "REPORTED" ? "ready" : "pending",
       flagged: false,
       pages: 0,
       size: ""

@@ -19,7 +19,7 @@ export interface DiagnosticOrderRecord {
   testName: string;
   priority: "ROUTINE" | "URGENT" | "STAT";
   clinicalNotes?: string;
-  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  status: "PENDING" | "IN_PROGRESS" | "REPORTED" | "CANCELLED";
   report?: string;
   createdAt: string;
 }
@@ -32,7 +32,7 @@ export const fetchPendingOrdersApi = async () => {
   return response.data;
 };
 
-export const updateOrderStatusApi = async (id: string, status: "IN_PROGRESS" | "COMPLETED" | "CANCELLED") => {
+export const updateOrderStatusApi = async (id: string, status: "IN_PROGRESS" | "REPORTED" | "CANCELLED") => {
   const response = await apiClient.put<{
     status: string;
     data: { order: DiagnosticOrderRecord };

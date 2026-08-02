@@ -110,7 +110,7 @@ export function WorklistPanel() {
     loadOrders();
   }, []);
 
-  const handleUpdateStatus = async (id: string, newStatus: "IN_PROGRESS" | "COMPLETED" | "CANCELLED") => {
+  const handleUpdateStatus = async (id: string, newStatus: "IN_PROGRESS" | "REPORTED" | "CANCELLED") => {
     try {
       const res = await updateOrderStatusApi(id, newStatus);
       if (res.status === "success") {
@@ -127,7 +127,7 @@ export function WorklistPanel() {
       ? true
       : filter === "stat"
         ? w.priority === "STAT"
-        : w.status !== "COMPLETED",
+        : w.status !== "REPORTED",
   );
 
   return (
@@ -250,7 +250,7 @@ export function UploadPanel() {
   useEffect(() => {
     fetchPendingOrdersApi().then(res => {
       if (res.status === "success") {
-        const pending = res.data.orders.filter(o => o.status !== "COMPLETED");
+        const pending = res.data.orders.filter(o => o.status !== "REPORTED");
         setOrders(pending);
         if (pending.length > 0 && !orderId) setOrderId(pending[0]._id);
       }

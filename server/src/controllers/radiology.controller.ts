@@ -13,10 +13,10 @@ if (!fs.existsSync(uploadDir)) {
 
 // Configure Multer for local storage
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: function (_req, _file, cb) {
     cb(null, uploadDir);
   },
-  filename: function (req, file, cb) {
+  filename: function (_req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
     cb(null, file.fieldname + "-" + uniqueSuffix + ext);
@@ -116,8 +116,7 @@ export const uploadReport = async (req: Request, res: Response) => {
       comments,
     });
 
-    order.status = "COMPLETED";
-    order.report = report._id;
+    order.status = "REPORTED" as any;
     await order.save();
 
     res.status(201).json({

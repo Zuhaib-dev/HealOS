@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { ArrowUpRight, Check, X, TriangleAlert } from "lucide-react";
+import { useAuthStore } from "@/store/use-auth-store";
 import {
   approvals,
   staff,
@@ -162,12 +163,14 @@ function OccupancyGauge() {
 }
 
 export function OverviewPanel() {
+  const { user } = useAuthStore();
+
   return (
     <section>
       <PanelHeader
         index="01 / OVERVIEW"
-        title="Facility command"
-        note="Live census, staffing load, revenue and safety signals across every department."
+        title={`Facility command — ${user?.name || "Superadmin"}`}
+        note={`Role: ${user?.role || "ADMIN"} · System Administrator: ${user?.email || "N/A"}`}
         actions={
           <>
             <ActionButton>Export shift report</ActionButton>
@@ -237,7 +240,6 @@ export function OverviewPanel() {
   );
 }
 
-import { useEffect } from "react";
 import {
   fetchPendingOnboardingRequestsApi,
   approveOnboardingRequestApi,

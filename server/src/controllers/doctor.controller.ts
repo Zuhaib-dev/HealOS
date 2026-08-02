@@ -42,6 +42,7 @@ export const saveConsultation = async (req: Request, res: Response) => {
       diagnosis,
       advice,
       medicines,
+      diagnosticOrders, // array of { testType, testName, clinicalNotes }
       status, // DRAFT or COMPLETED
     } = req.body;
 
@@ -80,6 +81,20 @@ export const saveConsultation = async (req: Request, res: Response) => {
     // If completed, update appointment status
     if (status === "COMPLETED" && appointmentId) {
       await Appointment.findByIdAndUpdate(appointmentId, { status: "COMPLETED" });
+    }
+
+    // Process diagnosticOrders
+    if (diagnosticOrders && Array.isArray(diagnosticOrders)) {
+      const ordersToCreate = diagnosticOrders.map(order => ({
+        patient: patientId,
+        doctor: doctorId,
+        consultation: consultation._id,
+        testType: order.testType,
+        testName: order.testName,
+        priority: order.priority || "ROUTINE",
+        clinicalNotes: order.clinicalNotes || chiefComplaint,
+      }));
+      await DiagnosticOrder.insertMany(ordersToCreate);
     }
 
     res.status(200).json({

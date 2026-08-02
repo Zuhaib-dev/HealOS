@@ -8,6 +8,7 @@ import onboardingRouter from "./onboarding.routes.js";
 import appointmentRouter from "./appointment.routes.js";
 import adminRouter from "./admin.routes.js";
 import doctorRouter from "./doctor.routes.js";
+import patientRouter from "./patient.routes.js";
 
 export const apiRouter = Router();
 
@@ -38,3 +39,4 @@ apiRouter.use("/onboarding", onboardingRouter);
 apiRouter.use("/appointments", appointmentRouter);
 apiRouter.use("/admin", adminRouter);
 apiRouter.use("/doctor", doctorRouter);
+apiRouter.use("/patient", patientRouter);

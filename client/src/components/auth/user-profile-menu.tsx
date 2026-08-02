@@ -88,6 +88,8 @@ export function UserProfileMenu() {
         return "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30";
       case "PHARMACIST":
         return "bg-pink-500/15 text-pink-600 dark:text-pink-400 border-pink-500/30";
+      case "NURSE":
+        return "bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30";
       case "patient":
       case "PATIENT":
       case "USER":
@@ -110,6 +112,8 @@ export function UserProfileMenu() {
         return "/reception";
       case "PHARMACIST":
         return "/pharmacy";
+      case "NURSE":
+        return "/nurse";
       default:
         return "/patient";
     }

@@ -9,7 +9,8 @@ export type UserRole =
   | "DOCTOR"
   | "RADIOLOGIST"
   | "RECEPTIONIST"
-  | "PHARMACIST";
+  | "PHARMACIST"
+  | "NURSE";
 
 export interface AuthUser {
   id: string;

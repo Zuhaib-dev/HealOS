@@ -33,6 +33,8 @@ export default function LandingPage() {
       router.replace("/reception");
     } else if (role === "PHARMACIST") {
       router.replace("/pharmacy");
+    } else if (role === "NURSE") {
+      router.replace("/nurse");
     }
   }, [_hasHydrated, isAuthenticated, user, router]);
 

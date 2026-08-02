@@ -58,6 +58,8 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
         targetPath = "/doctor";
       } else if (normalized === "RADIOLOGIST") {
         targetPath = "/radiology";
+      } else if (normalized === "RECEPTIONIST") {
+        targetPath = "/reception";
       } else if (normalized === "PATIENT" || normalized === "LEGACY_PATIENT") {
         targetPath = "/patient";
       } else if (normalized === "USER") {

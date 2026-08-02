@@ -34,7 +34,7 @@ import { toast } from "sonner";
 export function UserProfileMenu() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuthStore();
+  const { user, logout, closeAuthModal } = useAuthStore();
 
   const [patientProfile, setPatientProfile] = useState<PatientProfileData | null>(null);
 
@@ -109,6 +109,7 @@ export function UserProfileMenu() {
 
   const handleLogout = async () => {
     logout();
+    closeAuthModal();
     try {
       await signOut({ redirect: false });
     } catch {

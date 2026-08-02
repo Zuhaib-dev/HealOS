@@ -73,7 +73,6 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
       // 1. Unauthenticated case
       if (!token) {
         if (isActive) setIsChecking(false);
-        openAuthModal("login");
         if (pathname !== "/") {
           router.push("/");
         }
@@ -98,7 +97,6 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
       } catch {
         // Only log out if token verification actually failed
         logout();
-        openAuthModal("login");
         if (pathname !== "/") {
           router.push("/");
         }

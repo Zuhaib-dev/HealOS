@@ -7,6 +7,7 @@ import authRouter from "./auth.routes.js";
 import onboardingRouter from "./onboarding.routes.js";
 import appointmentRouter from "./appointment.routes.js";
 import adminRouter from "./admin.routes.js";
+import doctorRouter from "./doctor.routes.js";
 
 export const apiRouter = Router();
 
@@ -24,6 +25,7 @@ apiRouter.get("/", (_req, res) => {
       onboarding: "/api/v1/onboarding",
       appointments: "/api/v1/appointments",
       admin: "/api/v1/admin",
+      doctor: "/api/v1/doctor",
     },
   });
 });
@@ -35,3 +37,4 @@ apiRouter.use("/auth", authRouter);
 apiRouter.use("/onboarding", onboardingRouter);
 apiRouter.use("/appointments", appointmentRouter);
 apiRouter.use("/admin", adminRouter);
+apiRouter.use("/doctor", doctorRouter);

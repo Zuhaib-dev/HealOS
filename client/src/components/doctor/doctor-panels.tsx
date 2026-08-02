@@ -9,6 +9,7 @@ import {
   AppointmentRecord,
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
+import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import {
   shiftStats,
   rounds,
@@ -249,6 +250,7 @@ export function ClinicPanel() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [activeConsultation, setActiveConsultation] = useState<AppointmentRecord | null>(null);
 
   const loadAppointments = async () => {
     try {
@@ -272,13 +274,13 @@ export function ClinicPanel() {
     let notes: string | undefined = undefined;
 
     if (status === "COMPLETED") {
-      const input = window.prompt("Add clinical consultation note for patient file:");
-      if (input !== null) notes = input;
+      setActiveConsultation(appointments.find((a) => a._id === id) || null);
+      return;
     }
 
     try {
       setBusyId(id);
-      const res = await updateAppointmentStatusApi(id, status, notes);
+      const res = await updateAppointmentStatusApi(id, status);
       if (res.success) {
         toast.success(`Appointment marked as ${status}`);
         loadAppointments();
@@ -291,7 +293,17 @@ export function ClinicPanel() {
   };
 
   return (
-    <div>
+    <div className="relative">
+      {activeConsultation && (
+        <ConsultationForm
+          appointment={activeConsultation}
+          onBack={() => setActiveConsultation(null)}
+          onComplete={() => {
+            setActiveConsultation(null);
+            loadAppointments();
+          }}
+        />
+      )}
       <PanelHeader
         index="03 / clinic"
         title="Assigned Clinic Appointments"
@@ -416,6 +428,212 @@ export function ClinicPanel() {
             )}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+function ConsultationForm({
+  appointment,
+  onBack,
+  onComplete,
+}: {
+  appointment: AppointmentRecord;
+  onBack: () => void;
+  onComplete: () => void;
+}) {
+  const [chiefComplaint, setChiefComplaint] = useState("");
+  const [diagnosis, setDiagnosis] = useState("");
+  const [advice, setAdvice] = useState("");
+  const [medicines, setMedicines] = useState<IMedicine[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  // New Medicine Form
+  const [newMed, setNewMed] = useState<IMedicine>({
+    name: "",
+    dosage: "",
+    frequency: "",
+    duration: "",
+    instructions: "",
+  });
+
+  const addMedicine = () => {
+    if (!newMed.name || !newMed.dosage || !newMed.frequency || !newMed.duration) {
+      toast.error("Please fill required medicine fields");
+      return;
+    }
+    setMedicines([...medicines, newMed]);
+    setNewMed({ name: "", dosage: "", frequency: "", duration: "", instructions: "" });
+  };
+
+  const removeMedicine = (index: number) => {
+    setMedicines(medicines.filter((_, i) => i !== index));
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const patId = typeof appointment.patient === "object" ? appointment.patient._id : appointment.patient;
+      const res = await saveConsultationApi({
+        patientId: patId as string,
+        appointmentId: appointment._id,
+        chiefComplaint,
+        diagnosis,
+        advice,
+        medicines,
+        status: "COMPLETED",
+      });
+      if (res.status === "success") {
+        toast.success("Consultation saved and completed");
+        onComplete();
+      }
+    } catch (error) {
+      toast.error("Failed to save consultation");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const pat = typeof appointment.patient === "object" ? appointment.patient : null;
+
+  return (
+    <div className="absolute inset-0 bg-background z-10 flex flex-col overflow-y-auto pb-24">
+      <PanelHeader
+        index="Consultation"
+        title={`Patient: ${pat?.name || "Unknown"}`}
+        note={`Date: ${appointment.date} | Time: ${appointment.timeSlot} | Dept: ${appointment.department}`}
+        actions={
+          <>
+            <ActionButton onClick={onBack}>Cancel</ActionButton>
+            <ActionButton tone="solid" onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Save & Complete"}
+            </ActionButton>
+          </>
+        }
+      />
+      <div className="p-6 max-w-4xl w-full mx-auto space-y-8">
+        
+        {/* Vitals / Reason */}
+        <div className="bg-foreground/[0.02] border border-[var(--hairline)] rounded p-4">
+          <p className="mono-label text-muted-foreground mb-1">Reason for Visit</p>
+          <p className="font-medium text-foreground">{appointment.reason}</p>
+        </div>
+
+        {/* Clinical Notes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div>
+              <label className="mono-label text-muted-foreground block mb-2">Chief Complaint</label>
+              <textarea
+                value={chiefComplaint}
+                onChange={(e) => setChiefComplaint(e.target.value)}
+                className="w-full bg-transparent border border-[var(--hairline)] p-3 min-h-[100px] outline-none focus:border-accent"
+                placeholder="Patient presents with..."
+              />
+            </div>
+            <div>
+              <label className="mono-label text-muted-foreground block mb-2">Diagnosis</label>
+              <input
+                type="text"
+                value={diagnosis}
+                onChange={(e) => setDiagnosis(e.target.value)}
+                className="w-full bg-transparent border border-[var(--hairline)] p-3 outline-none focus:border-accent"
+                placeholder="e.g. Acute Viral Pharyngitis"
+              />
+            </div>
+            <div>
+              <label className="mono-label text-muted-foreground block mb-2">Advice & Lifestyle</label>
+              <textarea
+                value={advice}
+                onChange={(e) => setAdvice(e.target.value)}
+                className="w-full bg-transparent border border-[var(--hairline)] p-3 min-h-[100px] outline-none focus:border-accent"
+                placeholder="Dietary changes, rest..."
+              />
+            </div>
+          </div>
+
+          {/* Prescription Writer */}
+          <div className="space-y-4">
+            <h3 className="font-mono font-bold text-lg border-b border-[var(--hairline)] pb-2">Rx: Prescription</h3>
+            
+            {/* Added Medicines */}
+            <div className="space-y-2 mb-4">
+              {medicines.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">No medicines added.</p>
+              ) : (
+                medicines.map((m, i) => (
+                  <div key={i} className="flex items-start justify-between bg-foreground/[0.03] p-3 border border-[var(--hairline)] rounded">
+                    <div>
+                      <p className="font-bold text-sm">{m.name} - <span className="text-muted-foreground">{m.dosage}</span></p>
+                      <p className="text-xs text-muted-foreground">{m.frequency} x {m.duration}</p>
+                      {m.instructions && <p className="text-[11px] text-emerald-500 mt-1">{m.instructions}</p>}
+                    </div>
+                    <button onClick={() => removeMedicine(i)} className="text-destructive hover:bg-destructive/10 p-1 rounded transition-colors">
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Add New Medicine */}
+            <div className="border border-[var(--hairline)] p-4 rounded bg-background">
+              <p className="mono-label text-xs mb-3 text-brass">Add Medicine (Free Text / Search)</p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <input
+                  type="text"
+                  placeholder="Drug Name (e.g. Paracetamol)"
+                  value={newMed.name}
+                  onChange={(e) => setNewMed({ ...newMed, name: e.target.value })}
+                  className="bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+                  list="common-drugs"
+                />
+                <datalist id="common-drugs">
+                  <option value="Paracetamol" />
+                  <option value="Ibuprofen" />
+                  <option value="Amoxicillin" />
+                  <option value="Azithromycin" />
+                  <option value="Cetirizine" />
+                  <option value="Pantoprazole" />
+                  <option value="Metformin" />
+                  <option value="Amlodipine" />
+                </datalist>
+                
+                <input
+                  type="text"
+                  placeholder="Dosage (e.g. 500mg)"
+                  value={newMed.dosage}
+                  onChange={(e) => setNewMed({ ...newMed, dosage: e.target.value })}
+                  className="bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+                />
+                <input
+                  type="text"
+                  placeholder="Frequency (e.g. 1-0-1)"
+                  value={newMed.frequency}
+                  onChange={(e) => setNewMed({ ...newMed, frequency: e.target.value })}
+                  className="bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+                />
+                <input
+                  type="text"
+                  placeholder="Duration (e.g. 5 days)"
+                  value={newMed.duration}
+                  onChange={(e) => setNewMed({ ...newMed, duration: e.target.value })}
+                  className="bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="Instructions (e.g. After food) [Optional]"
+                value={newMed.instructions}
+                onChange={(e) => setNewMed({ ...newMed, instructions: e.target.value })}
+                className="w-full bg-transparent border border-[var(--hairline)] p-2 text-sm outline-none focus:border-accent mb-3"
+              />
+              <button onClick={addMedicine} className="w-full bg-accent/10 text-accent font-medium py-2 text-sm hover:bg-accent/20 transition-colors">
+                + Add to Prescription
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

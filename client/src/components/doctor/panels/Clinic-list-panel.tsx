@@ -19,7 +19,7 @@ import {
   noteTemplates,
   handovers,
   onCall,
-} from "./doctor-data";
+} from "../doctor-data";
 
 /* ---------- primitives ---------- */
 

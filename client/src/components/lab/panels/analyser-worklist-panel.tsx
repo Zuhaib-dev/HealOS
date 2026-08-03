@@ -14,7 +14,7 @@ import {
   samples,
   type ResultLine,
   type Sample,
-} from "./lab-data";
+} from "../lab-data";
 
 const stageTone: Record<Sample["stage"], Tone> = {
   accessioned: "info",

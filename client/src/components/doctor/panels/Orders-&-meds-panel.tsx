@@ -19,7 +19,7 @@ import {
   noteTemplates,
   handovers,
   onCall,
-} from "./doctor-data";
+} from "../doctor-data";
 
 /* ---------- primitives ---------- */
 
@@ -87,113 +87,63 @@ function acuityPill(a: "critical" | "guarded" | "stable") {
   );
 }
 
-/* ---------- 04 · Results inbox ---------- */
+/* ---------- 05 · Orders & meds ---------- */
 
-export function ResultsPanel() {
-  const [signed, setSigned] = useState<string[]>([]);
-  const [filter, setFilter] = useState<"all" | "critical" | "unsigned">("all");
-
-  const rows = results.filter((r) =>
-    filter === "critical"
-      ? r.flag === "critical"
-      : filter === "unsigned"
-        ? !signed.includes(r.id)
-        : true,
+export function OrdersPanel() {
+  const [state, setState] = useState<Record<string, string>>(
+    Object.fromEntries(orders.map((o) => [o.id, o.state])),
   );
 
   return (
     <div>
       <PanelHeader
-        index="04 / results"
-        title="Results inbox"
-        note="Labs, imaging and pathology waiting on your signature — criticals surface at the top."
-        actions={
-          <ActionButton tone="solid" onClick={() => setSigned(results.map((r) => r.id))}>
-            Sign all normal
-          </ActionButton>
-        }
+        index="05 / orders"
+        title="Orders & prescriptions"
+        note="Draft, active and signed orders across your caseload. Signing pushes to pharmacy and the ward instantly."
+        actions={<ActionButton tone="solid">New order</ActionButton>}
       />
-      <div className="hairline-b flex gap-1 px-5 py-3 sm:px-8">
-        {(
-          [
-            ["all", "All"],
-            ["critical", "Critical"],
-            ["unsigned", "Unsigned"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setFilter(id)}
-            className={`mono-label px-3 py-1.5 ${
-              filter === id
-                ? "bg-accent/12 text-brass"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-205">
+        <table className="w-full min-w-190">
           <thead className="hairline-b">
             <tr>
-              <Th>At</Th>
+              <Th>Order</Th>
               <Th>Patient</Th>
-              <Th>Test</Th>
+              <Th>Detail</Th>
               <Th>Kind</Th>
-              <Th>Value</Th>
-              <Th>Flag</Th>
-              <Th>Action</Th>
+              <Th>State</Th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => {
-              const isSigned = signed.includes(r.id);
+            {orders.map((o) => {
+              const s = state[o.id];
               return (
-                <motion.tr key={r.id} layout className="hairline-b">
+                <tr key={o.id} className="hairline-b">
                   <Td>
-                    <span className="mono-label">{r.at}</span>
+                    <span className="mono-label">{o.id}</span>
                   </Td>
                   <Td>
-                    <span className="block font-medium">{r.patient}</span>
-                    <span className="mono-label text-muted-foreground">{r.mrn}</span>
+                    <span className="font-medium">{o.patient}</span>
                   </Td>
-                  <Td>{r.test}</Td>
+                  <Td>{o.detail}</Td>
                   <Td>
-                    <span className="mono-label text-muted-foreground">{r.kind}</span>
-                  </Td>
-                  <Td>
-                    <span
-                      className={`mono-label ${r.flag === "critical" ? "text-destructive" : ""}`}
-                    >
-                      {r.value}
-                    </span>
+                    <span className="mono-label text-muted-foreground">{o.kind}</span>
                   </Td>
                   <Td>
-                    {r.flag === "critical" ? (
-                      <Pill tone="bad">critical</Pill>
-                    ) : r.flag === "abnormal" ? (
-                      <Pill tone="warn">abnormal</Pill>
-                    ) : (
-                      <Pill tone="ok">normal</Pill>
-                    )}
-                  </Td>
-                  <Td>
-                    {isSigned ? (
-                      <Pill tone="mute">signed</Pill>
+                    {s === "signed" ? (
+                      <Pill tone="ok">signed</Pill>
+                    ) : s === "active" ? (
+                      <Pill tone="warn">active</Pill>
                     ) : (
                       <button
                         type="button"
-                        onClick={() => setSigned((s) => [...s, r.id])}
+                        onClick={() => setState((p) => ({ ...p, [o.id]: "signed" }))}
                         className="mono-label hairline px-3 py-1.5"
                       >
-                        acknowledge
+                        sign draft
                       </button>
                     )}
                   </Td>
-                </motion.tr>
+                </tr>
               );
             })}
           </tbody>

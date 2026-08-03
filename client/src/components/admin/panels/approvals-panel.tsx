@@ -1,4 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
+import { ProfessionalProfileData, fetchPendingOnboardingRequestsApi, approveOnboardingRequestApi, rejectOnboardingRequestApi } from "@/lib/api/onboarding";
+import { toast } from "sonner";
 import { motion } from "motion/react";
 import { ArrowUpRight, Check, X, TriangleAlert } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
@@ -10,8 +12,8 @@ import {
   invoices,
   supplies,
   throughput,
-} from "./admin-data";
-import { ActionButton, PanelHeader } from "./admin-shell";
+} from "../admin-data";
+import { ActionButton, PanelHeader } from "../admin-shell";
 
 /* ---------- shared primitives ---------- */
 

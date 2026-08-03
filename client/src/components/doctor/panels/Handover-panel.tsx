@@ -19,7 +19,7 @@ import {
   noteTemplates,
   handovers,
   onCall,
-} from "./doctor-data";
+} from "../doctor-data";
 
 /* ---------- primitives ---------- */
 
@@ -87,75 +87,66 @@ function acuityPill(a: "critical" | "guarded" | "stable") {
   );
 }
 
-/* ---------- 02 · My patients ---------- */
+/* ---------- 07 · Handover ---------- */
 
-export function RoundsPanel() {
-  const [seen, setSeen] = useState<string[]>(rounds.filter((r) => r.seen).map((r) => r.mrn));
+export function HandoverPanel() {
+  const [draft, setDraft] = useState("");
+  const [sent, setSent] = useState<string[]>([]);
 
   return (
     <div>
       <PanelHeader
-        index="02 / caseload"
-        title="My patients"
-        note="Your list by bed, with NEWS2 trend, working diagnosis and what remains before handover."
-        actions={<ActionButton tone="solid">Add to list</ActionButton>}
+        index="07 / handover"
+        title="Handover & messages"
+        note="Everything the outgoing team flagged, plus what you want the next shift to know."
       />
-      <div className="grid xl:grid-cols-2">
-        {rounds.map((p) => {
-          const done = seen.includes(p.mrn);
-          return (
-            <motion.article
-              key={p.mrn}
-              layout
-              className="hairline-l hairline-b px-5 py-5"
-              animate={{ opacity: done ? 0.6 : 1 }}
+      <div className="grid lg:grid-cols-[1fr_360px]">
+        <div className="hairline-l px-5 py-6 sm:px-8">
+          {handovers.map((h) => (
+            <motion.div
+              key={h.at}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="hairline-b py-4"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h3 className="font-mono text-lg font-bold">{p.name}</h3>
-                    {acuityPill(p.acuity)}
-                  </div>
-                  <p className="mono-label text-muted-foreground mt-1">
-                    {p.mrn} · {p.age}
-                    {p.sex} · {p.bed} · LOS {p.los}
-                  </p>
-                </div>
-                <Vitals series={p.vitals} />
+              <div className="flex items-center gap-3">
+                <span className="mono-label text-accent/80">{h.at}</span>
+                <span className="mono-label">{h.from}</span>
+                {h.priority === "high" ? <Pill tone="bad">priority</Pill> : null}
               </div>
-
-              <p className="mt-4 text-sm">{p.dx}</p>
-
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className={`mono-label ${p.news2 >= 5 ? "text-destructive" : "text-brass"}`}>
-                  NEWS2 {p.news2}
-                </span>
-                {p.tasks.map((t) => (
-                  <span key={t} className="mono-label bg-foreground/5 px-2 py-1">
-                    {t}
-                  </span>
-                ))}
+              <p className="mt-2 text-sm">{h.text}</p>
+            </motion.div>
+          ))}
+          {sent.map((s, i) => (
+            <div key={i} className="hairline-b py-4">
+              <div className="flex items-center gap-3">
+                <span className="mono-label text-accent/80">now</span>
+                <span className="mono-label">You</span>
               </div>
-
-              <div className="mt-5 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSeen((s) => (done ? s.filter((m) => m !== p.mrn) : [...s, p.mrn]))
-                  }
-                  className={`mono-label flex items-center gap-1.5 px-3 py-2 ${
-                    done ? "bg-accent/12 text-brass" : "hairline"
-                  }`}
-                >
-                  <Check className="size-3" /> {done ? "reviewed" : "mark reviewed"}
-                </button>
-                <button type="button" className="mono-label hairline flex items-center gap-1.5 px-3 py-2">
-                  <PenLine className="size-3" /> write note
-                </button>
-              </div>
-            </motion.article>
-          );
-        })}
+              <p className="mt-2 text-sm">{s}</p>
+            </div>
+          ))}
+        </div>
+        <div className="hairline-l px-5 py-6">
+          <p className="mono-label text-muted-foreground">Add handover note</p>
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="e.g. ICU-A 04 — repeat ABG at 12:00, escalate if lactate rising"
+            className="hairline placeholder:text-muted-foreground mt-3 min-h-32 w-full resize-y bg-transparent p-3 text-sm outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (!draft.trim()) return;
+              setSent((s) => [...s, draft.trim()]);
+              setDraft("");
+            }}
+            className="mono-label bg-foreground text-background mt-3 flex items-center gap-2 px-3.5 py-2"
+          >
+            <Send className="size-3" /> Post to handover
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -10,8 +10,8 @@ import {
   invoices,
   supplies,
   throughput,
-} from "./admin-data";
-import { ActionButton, PanelHeader } from "./admin-shell";
+} from "../admin-data";
+import { ActionButton, PanelHeader } from "../admin-shell";
 
 /* ---------- shared primitives ---------- */
 

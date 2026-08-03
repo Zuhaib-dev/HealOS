@@ -13,7 +13,7 @@ import {
   shiftStats,
   wounds,
   type MarDose,
-} from "./nurse-data";
+} from "../nurse-data";
 import {
   fetchVitalsQueueApi,
   recordVitalsApi,

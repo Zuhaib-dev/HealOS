@@ -23,7 +23,7 @@ import {
   tatStats,
   bookingSlots,
   type WorklistItem,
-} from "./radiology-data";
+} from "../radiology-data";
 import { fetchPendingOrdersApi, updateOrderStatusApi, uploadDiagnosticReportApi, DiagnosticOrderRecord } from "@/lib/api/radiology";
 import { toast } from "sonner";
 

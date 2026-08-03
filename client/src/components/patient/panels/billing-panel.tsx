@@ -45,7 +45,7 @@ import {
   messages,
   careTeam,
   type Appointment,
-} from "./patient-data";
+} from "../patient-data";
 import { fetchPatientDashboardApi, PatientDashboardData, payInvoiceApi } from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
 

@@ -90,6 +90,10 @@ export function UserProfileMenu() {
         return "bg-pink-500/15 text-pink-600 dark:text-pink-400 border-pink-500/30";
       case "NURSE":
         return "bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30";
+      case "EMERGENCY_DOCTOR":
+        return "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30";
+      case "LAB_TECHNICIAN":
+        return "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30";
       case "patient":
       case "PATIENT":
       case "USER":
@@ -114,6 +118,10 @@ export function UserProfileMenu() {
         return "/pharmacy";
       case "NURSE":
         return "/nurse";
+      case "EMERGENCY_DOCTOR":
+        return "/emergency";
+      case "LAB_TECHNICIAN":
+        return "/lab";
       default:
         return "/patient";
     }

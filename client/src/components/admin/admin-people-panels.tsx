@@ -229,6 +229,8 @@ export function UsersPanel() {
                         <option value="RECEPTIONIST">RECEPTIONIST</option>
                         <option value="PHARMACIST">PHARMACIST</option>
                         <option value="NURSE">NURSE</option>
+                        <option value="EMERGENCY_DOCTOR">EMERGENCY_DOCTOR</option>
+                        <option value="LAB_TECHNICIAN">LAB_TECHNICIAN</option>
                         <option value="ADMIN">ADMIN</option>
                       </select>
                       <span className="mono-label text-muted-foreground block mt-0.5 text-[10px]">Change Role</span>

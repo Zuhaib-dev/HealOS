@@ -2,6 +2,8 @@ import apiClient from "../api-client";
 
 export type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
 export type AppointmentType = "IN_PERSON" | "TELECONSULT" | "EMERGENCY";
+export type PaymentMethod = "ONLINE" | "CASH";
+export type PaymentStatus = "PAID" | "PENDING_CASH" | "REFUNDED";
 
 export interface DoctorListItem {
   _id: string;
@@ -37,6 +39,10 @@ export interface AppointmentRecord {
   reason: string;
   type: AppointmentType;
   status: AppointmentStatus;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  amount: number;
+  bookedAt: string;
   notes?: string;
   createdAt: string;
 }
@@ -48,6 +54,7 @@ export interface BookAppointmentPayload {
   timeSlot: string;
   reason: string;
   type?: AppointmentType;
+  paymentMethod?: PaymentMethod;
 }
 
 export const fetchAvailableDoctorsApi = async () => {
@@ -95,5 +102,13 @@ export const updateAppointmentStatusApi = async (
     message: string;
     appointment: AppointmentRecord;
   }>(`/appointments/${id}/status`, { status, notes });
+  return response.data;
+};
+
+export const cancelAppointmentApi = async (id: string) => {
+  const response = await apiClient.patch<{
+    success: boolean;
+    message: string;
+  }>(`/appointments/${id}/cancel`);
   return response.data;
 };

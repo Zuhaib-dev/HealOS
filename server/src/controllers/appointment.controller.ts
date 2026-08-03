@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { Appointment, AppointmentStatus, AppointmentType, User, UserRole, ProfessionalProfile } from "../models";
+import { Appointment, AppointmentStatus, AppointmentType, PaymentMethod as ApptPaymentMethod, PaymentStatus as ApptPaymentStatus, User, UserRole, ProfessionalProfile, Invoice, InvoiceStatus, PaymentMethod as InvoicePaymentMethod } from "../models";
 import { z } from "zod";
 
 const bookAppointmentSchema = z.object({
@@ -10,6 +10,7 @@ const bookAppointmentSchema = z.object({
   timeSlot: z.string().min(1, "Time slot is required"),
   reason: z.string().min(3, "Reason for visit is required"),
   type: z.enum([AppointmentType.IN_PERSON, AppointmentType.TELECONSULT, AppointmentType.EMERGENCY]).default(AppointmentType.IN_PERSON),
+  paymentMethod: z.enum([ApptPaymentMethod.ONLINE, ApptPaymentMethod.CASH]).default(ApptPaymentMethod.CASH),
 });
 
 const updateStatusSchema = z.object({
@@ -32,7 +33,7 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const { doctorId, department, date, timeSlot, reason, type } = parsed.data;
+    const { doctorId, department, date, timeSlot, reason, type, paymentMethod } = parsed.data;
 
     // Verify doctor exists
     const doctorObj = await User.findById(doctorId);
@@ -60,6 +61,8 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
       return;
     }
 
+    const paymentStatus = paymentMethod === ApptPaymentMethod.ONLINE ? ApptPaymentStatus.PAID : ApptPaymentStatus.PENDING_CASH;
+
     const appointment = await Appointment.create({
       patient: patientId,
       doctor: doctorId,
@@ -69,6 +72,22 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
       reason,
       type,
       status: AppointmentStatus.PENDING,
+      paymentMethod,
+      paymentStatus,
+      amount: 400,
+    });
+
+    // Generate Invoice
+    await Invoice.create({
+      patient: patientId,
+      issuedBy: patientId, // Self-booked
+      appointment: appointment._id,
+      items: [{ description: "OPD Consultation Fee", amount: 400 }],
+      totalAmount: 400,
+      status: paymentMethod === ApptPaymentMethod.ONLINE ? InvoiceStatus.PAID : InvoiceStatus.PENDING,
+      paymentMethod: paymentMethod === ApptPaymentMethod.ONLINE ? InvoicePaymentMethod.CARD : undefined,
+      payer: "self",
+      paidAt: paymentMethod === ApptPaymentMethod.ONLINE ? new Date() : undefined,
     });
 
     const populated = await Appointment.findById(appointment._id)
@@ -222,6 +241,76 @@ export const getAvailableDoctors = async (_req: Request, res: Response): Promise
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Server error while fetching available doctors",
+    });
+  }
+};
+
+// 6. Patient Cancels Appointment
+export const cancelAppointmentByPatient = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const patientId = req.user?._id;
+
+    const appointment = await Appointment.findOne({ _id: id, patient: patientId });
+    if (!appointment) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Appointment record not found or unauthorized",
+      });
+      return;
+    }
+
+    if (appointment.status === AppointmentStatus.CANCELLED) {
+      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Appointment is already cancelled" });
+      return;
+    }
+
+    if (appointment.paymentMethod === ApptPaymentMethod.CASH) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Cash appointments cannot be self-cancelled online. Please contact the reception desk.",
+      });
+      return;
+    }
+
+    // Check 30-min window for online payments
+    if (appointment.paymentMethod === ApptPaymentMethod.ONLINE) {
+      const now = new Date();
+      const bookedAt = appointment.bookedAt;
+      const diffMs = now.getTime() - new Date(bookedAt).getTime();
+      const diffMins = diffMs / 60000;
+
+      if (diffMins > 30) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "The 30-minute free cancellation window has passed. Please contact the reception desk.",
+        });
+        return;
+      }
+    }
+
+    appointment.status = AppointmentStatus.CANCELLED;
+    if (appointment.paymentMethod === ApptPaymentMethod.ONLINE) {
+      appointment.paymentStatus = ApptPaymentStatus.REFUNDED;
+    }
+    await appointment.save();
+
+    // Update related invoice
+    const invoice = await Invoice.findOne({ appointment: id });
+    if (invoice) {
+      invoice.status = InvoiceStatus.CANCELLED;
+      await invoice.save();
+    }
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Appointment cancelled successfully. Refund initiated.",
+    });
+  } catch (error) {
+    console.error("Error in cancelAppointmentByPatient:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error while cancelling appointment",
     });
   }
 };

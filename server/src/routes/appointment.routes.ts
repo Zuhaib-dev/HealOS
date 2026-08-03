@@ -5,6 +5,7 @@ import {
   getDoctorAppointments,
   updateAppointmentStatus,
   getAvailableDoctors,
+  cancelAppointmentByPatient,
 } from "../controllers/appointment.controller";
 import { verifyToken, requireRole } from "../middleware/auth.middleware";
 import { UserRole } from "../models";
@@ -17,6 +18,7 @@ router.get("/doctors-list", verifyToken, getAvailableDoctors);
 // Patient routes
 router.post("/book", verifyToken, bookAppointment);
 router.get("/patient", verifyToken, getPatientAppointments);
+router.patch("/:id/cancel", verifyToken, cancelAppointmentByPatient);
 
 // Doctor & Admin routes
 router.get("/doctor", verifyToken, requireRole([UserRole.DOCTOR, UserRole.RADIOLOGIST, UserRole.ADMIN]), getDoctorAppointments);

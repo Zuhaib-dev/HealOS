@@ -46,7 +46,8 @@ import {
   careTeam,
   type Appointment,
 } from "./patient-data";
-import { fetchPatientDashboardApi, PatientDashboardData } from "@/lib/api/patient";
+import { fetchPatientDashboardApi, PatientDashboardData, payInvoiceApi } from "@/lib/api/patient";
+import { useSocket } from "@/components/providers/socket-provider";
 
 /* ---------- primitives ---------- */
 
@@ -278,6 +279,7 @@ export function BookPanel() {
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState<string | null>(null);
   const [mode, setMode] = useState<"IN_PERSON" | "TELECONSULT">("IN_PERSON");
+  const [paymentMethod, setPaymentMethod] = useState<"ONLINE" | "CASH">("ONLINE");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [bookedRecord, setBookedRecord] = useState<AppointmentRecord | null>(null);
@@ -312,6 +314,7 @@ export function BookPanel() {
         timeSlot: time,
         reason,
         type: mode,
+        paymentMethod,
       });
 
       if (res.success && res.appointment) {
@@ -409,10 +412,26 @@ export function BookPanel() {
                 </button>
               ))}
             </div>
+
+            <p className="mono-label text-muted-foreground mt-5">4. Payment Method</p>
+            <div className="mt-2 flex gap-2">
+              {(["ONLINE", "CASH"] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPaymentMethod(p)}
+                  className={`mono-label flex-1 px-3 py-2.5 text-xs font-semibold rounded ${
+                    paymentMethod === p ? "bg-foreground text-background" : "hairline text-foreground"
+                  }`}
+                >
+                  {p === "ONLINE" ? "Pay Online (₹400)" : "Pay at Desk (₹400)"}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="bg-background p-5 lg:col-span-2">
-            <p className="mono-label text-muted-foreground">4. Appointment Date</p>
+            <p className="mono-label text-muted-foreground">5. Appointment Date</p>
             <input
               type="date"
               value={date}
@@ -421,7 +440,7 @@ export function BookPanel() {
               className="hairline mono-label mt-2 bg-background px-3 py-2.5 outline-none rounded text-xs font-semibold"
             />
 
-            <p className="mono-label text-muted-foreground mt-5">5. Available Time Slots</p>
+            <p className="mono-label text-muted-foreground mt-5">6. Available Time Slots</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {slotTimes.map((t) => {
                 return (
@@ -441,7 +460,7 @@ export function BookPanel() {
               })}
             </div>
 
-            <p className="mono-label text-muted-foreground mt-5">6. Reason for Visit & Symptoms</p>
+            <p className="mono-label text-muted-foreground mt-5">7. Reason for Visit & Symptoms</p>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -803,20 +822,50 @@ export function MedsPanel() {
 /* ---------- 06 billing ---------- */
 
 export function BillingPanel() {
+  const [data, setData] = useState<PatientDashboardData | null>(null);
+
+  const loadData = async () => {
+    try {
+      const res = await fetchPatientDashboardApi();
+      if (res.status === "success") setData(res.data);
+    } catch (err) {}
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handlePay = async (id: string) => {
+    try {
+      const res = await payInvoiceApi(id);
+      if (res.success) {
+        toast.success("Payment successful!");
+        loadData();
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to process payment");
+    }
+  };
+
+  const invoiceRows = data?.invoices || [];
+  const outstandingAmount = invoiceRows
+    .filter((i) => i.status !== "PAID" && i.status !== "CANCELLED")
+    .reduce((sum, i) => sum + i.totalAmount, 0);
+
   return (
     <section>
       <PanelHeader
         index="06 / billing"
         title="Bills &amp; insurance"
         note="Every invoice with what your insurer covered and what is left for you to pay."
-        actions={<ActionButton tone="solid">Pay outstanding ₹650</ActionButton>}
+        actions={<ActionButton tone="solid">Pay outstanding ₹{outstandingAmount}</ActionButton>}
       />
 
       <div className="grid gap-px sm:grid-cols-3" style={{ background: "var(--hairline)" }}>
         {[
-          { label: "Outstanding", value: "₹650", note: "1 invoice due" },
-          { label: "With insurer", value: "₹2,480", note: "claim in review" },
-          { label: "Paid this year", value: "₹4,100", note: "3 invoices" },
+          { label: "Outstanding", value: `₹${outstandingAmount}`, note: `${invoiceRows.filter(i => i.status !== "PAID" && i.status !== "CANCELLED").length} invoice(s) due` },
+          { label: "With insurer", value: "₹0", note: "claim in review" },
+          { label: "Paid this year", value: `₹${invoiceRows.filter(i => i.status === "PAID").reduce((sum, i) => sum + i.totalAmount, 0)}`, note: `${invoiceRows.filter(i => i.status === "PAID").length} invoice(s)` },
         ].map((s) => (
           <div key={s.label} className="bg-background p-5">
             <p className="mono-label text-muted-foreground">{s.label}</p>
@@ -834,40 +883,36 @@ export function BillingPanel() {
               <Th>Date</Th>
               <Th>Item</Th>
               <Th>Total</Th>
-              <Th>Insurer</Th>
-              <Th>You pay</Th>
               <Th>State</Th>
               <Th>Actions</Th>
             </tr>
           </thead>
           <tbody>
-            {bills.map((b) => (
-              <tr key={b.id} className="hairline-b hover:bg-foreground/2">
+            {invoiceRows.map((b) => (
+              <tr key={b._id} className="hairline-b hover:bg-foreground/2">
                 <Td>
-                  <span className="mono-label">{b.ref}</span>
+                  <span className="mono-label">{b._id.slice(-6).toUpperCase()}</span>
                 </Td>
                 <Td>
-                  <span className="mono-label">{b.date}</span>
+                  <span className="mono-label">{new Date(b.createdAt).toLocaleDateString()}</span>
                 </Td>
-                <Td>{b.item}</Td>
+                <Td>{b.items[0]?.description || "Service"}</Td>
                 <Td>
-                  <span className="mono-label">{b.amount}</span>
-                </Td>
-                <Td>
-                  <span className="mono-label text-muted-foreground">{b.insurerShare}</span>
+                  <span className="mono-label">₹{b.totalAmount}</span>
                 </Td>
                 <Td>
-                  <span className="mono-label">{b.due}</span>
-                </Td>
-                <Td>
-                  <Pill tone={b.state === "paid" ? "ok" : b.state === "due" ? "bad" : "warn"}>
-                    {b.state}
+                  <Pill tone={b.status === "PAID" ? "ok" : b.status === "PENDING" ? "bad" : "warn"}>
+                    {b.status}
                   </Pill>
                 </Td>
                 <Td>
                   <div className="flex gap-2">
                     <ActionButton>Receipt</ActionButton>
-                    {b.state === "due" && <ActionButton tone="solid">Pay</ActionButton>}
+                    {b.status !== "PAID" && b.status !== "CANCELLED" && (
+                      <ActionButton tone="solid" onClick={() => handlePay(b._id)}>
+                        Pay Now
+                      </ActionButton>
+                    )}
                   </div>
                 </Td>
               </tr>
@@ -882,80 +927,90 @@ export function BillingPanel() {
 /* ---------- 07 messages ---------- */
 
 export function MessagesPanel() {
+  const { user } = useAuthStore();
+  const socket = useSocket();
   const [draft, setDraft] = useState("");
-  const [sent, setSent] = useState<string[]>([]);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleReceive = (data: any) => {
+      setChatMessages((prev) => [...prev, data]);
+    };
+    
+    socket.on("chat:receive_message", handleReceive);
+    return () => {
+      socket.off("chat:receive_message", handleReceive);
+    };
+  }, [socket]);
+
+  const handleSend = () => {
+    if (!draft.trim() || !socket || !user) return;
+    const msg = {
+      senderId: user._id || "patient-id",
+      senderName: user.name || "Patient",
+      role: "PATIENT",
+      text: draft.trim(),
+      timestamp: new Date().toISOString()
+    };
+    socket.emit("chat:send_message", msg);
+    setChatMessages((prev) => [...prev, msg]);
+    setDraft("");
+  };
 
   return (
     <section>
       <PanelHeader
         index="07 / messages"
-        title="Messages"
-        note="Non-urgent questions to your care team. For anything urgent call the hospital or attend the emergency department."
+        title="Live Messages"
+        note="Real-time chat with the care team."
       />
 
       <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
         <div className="bg-background lg:col-span-2">
-          <div className="flex flex-col gap-px" style={{ background: "var(--hairline)" }}>
-            {messages.map((m) => (
-              <div key={m.id} className="bg-background p-5 sm:px-8">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="bg-accent/12 text-brass mono-label grid size-8 place-items-center">
-                    {m.from
-                      .replace("Dr. ", "")
-                      .split(" ")
-                      .map((p) => p[0])
-                      .join("")
-                      .slice(0, 2)}
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium">{m.from}</p>
-                    <p className="mono-label text-muted-foreground">
-                      {m.role} · {m.at}
-                    </p>
-                  </div>
-                  {m.unread && <Pill tone="warn">new</Pill>}
-                </div>
-                <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{m.body}</p>
-              </div>
-            ))}
-            {sent.map((s, i) => (
-              <div key={`sent-${i}`} className="bg-background p-5 sm:px-8">
+          <div className="flex flex-col gap-px h-[600px] overflow-y-auto" style={{ background: "var(--hairline)" }}>
+            {chatMessages.map((m, i) => (
+              <div key={i} className="bg-background p-5 sm:px-8">
                 <div className="flex items-center gap-3">
-                  <span className="bg-foreground/6 mono-label grid size-8 place-items-center">
-                    ME
+                  <span className={m.role === "PATIENT" ? "bg-foreground/6 mono-label grid size-8 place-items-center" : "bg-accent/12 text-brass mono-label grid size-8 place-items-center"}>
+                    {m.role === "PATIENT" ? "ME" : m.senderName[0].toUpperCase()}
                   </span>
                   <div>
-                    <p className="text-sm font-medium">You</p>
-                    <p className="mono-label text-muted-foreground">sent just now</p>
+                    <p className="text-sm font-medium">{m.role === "PATIENT" ? "You" : m.senderName}</p>
+                    <p className="mono-label text-muted-foreground">{new Date(m.timestamp).toLocaleTimeString()}</p>
                   </div>
                 </div>
-                <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{s}</p>
+                <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{m.text}</p>
               </div>
             ))}
+            {chatMessages.length === 0 && (
+              <div className="p-8 text-center mono-label text-xs text-muted-foreground">
+                No messages yet. Send a message to start chat.
+              </div>
+            )}
           </div>
         </div>
 
         <div className="bg-background p-5">
           <p className="mono-label text-muted-foreground">New message</p>
-          <select className="hairline mono-label mt-2 w-full bg-transparent px-3 py-2.5 outline-none">
-            {careTeam.map((c) => (
-              <option key={c.name}>{c.name}</option>
-            ))}
-          </select>
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={8}
-            placeholder="Type your question"
+            placeholder="Type your message..."
             className="hairline placeholder:text-muted-foreground mt-3 w-full resize-none bg-transparent p-3 text-sm outline-none"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
           />
           <button
             type="button"
             disabled={!draft.trim()}
-            onClick={() => {
-              setSent((p) => [...p, draft.trim()]);
-              setDraft("");
-            }}
+            onClick={handleSend}
             className={`mono-label mt-3 w-full px-4 py-2.5 ${
               draft.trim()
                 ? "bg-foreground text-background hover:opacity-85"
@@ -967,9 +1022,6 @@ export function MessagesPanel() {
               Send message
             </span>
           </button>
-          <p className="mono-label text-muted-foreground mt-3">
-            replies usually within one working day
-          </p>
         </div>
       </div>
     </section>

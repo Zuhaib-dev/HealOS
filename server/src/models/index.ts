@@ -11,3 +11,4 @@ export * from './consultation.model';
 export * from './diagnostic-order.model';
 export * from './diagnostic-report.model';
 export * from './invoice.model';
+export * from './vitals.model';

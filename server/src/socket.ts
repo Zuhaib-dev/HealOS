@@ -36,6 +36,13 @@ export const initSocketIO = (server: HttpServer): Server => {
       }
     });
 
+    // Real-time Chat
+    socket.on("chat:send_message", (messageData: { senderId: string, text: string, senderName: string, role: string, timestamp: string }) => {
+      // Broadcast to the care team (doctors, nurses, etc) and back to the patient's room so all their devices sync
+      socket.broadcast.emit("chat:receive_message", messageData);
+      console.log(`💬 Chat message from ${messageData.senderName}: ${messageData.text}`);
+    });
+
     socket.on("disconnect", () => {
       console.log(`🔌 Realtime socket disconnected: ${socket.id}`);
     });

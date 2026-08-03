@@ -1,13 +1,15 @@
 import { Router } from "express";
 import { verifyToken, requireRole } from "../middleware/auth.middleware.js";
-import { getPatientDashboard } from "../controllers/patient.controller.js";
+import { getPatientDashboard, updatePatientProfile, payInvoice } from "../controllers/patient.controller.js";
 import { UserRole } from "../models/user.model.js";
 
 const router = Router();
 
 router.use(verifyToken);
-router.use(requireRole([UserRole.PATIENT]));
+router.use(requireRole([UserRole.PATIENT, UserRole.ADMIN]));
 
 router.get("/dashboard", getPatientDashboard);
+router.put("/profile", updatePatientProfile);
+router.post("/invoices/:id/pay", payInvoice);
 
 export default router;

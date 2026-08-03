@@ -13,6 +13,17 @@ export enum AppointmentType {
   EMERGENCY = "EMERGENCY",
 }
 
+export enum PaymentMethod {
+  ONLINE = "ONLINE",
+  CASH = "CASH",
+}
+
+export enum PaymentStatus {
+  PAID = "PAID",
+  PENDING_CASH = "PENDING_CASH",
+  REFUNDED = "REFUNDED",
+}
+
 export interface IAppointment extends Document {
   patient: mongoose.Types.ObjectId;
   doctor: mongoose.Types.ObjectId;
@@ -22,6 +33,10 @@ export interface IAppointment extends Document {
   reason: string;
   type: AppointmentType;
   status: AppointmentStatus;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  amount: number;
+  bookedAt: Date;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -45,6 +60,20 @@ const appointmentSchema = new Schema<IAppointment>(
       enum: Object.values(AppointmentStatus),
       default: AppointmentStatus.PENDING,
     },
+    paymentMethod: {
+      type: String,
+      enum: Object.values(PaymentMethod),
+      required: true,
+      default: PaymentMethod.CASH,
+    },
+    paymentStatus: {
+      type: String,
+      enum: Object.values(PaymentStatus),
+      required: true,
+      default: PaymentStatus.PENDING_CASH,
+    },
+    amount: { type: Number, required: true, default: 400 },
+    bookedAt: { type: Date, default: Date.now },
     notes: { type: String },
   },
   { timestamps: true }

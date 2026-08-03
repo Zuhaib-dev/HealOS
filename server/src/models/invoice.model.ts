@@ -6,7 +6,7 @@ export enum InvoiceStatus {
   CANCELLED = "CANCELLED",
 }
 
-export enum PaymentMethod {
+export enum InvoicePaymentMethod {
   CASH = "CASH",
   CARD = "CARD",
   UPI = "UPI",
@@ -25,7 +25,7 @@ export interface IInvoice extends Document {
   items: IInvoiceItem[];
   totalAmount: number;
   status: InvoiceStatus;
-  paymentMethod?: PaymentMethod;
+  paymentMethod?: InvoicePaymentMethod;
   payer: string; // "self", "insurance", "corporate"
   insuranceCoverage?: number;
   paidAt?: Date;
@@ -52,7 +52,7 @@ const invoiceSchema = new Schema<IInvoice>(
     },
     paymentMethod: {
       type: String,
-      enum: Object.values(PaymentMethod),
+      enum: Object.values(InvoicePaymentMethod),
     },
     payer: {
       type: String,

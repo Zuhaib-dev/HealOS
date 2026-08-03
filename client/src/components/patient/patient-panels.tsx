@@ -47,7 +47,7 @@ import {
   type Appointment,
 } from "./patient-data";
 import { fetchPatientDashboardApi, PatientDashboardData, payInvoiceApi } from "@/lib/api/patient";
-import { useSocket } from "@/components/providers/socket-provider";
+import { getSocket } from "@/lib/socket";
 
 /* ---------- primitives ---------- */
 
@@ -642,7 +642,7 @@ export function ReportsPanel() {
     })),
     ...reports.map(r => ({
       id: r._id,
-      name: r.fileName || "Uploaded Report",
+      name: r.title || "Uploaded Report",
       kind: "REPORT",
       dept: r.uploadedBy?.firstName ? `${r.uploadedBy.firstName} ${r.uploadedBy.lastName}` : "Lab",
       date: new Date(r.createdAt).toLocaleDateString(),
@@ -928,11 +928,11 @@ export function BillingPanel() {
 
 export function MessagesPanel() {
   const { user } = useAuthStore();
-  const socket = useSocket();
   const [draft, setDraft] = useState("");
   const [chatMessages, setChatMessages] = useState<any[]>([]);
 
   useEffect(() => {
+    const socket = getSocket();
     if (!socket) return;
     
     const handleReceive = (data: any) => {
@@ -943,12 +943,13 @@ export function MessagesPanel() {
     return () => {
       socket.off("chat:receive_message", handleReceive);
     };
-  }, [socket]);
+  }, []);
 
   const handleSend = () => {
+    const socket = getSocket();
     if (!draft.trim() || !socket || !user) return;
     const msg = {
-      senderId: user._id || "patient-id",
+      senderId: user.id || "patient-id",
       senderName: user.name || "Patient",
       role: "PATIENT",
       text: draft.trim(),
@@ -969,7 +970,7 @@ export function MessagesPanel() {
 
       <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
         <div className="bg-background lg:col-span-2">
-          <div className="flex flex-col gap-px h-[600px] overflow-y-auto" style={{ background: "var(--hairline)" }}>
+          <div className="flex flex-col gap-px h-150 overflow-y-auto" style={{ background: "var(--hairline)" }}>
             {chatMessages.map((m, i) => (
               <div key={i} className="bg-background p-5 sm:px-8">
                 <div className="flex items-center gap-3">

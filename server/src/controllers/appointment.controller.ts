@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { Appointment, AppointmentStatus, AppointmentType, PaymentMethod as ApptPaymentMethod, PaymentStatus as ApptPaymentStatus, User, UserRole, ProfessionalProfile, Invoice, InvoiceStatus, PaymentMethod as InvoicePaymentMethod } from "../models";
+import { Appointment, AppointmentStatus, AppointmentType, PaymentMethod as ApptPaymentMethod, PaymentStatus as ApptPaymentStatus, User, UserRole, ProfessionalProfile, Invoice, InvoiceStatus, InvoicePaymentMethod } from "../models";
 import { z } from "zod";
 
 const bookAppointmentSchema = z.object({

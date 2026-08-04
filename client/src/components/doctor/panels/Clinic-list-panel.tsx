@@ -10,6 +10,7 @@ import {
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
 // imports removed
+import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 
 /* ---------- primitives ---------- */
 

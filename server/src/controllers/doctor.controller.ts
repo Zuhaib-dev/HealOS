@@ -259,11 +259,11 @@ export const updateDoctorProfile = async (req: Request, res: Response) => {
         folder: "/hms/avatars",
       });
       user.avatarUrl = uploadResponse.url;
-      await user.save();
       // clean up temp file
       fs.unlinkSync(req.file.path);
     }
 
+    await user.save();
     await profile.save();
 
     res.status(200).json({

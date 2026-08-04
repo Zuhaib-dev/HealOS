@@ -113,35 +113,41 @@ export function OverviewPanel() {
         
         {/* Vitals Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {vitals.slice(0, 4).map((v) => (
-            <Card key={v.label} className="shadow-sm border-border/60 hover:shadow-md transition-shadow">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    {v.label}
-                  </span>
-                  <div className="p-1.5 rounded-md bg-muted/50 border border-border/40">
-                    {getVitalIcon(v.label)}
+          {vitals.slice(0, 4).map((v) => {
+            const isWeight = v.label.toLowerCase() === "weight";
+            const displayValue = isWeight && profile?.weight ? profile.weight : v.value;
+            const displayNote = isWeight && profile?.weight ? "updated from profile" : v.note;
+
+            return (
+              <Card key={v.label} className="shadow-sm border-border/60 hover:shadow-md transition-shadow">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {v.label}
+                    </span>
+                    <div className="p-1.5 rounded-md bg-muted/50 border border-border/40">
+                      {getVitalIcon(v.label)}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-baseline gap-1 mt-2">
-                  <span className="font-mono text-3xl font-bold tracking-tight text-foreground">
-                    {v.value}
-                  </span>
-                  <span className="text-muted-foreground text-sm font-medium">{v.unit}</span>
-                </div>
-                <Trend series={v.series} color={getVitalColor(v.label)} />
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-3">
-                  {v.note}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex items-baseline gap-1 mt-2">
+                    <span className="font-mono text-3xl font-bold tracking-tight text-foreground">
+                      {displayValue}
+                    </span>
+                    <span className="text-muted-foreground text-sm font-medium">{v.unit}</span>
+                  </div>
+                  <Trend series={v.series} color={getVitalColor(v.label)} />
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-3">
+                    {displayNote}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* BMI & Health Stats row */}
         {profile?.height && profile?.weight && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <Card className="shadow-sm border-border/60 bg-gradient-to-br from-indigo-500/10 to-transparent">
               <CardContent className="p-5 flex flex-col justify-center">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
@@ -176,16 +182,6 @@ export function OverviewPanel() {
                 </p>
                 <p className="font-mono text-xl font-bold tracking-tight text-foreground">
                   {profile.height} <span className="text-sm text-muted-foreground">{profile.heightUnit}</span>
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm border-border/60">
-              <CardContent className="p-5 flex flex-col justify-center">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                  Weight
-                </p>
-                <p className="font-mono text-xl font-bold tracking-tight text-foreground">
-                  {profile.weight} <span className="text-sm text-muted-foreground">kg</span>
                 </p>
               </CardContent>
             </Card>

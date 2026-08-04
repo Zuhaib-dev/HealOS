@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -16,24 +16,37 @@ import {
   Bell,
   Sparkles,
   ShieldCheck,
+  Menu,
 } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { useAuthStore } from "@/store/use-auth-store";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerClose,
+} from "@/components/ui/drawer";
 
 export const patientSections = [
-  { id: "overview", label: "My Health", icon: LayoutDashboard },
-  { id: "book", label: "Book Appointment", icon: CalendarPlus },
-  { id: "appointments", label: "Visits & Schedule", icon: History },
-  { id: "reports", label: "Lab & Diagnostic Records", icon: FileText },
-  { id: "meds", label: "Prescriptions & Meds", icon: Pill },
-  { id: "billing", label: "Bills & Claims", icon: Receipt },
-  { id: "messages", label: "Care Team Chat", icon: MessagesSquare },
-  { id: "profile", label: "Personal Profile", icon: UserRound },
+  { id: "overview", label: "Home", icon: LayoutDashboard },
+  { id: "book", label: "Book", icon: CalendarPlus },
+  { id: "appointments", label: "Visits", icon: History },
+  { id: "reports", label: "Records", icon: FileText },
+  { id: "meds", label: "Meds", icon: Pill },
+  { id: "billing", label: "Billing", icon: Receipt },
+  { id: "messages", label: "Chat", icon: MessagesSquare },
+  { id: "profile", label: "Profile", icon: UserRound },
 ] as const;
 
 export type PatientSectionId = (typeof patientSections)[number]["id"];
+
+// Mobile Bottom Nav Layout
+const mainMobileTabs = ["overview", "book", "appointments", "messages"];
+const moreMobileTabs = ["reports", "meds", "billing", "profile"];
 
 export function PatientShell({
   active,
@@ -45,11 +58,12 @@ export function PatientShell({
   children: ReactNode;
 }) {
   const [query, setQuery] = useState("");
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const { user } = useAuthStore();
   const currentSection = patientSections.find((s) => s.id === active);
 
   return (
-    <div className="bg-background text-foreground min-h-screen">
+    <div className="bg-background text-foreground min-h-screen pb-24 md:pb-0">
       {/* Top Instrument Header */}
       <header className="bg-background/90 border-b border-border/60 sticky top-0 z-40 backdrop-blur-md transition-all">
         <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-8">
@@ -98,7 +112,7 @@ export function PatientShell({
 
             <ThemeToggle />
 
-            <div className="border-l border-border/60 pl-3">
+            <div className="border-l border-border/60 pl-3 hidden md:block">
               <UserProfileMenu />
             </div>
           </div>
@@ -107,7 +121,7 @@ export function PatientShell({
 
       {/* Main Layout Container */}
       <div className="flex">
-        {/* Sidebar Navigation */}
+        {/* Sidebar Navigation - Desktop Only */}
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex">
           <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5">
             <Sparkles className="size-4 text-emerald-500 shrink-0" />
@@ -122,7 +136,7 @@ export function PatientShell({
           </div>
 
           <nav className="flex flex-col gap-1">
-            {patientSections.map((s, i) => {
+            {patientSections.map((s) => {
               const Icon = s.icon;
               const isActive = active === s.id;
               return (
@@ -158,27 +172,136 @@ export function PatientShell({
         </aside>
 
         {/* Main Content Area */}
-        <main className="min-w-0 flex-1">
-          {/* Mobile Header Tabs */}
-          <div className="border-b border-border/60 flex gap-1.5 overflow-x-auto p-2 bg-card/40 md:hidden">
-            {patientSections.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => onSelect(s.id)}
-                className={`mono-label text-xs shrink-0 px-3 py-1.5 rounded-md transition-colors ${
-                  active === s.id
-                    ? "bg-primary text-primary-foreground font-semibold"
-                    : "text-muted-foreground bg-muted/30"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
+        <main className="min-w-0 flex-1 relative">
+          {/* Mobile "Header" - just the title of the current section */}
+          <div className="md:hidden border-b border-border/60 bg-card/40 p-4 sticky top-16 z-30 backdrop-blur-md flex items-center gap-2">
+            {currentSection && <currentSection.icon className="size-4 text-primary" />}
+            <h1 className="font-semibold text-sm">{currentSection?.label}</h1>
           </div>
-          {children}
+          
+          <div className="mx-auto w-full max-w-5xl">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.15, ease: "easeInOut" }}
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </main>
       </div>
+
+      {/* Persistent Bottom Navigation Bar - Mobile Only */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+        <nav className="flex justify-around items-center px-2 py-1.5">
+          {patientSections
+            .filter((s) => mainMobileTabs.includes(s.id))
+            .map((s) => {
+              const Icon = s.icon;
+              const isActive = active === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => onSelect(s.id)}
+                  className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none group tap-highlight-transparent"
+                >
+                  <motion.div 
+                    animate={isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className={`size-5 ${isActive ? "fill-primary/20" : ""}`} strokeWidth={isActive ? 2.5 : 2} />
+                  </motion.div>
+                  <span 
+                    className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                      isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                    }`}
+                  >
+                    {s.label}
+                  </span>
+                </button>
+              );
+            })}
+
+          {/* More / Menu Tab (Drawer) */}
+          <Drawer open={isMoreOpen} onOpenChange={setIsMoreOpen}>
+            <DrawerTrigger asChild>
+              <button
+                type="button"
+                className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none group tap-highlight-transparent"
+              >
+                <div className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                  moreMobileTabs.includes(active) ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                }`}>
+                  <Menu className={`size-5 ${moreMobileTabs.includes(active) ? "fill-primary/20" : ""}`} strokeWidth={moreMobileTabs.includes(active) ? 2.5 : 2} />
+                </div>
+                <span className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                  moreMobileTabs.includes(active) ? "text-primary font-semibold" : "text-muted-foreground"
+                }`}>
+                  More
+                </span>
+              </button>
+            </DrawerTrigger>
+            <DrawerContent className="bg-background/95 backdrop-blur-xl border-t border-border/60">
+              <DrawerHeader className="border-b border-border/40 pb-4 text-left">
+                <DrawerTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Menu className="size-5 text-primary" />
+                  Menu
+                </DrawerTitle>
+              </DrawerHeader>
+              <div className="p-4 grid grid-cols-4 gap-4">
+                {patientSections
+                  .filter((s) => moreMobileTabs.includes(s.id))
+                  .map((s) => {
+                    const Icon = s.icon;
+                    const isActive = active === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          onSelect(s.id);
+                          setIsMoreOpen(false);
+                        }}
+                        className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-primary/10 text-primary border border-primary/20"
+                            : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
+                        }`}
+                      >
+                        <Icon className="size-6" strokeWidth={isActive ? 2.5 : 2} />
+                        <span className="text-[11px] font-semibold tracking-wide">{s.label}</span>
+                      </button>
+                    );
+                  })}
+              </div>
+              <div className="p-4 pt-2 mt-auto">
+                <DrawerClose asChild>
+                  <button className="w-full bg-muted/50 text-foreground py-3.5 rounded-xl text-sm font-semibold border border-border/50 active:bg-muted/80 transition-colors">
+                    Close Menu
+                  </button>
+                </DrawerClose>
+              </div>
+            </DrawerContent>
+          </Drawer>
+        </nav>
+      </div>
+
+      <style jsx global>{`
+        .pb-safe {
+          padding-bottom: env(safe-area-inset-bottom, 16px);
+        }
+        .tap-highlight-transparent {
+          -webkit-tap-highlight-color: transparent;
+        }
+      `}</style>
     </div>
   );
 }

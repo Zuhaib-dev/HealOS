@@ -16,7 +16,7 @@ import { AppError } from "../middleware/error-handler.js";
 // ==========================================
 export const getPatientDashboard = async (req: Request, res: Response) => {
   try {
-    const patientId = req.user?.id;
+    const patientId = req.user?._id;
 
     if (!patientId) {
       throw new AppError("Patient not found", 404);

@@ -19,18 +19,33 @@ import {
   AppointmentRecord,
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
+import { fetchPatientDashboardApi, DashboardConsultation } from "@/lib/api/patient";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function AppointmentsPanel() {
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
   const [loading, setLoading] = useState(true);
   const [liveAppointments, setLiveAppointments] = useState<AppointmentRecord[]>([]);
+  const [consultations, setConsultations] = useState<DashboardConsultation[]>([]);
+  const [selectedConsultation, setSelectedConsultation] = useState<DashboardConsultation | null>(null);
 
   const loadAppointments = async () => {
     try {
       setLoading(true);
-      const res = await fetchPatientAppointmentsApi();
+      const [res, dashboardRes] = await Promise.all([
+        fetchPatientAppointmentsApi(),
+        fetchPatientDashboardApi()
+      ]);
       if (res.success && res.appointments) {
         setLiveAppointments(res.appointments);
+      }
+      if (dashboardRes.status === "success" && dashboardRes.data.consultations) {
+        setConsultations(dashboardRes.data.consultations);
       }
     } catch (err) {
       console.error("Failed to fetch patient appointments", err);
@@ -185,6 +200,14 @@ export function AppointmentsPanel() {
                     ) : a.status === "COMPLETED" ? (
                       <button
                         type="button"
+                        onClick={() => {
+                          const note = consultations.find(c => (c as any).appointment === a._id);
+                          if (note) {
+                            setSelectedConsultation(note);
+                          } else {
+                            toast.info("Clinical note not available yet for this appointment.");
+                          }
+                        }}
                         className="w-full flex items-center justify-center gap-2 text-xs font-medium text-cyan-600 dark:text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 py-2 rounded-md transition-all"
                       >
                         <FileText className="size-3.5" /> View Clinical Note
@@ -205,6 +228,34 @@ export function AppointmentsPanel() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!selectedConsultation} onOpenChange={(open) => !open && setSelectedConsultation(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Clinical Note</DialogTitle>
+          </DialogHeader>
+          {selectedConsultation && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Diagnosis</h4>
+                <p className="text-sm text-muted-foreground">{selectedConsultation.diagnosis || "No diagnosis provided."}</p>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Prescribed Medicines</h4>
+                {selectedConsultation.medicines?.length > 0 ? (
+                  <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                    {selectedConsultation.medicines.map((m: any, i: number) => (
+                      <li key={i}>{m.name} - {m.dosage} ({m.frequency})</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No medicines prescribed.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

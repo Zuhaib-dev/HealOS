@@ -229,8 +229,8 @@ export function AppointmentsPanel() {
         )}
       </div>
 
-      <Dialog open={!!selectedConsultation} onOpenChange={(open) => !open && setSelectedConsultation(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={!!selectedConsultation} onOpenChange={(open: boolean) => !open && setSelectedConsultation(null)}>
+        <DialogContent className="sm:max-w-125">
           <DialogHeader>
             <DialogTitle>Clinical Note</DialogTitle>
           </DialogHeader>

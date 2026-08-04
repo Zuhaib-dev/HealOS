@@ -85,7 +85,7 @@ export function CounterPanel() {
                       <span className="mono-label">{b._id.slice(-6)}</span>
                     </Td>
                     <Td>
-                      <p className="font-medium">{b.patient?.firstName} {b.patient?.lastName}</p>
+                      <p className="font-medium">{b.patient?.name || "Unknown Patient"}</p>
                       <p className="mono-label text-muted-foreground">{b.patient?.phone}</p>
                     </Td>
                     <Td>

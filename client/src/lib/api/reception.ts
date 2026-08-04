@@ -4,14 +4,12 @@ export interface AppointmentRecord {
   _id: string;
   patient: {
     _id: string;
-    firstName: string;
-    lastName: string;
+    name: string;
     phone: string;
   };
   doctor: {
     _id: string;
-    firstName: string;
-    lastName: string;
+    name: string;
     department: string;
   };
   department: string;
@@ -30,8 +28,7 @@ export interface InvoiceRecord {
   _id: string;
   patient: {
     _id: string;
-    firstName: string;
-    lastName: string;
+    name: string;
     phone: string;
   };
   issuedBy: string;

@@ -162,7 +162,7 @@ export function RegistrationPanel() {
                 {issued.appointment.department} · payer {issued.invoice.payer}
               </p>
               <p className="mono-label text-muted-foreground mt-4">
-                {issued.patient.firstName} {issued.patient.lastName} · {issued.patient.phone || "no mobile"}
+                {issued.patient.name} · {issued.patient.phone || "no mobile"}
               </p>
               {issued.patient.abhaNumber && (
                 <p className="mono-label text-brass mt-2">

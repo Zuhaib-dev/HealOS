@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { User, UserRole } from "../models/user.model.js";
+import { User, UserRole, PatientProfile } from "../models/index.js";
 import { Appointment, AppointmentStatus } from "../models/appointment.model.js";
-import { Invoice, InvoiceStatus, PaymentMethod } from "../models/invoice.model.js";
+import { Invoice, InvoiceStatus, InvoicePaymentMethod } from "../models/invoice.model.js";
 import { AppError } from "../middleware/error-handler.js";
 import crypto from "crypto";
 
@@ -10,29 +10,51 @@ import crypto from "crypto";
 // ==========================================
 export const registerPatientAndCreateToken = async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, phone, dateOfBirth, gender, address, department, payer } = req.body;
+    const { firstName, lastName, phone, dateOfBirth, gender, address, department, payer, abhaNumber } = req.body;
 
     if (!firstName || !phone || !department) {
       throw new AppError("First name, phone, and department are required", 400);
     }
 
+    const name = lastName ? `${firstName} ${lastName}` : firstName;
+
     // Try to find if user exists by phone
     let patient = await User.findOne({ phone, role: UserRole.PATIENT });
+    let patientProfile = null;
 
     if (!patient) {
-      // Create new user (auto-generate password or dummy email if required)
+      // Create new user
       patient = new User({
-        firstName,
-        lastName,
+        name,
         phone,
         email: `${phone}@healos-temp.com`, // Dummy email
-        password: crypto.randomBytes(8).toString("hex"), // Random password for walk-ins
+        password: crypto.randomBytes(8).toString("hex"),
         role: UserRole.PATIENT,
+      });
+      await patient.save();
+
+      // Create patient profile
+      patientProfile = new PatientProfile({
+        user: patient._id,
         dateOfBirth: dateOfBirth || null,
         gender: gender || "Other",
         address,
+        abhaNumber,
       });
-      await patient.save();
+      await patientProfile.save();
+    } else {
+      // Find existing profile or create it
+      patientProfile = await PatientProfile.findOne({ user: patient._id });
+      if (!patientProfile) {
+        patientProfile = new PatientProfile({
+          user: patient._id,
+          dateOfBirth: dateOfBirth || null,
+          gender: gender || "Other",
+          address,
+          abhaNumber,
+        });
+        await patientProfile.save();
+      }
     }
 
     // Assign a random doctor from the requested department (mock logic)
@@ -140,7 +162,7 @@ export const payBill = async (req: Request, res: Response) => {
     }
 
     invoice.status = InvoiceStatus.PAID;
-    invoice.paymentMethod = paymentMethod as PaymentMethod;
+    invoice.paymentMethod = paymentMethod as InvoicePaymentMethod;
     invoice.paidAt = new Date();
     await invoice.save();
 

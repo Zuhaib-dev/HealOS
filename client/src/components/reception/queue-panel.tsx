@@ -5,23 +5,45 @@ import { Ticket } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { LiveDot, Pill } from "@/components/workspace/ui";
 import { fetchQueueApi, AppointmentRecord } from "@/lib/api/reception";
+import { updateAppointmentStatusApi } from "@/lib/api/appointment";
+import { toast } from "sonner";
 
 export function QueuePanel() {
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
 
-  useEffect(() => {
+  const loadQueue = () => {
     fetchQueueApi().then(res => {
       if (res.status === "success") {
         setAppointments(res.data.appointments);
       }
     }).catch(console.error);
+  };
+
+  useEffect(() => {
+    loadQueue();
   }, []);
+
+  const handleUpdateStatus = async (id: string, status: "CONFIRMED" | "COMPLETED" | "CANCELLED" | "IN_PROGRESS" | "NO_SHOW") => {
+    try {
+      // @ts-ignore
+      const res = await updateAppointmentStatusApi(id, status);
+      if (res.success) {
+        toast.success(`Token marked as ${status}`);
+        loadQueue();
+      }
+    } catch (err) {
+      toast.error("Failed to update token status");
+    }
+  };
 
   // Group appointments by department/doctor
   const queuesMap: Record<string, {
+    department: string;
     room: string;
     doctor: string;
     nowServing: string;
+    nowServingId?: string;
+    nextId?: string;
     waiting: number;
     avgMin: number;
     state: "in-room" | "break";
@@ -31,18 +53,22 @@ export function QueuePanel() {
     const key = app.department;
     if (!queuesMap[key]) {
       queuesMap[key] = {
+        department: app.department,
         room: `OPD · ${app.department}`,
-        doctor: app.doctor ? `Dr. ${app.doctor.firstName} ${app.doctor.lastName}` : "TBA",
+        doctor: app.doctor ? `Dr. ${app.doctor.name || "TBA"}` : "TBA",
         nowServing: "-",
         waiting: 0,
         avgMin: 12,
         state: "in-room",
       };
     }
-    if (app.status === "SCHEDULED") {
+    // Reception uses CONFIRMED as scheduled
+    if (app.status === "PENDING" || app.status === "CONFIRMED") {
       queuesMap[key].waiting++;
+      if (!queuesMap[key].nextId) queuesMap[key].nextId = app._id;
     } else if (app.status === "IN_PROGRESS") {
       queuesMap[key].nowServing = `${app.department.charAt(0)}-${app._id.slice(-4)}`;
+      queuesMap[key].nowServingId = app._id;
     }
   });
 
@@ -94,12 +120,29 @@ export function QueuePanel() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
-              <ActionButton tone="solid">
+              <ActionButton 
+                tone="solid" 
+                onClick={() => {
+                  if (q.nextId) {
+                    handleUpdateStatus(q.nextId, "IN_PROGRESS");
+                  } else {
+                    toast.error("No patients waiting in queue");
+                  }
+                }}
+              >
                 <Ticket className="mr-1 inline size-3" />
                 Call next
               </ActionButton>
-              <ActionButton>Recall</ActionButton>
-              <ActionButton>Mark no-show</ActionButton>
+              {q.nowServingId && (
+                <ActionButton onClick={() => handleUpdateStatus(q.nowServingId!, "IN_PROGRESS")}>
+                  Recall
+                </ActionButton>
+              )}
+              {q.nowServingId && (
+                <ActionButton onClick={() => handleUpdateStatus(q.nowServingId!, "CANCELLED")}>
+                  Mark no-show
+                </ActionButton>
+              )}
             </div>
           </div>
         ))}

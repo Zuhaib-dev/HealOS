@@ -25,6 +25,9 @@ const updatePatientProfileSchema = z.object({
   allergies: z.array(z.string()).optional(),
   medicalHistory: z.string().optional(),
   address: z.string().optional(),
+  height: z.number().optional(),
+  heightUnit: z.enum(["cm", "ft"]).optional(),
+  weight: z.number().optional(),
 });
 
 import { emitUserRoleUpdated, emitNewOnboardingRequest } from "../socket.js";

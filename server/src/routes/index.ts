@@ -13,6 +13,7 @@ import radiologyRouter from "./radiology.routes.js";
 import receptionRouter from "./reception.routes.js";
 import pharmacyRouter from "./pharmacy.routes.js";
 import nurseRouter from "./nurse.routes.js";
+import paymentRouter from "./payment.routes.js";
 
 export const apiRouter = Router();
 
@@ -48,3 +49,4 @@ apiRouter.use("/radiology", radiologyRouter);
 apiRouter.use("/reception", receptionRouter);
 apiRouter.use("/pharmacy", pharmacyRouter);
 apiRouter.use("/nurse", nurseRouter);
+apiRouter.use("/payment", paymentRouter);

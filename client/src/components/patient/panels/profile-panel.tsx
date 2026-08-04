@@ -16,6 +16,9 @@ export function ProfilePanel() {
   const [emergencyContactName, setEmergencyContactName] = useState("");
   const [allergies, setAllergies] = useState("");
   const [address, setAddress] = useState("");
+  const [height, setHeight] = useState<number | "">("");
+  const [heightUnit, setHeightUnit] = useState<"cm" | "ft">("cm");
+  const [weight, setWeight] = useState<number | "">("");
 
   useEffect(() => {
     fetchPatientProfileApi()
@@ -28,6 +31,9 @@ export function ProfilePanel() {
           if (res.profile.emergencyContactName) setEmergencyContactName(res.profile.emergencyContactName);
           if (res.profile.allergies) setAllergies(res.profile.allergies.join(", "));
           if (res.profile.address) setAddress(res.profile.address);
+          if (res.profile.height) setHeight(res.profile.height);
+          if (res.profile.heightUnit) setHeightUnit(res.profile.heightUnit);
+          if (res.profile.weight) setWeight(res.profile.weight);
         }
       })
       .catch(() => {});
@@ -49,6 +55,9 @@ export function ProfilePanel() {
         emergencyContactName,
         allergies: allergyArr,
         address,
+        height: height === "" ? undefined : height,
+        heightUnit,
+        weight: weight === "" ? undefined : weight,
       });
 
       if (res.success) {
@@ -194,6 +203,43 @@ export function ProfilePanel() {
                       placeholder="e.g. Penicillin, Dust Mites, Peanuts"
                       className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
+                  </div>
+
+                  <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 bg-muted/10 p-4 rounded-lg border border-border/40 mb-6">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                        Height
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          value={height}
+                          onChange={(e) => setHeight(e.target.value === "" ? "" : Number(e.target.value))}
+                          placeholder="e.g. 175"
+                          className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                        />
+                        <select
+                          value={heightUnit}
+                          onChange={(e) => setHeightUnit(e.target.value as "cm" | "ft")}
+                          className="appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all w-24"
+                        >
+                          <option value="cm">cm</option>
+                          <option value="ft">ft</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                        Weight (kg)
+                      </label>
+                      <input
+                        type="number"
+                        value={weight}
+                        onChange={(e) => setWeight(e.target.value === "" ? "" : Number(e.target.value))}
+                        placeholder="e.g. 70"
+                        className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      />
+                    </div>
                   </div>
 
                   <div className="sm:col-span-2">

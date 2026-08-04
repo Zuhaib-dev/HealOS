@@ -21,6 +21,7 @@ export enum PaymentMethod {
 export enum PaymentStatus {
   PAID = "PAID",
   PENDING_CASH = "PENDING_CASH",
+  PENDING_ONLINE = "PENDING_ONLINE",
   REFUNDED = "REFUNDED",
 }
 
@@ -38,6 +39,9 @@ export interface IAppointment extends Document {
   amount: number;
   bookedAt: Date;
   notes?: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -75,6 +79,9 @@ const appointmentSchema = new Schema<IAppointment>(
     amount: { type: Number, required: true, default: 400 },
     bookedAt: { type: Date, default: Date.now },
     notes: { type: String },
+    razorpayOrderId: { type: String },
+    razorpayPaymentId: { type: String },
+    razorpaySignature: { type: String },
   },
   { timestamps: true }
 );

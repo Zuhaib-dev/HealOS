@@ -61,7 +61,7 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const paymentStatus = paymentMethod === ApptPaymentMethod.ONLINE ? ApptPaymentStatus.PAID : ApptPaymentStatus.PENDING_CASH;
+    const paymentStatus = paymentMethod === ApptPaymentMethod.ONLINE ? ApptPaymentStatus.PENDING_ONLINE : ApptPaymentStatus.PENDING_CASH;
 
     const appointment = await Appointment.create({
       patient: patientId,
@@ -84,10 +84,10 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
       appointment: appointment._id,
       items: [{ description: "OPD Consultation Fee", amount: 400 }],
       totalAmount: 400,
-      status: paymentMethod === ApptPaymentMethod.ONLINE ? InvoiceStatus.PAID : InvoiceStatus.PENDING,
+      status: InvoiceStatus.PENDING,
       paymentMethod: paymentMethod === ApptPaymentMethod.ONLINE ? InvoicePaymentMethod.CARD : undefined,
       payer: "self",
-      paidAt: paymentMethod === ApptPaymentMethod.ONLINE ? new Date() : undefined,
+      paidAt: undefined,
     });
 
     const populated = await Appointment.findById(appointment._id)

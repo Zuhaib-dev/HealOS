@@ -28,6 +28,9 @@ export interface IInvoice extends Document {
   paymentMethod?: InvoicePaymentMethod;
   payer: string; // "self", "insurance", "corporate"
   insuranceCoverage?: number;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
   paidAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -60,6 +63,9 @@ const invoiceSchema = new Schema<IInvoice>(
       default: "self",
     },
     insuranceCoverage: { type: Number, default: 0 },
+    razorpayOrderId: { type: String },
+    razorpayPaymentId: { type: String },
+    razorpaySignature: { type: String },
     paidAt: { type: Date },
   },
   { timestamps: true }

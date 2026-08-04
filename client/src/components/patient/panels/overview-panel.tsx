@@ -139,6 +139,59 @@ export function OverviewPanel() {
           ))}
         </div>
 
+        {/* BMI & Health Stats row */}
+        {profile?.height && profile?.weight && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <Card className="shadow-sm border-border/60 bg-gradient-to-br from-indigo-500/10 to-transparent">
+              <CardContent className="p-5 flex flex-col justify-center">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Body Mass Index (BMI)
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <span className="font-mono text-3xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
+                    {(
+                      profile.weight /
+                      Math.pow(
+                        profile.heightUnit === "ft" ? profile.height * 0.3048 : profile.height / 100,
+                        2
+                      )
+                    ).toFixed(1)}
+                  </span>
+                  <span className="text-sm font-semibold text-indigo-700/70 dark:text-indigo-400/70">
+                    {(() => {
+                      const bmi = profile.weight / Math.pow(profile.heightUnit === "ft" ? profile.height * 0.3048 : profile.height / 100, 2);
+                      if (bmi < 18.5) return "Underweight";
+                      if (bmi < 25) return "Normal weight";
+                      if (bmi < 30) return "Overweight";
+                      return "Obese";
+                    })()}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-border/60">
+              <CardContent className="p-5 flex flex-col justify-center">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Height
+                </p>
+                <p className="font-mono text-xl font-bold tracking-tight text-foreground">
+                  {profile.height} <span className="text-sm text-muted-foreground">{profile.heightUnit}</span>
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-border/60">
+              <CardContent className="p-5 flex flex-col justify-center">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Weight
+                </p>
+                <p className="font-mono text-xl font-bold tracking-tight text-foreground">
+                  {profile.weight} <span className="text-sm text-muted-foreground">kg</span>
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Alerts & Care Team */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           

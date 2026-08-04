@@ -32,6 +32,9 @@ export interface PatientProfileData {
   allergies?: string[];
   medicalHistory?: string;
   address?: string;
+  height?: number;
+  heightUnit?: "cm" | "ft";
+  weight?: number;
   isComplete: boolean;
 }
 

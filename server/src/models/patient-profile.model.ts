@@ -10,6 +10,9 @@ export interface IPatientProfile extends Document {
   allergies?: string[];
   medicalHistory?: string;
   address?: string;
+  height?: number;
+  heightUnit?: "cm" | "ft";
+  weight?: number; // in kg
   isComplete: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +29,9 @@ const patientProfileSchema = new Schema<IPatientProfile>(
     allergies: [{ type: String }],
     medicalHistory: { type: String },
     address: { type: String },
+    height: { type: Number },
+    heightUnit: { type: String, enum: ["cm", "ft"], default: "cm" },
+    weight: { type: Number },
     isComplete: { type: Boolean, default: false },
   },
   { timestamps: true }

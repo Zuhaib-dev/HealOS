@@ -15,6 +15,10 @@ export function ProfilePanel() {
   const [specialization, setSpecialization] = useState("");
   const [degree, setDegree] = useState("");
   const [bio, setBio] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [experienceYears, setExperienceYears] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
@@ -22,12 +26,17 @@ export function ProfilePanel() {
     // Load doctor profile data
     apiClient.get("/doctor/profile")
       .then((res: any) => {
-        if (res.data?.status === "success") {
+          if (res.data?.status === "success") {
           const prof = res.data.data.profile;
+          const usr = res.data.data.user;
+          if (usr?.name) setName(usr.name);
+          if (usr?.phone) setPhone(usr.phone);
           if (prof?.department) setDepartment(prof.department);
           if (prof?.specialization) setSpecialization(prof.specialization);
           if (prof?.degree) setDegree(prof.degree);
           if (prof?.bio) setBio(prof.bio);
+          if (prof?.experienceYears !== undefined) setExperienceYears(String(prof.experienceYears));
+          if (prof?.licenseNumber) setLicenseNumber(prof.licenseNumber);
         }
       })
       .catch(() => {});
@@ -52,6 +61,10 @@ export function ProfilePanel() {
       formData.append("specialization", specialization);
       formData.append("degree", degree);
       formData.append("bio", bio);
+      formData.append("name", name);
+      formData.append("phone", phone);
+      formData.append("experienceYears", experienceYears);
+      formData.append("licenseNumber", licenseNumber);
       if (avatarFile) {
         formData.append("avatar", avatarFile);
       }
@@ -119,6 +132,28 @@ export function ProfilePanel() {
                   </div>
                 </div>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Full Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="e.g. Dr. Jane Doe"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Phone Number</label>
+                  <input
+                    type="text"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="+1 234 567 8900"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -141,6 +176,16 @@ export function ProfilePanel() {
                 />
               </div>
               <div className="space-y-2">
+                <label className="text-sm font-medium">License Number</label>
+                <input
+                  type="text"
+                  value={licenseNumber}
+                  onChange={(e) => setLicenseNumber(e.target.value)}
+                  className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="e.g. MED-12345"
+                />
+              </div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium">Specialization</label>
                 <input
                   type="text"
@@ -148,6 +193,17 @@ export function ProfilePanel() {
                   onChange={(e) => setSpecialization(e.target.value)}
                   className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   placeholder="e.g. Interventional Cardiology"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Years of Experience</label>
+                <input
+                  type="number"
+                  value={experienceYears}
+                  onChange={(e) => setExperienceYears(e.target.value)}
+                  className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="e.g. 10"
+                  min="0"
                 />
               </div>
               <div className="space-y-2">

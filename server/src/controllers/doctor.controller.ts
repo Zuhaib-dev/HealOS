@@ -222,7 +222,7 @@ export const getDoctorProfile = async (req: Request, res: Response) => {
 export const updateDoctorProfile = async (req: Request, res: Response) => {
   try {
     const doctorId = req.user?._id;
-    const { department, bio, specialization, degree } = req.body;
+    const { department, bio, specialization, degree, name, phone, experienceYears, licenseNumber } = req.body;
 
     let user = await User.findById(doctorId);
     if (!user) throw new AppError("Doctor not found", 404);
@@ -235,15 +235,20 @@ export const updateDoctorProfile = async (req: Request, res: Response) => {
         requestedRole: user.role,
         degree: degree || "Unknown",
         specialization: specialization || "General",
-        experienceYears: 0,
-        licenseNumber: "TBD",
+        experienceYears: experienceYears || 0,
+        licenseNumber: licenseNumber || "TBD",
       });
     }
+
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
 
     if (department) profile.department = department;
     if (bio) profile.bio = bio;
     if (specialization) profile.specialization = specialization;
     if (degree) profile.degree = degree;
+    if (experienceYears !== undefined) profile.experienceYears = Number(experienceYears);
+    if (licenseNumber) profile.licenseNumber = licenseNumber;
 
     // Handle Image Upload if file exists
     if (req.file) {

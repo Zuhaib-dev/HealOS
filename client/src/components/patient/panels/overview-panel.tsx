@@ -1,90 +1,29 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
-  Check,
-  Download,
-  Eye,
-  FileText,
-  Share2,
   TriangleAlert,
-  Video,
-  MapPin,
-  X,
-  Send,
-  RefreshCw,
-  UploadCloud,
+  Activity,
+  HeartPulse,
+  Droplets,
+  Thermometer,
+  Scale,
+  Users,
+  AlertCircle,
+  Stethoscope,
+  ShieldCheck
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Badge } from "@/components/ui/badge";
-import {
-  fetchAvailableDoctorsApi,
-  bookAppointmentApi,
-  fetchPatientAppointmentsApi,
-  updateAppointmentStatusApi,
-  DoctorListItem,
-  AppointmentRecord,
-} from "@/lib/api/appointment";
-import {
-  fetchPatientProfileApi,
-  updatePatientProfileApi,
-  PatientProfileData,
-} from "@/lib/api/onboarding";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { fetchPatientProfileApi, PatientProfileData } from "@/lib/api/onboarding";
 import { useAuthStore } from "@/store/use-auth-store";
-import { toast } from "sonner";
 import {
   patient,
-  upcoming,
-  history,
-  departments,
-  slotTimes,
-  bookedTimes,
-  reports,
-  meds,
-  bills,
   vitals,
-  messages,
   careTeam,
-  type Appointment,
 } from "../patient-data";
-import { fetchPatientDashboardApi, PatientDashboardData, payInvoiceApi } from "@/lib/api/patient";
-import { getSocket } from "@/lib/socket";
-
-/* ---------- primitives ---------- */
-
-function Pill({
-  children,
-  tone,
-}: {
-  children: React.ReactNode;
-  tone: "ok" | "warn" | "bad" | "mute";
-}) {
-  const map = {
-    ok: "bg-accent/12 text-brass",
-    warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
-    mute: "bg-foreground/[0.04] text-muted-foreground",
-  } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
-  );
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
-
-function stateTone(s: Appointment["state"]) {
-  if (s === "confirmed" || s === "completed") return "ok";
-  if (s === "pending") return "warn";
-  return "bad";
-}
 
 /** Animated trend line — drawn, never an image. */
-function Trend({ series }: { series: number[] }) {
+function Trend({ series, color }: { series: number[], color?: string }) {
   const max = Math.max(...series);
   const min = Math.min(...series);
   const pts = series
@@ -95,12 +34,12 @@ function Trend({ series }: { series: number[] }) {
     })
     .join(" ");
   return (
-    <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="h-10 w-full">
+    <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="h-10 w-full mt-2">
       <motion.polyline
         points={pts}
         fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="1.4"
+        stroke={color || "var(--color-primary)"}
+        strokeWidth="2"
         vectorEffect="non-scaling-stroke"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
@@ -109,31 +48,6 @@ function Trend({ series }: { series: number[] }) {
     </svg>
   );
 }
-
-function AppointmentRow({ a, actions }: { a: Appointment; actions?: React.ReactNode }) {
-  return (
-    <div className="bg-background flex flex-wrap items-center gap-4 px-5 py-4 sm:px-8">
-      <div className="w-28 shrink-0">
-        <p className="mono-label text-brass">{a.date}</p>
-        <p className="mono-label text-muted-foreground">{a.time}</p>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{a.reason}</p>
-        <p className="mono-label text-muted-foreground mt-1">
-          {a.dept} · {a.clinician}
-        </p>
-      </div>
-      <span className="mono-label text-muted-foreground hidden items-center gap-1.5 sm:flex">
-        {a.mode === "Video" ? <Video className="size-3" /> : <MapPin className="size-3" />}
-        {a.room}
-      </span>
-      <Pill tone={stateTone(a.state)}>{a.state}</Pill>
-      {actions}
-    </div>
-  );
-}
-
-/* ---------- 01 overview ---------- */
 
 export function OverviewPanel() {
   const { user } = useAuthStore();
@@ -159,111 +73,178 @@ export function OverviewPanel() {
   const allergiesList = profile?.allergies?.length ? profile.allergies : ["No known drug allergies"];
   const bloodGroup = profile?.bloodGroup || "O+";
 
+  const getVitalIcon = (label: string) => {
+    switch (label.toLowerCase()) {
+      case "blood pressure": return <HeartPulse className="size-4 text-rose-500" />;
+      case "heart rate": return <Activity className="size-4 text-amber-500" />;
+      case "glucose": return <Droplets className="size-4 text-cyan-500" />;
+      case "temperature": return <Thermometer className="size-4 text-orange-500" />;
+      case "weight": return <Scale className="size-4 text-indigo-500" />;
+      default: return <Activity className="size-4 text-primary" />;
+    }
+  };
+
+  const getVitalColor = (label: string) => {
+    switch (label.toLowerCase()) {
+      case "blood pressure": return "#f43f5e";
+      case "heart rate": return "#f59e0b";
+      case "glucose": return "#06b6d4";
+      case "temperature": return "#f97316";
+      case "weight": return "#6366f1";
+      default: return "var(--color-primary)";
+    }
+  };
+
   return (
-    <section>
+    <section className="pb-12">
       <PanelHeader
         index="01 / my health"
         title={`Hello, ${userFirstName}`}
         note={`Role: ${userRole} · Email: ${user?.email || "N/A"} · Blood Group: ${bloodGroup}`}
         actions={
-          <>
-            <ActionButton tone="solid">Verified Health Account</ActionButton>
-          </>
+          <ActionButton tone="solid">
+            <ShieldCheck className="size-4 mr-2" />
+            Verified Health Account
+          </ActionButton>
         }
       />
 
-      <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
-        <div className="bg-background p-5 lg:col-span-2">
-          <p className="mono-label text-muted-foreground">Logged-In Profile Status</p>
-          <p className="mt-2 font-mono text-2xl font-bold tracking-tight">
-            {userName}
-          </p>
-          <p className="mono-label text-muted-foreground mt-2">
-            Phone: {user?.phone || profile?.emergencyPhone || "Not set"} · Emergency Contact: {profile?.emergencyContactName || "Not set"}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <ActionButton tone="solid">Profile Verified</ActionButton>
-          </div>
-        </div>
-
-        <div className="bg-background p-5">
-          <p className="mono-label text-muted-foreground">Account Health Alerts</p>
-          <ul className="mt-3 space-y-3">
-            {[
-              { t: `Account Email: ${user?.email}`, tone: "ok" as const },
-              { t: `Role Designation: ${userRole}`, tone: "warn" as const },
-              { t: `Blood Group: ${bloodGroup}`, tone: "ok" as const },
-            ].map((i) => (
-              <li key={i.t} className="flex items-center gap-3">
-                <Pill tone={i.tone}>·</Pill>
-                <span className="text-sm">{i.t}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <div
-        className="hairline-t grid gap-px sm:grid-cols-2 xl:grid-cols-4"
-        style={{ background: "var(--hairline)" }}
-      >
-        {vitals.map((v) => (
-          <div key={v.label} className="bg-background p-5">
-            <p className="mono-label text-muted-foreground">{v.label}</p>
-            <p className="mt-2 font-mono text-3xl font-bold tracking-tight">
-              {v.value}
-              <span className="text-muted-foreground ml-1 text-sm font-normal">{v.unit}</span>
-            </p>
-            <Trend series={v.series} />
-            <p className="mono-label text-muted-foreground">{v.note}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="hairline-t grid gap-px lg:grid-cols-2" style={{ background: "var(--hairline)" }}>
-        <div className="bg-background p-5">
-          <p className="mono-label text-muted-foreground">Allergies &amp; alerts</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {allergiesList.map((a) => (
-              <span key={a} className="mono-label bg-destructive/12 text-destructive px-2 py-1">
-                <TriangleAlert className="mr-1 inline size-3" />
-                {a}
-              </span>
-            ))}
-          </div>
-          <p className="mono-label text-muted-foreground mt-5">Ongoing conditions</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {patient.conditions.map((c) => (
-              <Pill key={c} tone="warn">
-                {c}
-              </Pill>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-background p-5">
-          <p className="mono-label text-muted-foreground">Care team</p>
-          <div className="mt-3 flex flex-col gap-3">
-            {careTeam.map((c) => (
-              <div key={c.name} className="flex items-center gap-3">
-                <div className="bg-accent/12 text-brass mono-label grid size-8 shrink-0 place-items-center">
-                  {c.name
-                    .replace("Dr. ", "")
-                    .replace("Sr. ", "")
-                    .split(" ")
-                    .map((p) => p[0])
-                    .join("")
-                    .slice(0, 2)}
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        
+        {/* Vitals Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {vitals.slice(0, 4).map((v) => (
+            <Card key={v.label} className="shadow-sm border-border/60 hover:shadow-md transition-shadow">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {v.label}
+                  </span>
+                  <div className="p-1.5 rounded-md bg-muted/50 border border-border/40">
+                    {getVitalIcon(v.label)}
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm">{c.name}</p>
-                  <p className="mono-label text-muted-foreground">
-                    {c.role} · {c.contact}
+                <div className="flex items-baseline gap-1 mt-2">
+                  <span className="font-mono text-3xl font-bold tracking-tight text-foreground">
+                    {v.value}
+                  </span>
+                  <span className="text-muted-foreground text-sm font-medium">{v.unit}</span>
+                </div>
+                <Trend series={v.series} color={getVitalColor(v.label)} />
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-3">
+                  {v.note}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Alerts & Care Team */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          <div className="lg:col-span-8 space-y-6">
+            <Card className="shadow-sm border-border/60">
+              <CardHeader className="pb-4 border-b border-border/40">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertCircle className="size-4 text-rose-500" />
+                  Health Alerts & Allergies
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                      Known Allergies
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {allergiesList.map((a) => (
+                        <span key={a} className="inline-flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 px-2.5 py-1.5 rounded-md text-xs font-semibold">
+                          <TriangleAlert className="size-3.5" />
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                      Active Conditions
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {patient.conditions.map((c) => (
+                        <span key={c} className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 px-2.5 py-1.5 rounded-md text-xs font-semibold">
+                          <Activity className="size-3.5" />
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-border/60 overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+              <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
+                <div>
+                  <h3 className="font-mono text-2xl font-bold tracking-tight text-foreground">
+                    {userName}
+                  </h3>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    Phone: {user?.phone || profile?.emergencyPhone || "Not set"}
+                  </p>
+                  <p className="text-muted-foreground text-sm">
+                    Emergency Contact: {profile?.emergencyContactName || "Not set"}
                   </p>
                 </div>
-              </div>
-            ))}
+                
+                <div className="text-center sm:text-right bg-background p-4 rounded-xl border border-border/40 shadow-sm">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Blood Type
+                  </p>
+                  <p className="font-mono text-3xl font-bold text-rose-500">
+                    {bloodGroup}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
+
+          <div className="lg:col-span-4">
+            <Card className="shadow-sm border-border/60">
+              <CardHeader className="pb-4 border-b border-border/40">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="size-4 text-primary" />
+                  My Care Team
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="flex flex-col gap-4">
+                  {careTeam.map((c) => (
+                    <div key={c.name} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors cursor-pointer group">
+                      <div className="bg-primary/10 border border-primary/20 text-primary font-bold grid size-10 rounded-full shrink-0 place-items-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                        {c.name
+                          .replace("Dr. ", "")
+                          .replace("Sr. ", "")
+                          .split(" ")
+                          .map((p) => p[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">{c.name}</p>
+                        <p className="text-xs text-muted-foreground truncate font-medium mt-0.5 flex items-center gap-1.5">
+                          <Stethoscope className="size-3" />
+                          {c.role}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
         </div>
       </div>
     </section>

@@ -1,139 +1,10 @@
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
-import {
-  Check,
-  Download,
-  Eye,
-  FileText,
-  Share2,
-  TriangleAlert,
-  Video,
-  MapPin,
-  X,
-  Send,
-  RefreshCw,
-  UploadCloud,
-} from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Badge } from "@/components/ui/badge";
-import {
-  fetchAvailableDoctorsApi,
-  bookAppointmentApi,
-  fetchPatientAppointmentsApi,
-  updateAppointmentStatusApi,
-  DoctorListItem,
-  AppointmentRecord,
-} from "@/lib/api/appointment";
-import {
-  fetchPatientProfileApi,
-  updatePatientProfileApi,
-  PatientProfileData,
-} from "@/lib/api/onboarding";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ShieldCheck, UserCheck, BellRing, Lock, AlertTriangle, FileText } from "lucide-react";
+import { fetchPatientProfileApi, updatePatientProfileApi } from "@/lib/api/onboarding";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import {
-  patient,
-  upcoming,
-  history,
-  departments,
-  slotTimes,
-  bookedTimes,
-  reports,
-  meds,
-  bills,
-  vitals,
-  messages,
-  careTeam,
-  type Appointment,
-} from "../patient-data";
-import { fetchPatientDashboardApi, PatientDashboardData, payInvoiceApi } from "@/lib/api/patient";
-import { getSocket } from "@/lib/socket";
-
-/* ---------- primitives ---------- */
-
-function Pill({
-  children,
-  tone,
-}: {
-  children: React.ReactNode;
-  tone: "ok" | "warn" | "bad" | "mute";
-}) {
-  const map = {
-    ok: "bg-accent/12 text-brass",
-    warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
-    mute: "bg-foreground/[0.04] text-muted-foreground",
-  } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
-  );
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
-
-function stateTone(s: Appointment["state"]) {
-  if (s === "confirmed" || s === "completed") return "ok";
-  if (s === "pending") return "warn";
-  return "bad";
-}
-
-/** Animated trend line — drawn, never an image. */
-function Trend({ series }: { series: number[] }) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
-  const pts = series
-    .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
-      const y = 30 - ((v - min) / Math.max(0.001, max - min)) * 24 - 3;
-      return `${x},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  return (
-    <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="h-10 w-full">
-      <motion.polyline
-        points={pts}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="1.4"
-        vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.4, ease: "easeInOut" }}
-      />
-    </svg>
-  );
-}
-
-function AppointmentRow({ a, actions }: { a: Appointment; actions?: React.ReactNode }) {
-  return (
-    <div className="bg-background flex flex-wrap items-center gap-4 px-5 py-4 sm:px-8">
-      <div className="w-28 shrink-0">
-        <p className="mono-label text-brass">{a.date}</p>
-        <p className="mono-label text-muted-foreground">{a.time}</p>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{a.reason}</p>
-        <p className="mono-label text-muted-foreground mt-1">
-          {a.dept} · {a.clinician}
-        </p>
-      </div>
-      <span className="mono-label text-muted-foreground hidden items-center gap-1.5 sm:flex">
-        {a.mode === "Video" ? <Video className="size-3" /> : <MapPin className="size-3" />}
-        {a.room}
-      </span>
-      <Pill tone={stateTone(a.state)}>{a.state}</Pill>
-      {actions}
-    </div>
-  );
-}
-
-/* ---------- 08 profile ---------- */
 
 export function ProfilePanel() {
   const { user, updateUser } = useAuthStore();
@@ -181,166 +52,226 @@ export function ProfilePanel() {
       });
 
       if (res.success) {
-        toast.success("Patient profile updated successfully in MongoDB Atlas!");
+        toast.success("Profile updated successfully!");
         if (emergencyPhone && user) {
           updateUser({ phone: emergencyPhone });
         }
       }
     } catch {
-      toast.error("Failed to update patient profile.");
+      toast.error("Failed to update profile.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <section>
+    <section className="pb-12">
       <form onSubmit={handleSave}>
         <PanelHeader
           index="08 / profile"
-          title="My Profile"
-          note="Live contact details and health records stored in your MongoDB Atlas account."
+          title="Personal Profile"
+          note="Manage your contact details, emergency information, and account preferences securely."
           actions={
             <ActionButton tone="solid" type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
+              {saving ? "Saving Changes..." : "Save Changes"}
             </ActionButton>
           }
         />
 
-        <div className="grid gap-px lg:grid-cols-2" style={{ background: "var(--hairline)" }}>
-          <div className="bg-background p-5">
-            <p className="mono-label text-muted-foreground">Personal Information</p>
-            <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <label className="block sm:col-span-2">
-                <span className="mono-label text-muted-foreground">Full Name</span>
-                <input
-                  readOnly
-                  value={user?.name || ""}
-                  className="hairline mt-2 w-full bg-muted/30 px-3 py-2.5 text-sm outline-none cursor-not-allowed"
-                />
-              </label>
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* Left Column: Form */}
+            <div className="lg:col-span-8">
+              <Card className="shadow-sm border-border/60">
+                <CardHeader className="pb-4 border-b border-border/40">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <UserCheck className="size-4 text-primary" />
+                    Personal Information
+                  </CardTitle>
+                  <CardDescription>Update your personal and medical identification details.</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6 grid gap-6 sm:grid-cols-2">
+                  
+                  {/* Read Only Fields */}
+                  <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 bg-muted/30 p-4 rounded-lg border border-border/40">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                        Full Name
+                      </label>
+                      <input
+                        readOnly
+                        value={user?.name || ""}
+                        className="w-full bg-transparent text-sm font-medium outline-none text-foreground/70 cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                        Email Address
+                      </label>
+                      <input
+                        readOnly
+                        value={user?.email || ""}
+                        className="w-full bg-transparent text-sm font-medium outline-none text-foreground/70 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
 
-              <label className="block sm:col-span-2">
-                <span className="mono-label text-muted-foreground">Email Address</span>
-                <input
-                  readOnly
-                  value={user?.email || ""}
-                  className="hairline mt-2 w-full bg-muted/30 px-3 py-2.5 text-sm outline-none cursor-not-allowed"
-                />
-              </label>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="date"
+                      value={dob}
+                      onChange={(e) => setDob(e.target.value)}
+                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    />
+                  </div>
 
-              <label className="block">
-                <span className="mono-label text-muted-foreground">Date of Birth</span>
-                <input
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
-                />
-              </label>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                      Gender
+                    </label>
+                    <select
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value as any)}
+                      className="w-full appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    >
+                      <option value="MALE">Male</option>
+                      <option value="FEMALE">Female</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
 
-              <label className="block">
-                <span className="mono-label text-muted-foreground">Gender</span>
-                <select
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value as any)}
-                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
-                >
-                  <option value="MALE">MALE</option>
-                  <option value="FEMALE">FEMALE</option>
-                  <option value="OTHER">OTHER</option>
-                </select>
-              </label>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                      Blood Group
+                    </label>
+                    <select
+                      value={bloodGroup}
+                      onChange={(e) => setBloodGroup(e.target.value as any)}
+                      className="w-full appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    >
+                      {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map(bg => (
+                        <option key={bg} value={bg}>{bg}</option>
+                      ))}
+                    </select>
+                  </div>
 
-              <label className="block">
-                <span className="mono-label text-muted-foreground">Blood Group</span>
-                <select
-                  value={bloodGroup}
-                  onChange={(e) => setBloodGroup(e.target.value as any)}
-                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
-                >
-                  <option value="A+">A+</option>
-                  <option value="A-">A-</option>
-                  <option value="B+">B+</option>
-                  <option value="B-">B-</option>
-                  <option value="O+">O+</option>
-                  <option value="O-">O-</option>
-                  <option value="AB+">AB+</option>
-                  <option value="AB-">AB-</option>
-                </select>
-              </label>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                      Emergency Contact Name
+                    </label>
+                    <input
+                      value={emergencyContactName}
+                      onChange={(e) => setEmergencyContactName(e.target.value)}
+                      placeholder="Primary contact name"
+                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    />
+                  </div>
 
-              <label className="block">
-                <span className="mono-label text-muted-foreground">Emergency Contact Name</span>
-                <input
-                  value={emergencyContactName}
-                  onChange={(e) => setEmergencyContactName(e.target.value)}
-                  placeholder="Primary contact name"
-                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
-                />
-              </label>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                      Emergency Phone Number
+                    </label>
+                    <input
+                      value={emergencyPhone}
+                      onChange={(e) => setEmergencyPhone(e.target.value)}
+                      placeholder="+91 9876543210"
+                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    />
+                  </div>
 
-              <label className="block sm:col-span-2">
-                <span className="mono-label text-muted-foreground">Emergency Phone Number</span>
-                <input
-                  value={emergencyPhone}
-                  onChange={(e) => setEmergencyPhone(e.target.value)}
-                  placeholder="+91 9876543210"
-                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
-                />
-              </label>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <AlertTriangle className="size-3.5 text-amber-500" />
+                      Known Allergies (Comma Separated)
+                    </label>
+                    <input
+                      value={allergies}
+                      onChange={(e) => setAllergies(e.target.value)}
+                      placeholder="e.g. Penicillin, Dust Mites, Peanuts"
+                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    />
+                  </div>
 
-              <label className="block sm:col-span-2">
-                <span className="mono-label text-muted-foreground">Known Allergies (Comma Separated)</span>
-                <input
-                  value={allergies}
-                  onChange={(e) => setAllergies(e.target.value)}
-                  placeholder="Penicillin, Dust Mites, Peanuts"
-                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 text-sm outline-none"
-                />
-              </label>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                      Residential Address
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Enter full residential address"
+                      className="w-full resize-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    />
+                  </div>
 
-              <label className="block sm:col-span-2">
-                <span className="mono-label text-muted-foreground">Residential Address</span>
-                <textarea
-                  rows={3}
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Enter full address"
-                  className="hairline mt-2 w-full bg-transparent p-3 text-sm outline-none resize-none"
-                />
-              </label>
+                </CardContent>
+              </Card>
             </div>
-          </div>
 
-          <div className="bg-background p-5">
-            <p className="mono-label text-muted-foreground">Account Status</p>
-            <div className="mt-3 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <p className="font-semibold text-sm text-foreground">Role: {user?.role}</p>
-              <p className="mono-label text-xs text-muted-foreground mt-1">
-                Verified Status: {user?.isEmailVerified ? "Verified ✓" : "Pending Verification"}
-              </p>
+            {/* Right Column: Status & Consent */}
+            <div className="lg:col-span-4 space-y-6">
+              
+              <Card className="shadow-sm border-border/60">
+                <CardHeader className="pb-4 border-b border-border/40">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ShieldCheck className="size-4 text-emerald-500" />
+                    Account Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-semibold text-sm text-emerald-800 dark:text-emerald-300">
+                        Role: {user?.role}
+                      </p>
+                      {user?.isEmailVerified && (
+                        <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+                      )}
+                    </div>
+                    <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80 font-medium">
+                      Status: {user?.isEmailVerified ? "Verified Identity" : "Pending Verification"}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-sm border-border/60 bg-muted/10">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Lock className="size-4 text-muted-foreground" />
+                    Consent & Security
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {[
+                    { t: "Share records with assigned clinicians", on: true, icon: FileText },
+                    { t: "SMS & Email reminders for visits", on: true, icon: BellRing },
+                    { t: "HIPAA Compliant Data Encryption", on: true, icon: Lock },
+                  ].map((c) => {
+                    const Icon = c.icon as any;
+                    return (
+                      <div key={c.t} className="flex items-start gap-3 p-3 rounded-md bg-background border border-border/40">
+                        <div className="mt-0.5">
+                          <Icon className="size-4 text-primary/70" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground leading-tight">{c.t}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
+                            {c.on ? <span className="text-emerald-500">Active</span> : "Disabled"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
             </div>
-
-            <p className="mono-label text-muted-foreground mt-6">Consent &amp; Data Security</p>
-            <ul className="mt-3 space-y-3">
-              {[
-                { t: "Share records with assigned clinicians", on: true },
-                { t: "SMS & Email reminders before appointments", on: true },
-                { t: "HIPAA Compliant Data Encryption", on: true },
-              ].map((c) => (
-                <li key={c.t} className="flex items-center justify-between gap-4">
-                  <span className="text-sm">{c.t}</span>
-                  <span
-                    className={`mono-label px-2 py-1 ${
-                      c.on ? "bg-accent/12 text-brass font-mono" : "bg-foreground/4 text-muted-foreground"
-                    }`}
-                  >
-                    {c.on ? "active" : "off"}
-                  </span>
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
       </form>

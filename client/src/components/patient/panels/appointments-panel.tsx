@@ -1,139 +1,24 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
-  Check,
-  Download,
-  Eye,
-  FileText,
-  Share2,
-  TriangleAlert,
+  Calendar,
+  Clock,
   Video,
   MapPin,
-  X,
-  Send,
-  RefreshCw,
-  UploadCloud,
+  XCircle,
+  FileText,
+  Building2,
+  Stethoscope,
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-  fetchAvailableDoctorsApi,
-  bookAppointmentApi,
   fetchPatientAppointmentsApi,
   updateAppointmentStatusApi,
-  DoctorListItem,
   AppointmentRecord,
 } from "@/lib/api/appointment";
-import {
-  fetchPatientProfileApi,
-  updatePatientProfileApi,
-  PatientProfileData,
-} from "@/lib/api/onboarding";
-import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import {
-  patient,
-  upcoming,
-  history,
-  departments,
-  slotTimes,
-  bookedTimes,
-  reports,
-  meds,
-  bills,
-  vitals,
-  messages,
-  careTeam,
-  type Appointment,
-} from "../patient-data";
-import { fetchPatientDashboardApi, PatientDashboardData, payInvoiceApi } from "@/lib/api/patient";
-import { getSocket } from "@/lib/socket";
-
-/* ---------- primitives ---------- */
-
-function Pill({
-  children,
-  tone,
-}: {
-  children: React.ReactNode;
-  tone: "ok" | "warn" | "bad" | "mute";
-}) {
-  const map = {
-    ok: "bg-accent/12 text-brass",
-    warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
-    mute: "bg-foreground/[0.04] text-muted-foreground",
-  } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
-  );
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
-
-function stateTone(s: Appointment["state"]) {
-  if (s === "confirmed" || s === "completed") return "ok";
-  if (s === "pending") return "warn";
-  return "bad";
-}
-
-/** Animated trend line — drawn, never an image. */
-function Trend({ series }: { series: number[] }) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
-  const pts = series
-    .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
-      const y = 30 - ((v - min) / Math.max(0.001, max - min)) * 24 - 3;
-      return `${x},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  return (
-    <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="h-10 w-full">
-      <motion.polyline
-        points={pts}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="1.4"
-        vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.4, ease: "easeInOut" }}
-      />
-    </svg>
-  );
-}
-
-function AppointmentRow({ a, actions }: { a: Appointment; actions?: React.ReactNode }) {
-  return (
-    <div className="bg-background flex flex-wrap items-center gap-4 px-5 py-4 sm:px-8">
-      <div className="w-28 shrink-0">
-        <p className="mono-label text-brass">{a.date}</p>
-        <p className="mono-label text-muted-foreground">{a.time}</p>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{a.reason}</p>
-        <p className="mono-label text-muted-foreground mt-1">
-          {a.dept} · {a.clinician}
-        </p>
-      </div>
-      <span className="mono-label text-muted-foreground hidden items-center gap-1.5 sm:flex">
-        {a.mode === "Video" ? <Video className="size-3" /> : <MapPin className="size-3" />}
-        {a.room}
-      </span>
-      <Pill tone={stateTone(a.state)}>{a.state}</Pill>
-      {actions}
-    </div>
-  );
-}
-
-/* ---------- 03 appointments ---------- */
 
 export function AppointmentsPanel() {
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
@@ -172,78 +57,151 @@ export function AppointmentsPanel() {
   };
 
   const filteredLive = liveAppointments.filter((a) =>
-    tab === "upcoming" ? a.status !== "COMPLETED" && a.status !== "CANCELLED" : a.status === "COMPLETED" || a.status === "CANCELLED"
+    tab === "upcoming"
+      ? a.status !== "COMPLETED" && a.status !== "CANCELLED"
+      : a.status === "COMPLETED" || a.status === "CANCELLED"
   );
 
   return (
-    <section>
+    <section className="pb-12">
       <PanelHeader
         index="03 / visits"
         title="Appointments Desk"
-        note="Everything scheduled and completed visits with your primary physicians."
+        note="View scheduled visits, check past records, or cancel upcoming consultations."
         actions={
-          <>
-            <ActionButton tone={tab === "upcoming" ? "solid" : "ghost"} onClick={() => setTab("upcoming")}>
-              Upcoming ({filteredLive.length})
-            </ActionButton>
-            <ActionButton tone={tab === "past" ? "solid" : "ghost"} onClick={() => setTab("past")}>
-              Past / Cancelled ({liveAppointments.length - filteredLive.length})
-            </ActionButton>
-          </>
+          <div className="flex bg-muted/50 p-1 rounded-md border border-border/40">
+            <button
+              onClick={() => setTab("upcoming")}
+              className={`text-xs px-3 py-1.5 rounded transition-all ${
+                tab === "upcoming" ? "bg-background shadow-sm font-semibold" : "text-muted-foreground"
+              }`}
+            >
+              Upcoming
+            </button>
+            <button
+              onClick={() => setTab("past")}
+              className={`text-xs px-3 py-1.5 rounded transition-all ${
+                tab === "past" ? "bg-background shadow-sm font-semibold" : "text-muted-foreground"
+              }`}
+            >
+              Past / Cancelled
+            </button>
+          </div>
         }
       />
 
-      <div className="flex flex-col gap-px" style={{ background: "var(--hairline)" }}>
+      <div className="p-4 sm:p-6 lg:p-8">
         {loading ? (
-          <div className="bg-background p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
-            Loading scheduled appointments...
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="animate-pulse shadow-none border-border/40">
+                <CardContent className="p-6 h-40 bg-muted/20" />
+              </Card>
+            ))}
           </div>
         ) : filteredLive.length > 0 ? (
-          filteredLive.map((a) => (
-            <div key={a._id} className="bg-background flex flex-wrap items-center gap-4 px-5 py-4 sm:px-8">
-              <div className="w-28 shrink-0">
-                <p className="mono-label text-brass font-bold">{a.date}</p>
-                <p className="mono-label text-muted-foreground">{a.timeSlot}</p>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground">{a.reason}</p>
-                <p className="mono-label text-muted-foreground mt-1">
-                  {a.department} · Dr. {a.doctor.name} ({a.type})
-                </p>
-                {a.notes && (
-                  <p className="text-xs text-emerald-500 font-mono mt-1">
-                    Doctor Note: {a.notes}
-                  </p>
-                )}
-              </div>
-              <Badge
-                variant="outline"
-                className={`mono-label text-xs px-2.5 py-1 uppercase font-bold ${
-                  a.status === "CONFIRMED"
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                    : a.status === "COMPLETED"
-                    ? "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30"
-                    : a.status === "CANCELLED"
-                    ? "bg-destructive/15 text-destructive border-destructive/30"
-                    : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                }`}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {filteredLive.map((a) => (
+              <Card
+                key={a._id}
+                className="group relative shadow-sm border-border/60 hover:shadow-md hover:border-primary/20 transition-all overflow-hidden flex flex-col"
               >
-                {a.status}
-              </Badge>
-              {a.status === "PENDING" || a.status === "CONFIRMED" ? (
-                <button
-                  type="button"
-                  onClick={() => handleCancel(a._id)}
-                  className="hairline mono-label text-destructive hover:bg-destructive/10 px-3 py-1.5 rounded text-xs transition-colors"
-                >
-                  Cancel Visit
-                </button>
-              ) : null}
-            </div>
-          ))
+                {/* Top color bar depending on status */}
+                <div
+                  className={`h-1.5 w-full ${
+                    a.status === "CONFIRMED"
+                      ? "bg-emerald-500"
+                      : a.status === "COMPLETED"
+                      ? "bg-cyan-500"
+                      : a.status === "CANCELLED"
+                      ? "bg-destructive"
+                      : "bg-amber-500"
+                  }`}
+                />
+                <CardContent className="p-5 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-4">
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] px-2 py-0.5 font-bold tracking-wider uppercase border-0 ${
+                        a.status === "CONFIRMED"
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          : a.status === "COMPLETED"
+                          ? "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400"
+                          : a.status === "CANCELLED"
+                          ? "bg-destructive/15 text-destructive"
+                          : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                      }`}
+                    >
+                      {a.status}
+                    </Badge>
+                    
+                    <span className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                      {a.type === "TELECONSULT" ? (
+                        <><Video className="size-3 text-cyan-500" /> Video Call</>
+                      ) : (
+                        <><MapPin className="size-3 text-emerald-500" /> In Person</>
+                      )}
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-semibold leading-tight text-foreground mb-1 line-clamp-1">
+                    {a.reason}
+                  </h3>
+                  
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
+                    <Stethoscope className="size-3.5" />
+                    <span>Dr. {a.doctor.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1.5">
+                    <Building2 className="size-3.5" />
+                    <span>{a.department}</span>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-2 gap-3 mb-4">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5">
+                        <Calendar className="size-3" /> Date
+                      </span>
+                      <span className="text-sm font-medium text-foreground">{a.date}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5">
+                        <Clock className="size-3" /> Time
+                      </span>
+                      <span className="text-sm font-medium text-foreground">{a.timeSlot}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions footer anchored to bottom */}
+                  <div className="mt-auto pt-2">
+                    {a.status === "PENDING" || a.status === "CONFIRMED" ? (
+                      <button
+                        type="button"
+                        onClick={() => handleCancel(a._id)}
+                        className="w-full flex items-center justify-center gap-2 text-xs font-medium text-destructive bg-destructive/5 hover:bg-destructive/10 border border-transparent hover:border-destructive/20 py-2 rounded-md transition-all"
+                      >
+                        <XCircle className="size-3.5" /> Cancel Appointment
+                      </button>
+                    ) : a.status === "COMPLETED" ? (
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-center gap-2 text-xs font-medium text-cyan-600 dark:text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 py-2 rounded-md transition-all"
+                      >
+                        <FileText className="size-3.5" /> View Clinical Note
+                      </button>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         ) : (
-          <div className="bg-background p-8 text-center mono-label text-xs text-muted-foreground">
-            No {tab} appointments found.
+          <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-card/30 rounded-xl border border-dashed border-border/60">
+            <Calendar className="size-10 text-muted-foreground/30 mb-4" />
+            <p className="text-sm font-medium text-foreground">No {tab} appointments</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+              You don't have any {tab} appointments in your schedule right now.
+            </p>
           </div>
         )}
       </div>

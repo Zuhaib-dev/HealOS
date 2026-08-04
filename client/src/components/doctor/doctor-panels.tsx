@@ -6,3 +6,4 @@ export { OrdersPanel } from "./panels/Orders-&-meds-panel";
 export { NotesPanel } from "./panels/Documentation-panel";
 export { HandoverPanel } from "./panels/Handover-panel";
 export { RotaPanel } from "./panels/Rota-panel";
+export { ProfilePanel } from "./panels/profile-panel";

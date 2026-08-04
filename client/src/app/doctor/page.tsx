@@ -12,6 +12,7 @@ import {
   NotesPanel,
   HandoverPanel,
   RotaPanel,
+  ProfilePanel,
 } from "@/components/doctor/doctor-panels";
 
 export default function DoctorPage() {
@@ -28,6 +29,7 @@ export default function DoctorPage() {
         {active === "notes" && <NotesPanel />}
         {active === "handover" && <HandoverPanel />}
         {active === "rota" && <RotaPanel />}
+        {active === "profile" && <ProfilePanel />}
       </DoctorShell>
     </RoleGuard>
   );

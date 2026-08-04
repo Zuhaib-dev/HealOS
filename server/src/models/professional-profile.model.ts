@@ -15,6 +15,8 @@ export interface IProfessionalProfile extends Document {
   specialization: string;
   experienceYears: number;
   licenseNumber: string;
+  department?: string;
+  bio?: string;
   documentUrls: string[]; // URLs from ImageKit
   status: ProfileStatus;
   rejectionReason?: string;
@@ -36,6 +38,8 @@ const professionalProfileSchema = new Schema<IProfessionalProfile>(
     specialization: { type: String, required: true },
     experienceYears: { type: Number, required: true },
     licenseNumber: { type: String, required: true },
+    department: { type: String },
+    bio: { type: String },
     documentUrls: [{ type: String }],
     status: { 
       type: String, 

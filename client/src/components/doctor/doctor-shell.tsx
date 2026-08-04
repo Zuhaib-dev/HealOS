@@ -21,6 +21,9 @@ import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { useAuthStore } from "@/store/use-auth-store";
+import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from "@/components/ui/drawer";
+import { UserCircle, MoreHorizontal } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 
 export const doctorSections = [
   { id: "shift", label: "Shift Board", icon: Activity },
@@ -31,7 +34,10 @@ export const doctorSections = [
   { id: "notes", label: "Documentation", icon: FileSignature },
   { id: "handover", label: "Handover", icon: MessagesSquare },
   { id: "rota", label: "My Rota", icon: CalendarDays },
+  { id: "profile", label: "My Profile", icon: UserCircle },
 ] as const;
+
+const mainMobileTabs = ["shift", "clinic", "rounds", "profile"];
 
 export type DoctorSectionId = (typeof doctorSections)[number]["id"];
 
@@ -46,6 +52,7 @@ export function DoctorShell({
 }) {
   const [query, setQuery] = useState("");
   const { user } = useAuthStore();
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const currentSection = doctorSections.find((s) => s.id === active);
 
   return (
@@ -158,26 +165,133 @@ export function DoctorShell({
         </aside>
 
         {/* Main Content Area */}
-        <main className="min-w-0 flex-1">
-          {/* Mobile Header Tabs */}
-          <div className="border-b border-border/60 flex gap-1.5 overflow-x-auto p-2 bg-card/40 md:hidden">
-            {doctorSections.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => onSelect(s.id)}
-                className={`mono-label text-xs shrink-0 px-3 py-1.5 rounded-md transition-colors ${
-                  active === s.id
-                    ? "bg-primary text-primary-foreground font-semibold"
-                    : "text-muted-foreground bg-muted/30"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
+        <main className="min-w-0 flex-1 relative pb-20 md:pb-0">
+          {/* Mobile "Header" - just the title of the current section */}
+          <div className="md:hidden border-b border-border/60 bg-card/40 p-4 sticky top-16 z-30 backdrop-blur-md flex items-center gap-2">
+            {currentSection && <currentSection.icon className="size-4 text-primary" />}
+            <h1 className="font-semibold text-sm">{currentSection?.label}</h1>
           </div>
-          {children}
+          
+          <div className="mx-auto w-full">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.15, ease: "easeInOut" }}
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </main>
+      </div>
+
+      {/* Persistent Bottom Navigation Bar - Mobile Only */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+        <nav className="flex justify-around items-center px-2 py-1.5">
+          {doctorSections
+            .filter((s) => mainMobileTabs.includes(s.id))
+            .map((s) => {
+              const Icon = s.icon;
+              const isActive = active === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    onSelect(s.id);
+                    setIsMoreOpen(false);
+                  }}
+                  className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none group tap-highlight-transparent"
+                >
+                  <motion.div 
+                    animate={isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className={`size-5 ${isActive ? "fill-primary/20" : ""}`} strokeWidth={isActive ? 2.5 : 2} />
+                  </motion.div>
+                  <span 
+                    className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                      isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                    }`}
+                  >
+                    {s.label.split(" ")[0]}
+                  </span>
+                </button>
+              );
+            })}
+
+          {/* More / Menu Tab (Drawer) */}
+          <Drawer open={isMoreOpen} onOpenChange={setIsMoreOpen}>
+            <DrawerTrigger asChild>
+              <button
+                type="button"
+                className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none group tap-highlight-transparent"
+              >
+                <div
+                  className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                    isMoreOpen || !mainMobileTabs.includes(active)
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground"
+                  }`}
+                >
+                  <MoreHorizontal className="size-5" strokeWidth={isMoreOpen || !mainMobileTabs.includes(active) ? 2.5 : 2} />
+                </div>
+                <span
+                  className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                    isMoreOpen || !mainMobileTabs.includes(active) ? "text-primary font-semibold" : "text-muted-foreground"
+                  }`}
+                >
+                  More
+                </span>
+              </button>
+            </DrawerTrigger>
+            <DrawerContent className="pb-6">
+              <DrawerTitle className="sr-only">More Options</DrawerTitle>
+              <div className="grid grid-cols-4 gap-y-6 gap-x-2 p-6 pt-8">
+                {doctorSections
+                  .filter((s) => !mainMobileTabs.includes(s.id))
+                  .map((s) => {
+                    const Icon = s.icon;
+                    const isActive = active === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          onSelect(s.id);
+                          setIsMoreOpen(false);
+                        }}
+                        className="flex flex-col items-center justify-start gap-2 group tap-highlight-transparent"
+                      >
+                        <div
+                          className={`flex items-center justify-center size-12 rounded-full transition-all ${
+                            isActive
+                              ? "bg-primary/10 text-primary border border-primary/20"
+                              : "bg-muted/50 text-muted-foreground border border-transparent group-hover:bg-muted group-hover:text-foreground"
+                          }`}
+                        >
+                          <Icon className="size-5" />
+                        </div>
+                        <span
+                          className={`text-xs text-center leading-tight ${
+                            isActive ? "font-semibold text-foreground" : "text-muted-foreground"
+                          }`}
+                        >
+                          {s.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+              </div>
+            </DrawerContent>
+          </Drawer>
+        </nav>
       </div>
     </div>
   );

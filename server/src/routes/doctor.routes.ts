@@ -5,8 +5,13 @@ import {
   saveConsultation,
   orderDiagnostic,
   getPatientHistory,
+  getDoctorProfile,
+  updateDoctorProfile,
 } from "../controllers/doctor.controller.js";
 import { UserRole } from "../models/user.model.js";
+import multer from "multer";
+
+const upload = multer({ dest: "uploads/" });
 
 const router = Router();
 
@@ -18,5 +23,7 @@ router.get("/appointments", getAppointments);
 router.post("/consultations", saveConsultation);
 router.post("/diagnostic-orders", orderDiagnostic);
 router.get("/patients/:id/history", getPatientHistory);
+router.get("/profile", getDoctorProfile);
+router.put("/profile", upload.single("avatar"), updateDoctorProfile);
 
 export default router;

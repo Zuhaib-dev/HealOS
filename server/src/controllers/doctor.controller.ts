@@ -4,8 +4,19 @@ import {
   Consultation,
   DiagnosticOrder,
   DiagnosticReport,
+  ProfessionalProfile,
+  User,
 } from "../models/index.js";
 import { AppError } from "../middleware/error-handler.js";
+import ImageKit from "imagekit";
+import fs from "fs";
+
+// Initialize ImageKit
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY || "public_key",
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY || "private_key",
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/your_endpoint"
+});
 
 // ==========================================
 // 1. Get Doctor's Appointments
@@ -179,5 +190,89 @@ export const getPatientHistory = async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: "Failed to fetch patient history" });
+  }
+};
+
+// ==========================================
+// 5. Get Doctor Profile
+// ==========================================
+export const getDoctorProfile = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user?._id;
+    const user = await User.findById(doctorId).select("-password");
+    if (!user) throw new AppError("Doctor not found", 404);
+
+    const profile = await ProfessionalProfile.findOne({ user: doctorId });
+    
+    res.status(200).json({
+      status: "success",
+      data: { user, profile },
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      status: "error",
+      message: error.message || "Failed to fetch profile",
+    });
+  }
+};
+
+// ==========================================
+// 6. Update Doctor Profile
+// ==========================================
+export const updateDoctorProfile = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user?._id;
+    const { department, bio, specialization, degree } = req.body;
+
+    let user = await User.findById(doctorId);
+    if (!user) throw new AppError("Doctor not found", 404);
+
+    let profile = await ProfessionalProfile.findOne({ user: doctorId });
+    if (!profile) {
+      // If profile doesn't exist, create a stub one
+      profile = new ProfessionalProfile({
+        user: doctorId,
+        requestedRole: user.role,
+        degree: degree || "Unknown",
+        specialization: specialization || "General",
+        experienceYears: 0,
+        licenseNumber: "TBD",
+      });
+    }
+
+    if (department) profile.department = department;
+    if (bio) profile.bio = bio;
+    if (specialization) profile.specialization = specialization;
+    if (degree) profile.degree = degree;
+
+    // Handle Image Upload if file exists
+    if (req.file) {
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const uploadResponse = await imagekit.upload({
+        file: fileBuffer,
+        fileName: `doctor_avatar_${doctorId}_${Date.now()}`,
+        folder: "/hms/avatars",
+      });
+      user.avatarUrl = uploadResponse.url;
+      await user.save();
+      // clean up temp file
+      fs.unlinkSync(req.file.path);
+    }
+
+    await profile.save();
+
+    res.status(200).json({
+      status: "success",
+      data: { user, profile },
+      message: "Profile updated successfully",
+    });
+  } catch (error: any) {
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(error.statusCode || 500).json({
+      status: "error",
+      message: error.message || "Failed to update profile",
+    });
   }
 };

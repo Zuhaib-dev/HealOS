@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
@@ -137,16 +137,19 @@ export function ClinicPanel() {
 
   return (
     <div className="relative">
-      {activeConsultation && (
-        <ConsultationForm
-          appointment={activeConsultation}
-          onBack={() => setActiveConsultation(null)}
-          onComplete={() => {
-            setActiveConsultation(null);
-            loadAppointments();
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {activeConsultation && (
+          <ConsultationForm
+            key="consultation-form"
+            appointment={activeConsultation}
+            onBack={() => setActiveConsultation(null)}
+            onComplete={() => {
+              setActiveConsultation(null);
+              loadAppointments();
+            }}
+          />
+        )}
+      </AnimatePresence>
       <PanelHeader
         index="03 / clinic"
         title="Assigned Clinic Appointments"
@@ -362,21 +365,26 @@ function ConsultationForm({
   const pat = typeof appointment.patient === "object" ? appointment.patient : null;
 
   return (
-    <div className="absolute inset-0 bg-background z-10 flex flex-col overflow-y-auto pb-24">
-      <PanelHeader
-        index="Consultation"
-        title={`Patient: ${pat?.name || "Unknown"}`}
-        note={`Date: ${appointment.date} | Time: ${appointment.timeSlot} | Dept: ${appointment.department}`}
-        actions={
-          <>
-            <ActionButton onClick={onBack}>Cancel</ActionButton>
-            <ActionButton tone="solid" onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save & Complete"}
-            </ActionButton>
-          </>
-        }
-      />
-      <div className="p-6 max-w-4xl w-full mx-auto space-y-8">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="fixed inset-0 bg-background z-[100] flex flex-col overflow-y-auto w-full h-full"
+    >
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-(--hairline) px-4 py-3 flex items-center justify-between">
+        <div>
+          <h2 className="font-semibold text-foreground text-lg">Consultation: {pat?.name || "Unknown"}</h2>
+          <p className="mono-label text-muted-foreground text-xs">{appointment.date} | {appointment.timeSlot} | {appointment.department}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <ActionButton onClick={onBack}>Cancel</ActionButton>
+          <ActionButton tone="solid" onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save & Complete"}
+          </ActionButton>
+        </div>
+      </div>
+      <div className="p-4 sm:p-6 lg:p-8 max-w-5xl w-full mx-auto space-y-8 pb-32">
         
         {/* Vitals / Reason */}
         <div className="bg-foreground/2 border border-(--hairline) rounded p-4">
@@ -556,6 +564,6 @@ function ConsultationForm({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

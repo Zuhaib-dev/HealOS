@@ -10,16 +10,7 @@ import {
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
-import {
-  shiftStats,
-  rounds,
-  clinic,
-  results,
-  orders,
-  noteTemplates,
-  handovers,
-  onCall,
-} from "../doctor-data";
+import { getHandoversApi, createHandoverApi } from "@/lib/api/doctor";
 
 /* ---------- primitives ---------- */
 
@@ -90,8 +81,36 @@ function acuityPill(a: "critical" | "guarded" | "stable") {
 /* ---------- 07 · Handover ---------- */
 
 export function HandoverPanel() {
+  const { user } = useAuthStore();
   const [draft, setDraft] = useState("");
-  const [sent, setSent] = useState<string[]>([]);
+  const [handoversList, setHandoversList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchHandovers = () => {
+    setLoading(true);
+    getHandoversApi()
+      .then(res => setHandoversList(res.data.handovers || []))
+      .catch(() => toast.error("Failed to load handovers"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchHandovers();
+  }, []);
+
+  const handlePost = async () => {
+    if (!draft.trim()) return;
+    try {
+      await createHandoverApi({
+        background: "Handover Note",
+        assessment: draft.trim(),
+      });
+      setDraft("");
+      fetchHandovers();
+    } catch (err) {
+      toast.error("Failed to post handover");
+    }
+  };
 
   return (
     <div>
@@ -102,30 +121,30 @@ export function HandoverPanel() {
       />
       <div className="grid lg:grid-cols-[1fr_360px]">
         <div className="hairline-l px-5 py-6 sm:px-8">
-          {handovers.map((h) => (
-            <motion.div
-              key={h.at}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="hairline-b py-4"
-            >
-              <div className="flex items-center gap-3">
-                <span className="mono-label text-accent/80">{h.at}</span>
-                <span className="mono-label">{h.from}</span>
-                {h.priority === "high" ? <Pill tone="bad">priority</Pill> : null}
-              </div>
-              <p className="mt-2 text-sm">{h.text}</p>
-            </motion.div>
-          ))}
-          {sent.map((s, i) => (
-            <div key={i} className="hairline-b py-4">
-              <div className="flex items-center gap-3">
-                <span className="mono-label text-accent/80">now</span>
-                <span className="mono-label">You</span>
-              </div>
-              <p className="mt-2 text-sm">{s}</p>
-            </div>
-          ))}
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading handovers...</p>
+          ) : handoversList.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No handovers found.</p>
+          ) : (
+            handoversList.map((h) => (
+              <motion.div
+                key={h._id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="hairline-b py-4"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="mono-label text-accent/80">
+                    {new Date(h.createdAt).toLocaleString()}
+                  </span>
+                  <span className="mono-label">{h.fromDoctor?.name || "Unknown"}</span>
+                  {h.acuity === "critical" ? <Pill tone="bad">critical</Pill> : null}
+                </div>
+                <p className="mt-2 text-sm whitespace-pre-wrap">{h.assessment}</p>
+                {h.patient && <p className="mt-1 text-xs text-muted-foreground">Patient: {h.patient.name}</p>}
+              </motion.div>
+            ))
+          )}
         </div>
         <div className="hairline-l px-5 py-6">
           <p className="mono-label text-muted-foreground">Add handover note</p>
@@ -137,12 +156,8 @@ export function HandoverPanel() {
           />
           <button
             type="button"
-            onClick={() => {
-              if (!draft.trim()) return;
-              setSent((s) => [...s, draft.trim()]);
-              setDraft("");
-            }}
-            className="mono-label bg-foreground text-background mt-3 flex items-center gap-2 px-3.5 py-2"
+            onClick={handlePost}
+            className="mono-label bg-foreground text-background mt-3 flex items-center gap-2 px-3.5 py-2 hover:opacity-90"
           >
             <Send className="size-3" /> Post to handover
           </button>

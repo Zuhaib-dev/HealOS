@@ -9,17 +9,7 @@ import {
   AppointmentRecord,
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
-import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
-import {
-  shiftStats,
-  rounds,
-  clinic,
-  results,
-  orders,
-  noteTemplates,
-  handovers,
-  onCall,
-} from "../doctor-data";
+// imports removed
 
 /* ---------- primitives ---------- */
 
@@ -251,26 +241,11 @@ export function ClinicPanel() {
                 );
               })
             ) : (
-              clinic.map((c) => (
-                <tr key={c.time} className="hairline-b">
-                  <Td>
-                    <span className="mono-label">{c.time}</span>
-                  </Td>
-                  <Td>
-                    <span className="font-medium">{c.patient}</span>
-                  </Td>
-                  <Td>
-                    <span className="mono-label text-muted-foreground">{c.mrn}</span>
-                  </Td>
-                  <Td>{c.reason}</Td>
-                  <Td>
-                    <span className="mono-label text-muted-foreground">{c.kind}</span>
-                  </Td>
-                  <Td>
-                    <Pill tone="mute">upcoming</Pill>
-                  </Td>
-                </tr>
-              ))
+              <tr>
+                <td colSpan={6} className="p-8 text-center mono-label text-xs text-muted-foreground">
+                  No appointments scheduled.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>

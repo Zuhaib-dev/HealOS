@@ -9,17 +9,7 @@ import {
   AppointmentRecord,
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
-import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
-import {
-  shiftStats,
-  rounds,
-  clinic,
-  results,
-  orders,
-  noteTemplates,
-  handovers,
-  onCall,
-} from "../doctor-data";
+import { getDashboardStatsApi } from "@/lib/api/doctor";
 
 /* ---------- primitives ---------- */
 
@@ -91,8 +81,35 @@ function acuityPill(a: "critical" | "guarded" | "stable") {
 
 export function ShiftPanel() {
   const { user } = useAuthStore();
-  const critical = rounds.filter((r) => r.acuity === "critical");
-  const tasks = rounds.flatMap((r) => r.tasks.map((t) => ({ t, who: r.name, bed: r.bed })));
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getDashboardStatsApi()
+      .then((res) => {
+        setStats(res.data);
+      })
+      .catch((err) => {
+        toast.error("Failed to load dashboard stats");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const statCards = [
+    { label: "Patients under you", value: stats?.activePatientsCount || 0, note: "Active patients" },
+    { label: "Clinic slots today", value: stats?.appointmentsToday || 0, note: "Scheduled for today" },
+    { label: "Results awaiting sign", value: stats?.resultsAwaiting || 0, note: "0 flagged abnormal" },
+    { label: "Time on shift", value: stats?.timeOnShift || "0h 0m", note: "Started recently" },
+  ];
+  const [patients, setPatients] = useState<any[]>([]);
+
+  useEffect(() => {
+    import("@/lib/api/doctor").then(({ getAssignedPatientsApi }) => {
+      getAssignedPatientsApi().then(res => setPatients(res.data.patients || []));
+    });
+  }, []);
 
   return (
     <div>
@@ -108,25 +125,30 @@ export function ShiftPanel() {
         }
       />
 
-      <div className="hairline-b grid grid-cols-2 lg:grid-cols-4">
-        {shiftStats.map((s) => (
-          <div key={s.label} className="hairline-l px-5 py-5">
-            <p className="mono-label text-muted-foreground">{s.label}</p>
-            <p className="mt-3 font-mono text-3xl font-bold tracking-tight">{s.value}</p>
-            <p className="mono-label text-muted-foreground mt-2">{s.note}</p>
-          </div>
-        ))}
-      </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {statCards.map((s, i) => (
+            <div
+              key={i}
+              className="bg-foreground/[0.02] border border-(--hairline) rounded flex flex-col justify-between p-4 min-h-[110px]"
+            >
+              <span className="mono-label text-muted-foreground">{s.label}</span>
+              <div>
+                <div className="text-3xl font-medium tracking-tight mt-3">{loading ? "-" : s.value}</div>
+                <div className="text-xs text-muted-foreground mt-1">{loading ? "Loading..." : s.note}</div>
+              </div>
+            </div>
+          ))}
+        </div>
 
       <div className="hairline-b grid lg:grid-cols-2">
         <div className="hairline-l px-5 py-6">
-          <p className="mono-label text-destructive flex items-center gap-2">
-            <TriangleAlert className="size-3.5" /> Deteriorating — see first
+          <p className="mono-label text-muted-foreground flex items-center gap-2">
+            <CheckCircle2 className="size-3.5" /> Recent Patients
           </p>
           <div className="mt-4 space-y-3">
-            {critical.map((p) => (
+            {patients.length > 0 ? patients.slice(0, 5).map((p) => (
               <motion.div
-                key={p.mrn}
+                key={p._id}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="hairline flex items-center justify-between gap-4 px-4 py-3"
@@ -134,33 +156,26 @@ export function ShiftPanel() {
                 <div className="min-w-0">
                   <p className="font-medium">{p.name}</p>
                   <p className="mono-label text-muted-foreground">
-                    {p.bed} · {p.dx}
+                    {p.email} · {p.phone || "No phone"}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  <Vitals series={p.vitals} />
-                  <span className="mono-label text-destructive whitespace-nowrap">
-                    NEWS2 {p.news2}
-                  </span>
-                </div>
+                <ActionButton>View</ActionButton>
               </motion.div>
-            ))}
+            )) : (
+              <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-(--hairline) rounded">
+                No active patients found.
+              </div>
+            )}
           </div>
         </div>
-
         <div className="hairline-l px-5 py-6">
-          <p className="mono-label text-muted-foreground">Open tasks</p>
-          <div className="mt-4">
-            {tasks.map((t) => (
-              <label
-                key={t.t}
-                className="hairline-b flex cursor-pointer items-center gap-3 py-3 last:border-b-0"
-              >
-                <input type="checkbox" className="accent-(--color-accent)" />
-                <span className="text-sm">{t.t}</span>
-                <span className="mono-label text-muted-foreground ml-auto">{t.bed}</span>
-              </label>
-            ))}
+          <p className="mono-label flex items-center gap-2 text-muted-foreground">
+            <PenLine className="size-3.5" /> Pending Actions
+          </p>
+          <div className="mt-4 space-y-2">
+            <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-(--hairline) rounded">
+              You're all caught up!
+            </div>
           </div>
         </div>
       </div>

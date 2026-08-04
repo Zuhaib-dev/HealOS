@@ -10,16 +10,7 @@ import {
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
-import {
-  shiftStats,
-  rounds,
-  clinic,
-  results,
-  orders,
-  noteTemplates,
-  handovers,
-  onCall,
-} from "../doctor-data";
+import { getDiagnosticResultsApi } from "@/lib/api/doctor";
 
 /* ---------- primitives ---------- */
 
@@ -90,14 +81,23 @@ function acuityPill(a: "critical" | "guarded" | "stable") {
 /* ---------- 04 · Results inbox ---------- */
 
 export function ResultsPanel() {
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [signed, setSigned] = useState<string[]>([]);
   const [filter, setFilter] = useState<"all" | "critical" | "unsigned">("all");
+
+  useEffect(() => {
+    getDiagnosticResultsApi()
+      .then(res => setResults(res.data.results || []))
+      .catch(() => toast.error("Failed to load results"))
+      .finally(() => setLoading(false));
+  }, []);
 
   const rows = results.filter((r) =>
     filter === "critical"
       ? r.flag === "critical"
       : filter === "unsigned"
-        ? !signed.includes(r.id)
+        ? !signed.includes(r._id)
         : true,
   );
 
@@ -108,7 +108,7 @@ export function ResultsPanel() {
         title="Results inbox"
         note="Labs, imaging and pathology waiting on your signature — criticals surface at the top."
         actions={
-          <ActionButton tone="solid" onClick={() => setSigned(results.map((r) => r.id))}>
+          <ActionButton tone="solid" onClick={() => setSigned(results.map((r) => r._id))}>
             Sign all normal
           </ActionButton>
         }
@@ -149,53 +149,65 @@ export function ResultsPanel() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => {
-              const isSigned = signed.includes(r.id);
-              return (
-                <motion.tr key={r.id} layout className="hairline-b">
-                  <Td>
-                    <span className="mono-label">{r.at}</span>
-                  </Td>
-                  <Td>
-                    <span className="block font-medium">{r.patient}</span>
-                    <span className="mono-label text-muted-foreground">{r.mrn}</span>
-                  </Td>
-                  <Td>{r.test}</Td>
-                  <Td>
-                    <span className="mono-label text-muted-foreground">{r.kind}</span>
-                  </Td>
-                  <Td>
-                    <span
-                      className={`mono-label ${r.flag === "critical" ? "text-destructive" : ""}`}
-                    >
-                      {r.value}
-                    </span>
-                  </Td>
-                  <Td>
-                    {r.flag === "critical" ? (
-                      <Pill tone="bad">critical</Pill>
-                    ) : r.flag === "abnormal" ? (
-                      <Pill tone="warn">abnormal</Pill>
-                    ) : (
-                      <Pill tone="ok">normal</Pill>
-                    )}
-                  </Td>
-                  <Td>
-                    {isSigned ? (
-                      <Pill tone="mute">signed</Pill>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setSigned((s) => [...s, r.id])}
-                        className="mono-label hairline px-3 py-1.5"
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-muted-foreground">Loading results...</td>
+              </tr>
+            ) : rows.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-muted-foreground">No diagnostic results found.</td>
+              </tr>
+            ) : (
+              rows.map((r) => {
+                const isSigned = signed.includes(r._id);
+                const patName = typeof r.patient === "object" ? r.patient?.name : "Unknown";
+                const testName = r.order?.testName || "Unknown Test";
+                const kind = r.order?.testType || "TEST";
+                return (
+                  <motion.tr key={r._id} layout className="hairline-b">
+                    <Td>
+                      <span className="mono-label">{new Date(r.createdAt).toLocaleDateString()}</span>
+                    </Td>
+                    <Td>
+                      <span className="block font-medium">{patName}</span>
+                    </Td>
+                    <Td>{testName}</Td>
+                    <Td>
+                      <span className="mono-label text-muted-foreground">{kind}</span>
+                    </Td>
+                    <Td>
+                      <span
+                        className={`mono-label ${r.flag === "critical" ? "text-destructive" : ""}`}
                       >
-                        acknowledge
-                      </button>
-                    )}
-                  </Td>
-                </motion.tr>
-              );
-            })}
+                        {r.findings || "Pending"}
+                      </span>
+                    </Td>
+                    <Td>
+                      {r.flag === "critical" ? (
+                        <Pill tone="bad">critical</Pill>
+                      ) : r.flag === "abnormal" ? (
+                        <Pill tone="warn">abnormal</Pill>
+                      ) : (
+                        <Pill tone="ok">normal</Pill>
+                      )}
+                    </Td>
+                    <Td>
+                      {isSigned ? (
+                        <Pill tone="mute">signed</Pill>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setSigned((s) => [...s, r._id])}
+                          className="mono-label hairline px-3 py-1.5"
+                        >
+                          acknowledge
+                        </button>
+                      )}
+                    </Td>
+                  </motion.tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

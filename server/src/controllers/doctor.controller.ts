@@ -6,6 +6,9 @@ import {
   DiagnosticReport,
   ProfessionalProfile,
   User,
+  ClinicalNote,
+  Handover,
+  Schedule,
 } from "../models/index.js";
 import { AppError } from "../middleware/error-handler.js";
 import ImageKit from "imagekit";
@@ -279,5 +282,190 @@ export const updateDoctorProfile = async (req: Request, res: Response) => {
       status: "error",
       message: error.message || "Failed to update profile",
     });
+  }
+};
+
+// ==========================================
+// 7. Get Dashboard Stats
+// ==========================================
+export const getDashboardStats = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user?._id;
+    
+    // Count today's appointments
+    const today = new Date().toISOString().split("T")[0];
+    const appointmentsToday = await Appointment.countDocuments({
+      doctor: doctorId,
+      date: today,
+    });
+    
+    // Count active patients (unique patients with appointments in last 30 days)
+    const activePatients = await Appointment.distinct("patient", {
+      doctor: doctorId,
+    });
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        appointmentsToday,
+        activePatientsCount: activePatients.length,
+        resultsAwaiting: 0, // Mock for now
+        timeOnShift: "4h 12m", // Mock for now
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ status: "error", message: "Failed to fetch stats" });
+  }
+};
+
+// ==========================================
+// 8. Get Assigned Patients (Inpatients / Rounds)
+// ==========================================
+export const getAssignedPatients = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user?._id;
+    const patientIds = await Appointment.distinct("patient", { doctor: doctorId });
+    const patients = await User.find({ _id: { $in: patientIds } }).select("name email phone avatarUrl");
+    
+    res.status(200).json({
+      status: "success",
+      data: { patients },
+    });
+  } catch (error: any) {
+    res.status(500).json({ status: "error", message: "Failed to fetch patients" });
+  }
+};
+
+// ==========================================
+// 9. Diagnostics & Results
+// ==========================================
+export const getDiagnosticResults = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user?._id;
+    const patientIds = await Appointment.distinct("patient", { doctor: doctorId });
+    
+    const results = await DiagnosticReport.find({ patient: { $in: patientIds } })
+      .populate("patient", "name")
+      .populate("order")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: "success",
+      data: { results },
+    });
+  } catch (error: any) {
+    res.status(500).json({ status: "error", message: "Failed to fetch results" });
+  }
+};
+
+// ==========================================
+// 10. Orders and Meds
+// ==========================================
+export const getOrdersAndMeds = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user?._id;
+    const orders = await DiagnosticOrder.find({ doctor: doctorId })
+      .populate("patient", "name")
+      .sort({ createdAt: -1 });
+      
+    const consultations = await Consultation.find({ doctor: doctorId, medicines: { $exists: true, $not: {$size: 0} } })
+      .populate("patient", "name")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: "success",
+      data: { orders, consultations },
+    });
+  } catch (error: any) {
+    res.status(500).json({ status: "error", message: "Failed to fetch orders and meds" });
+  }
+};
+
+// ==========================================
+// 11. Clinical Notes
+// ==========================================
+export const getClinicalNotes = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user?._id;
+    const notes = await ClinicalNote.find({ doctor: doctorId })
+      .populate("patient", "name")
+      .sort({ createdAt: -1 });
+    res.status(200).json({ status: "success", data: { notes } });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: "Failed to fetch notes" });
+  }
+};
+
+export const createClinicalNote = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user?._id;
+    const { patientId, appointmentId, category, content, tags } = req.body;
+    
+    const note = await ClinicalNote.create({
+      patient: patientId,
+      doctor: doctorId,
+      appointment: appointmentId,
+      category,
+      content,
+      tags,
+    });
+    res.status(201).json({ status: "success", data: { note } });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: "Failed to create note" });
+  }
+};
+
+// ==========================================
+// 12. Handovers
+// ==========================================
+export const getHandovers = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user?._id;
+    // Get handovers where the doctor is either the sender or receiver
+    const handovers = await Handover.find({
+      $or: [{ fromDoctor: doctorId }, { toDoctor: doctorId }]
+    })
+      .populate("patient", "name")
+      .populate("fromDoctor", "name")
+      .populate("toDoctor", "name")
+      .sort({ createdAt: -1 });
+      
+    res.status(200).json({ status: "success", data: { handovers } });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: "Failed to fetch handovers" });
+  }
+};
+
+export const createHandover = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user?._id;
+    const { patientId, toDoctorId, department, acuity, background, assessment, tasks } = req.body;
+    
+    const handover = await Handover.create({
+      patient: patientId,
+      fromDoctor: doctorId,
+      toDoctor: toDoctorId,
+      department,
+      acuity,
+      background,
+      assessment,
+      tasks,
+    });
+    res.status(201).json({ status: "success", data: { handover } });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: "Failed to create handover" });
+  }
+};
+
+// ==========================================
+// 13. Rota / Schedule
+// ==========================================
+export const getSchedule = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user?._id;
+    const schedule = await Schedule.find({ user: doctorId }).sort({ date: 1, startTime: 1 });
+    res.status(200).json({ status: "success", data: { schedule } });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: "Failed to fetch schedule" });
   }
 };

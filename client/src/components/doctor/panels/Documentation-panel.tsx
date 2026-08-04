@@ -10,16 +10,15 @@ import {
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
-import {
-  shiftStats,
-  rounds,
-  clinic,
-  results,
-  orders,
-  noteTemplates,
-  handovers,
-  onCall,
-} from "../doctor-data";
+import { getClinicalNotesApi, createClinicalNoteApi } from "@/lib/api/doctor";
+
+const noteTemplates = [
+  "Progress Note (SOAP)",
+  "Admission Note",
+  "Discharge Summary",
+  "Operative Note",
+  "Consult Note",
+];
 
 /* ---------- primitives ---------- */
 
@@ -94,7 +93,16 @@ export function NotesPanel() {
   const [body, setBody] = useState(
     "SUBJECTIVE\n\nOBJECTIVE\n  Obs: \n  Exam: \n\nASSESSMENT\n\nPLAN\n  1. ",
   );
+  const [notes, setNotes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getClinicalNotesApi()
+      .then(res => setNotes(res.data.notes || []))
+      .catch(() => toast.error("Failed to load notes"))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div>
@@ -136,17 +144,39 @@ export function NotesPanel() {
         </div>
         <div className="p-5 sm:p-8">
           <p className="mono-label text-muted-foreground">
-            {template} · Jonas Vidal · PT-99401 · ICU-A 04
+            {template} · (Select a patient to save note)
           </p>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             spellCheck={false}
-            className="hairline mt-3 min-h-72 w-full resize-y bg-transparent p-4 font-mono text-sm leading-relaxed outline-none"
+            className="hairline mt-3 min-h-72 w-full resize-y bg-transparent p-4 font-mono text-sm leading-relaxed outline-none focus:ring-1 focus:ring-accent"
           />
           <p className="mono-label text-muted-foreground mt-3">
-            autosaved 12s ago · {body.length} chars · countersign required for ICU notes
+            {body.length} chars
           </p>
+          
+          <div className="mt-8">
+            <h3 className="mono-label font-bold mb-4 border-b border-(--hairline) pb-2">Past Notes</h3>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : notes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No notes found.</p>
+            ) : (
+              <div className="space-y-4">
+                {notes.map((n, i) => (
+                  <div key={i} className="p-4 border border-(--hairline) rounded bg-foreground/[0.02]">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="mono-label font-bold text-brass">{n.category}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</span>
+                    </div>
+                    <p className="text-sm font-mono whitespace-pre-wrap">{n.content}</p>
+                    <p className="text-xs mt-3 text-muted-foreground">Patient: {n.patient?.name}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

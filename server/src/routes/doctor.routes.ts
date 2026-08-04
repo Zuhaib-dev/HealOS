@@ -7,6 +7,15 @@ import {
   getPatientHistory,
   getDoctorProfile,
   updateDoctorProfile,
+  getDashboardStats,
+  getAssignedPatients,
+  getDiagnosticResults,
+  getOrdersAndMeds,
+  getClinicalNotes,
+  createClinicalNote,
+  getHandovers,
+  createHandover,
+  getSchedule,
 } from "../controllers/doctor.controller.js";
 import { UserRole } from "../models/user.model.js";
 import multer from "multer";
@@ -25,5 +34,20 @@ router.post("/diagnostic-orders", orderDiagnostic);
 router.get("/patients/:id/history", getPatientHistory);
 router.get("/profile", getDoctorProfile);
 router.put("/profile", upload.single("avatar"), updateDoctorProfile);
+
+// New audit endpoints
+router.get("/dashboard-stats", getDashboardStats);
+router.get("/patients", getAssignedPatients);
+router.get("/diagnostic-reports", getDiagnosticResults);
+router.get("/orders-and-meds", getOrdersAndMeds);
+
+// Notes & Handovers
+router.get("/clinical-notes", getClinicalNotes);
+router.post("/clinical-notes", createClinicalNote);
+router.get("/handovers", getHandovers);
+router.post("/handovers", createHandover);
+
+// Schedule
+router.get("/schedule", getSchedule);
 
 export default router;

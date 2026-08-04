@@ -10,16 +10,7 @@ import {
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
-import {
-  shiftStats,
-  rounds,
-  clinic,
-  results,
-  orders,
-  noteTemplates,
-  handovers,
-  onCall,
-} from "../doctor-data";
+import { getOrdersAndMedsApi } from "@/lib/api/doctor";
 
 /* ---------- primitives ---------- */
 
@@ -90,9 +81,22 @@ function acuityPill(a: "critical" | "guarded" | "stable") {
 /* ---------- 05 · Orders & meds ---------- */
 
 export function OrdersPanel() {
-  const [state, setState] = useState<Record<string, string>>(
-    Object.fromEntries(orders.map((o) => [o.id, o.state])),
-  );
+  const [dataList, setDataList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getOrdersAndMedsApi()
+      .then(res => {
+        const { orders = [], consultations = [] } = res.data || {};
+        const combined = [
+          ...orders.map((o: any) => ({ ...o, _type: "Order" })),
+          ...consultations.flatMap((c: any) => c.medicines.map((m: any) => ({ ...m, _type: "Medicine", patient: c.patient })))
+        ];
+        setDataList(combined);
+      })
+      .catch(() => toast.error("Failed to load orders"))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div>
@@ -114,38 +118,39 @@ export function OrdersPanel() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => {
-              const s = state[o.id];
-              return (
-                <tr key={o.id} className="hairline-b">
-                  <Td>
-                    <span className="mono-label">{o.id}</span>
-                  </Td>
-                  <Td>
-                    <span className="font-medium">{o.patient}</span>
-                  </Td>
-                  <Td>{o.detail}</Td>
-                  <Td>
-                    <span className="mono-label text-muted-foreground">{o.kind}</span>
-                  </Td>
-                  <Td>
-                    {s === "signed" ? (
-                      <Pill tone="ok">signed</Pill>
-                    ) : s === "active" ? (
-                      <Pill tone="warn">active</Pill>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setState((p) => ({ ...p, [o.id]: "signed" }))}
-                        className="mono-label hairline px-3 py-1.5"
-                      >
-                        sign draft
-                      </button>
-                    )}
-                  </Td>
-                </tr>
-              );
-            })}
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="p-8 text-center text-muted-foreground">Loading orders...</td>
+              </tr>
+            ) : dataList.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="p-8 text-center text-muted-foreground">No active orders or medicines.</td>
+              </tr>
+            ) : (
+              dataList.map((o, i) => {
+                const patName = typeof o.patient === "object" ? o.patient?.name : "Unknown";
+                const isMed = o._type === "Medicine";
+                const detail = isMed ? `${o.name} - ${o.dosage} (${o.frequency})` : (o.testName || "Diagnostic Test");
+                
+                return (
+                  <tr key={i} className="hairline-b">
+                    <Td>
+                      <span className="mono-label">{o._id || `MED-${i}`}</span>
+                    </Td>
+                    <Td>
+                      <span className="font-medium">{patName}</span>
+                    </Td>
+                    <Td>{detail}</Td>
+                    <Td>
+                      <span className="mono-label text-muted-foreground">{o._type}</span>
+                    </Td>
+                    <Td>
+                      <Pill tone="ok">{isMed ? "Dispensed" : o.status || "PENDING"}</Pill>
+                    </Td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

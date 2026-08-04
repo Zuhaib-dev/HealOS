@@ -10,16 +10,7 @@ import {
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
-import {
-  shiftStats,
-  rounds,
-  clinic,
-  results,
-  orders,
-  noteTemplates,
-  handovers,
-  onCall,
-} from "../doctor-data";
+import { getScheduleApi } from "@/lib/api/doctor";
 
 /* ---------- primitives ---------- */
 
@@ -90,6 +81,16 @@ function acuityPill(a: "critical" | "guarded" | "stable") {
 /* ---------- 08 · Rota ---------- */
 
 export function RotaPanel() {
+  const [scheduleList, setScheduleList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getScheduleApi()
+      .then(res => setScheduleList(res.data.schedule || []))
+      .catch(() => toast.error("Failed to load schedule"))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div>
       <PanelHeader
@@ -99,23 +100,31 @@ export function RotaPanel() {
         actions={<ActionButton>Request swap</ActionButton>}
       />
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7">
-        {onCall.map((d) => {
-          const tone =
-            d.shift === "Night"
-              ? "bg-foreground/[0.06]"
-              : d.shift === "On-call"
-                ? "bg-destructive/10"
-                : d.shift === "Day"
-                  ? "bg-accent/10"
-                  : "";
-          return (
-            <div key={d.day} className={`hairline-l hairline-b px-5 py-6 ${tone}`}>
-              <p className="mono-label text-muted-foreground">{d.day}</p>
-              <p className="mt-3 font-mono text-lg font-bold">{d.shift}</p>
-              <p className="mono-label text-muted-foreground mt-2">{d.unit}</p>
-            </div>
-          );
-        })}
+        {loading ? (
+          <div className="p-8 text-center text-muted-foreground col-span-full">Loading schedule...</div>
+        ) : scheduleList.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground col-span-full">No scheduled shifts found.</div>
+        ) : (
+          scheduleList.map((d) => {
+            const tone =
+              d.shiftType === "Night"
+                ? "bg-foreground/[0.06]"
+                : d.shiftType === "On-call"
+                  ? "bg-destructive/10"
+                  : d.shiftType === "Day"
+                    ? "bg-accent/10"
+                    : "";
+            return (
+              <div key={d._id} className={`hairline-l hairline-b px-5 py-6 ${tone}`}>
+                <p className="mono-label text-muted-foreground">
+                  {new Date(d.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                </p>
+                <p className="mt-3 font-mono text-lg font-bold">{d.shiftType}</p>
+                <p className="mono-label text-muted-foreground mt-2">{d.department}</p>
+              </div>
+            );
+          })
+        )}
       </div>
       <div className="px-5 py-6 sm:px-8">
         <p className="mono-label text-muted-foreground">

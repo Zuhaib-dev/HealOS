@@ -1,34 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
+  <h1>💻 HealOS Client</h1>
+  <p>The frontend application for HealOS, built with Next.js 15.</p>
+</div>
 
-## Getting Started
+## 🛠 Tech Stack
 
-First, run the development server:
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **State Management**: [Zustand](https://docs.pmnd.rs/zustand/getting-started/introduction)
+- **Data Fetching**: React Query / Custom API Client
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 📂 Directory Structure
+
+```
+client/
+└── src/
+    ├── app/           # Next.js App Router (Pages, Layouts, API Routes)
+    ├── components/    # Reusable UI components, forms, and charts
+    ├── hooks/         # Custom React hooks
+    ├── lib/           # Utility functions and API client setup
+    ├── store/         # Zustand global state stores
+    └── types/         # Client-specific TypeScript interfaces
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Ensure you are in the root directory of the monorepo or inside the `client` directory.
 
-## Learn More
+### Running in Development
 
-To learn more about Next.js, take a look at the following resources:
+To start the client in development mode (with Hot Module Replacement):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# From the root of the monorepo:
+npm run dev:client
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Or from within the client directory:
+npm run dev
+```
+The application will be available at [http://localhost:3000](http://localhost:3000).
 
-## Deploy on Vercel
+### Building for Production
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+To create an optimized production build:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# From the root of the monorepo:
+npm run build:client
+```
+
+This will output the build artifacts to the `.next` folder, ready for deployment.
+
+## 🎨 Styling & Design
+
+This project utilizes **Tailwind CSS v4** for utility-first styling. The design system features:
+- A glassmorphism aesthetic with floating dashboard elements.
+- A carefully curated dark-mode color palette (teal, soft blue, dark backgrounds).
+- Smooth micro-interactions powered by **Framer Motion**.
+
+---
+*Part of the [HealOS Monorepo](../README.md).*

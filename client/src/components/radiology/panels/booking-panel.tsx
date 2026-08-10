@@ -14,17 +14,7 @@ import {
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
-import {
-  worklist,
-  documents,
-  reportTemplates,
-  modalities,
-  criticalFindings,
-  tatStats,
-  bookingSlots,
-  type WorklistItem,
-} from "../radiology-data";
-import { fetchPendingOrdersApi, updateOrderStatusApi, uploadDiagnosticReportApi, DiagnosticOrderRecord } from "@/lib/api/radiology";
+import { fetchBookingsApi, RadiologyBookingRecord } from "@/lib/api/radiology";
 import { toast } from "sonner";
 
 /* ---------- primitives ---------- */
@@ -93,6 +83,12 @@ function ScannerGlyph({ active }: { active: boolean }) {
 /* ---------- 07 booking ---------- */
 
 export function BookingPanel() {
+  const [bookings, setBookings] = useState<RadiologyBookingRecord[]>([]);
+
+  useEffect(() => {
+    fetchBookingsApi().then(res => setBookings(res.data.bookings)).catch(console.error);
+  }, []);
+
   return (
     <section>
       <PanelHeader
@@ -103,7 +99,9 @@ export function BookingPanel() {
       />
 
       <div className="flex flex-col gap-px" style={{ background: "var(--hairline)" }}>
-        {bookingSlots.map((s, i) => (
+        {bookings.length === 0 ? (
+          <div className="bg-background p-8 text-center text-muted-foreground">Loading slots...</div>
+        ) : bookings.map((s, i) => (
           <div
             key={`${s.time}-${s.room}-${i}`}
             className="bg-background flex flex-wrap items-center gap-4 px-5 py-4 sm:px-8"
@@ -114,8 +112,8 @@ export function BookingPanel() {
               <p className={s.state === "open" ? "text-muted-foreground text-sm" : "text-sm"}>
                 {s.study}
               </p>
-              {s.patient !== "—" && (
-                <p className="mono-label text-muted-foreground mt-0.5">{s.patient}</p>
+              {s.patientName && s.patientName !== "—" && (
+                <p className="mono-label text-muted-foreground mt-0.5">{s.patientName}</p>
               )}
             </div>
             <Pill tone={s.state === "booked" ? "warn" : s.state === "open" ? "ok" : "bad"}>

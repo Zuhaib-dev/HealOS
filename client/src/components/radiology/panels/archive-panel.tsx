@@ -14,17 +14,7 @@ import {
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
-import {
-  worklist,
-  documents,
-  reportTemplates,
-  modalities,
-  criticalFindings,
-  tatStats,
-  bookingSlots,
-  type WorklistItem,
-} from "../radiology-data";
-import { fetchPendingOrdersApi, updateOrderStatusApi, uploadDiagnosticReportApi, DiagnosticOrderRecord } from "@/lib/api/radiology";
+import { fetchDocumentsApi, StudyDocRecord } from "@/lib/api/radiology";
 import { toast } from "sonner";
 
 /* ---------- primitives ---------- */
@@ -94,8 +84,16 @@ function ScannerGlyph({ active }: { active: boolean }) {
 
 export function ArchivePanel() {
   const [q, setQ] = useState("");
+  const [documents, setDocuments] = useState<StudyDocRecord[]>([]);
+
+  useEffect(() => {
+    fetchDocumentsApi()
+      .then((res) => setDocuments(res.data.documents))
+      .catch(console.error);
+  }, []);
+
   const rows = documents.filter((d) =>
-    `${d.name} ${d.patient} ${d.accession}`.toLowerCase().includes(q.toLowerCase()),
+    `${d.fileName} ${d.patient?.firstName} ${d.patient?.lastName} ${d.order?.accessionNumber}`.toLowerCase().includes(q.toLowerCase()),
   );
 
   return (
@@ -135,12 +133,16 @@ export function ArchivePanel() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((d) => (
-              <tr key={d.id} className="hairline-b hover:bg-foreground/2">
+            {documents.length === 0 ? (
+              <tr><Td colSpan={7} className="text-center text-muted-foreground p-8 align-middle">Loading archive...</Td></tr>
+            ) : rows.length === 0 ? (
+              <tr><Td colSpan={7} className="text-center text-muted-foreground p-8 align-middle">No documents found.</Td></tr>
+            ) : rows.map((d) => (
+              <tr key={d._id} className="hairline-b hover:bg-foreground/2">
                 <Td>
                   <span className="flex items-center gap-2">
                     <FileText className="text-accent size-3.5" />
-                    <span className="font-mono text-sm">{d.name}</span>
+                    <span className="font-mono text-sm">{d.fileName}</span>
                   </span>
                   {d.pages > 0 && (
                     <p className="mono-label text-muted-foreground mt-1">{d.pages} pages</p>
@@ -150,15 +152,15 @@ export function ArchivePanel() {
                   <span className="mono-label text-muted-foreground">{d.kind}</span>
                 </Td>
                 <Td>
-                  <p>{d.patient}</p>
-                  <p className="mono-label text-muted-foreground">{d.accession}</p>
+                  <p>{d.patient?.firstName} {d.patient?.lastName}</p>
+                  <p className="mono-label text-muted-foreground">{d.order?.accessionNumber}</p>
                 </Td>
                 <Td>
-                  <span className="mono-label">{d.size}</span>
+                  <span className="mono-label">{d.fileSize || "—"}</span>
                 </Td>
                 <Td>
-                  <p className="mono-label">{d.uploaded}</p>
-                  <p className="mono-label text-muted-foreground">{d.by}</p>
+                  <p className="mono-label">{new Date(d.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className="mono-label text-muted-foreground">{d.uploadedBy || (d.radiologist ? `Dr. ${d.radiologist.lastName}` : "—")}</p>
                 </Td>
                 <Td>
                   <Pill
@@ -166,7 +168,7 @@ export function ArchivePanel() {
                       d.state === "verified" ? "ok" : d.state === "pending sign" ? "warn" : "bad"
                     }
                   >
-                    {d.state}
+                    {d.state || "—"}
                   </Pill>
                 </Td>
                 <Td>

@@ -172,11 +172,15 @@ export function WorklistPanel() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((w) => {
+            {orders.length === 0 ? (
+              <tr><Td colSpan={8} className="text-center text-muted-foreground p-8 align-middle">Loading worklist...</Td></tr>
+            ) : rows.length === 0 ? (
+              <tr><Td colSpan={8} className="text-center text-muted-foreground p-8 align-middle">No orders found.</Td></tr>
+            ) : rows.map((w) => {
               return (
                 <tr key={w._id} className="hairline-b hover:bg-foreground/2">
                   <Td>
-                    <span className="mono-label truncate block w-24" title={w._id}>{w._id}</span>
+                    <span className="mono-label truncate block w-24" title={w.accessionNumber}>{w.accessionNumber || w._id.slice(-8).toUpperCase()}</span>
                   </Td>
                   <Td>
                     <p className="font-medium">{w.patient?.firstName} {w.patient?.lastName}</p>
@@ -187,7 +191,7 @@ export function WorklistPanel() {
                   <Td>
                     <p>{w.testName}</p>
                     <p className="mono-label text-muted-foreground">
-                      {w.testType} · requested {new Date(w.createdAt).toLocaleDateString()}
+                      {w.modality || w.testType}
                     </p>
                   </Td>
                   <Td>
@@ -202,12 +206,17 @@ export function WorklistPanel() {
                     </span>
                   </Td>
                   <Td>
-                    {w.status === "PENDING" && (
-                      <button onClick={() => handleUpdateStatus(w._id, "IN_PROGRESS")} className="text-xs bg-accent/20 text-accent px-2 py-1 rounded">Mark In Progress</button>
-                    )}
+                    <span className="mono-label text-muted-foreground">{w.room || "—"}</span>
                   </Td>
                   <Td>
-                    <span className="mono-label text-muted-foreground">{w.doctor?.firstName} {w.doctor?.lastName}</span>
+                    <span className="mono-label font-mono">
+                      {w.tatMin !== undefined ? <span className={w.tatMin > (w.slaMin || Infinity) ? "text-destructive" : ""}>{w.tatMin}m</span> : "—"}
+                      {" / "}
+                      {w.slaMin ? `${w.slaMin}m` : "—"}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span className="mono-label text-muted-foreground">{w.radiologist || "unassigned"}</span>
                   </Td>
                 </tr>
               );

@@ -14,17 +14,7 @@ import {
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
-import {
-  worklist,
-  documents,
-  reportTemplates,
-  modalities,
-  criticalFindings,
-  tatStats,
-  bookingSlots,
-  type WorklistItem,
-} from "../radiology-data";
-import { fetchPendingOrdersApi, updateOrderStatusApi, uploadDiagnosticReportApi, DiagnosticOrderRecord } from "@/lib/api/radiology";
+import { fetchCriticalFindingsApi, CriticalFindingRecord } from "@/lib/api/radiology";
 import { toast } from "sonner";
 
 /* ---------- primitives ---------- */
@@ -93,9 +83,15 @@ function ScannerGlyph({ active }: { active: boolean }) {
 /* ---------- 05 critical findings ---------- */
 
 export function CriticalPanel() {
-  const [called, setCalled] = useState<Record<string, boolean>>(
-    Object.fromEntries(criticalFindings.map((c) => [c.accession, c.called])),
-  );
+  const [findings, setFindings] = useState<CriticalFindingRecord[]>([]);
+  const [called, setCalled] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    fetchCriticalFindingsApi().then(res => {
+      setFindings(res.data.findings);
+      setCalled(Object.fromEntries(res.data.findings.map(c => [c.accession, c.called])));
+    }).catch(console.error);
+  }, []);
 
   return (
     <section>
@@ -106,11 +102,13 @@ export function CriticalPanel() {
       />
 
       <div className="flex flex-col gap-px" style={{ background: "var(--hairline)" }}>
-        {criticalFindings.map((c) => {
+        {findings.length === 0 ? (
+          <div className="bg-background p-8 text-center text-muted-foreground">No critical findings to display.</div>
+        ) : findings.map((c) => {
           const ack = called[c.accession];
           return (
             <div
-              key={c.accession}
+              key={c._id}
               className="bg-background flex flex-wrap items-center gap-4 p-5 sm:px-8"
             >
               <span
@@ -121,13 +119,17 @@ export function CriticalPanel() {
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{c.finding}</p>
                 <p className="mono-label text-muted-foreground mt-1">
-                  {c.accession} · {c.patient} · flagged {c.at} · to {c.clinician}
+                  {c.accession} · {c.patientName} · flagged {c.atTime} · to {c.clinician}
                 </p>
               </div>
               <Pill tone={ack ? "ok" : "bad"}>{ack ? "acknowledged" : "callback pending"}</Pill>
               <ActionButton
                 tone={ack ? "ghost" : "solid"}
-                onClick={() => setCalled((p) => ({ ...p, [c.accession]: true }))}
+                onClick={() => {
+                  setCalled((p) => ({ ...p, [c.accession]: true }));
+                  toast.success(`Marked as called: ${c.accession}`);
+                  // Note: In a real app we would call a PUT endpoint here to update `called: true`
+                }}
               >
                 <span className="inline-flex items-center gap-2">
                   <PhoneCall className="size-3.5" />

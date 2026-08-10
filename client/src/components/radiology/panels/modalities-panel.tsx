@@ -14,17 +14,7 @@ import {
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
-import {
-  worklist,
-  documents,
-  reportTemplates,
-  modalities,
-  criticalFindings,
-  tatStats,
-  bookingSlots,
-  type WorklistItem,
-} from "../radiology-data";
-import { fetchPendingOrdersApi, updateOrderStatusApi, uploadDiagnosticReportApi, DiagnosticOrderRecord } from "@/lib/api/radiology";
+import { fetchModalitiesApi, ModalityMachineRecord } from "@/lib/api/radiology";
 import { toast } from "sonner";
 
 /* ---------- primitives ---------- */
@@ -93,6 +83,12 @@ function ScannerGlyph({ active }: { active: boolean }) {
 /* ---------- 06 modalities ---------- */
 
 export function ModalitiesPanel() {
+  const [modalities, setModalities] = useState<ModalityMachineRecord[]>([]);
+
+  useEffect(() => {
+    fetchModalitiesApi().then(res => setModalities(res.data.modalities)).catch(console.error);
+  }, []);
+
   return (
     <section>
       <PanelHeader
@@ -102,8 +98,10 @@ export function ModalitiesPanel() {
       />
 
       <div className="grid gap-px sm:grid-cols-2 xl:grid-cols-3" style={{ background: "var(--hairline)" }}>
-        {modalities.map((m) => (
-          <div key={m.room} className="bg-background p-5">
+        {modalities.length === 0 ? (
+          <div className="bg-background p-8 text-center text-muted-foreground col-span-full">Loading equipment...</div>
+        ) : modalities.map((m) => (
+          <div key={m._id} className="bg-background p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-mono text-lg">{m.room}</p>

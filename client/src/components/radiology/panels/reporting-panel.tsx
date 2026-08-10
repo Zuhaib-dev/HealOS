@@ -14,17 +14,7 @@ import {
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
-import {
-  worklist,
-  documents,
-  reportTemplates,
-  modalities,
-  criticalFindings,
-  tatStats,
-  bookingSlots,
-  type WorklistItem,
-} from "../radiology-data";
-import { fetchPendingOrdersApi, updateOrderStatusApi, uploadDiagnosticReportApi, DiagnosticOrderRecord } from "@/lib/api/radiology";
+import { fetchTemplatesApi, fetchPendingOrdersApi, DiagnosticOrderRecord, ReportTemplateRecord } from "@/lib/api/radiology";
 import { toast } from "sonner";
 
 /* ---------- primitives ---------- */
@@ -93,9 +83,39 @@ function ScannerGlyph({ active }: { active: boolean }) {
 /* ---------- 03 reporting ---------- */
 
 export function ReportingPanel() {
-  const [tpl, setTpl] = useState(reportTemplates[0]!);
-  const [body, setBody] = useState(reportTemplates[0]!.body);
-  const [study] = useState(worklist[0]!);
+  const [templates, setTemplates] = useState<ReportTemplateRecord[]>([]);
+  const [tpl, setTpl] = useState<ReportTemplateRecord | null>(null);
+  const [body, setBody] = useState("");
+  const [orders, setOrders] = useState<DiagnosticOrderRecord[]>([]);
+  const [study, setStudy] = useState<DiagnosticOrderRecord | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      fetchTemplatesApi(),
+      fetchPendingOrdersApi()
+    ]).then(([tplRes, ordersRes]) => {
+      setTemplates(tplRes.data.templates);
+      if (tplRes.data.templates.length > 0) {
+        setTpl(tplRes.data.templates[0]);
+        setBody(tplRes.data.templates[0].body);
+      }
+      
+      const inProgress = ordersRes.data.orders.filter(o => o.status === "IN_PROGRESS");
+      setOrders(inProgress);
+      if (inProgress.length > 0) {
+        setStudy(inProgress[0]);
+      }
+    }).catch(console.error);
+  }, []);
+
+  if (!study || !tpl) {
+    return (
+      <section>
+        <PanelHeader index="03 / reporting" title="Reporting desk" note="Loading reporting context..." />
+        <div className="p-8 text-center text-muted-foreground">Loading templates and active studies...</div>
+      </section>
+    );
+  }
 
   return (
     <section>
@@ -114,29 +134,29 @@ export function ReportingPanel() {
       <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
         <div className="bg-background p-5">
           <p className="mono-label text-muted-foreground">Current study</p>
-          <p className="mt-2 font-mono text-lg">{study.study}</p>
+          <p className="mt-2 font-mono text-lg">{study.testName}</p>
           <p className="mono-label text-muted-foreground mt-1">
-            {study.accession} · {study.patient} · {study.mrn}
+            {study.accessionNumber} · {study.patient?.firstName} {study.patient?.lastName}
           </p>
           <div className="hairline mt-4 p-2">
             <ScannerGlyph active />
             <p className="mono-label text-muted-foreground mt-1 text-center">
-              {study.room} · series 4 · 312 images
+              {study.room || "—"} · series 4 · 312 images
             </p>
           </div>
 
           <p className="mono-label text-muted-foreground mt-5">Templates</p>
           <div className="mt-2 flex flex-col gap-0.5">
-            {reportTemplates.map((t) => (
+            {templates.map((t) => (
               <button
-                key={t.id}
+                key={t._id}
                 type="button"
                 onClick={() => {
                   setTpl(t);
                   setBody(t.body);
                 }}
                 className={`mono-label px-3 py-2 text-left transition-colors ${
-                  tpl.id === t.id
+                  tpl._id === t._id
                     ? "bg-accent/10 text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-foreground/3"
                 }`}

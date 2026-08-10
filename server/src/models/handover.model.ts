@@ -2,13 +2,17 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IHandover extends Document {
   patient: mongoose.Types.ObjectId;
+  patientName?: string; // added for nurse UI
+  bed?: string; // added for nurse UI
   fromDoctor: mongoose.Types.ObjectId;
-  toDoctor?: mongoose.Types.ObjectId; // Optional: if assigned to a specific doctor
-  department?: string; // Optional: if assigned to a department
+  toDoctor?: mongoose.Types.ObjectId;
+  department?: string;
   acuity: "critical" | "guarded" | "stable";
+  situation?: string; // added for SBAR
   background: string;
   assessment: string;
-  tasks: string[]; // pending tasks
+  recommendation?: string; // added for SBAR
+  tasks: string[];
   status: "PENDING" | "ACKNOWLEDGED" | "COMPLETED";
   createdAt: Date;
   updatedAt: Date;
@@ -17,6 +21,8 @@ export interface IHandover extends Document {
 const handoverSchema = new Schema<IHandover>(
   {
     patient: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    patientName: { type: String },
+    bed: { type: String },
     fromDoctor: { type: Schema.Types.ObjectId, ref: "User", required: true },
     toDoctor: { type: Schema.Types.ObjectId, ref: "User" },
     department: { type: String },
@@ -25,8 +31,10 @@ const handoverSchema = new Schema<IHandover>(
       enum: ["critical", "guarded", "stable"],
       default: "stable" 
     },
+    situation: { type: String },
     background: { type: String, required: true },
     assessment: { type: String, required: true },
+    recommendation: { type: String },
     tasks: { type: [String], default: [] },
     status: { 
       type: String, 

@@ -120,3 +120,80 @@ export const getPatientVitals = async (req: Request, res: Response): Promise<voi
     });
   }
 };
+
+/**
+ * GET /api/v1/nurse/fluids
+ * Get fluid balances
+ */
+export const getFluidBalances = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { FluidBalance } = await import("../models/fluid-balance.model.js");
+    const fluids = await FluidBalance.find().sort({ createdAt: -1 });
+    res.status(StatusCodes.OK).json({ success: true, fluids });
+  } catch (error) {
+    console.error("Error in getFluidBalances:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching fluid balances" });
+  }
+};
+
+/**
+ * GET /api/v1/nurse/call-bells
+ * Get call bells
+ */
+export const getCallBells = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { CallBell } = await import("../models/call-bell.model.js");
+    const callBells = await CallBell.find().sort({ createdAt: -1 });
+    res.status(StatusCodes.OK).json({ success: true, callBells });
+  } catch (error) {
+    console.error("Error in getCallBells:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching call bells" });
+  }
+};
+
+/**
+ * GET /api/v1/nurse/emar
+ * Get medication administration records
+ */
+export const getMarDoses = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { MarDose } = await import("../models/mar-dose.model.js");
+    const doses = await MarDose.find().sort({ createdAt: -1 });
+    res.status(StatusCodes.OK).json({ success: true, doses });
+  } catch (error) {
+    console.error("Error in getMarDoses:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching medication doses" });
+  }
+};
+
+/**
+ * GET /api/v1/nurse/wounds
+ * Get wound care records
+ */
+export const getWounds = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { Wound } = await import("../models/wound.model.js");
+    const wounds = await Wound.find().sort({ createdAt: -1 });
+    res.status(StatusCodes.OK).json({ success: true, wounds });
+  } catch (error) {
+    console.error("Error in getWounds:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching wounds" });
+  }
+};
+
+/**
+ * GET /api/v1/nurse/handovers
+ * Get nurse handovers
+ */
+export const getHandovers = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { Handover } = await import("../models/handover.model.js");
+    // Ensure we only fetch nurse handovers (they will have a 'bed' field seeded)
+    const handovers = await Handover.find({ bed: { $exists: true } }).sort({ createdAt: -1 });
+    res.status(StatusCodes.OK).json({ success: true, handovers });
+  } catch (error) {
+    console.error("Error in getHandovers:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching handovers" });
+  }
+};
+

@@ -19,3 +19,7 @@ export * from "./ward.model.js";
 export * from "./inventory.model.js";
 export * from "./audit-log.model.js";
 export * from "./integration.model.js";
+export * from "./fluid-balance.model.js";
+export * from "./call-bell.model.js";
+export * from "./mar-dose.model.js";
+export * from "./wound.model.js";

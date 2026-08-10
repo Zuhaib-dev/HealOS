@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
+import { ArrowUpRight } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 
 /* ---------- shared primitives ---------- */

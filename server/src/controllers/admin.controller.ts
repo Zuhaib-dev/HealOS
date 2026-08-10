@@ -124,3 +124,83 @@ export const updateUserRole = async (req: Request, res: Response): Promise<void>
     });
   }
 };
+
+/**
+ * GET /api/v1/admin/staff
+ * Returns list of all professional profiles (staff)
+ */
+export const getStaff = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const staff = await ProfessionalProfile.find()
+      .populate("user", "name email phone role avatarUrl")
+      .sort({ createdAt: -1 });
+    res.status(StatusCodes.OK).json({
+      success: true,
+      staff,
+      count: staff.length,
+    });
+  } catch (error) {
+    console.error("Error in getStaff:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error fetching staff list",
+    });
+  }
+};
+
+/**
+ * GET /api/v1/admin/schedule
+ * Returns today's appointments and schedules
+ */
+export const getSchedule = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const appointments = await Appointment.find({
+      date: { $gte: today, $lt: tomorrow },
+    })
+      .populate("patient", "user")
+      .populate("doctor", "user department")
+      .sort({ timeSlot: 1 });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      appointments,
+    });
+  } catch (error) {
+    console.error("Error in getSchedule:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error fetching schedule",
+    });
+  }
+};
+
+/**
+ * GET /api/v1/admin/invoices
+ * Returns all invoices
+ */
+export const getInvoices = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    // Dynamic import to avoid undefined if Invoice model is not imported at top
+    const { Invoice } = await import("../models/invoice.model.js");
+    const invoices = await Invoice.find()
+      .populate("patient", "user")
+      .sort({ createdAt: -1 });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      invoices,
+      count: invoices.length,
+    });
+  } catch (error) {
+    console.error("Error in getInvoices:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error fetching invoices",
+    });
+  }
+};

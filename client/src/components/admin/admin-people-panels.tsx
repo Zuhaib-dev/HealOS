@@ -5,9 +5,11 @@ import { ActionButton, PanelHeader } from "./admin-shell";
 import {
   fetchAdminUsersApi,
   fetchAdminPatientsApi,
+  fetchAdminScheduleApi,
   updateUserRoleApi,
   AdminUserData,
   AdminPatientData,
+  AdminAppointmentData,
 } from "@/lib/api/admin";
 import { toast } from "sonner";
 import {
@@ -418,9 +420,46 @@ export function PatientsPanel() {
 /* ---------- 05 · Theatre schedule ---------- */
 
 export function SchedulePanel() {
-  const rooms = Array.from(new Set(schedule.map((s) => s.room)));
+  const [loading, setLoading] = useState(true);
+  const [appointments, setAppointments] = useState<AdminAppointmentData[]>([]);
+
+  useEffect(() => {
+    const loadSchedule = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchAdminScheduleApi();
+        if (res.success && res.appointments) {
+          setAppointments(res.appointments);
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin schedule", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadSchedule();
+  }, []);
+
+  const scheduleWindow = { from: 7, to: 20 };
   const span = scheduleWindow.to - scheduleWindow.from;
   const hours = Array.from({ length: span + 1 }, (_, i) => scheduleWindow.from + i);
+
+  // Map appointments to rooms (departments or doctors)
+  const mappedSchedule = appointments.map((apt) => {
+    const [hourStr, minStr] = apt.timeSlot.split(":");
+    const startHour = parseInt(hourStr) + parseInt(minStr) / 60;
+    return {
+      id: apt._id,
+      room: apt.doctor?.department || "General",
+      label: apt.patient?.user?.name || "Patient",
+      surgeon: apt.doctor?.user?.name || "Doctor",
+      start: startHour,
+      end: startHour + 1, // Assume 1 hr
+      state: apt.status === "COMPLETED" ? "in-theatre" : apt.status === "CANCELLED" ? "delayed" : "scheduled",
+    };
+  });
+
+  const rooms = Array.from(new Set(mappedSchedule.map((s) => s.room)));
 
   return (
     <div>
@@ -436,69 +475,75 @@ export function SchedulePanel() {
         }
       />
       <div className="overflow-x-auto px-5 py-6 sm:px-8">
-        <div className="min-w-205">
-          <div className="mono-label text-muted-foreground flex pl-28">
-            {hours.map((h) => (
-              <span key={h} className="flex-1">
-                {String(h).padStart(2, "0")}:00
-              </span>
-            ))}
-          </div>
-          <div className="mt-3 space-y-2">
-            {rooms.map((room) => (
-              <div key={room} className="flex items-center">
-                <span className="mono-label w-28 shrink-0">{room}</span>
-                <div className="hairline relative h-11 flex-1 bg-graph-paper">
-                  {schedule
-                    .filter((s) => s.room === room)
-                    .map((s) => {
-                      const left = ((s.start - scheduleWindow.from) / span) * 100;
-                      const width = ((s.end - s.start) / span) * 100;
-                      const tone =
-                        s.state === "in-theatre"
-                          ? "bg-accent/25 text-brass border-l-2 border-l-[var(--color-accent)]"
-                          : s.state === "delayed"
-                            ? "bg-destructive/15 text-destructive border-l-2 border-l-current"
-                            : "bg-foreground/[0.06] text-foreground border-l-2 border-l-[var(--hairline)]";
-                      return (
-                        <motion.div
-                          key={s.label + s.start}
-                          initial={{ opacity: 0, scaleX: 0.4 }}
-                          animate={{ opacity: 1, scaleX: 1 }}
-                          transition={{ duration: 0.6, ease: "easeOut" }}
-                          style={{ left: `${left}%`, width: `${width}%`, originX: 0 }}
-                          className={`absolute top-1 bottom-1 overflow-hidden px-2 py-1 ${tone}`}
-                        >
-                          <span className="mono-label block truncate">{s.label}</span>
-                          <span className="mono-label text-muted-foreground block truncate">
-                            {s.surgeon}
-                          </span>
-                          {s.state === "in-theatre" && (
-                            <motion.span
-                              className="bg-accent absolute top-0 right-0 h-full w-0.5"
-                              animate={{ opacity: [0.2, 1, 0.2] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                            />
-                          )}
-                        </motion.div>
-                      );
-                    })}
+        {loading ? (
+          <p className="mono-label text-muted-foreground animate-pulse text-center p-8">Loading schedule from database...</p>
+        ) : (
+          <div className="min-w-205">
+            <div className="mono-label text-muted-foreground flex pl-28">
+              {hours.map((h) => (
+                <span key={h} className="flex-1">
+                  {String(h).padStart(2, "0")}:00
+                </span>
+              ))}
+            </div>
+            <div className="mt-3 space-y-2">
+              {rooms.length > 0 ? rooms.map((room) => (
+                <div key={room} className="flex items-center">
+                  <span className="mono-label w-28 shrink-0">{room}</span>
+                  <div className="hairline relative h-11 flex-1 bg-graph-paper">
+                    {mappedSchedule
+                      .filter((s) => s.room === room)
+                      .map((s) => {
+                        const left = ((s.start - scheduleWindow.from) / span) * 100;
+                        const width = ((s.end - s.start) / span) * 100;
+                        const tone =
+                          s.state === "in-theatre"
+                            ? "bg-accent/25 text-brass border-l-2 border-l-[var(--color-accent)]"
+                            : s.state === "delayed"
+                              ? "bg-destructive/15 text-destructive border-l-2 border-l-current"
+                              : "bg-foreground/[0.06] text-foreground border-l-2 border-l-[var(--hairline)]";
+                        return (
+                          <motion.div
+                            key={s.label + s.start}
+                            initial={{ opacity: 0, scaleX: 0.4 }}
+                            animate={{ opacity: 1, scaleX: 1 }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            style={{ left: `${Math.max(0, left)}%`, width: `${width}%`, originX: 0 }}
+                            className={`absolute top-1 bottom-1 overflow-hidden px-2 py-1 ${tone}`}
+                          >
+                            <span className="mono-label block truncate">{s.label}</span>
+                            <span className="mono-label text-muted-foreground block truncate">
+                              {s.surgeon}
+                            </span>
+                            {s.state === "in-theatre" && (
+                              <motion.span
+                                className="bg-accent absolute top-0 right-0 h-full w-0.5"
+                                animate={{ opacity: [0.2, 1, 0.2] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                              />
+                            )}
+                          </motion.div>
+                        );
+                      })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )) : (
+                <p className="mono-label text-muted-foreground text-center p-8 border border-dashed border-border/60">No appointments scheduled for today.</p>
+              )}
+            </div>
+            <div className="mono-label text-muted-foreground mt-5 flex gap-5">
+              <span className="flex items-center gap-2">
+                <span className="bg-accent/40 inline-block size-2.5" /> completed/in-session
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="bg-foreground/20 inline-block size-2.5" /> scheduled
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="bg-destructive/40 inline-block size-2.5" /> cancelled/delayed
+              </span>
+            </div>
           </div>
-          <div className="mono-label text-muted-foreground mt-5 flex gap-5">
-            <span className="flex items-center gap-2">
-              <span className="bg-accent/40 inline-block size-2.5" /> in theatre
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="bg-foreground/20 inline-block size-2.5" /> scheduled
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="bg-destructive/40 inline-block size-2.5" /> delayed
-            </span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

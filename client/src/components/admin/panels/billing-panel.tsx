@@ -70,12 +70,38 @@ function TablePanel({ children }: { children: React.ReactNode }) {
 }
 
 
+import { fetchAdminInvoicesApi, AdminInvoiceData } from "@/lib/api/admin";
+
 /* ---------- 05 billing ---------- */
 
 export function BillingPanel() {
-  const outstanding = invoices
-    .filter((i) => i.state !== "Paid")
-    .reduce((a, i) => a + i.amount, 0);
+  const [loading, setLoading] = useState(true);
+  const [invoicesData, setInvoicesData] = useState<AdminInvoiceData[]>([]);
+
+  useEffect(() => {
+    const loadInvoices = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchAdminInvoicesApi();
+        if (res.success && res.invoices) {
+          setInvoicesData(res.invoices);
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin invoices", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInvoices();
+  }, []);
+
+  const totalCollected = invoicesData
+    .filter((i) => i.status === "PAID")
+    .reduce((a, i) => a + (i.amount || 0), 0);
+
+  const outstanding = invoicesData
+    .filter((i) => i.status !== "PAID" && i.status !== "CANCELLED")
+    .reduce((a, i) => a + (i.amount || 0), 0);
 
   return (
     <section>
@@ -91,9 +117,9 @@ export function BillingPanel() {
         }
       />
       <div className="hairline-b grid grid-cols-2 lg:grid-cols-4">
-        <Metric label="Collected MTD" value="$4.71M" delta="+8.9%" />
+        <Metric label="Collected MTD" value={`$${(totalCollected / 1000).toFixed(1)}k`} delta="+Live" />
         <Metric label="Outstanding" value={`$${(outstanding / 1000).toFixed(1)}k`} />
-        <Metric label="Denial rate" value="2.4" suffix="%" />
+        <Metric label="Total Invoices" value={String(invoicesData.length)} />
         <Metric label="Days in A/R" value="31" suffix="days" />
       </div>
       <TablePanel>
@@ -101,31 +127,47 @@ export function BillingPanel() {
           <tr>
             <Th>Invoice</Th>
             <Th>Patient</Th>
-            <Th>Payer</Th>
+            <Th>Date</Th>
             <Th>Amount</Th>
             <Th>State</Th>
           </tr>
         </thead>
         <tbody>
-          {invoices.map((i) => (
-            <tr key={i.id} className="hairline-b">
-              <Td>
-                <span className="mono-label">{i.id}</span>
-              </Td>
-              <Td>
-                <span className="mono-label text-muted-foreground">{i.patient}</span>
-              </Td>
-              <Td>{i.payer}</Td>
-              <Td>
-                <span className="font-mono font-bold">${i.amount.toLocaleString()}</span>
-              </Td>
-              <Td>
-                <Pill tone={i.state === "Paid" ? "ok" : i.state === "Disputed" ? "bad" : "warn"}>
-                  {i.state}
-                </Pill>
-              </Td>
+          {loading ? (
+            <tr>
+              <td colSpan={5} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
+                Loading invoices from database...
+              </td>
             </tr>
-          ))}
+          ) : invoicesData.length > 0 ? (
+            invoicesData.map((i) => (
+              <tr key={i._id} className="hairline-b">
+                <Td>
+                  <span className="mono-label">{i._id.slice(-8).toUpperCase()}</span>
+                </Td>
+                <Td>
+                  <span className="mono-label text-muted-foreground">{i.patient?.user?.name || "Unknown Patient"}</span>
+                </Td>
+                <Td>
+                  <span className="mono-label text-muted-foreground">{new Date(i.createdAt).toLocaleDateString()}</span>
+                </Td>
+                <Td>
+                  <span className="font-mono font-bold">${(i.amount || 0).toLocaleString()}</span>
+                </Td>
+                <Td>
+                  <Pill tone={i.status === "PAID" ? "ok" : i.status === "FAILED" || i.status === "OVERDUE" ? "bad" : "warn"}>
+                    {i.status || "PENDING"}
+                  </Pill>
+                </Td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={5} className="p-8 text-center mono-label text-xs text-muted-foreground">
+                No invoices found in ledger.
+              </td>
+            </tr>
+          )}
         </tbody>
       </TablePanel>
     </section>

@@ -81,3 +81,63 @@ export async function updateUserRoleApi(userId: string, role: string) {
   }>(`/admin/users/${userId}/role`, { role });
   return response.data;
 }
+
+export interface AdminStaffData {
+  _id: string;
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    role: string;
+    avatarUrl?: string;
+  };
+  department: string;
+  status: string;
+  designation: string;
+}
+
+export async function fetchAdminStaffApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    staff: AdminStaffData[];
+    count: number;
+  }>("/admin/staff");
+  return response.data;
+}
+
+export interface AdminAppointmentData {
+  _id: string;
+  patient: { user: { name: string } };
+  doctor: { user: { name: string }; department: string };
+  date: string;
+  timeSlot: string;
+  status: string;
+  type: string;
+}
+
+export async function fetchAdminScheduleApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    appointments: AdminAppointmentData[];
+  }>("/admin/schedule");
+  return response.data;
+}
+
+export interface AdminInvoiceData {
+  _id: string;
+  patient: { user: { name: string } };
+  amount: number;
+  status: string;
+  type: string;
+  createdAt: string;
+}
+
+export async function fetchAdminInvoicesApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    invoices: AdminInvoiceData[];
+    count: number;
+  }>("/admin/invoices");
+  return response.data;
+}

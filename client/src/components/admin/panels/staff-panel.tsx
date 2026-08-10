@@ -1,16 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { ArrowUpRight, Check, X, TriangleAlert } from "lucide-react";
-import { useAuthStore } from "@/store/use-auth-store";
-import {
-  approvals,
-  staff,
-  wards,
-  audit,
-  invoices,
-  supplies,
-  throughput,
-} from "../admin-data";
+import { ArrowUpRight } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 
 /* ---------- shared primitives ---------- */

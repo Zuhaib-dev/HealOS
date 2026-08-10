@@ -15,14 +15,8 @@ import {
 } from "@/lib/api/admin";
 import { toast } from "sonner";
 import {
-  users as mockUsers,
-  patients as mockPatients,
-  schedule,
-  scheduleWindow,
   roleMatrix,
   permissionScopes,
-  integrations,
-  apiKeys,
 } from "./admin-data-people";
 
 /* ---------- local primitives ---------- */

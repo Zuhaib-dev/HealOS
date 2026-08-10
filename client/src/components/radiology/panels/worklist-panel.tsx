@@ -41,8 +41,8 @@ function Th({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
+function Td({ children, colSpan, className }: { children?: React.ReactNode, colSpan?: number, className?: string }) {
+  return <td colSpan={colSpan} className={`px-4 py-3.5 align-middle text-sm ${className || ""}`}>{children}</td>;
 }
 
 function priorityTone(p: DiagnosticOrderRecord["priority"]) {
@@ -85,6 +85,7 @@ function ScannerGlyph({ active }: { active: boolean }) {
 export function WorklistPanel() {
   const { user } = useAuthStore();
   const [filter, setFilter] = useState<"all" | "stat" | "unreported">("all");
+  const [orders, setOrders] = useState<DiagnosticOrderRecord[]>([]);
   const [stats, setStats] = useState<{ label: string, value: string, note: string }[]>([]);
 
   const loadData = async () => {

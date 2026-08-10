@@ -41,12 +41,8 @@ function Th({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
-
-function priorityTone(p: DiagnosticOrderRecord["priority"]) {
-  return p === "STAT" ? "bad" : p === "URGENT" ? "warn" : "mute";
+function Td({ children, colSpan, className }: { children?: React.ReactNode, colSpan?: number, className?: string }) {
+  return <td colSpan={colSpan} className={`px-4 py-3.5 align-middle text-sm ${className || ""}`}>{children}</td>;
 }
 
 /** Animated scanner glyph — hand-drawn SVG, no raster assets. */

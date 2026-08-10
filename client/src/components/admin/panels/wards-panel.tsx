@@ -54,7 +54,7 @@ function Pill({ children, tone }: { children: React.ReactNode; tone: "ok" | "war
 function TablePanel({ children }: { children: React.ReactNode }) {
   return (
     <div className="hairline-b overflow-x-auto">
-      <table className="w-full min-w-[720px] border-collapse">{children}</table>
+      <table className="w-full min-w-180 border-collapse">{children}</table>
     </div>
   );
 }
@@ -115,7 +115,7 @@ export function WardsPanel() {
                   {Array.from({ length: w.capacity }).slice(0, 24).map((_, i) => (
                     <motion.span
                       key={i}
-                      className={`h-3 ${i < Math.min(w.currentOccupancy, 24) ? "bg-accent" : "bg-foreground/[0.08]"}`}
+                      className={`h-3 ${i < Math.min(w.currentOccupancy, 24) ? "bg-accent" : "bg-foreground/8"}`}
                       initial={{ opacity: 0.2 }}
                       animate={{ opacity: i < Math.min(w.currentOccupancy, 24) ? [0.55, 1, 0.55] : 0.5 }}
                       transition={{ duration: 3, delay: i * 0.05, repeat: Infinity }}

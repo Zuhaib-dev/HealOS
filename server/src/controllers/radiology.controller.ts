@@ -133,3 +133,97 @@ export const uploadReport = async (req: Request, res: Response) => {
     });
   }
 };
+
+// ==========================================
+// 4. Get Documents (Reports)
+// ==========================================
+export const getDocuments = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const documents = await DiagnosticReport.find()
+      .populate("patient", "firstName lastName")
+      .populate("radiologist", "firstName lastName")
+      .populate("order", "accessionNumber testName")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: "success",
+      data: { documents },
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      status: "error",
+      message: error.message || "Failed to fetch documents",
+    });
+  }
+};
+
+// ==========================================
+// 5. Get Report Templates
+// ==========================================
+export const getTemplates = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { ReportTemplate } = await import("../models/index.js");
+    const templates = await ReportTemplate.find();
+    res.status(200).json({ status: "success", data: { templates } });
+  } catch (error: any) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+};
+
+// ==========================================
+// 6. Get Modalities
+// ==========================================
+export const getModalities = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { ModalityMachine } = await import("../models/index.js");
+    const modalities = await ModalityMachine.find();
+    res.status(200).json({ status: "success", data: { modalities } });
+  } catch (error: any) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+};
+
+// ==========================================
+// 7. Get Critical Findings
+// ==========================================
+export const getCriticalFindings = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { CriticalFinding } = await import("../models/index.js");
+    const findings = await CriticalFinding.find().sort({ createdAt: -1 });
+    res.status(200).json({ status: "success", data: { findings } });
+  } catch (error: any) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+};
+
+// ==========================================
+// 8. Get Bookings
+// ==========================================
+export const getBookings = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { RadiologyBooking } = await import("../models/index.js");
+    const bookings = await RadiologyBooking.find().sort({ time: 1 });
+    res.status(200).json({ status: "success", data: { bookings } });
+  } catch (error: any) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+};
+
+// ==========================================
+// 9. Get Stats
+// ==========================================
+export const getStats = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const totalOrders = await DiagnosticOrder.countDocuments({ testType: "RADIOLOGY" });
+    const pendingOrders = await DiagnosticOrder.countDocuments({ testType: "RADIOLOGY", status: { $in: ["PENDING", "IN_PROGRESS"] } });
+    const stats = [
+      { label: "Studies today", value: totalOrders.toString(), note: `${pendingOrders} remaining` },
+      { label: "Median report TAT", value: "24m", note: "stat SLA 30m" },
+      { label: "Unreported backlog", value: pendingOrders.toString(), note: "—" },
+      { label: "Reject / repeat rate", value: "1.8%", note: "target < 3%" },
+    ];
+    res.status(200).json({ status: "success", data: { stats } });
+  } catch (error: any) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+};

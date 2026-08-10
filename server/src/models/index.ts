@@ -23,3 +23,9 @@ export * from "./fluid-balance.model.js";
 export * from "./call-bell.model.js";
 export * from "./mar-dose.model.js";
 export * from "./wound.model.js";
+
+// New radiology models
+export * from "./modality-machine.model.js";
+export * from "./critical-finding.model.js";
+export * from "./radiology-booking.model.js";
+export * from "./report-template.model.js";

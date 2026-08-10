@@ -5,30 +5,30 @@ import { motion } from "motion/react";
 import { Check, X, PauseCircle, TriangleAlert, Droplets, Bandage, Bell } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, Sparkline, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import {
-  callBells,
-  fluidBalance,
-  handover,
-  marDoses,
-  shiftStats,
-  wounds,
-  type MarDose,
-} from "../nurse-data";
-import {
-  fetchVitalsQueueApi,
-  recordVitalsApi,
-  VitalsQueueItem,
-} from "@/lib/api/nurse";
+import { fetchFluidBalancesApi, type FluidBalance } from "@/lib/api/nurse";
 import { toast } from "sonner";
 
 
-/* ---------- 03 fluid balance (mock data) ---------- */
+/* ---------- 03 fluid balance (real data) ---------- */
 
-export function FluidPanel() {
-  const [entries, setEntries] = useState(fluidBalance);
+export function FluidBalancePanel() {
+  const [entries, setEntries] = useState<FluidBalance[]>([]);
+  const [loading, setLoading] = useState(true);
   const [addTo, setAddTo] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [kind, setKind] = useState<"oral" | "iv" | "urine" | "drain">("oral");
+
+  useEffect(() => {
+    fetchFluidBalancesApi()
+      .then((data) => {
+        setEntries(data.fluids);
+        setLoading(false);
+      })
+      .catch((err) => {
+        toast.error("Failed to load fluid balances");
+        setLoading(false);
+      });
+  }, []);
 
   const commit = (bed: string) => {
     const v = Number(amount);
@@ -60,7 +60,11 @@ export function FluidPanel() {
       />
 
       <div className="grid gap-px lg:grid-cols-2" style={{ background: "var(--hairline)" }}>
-        {entries.map((e) => {
+        {loading ? (
+          <div className="p-8 text-center text-sm text-muted-foreground col-span-2">Loading fluid balances...</div>
+        ) : entries.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground col-span-2">No fluid balances found.</div>
+        ) : entries.map((e) => {
           const intake = e.intakeOral + e.intakeIV;
           const output = e.outputUrine + e.outputDrain;
           const net = intake - output;

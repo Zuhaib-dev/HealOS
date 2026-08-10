@@ -5,28 +5,28 @@ import { motion } from "motion/react";
 import { Check, X, PauseCircle, TriangleAlert, Droplets, Bandage, Bell } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, Sparkline, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import {
-  callBells,
-  fluidBalance,
-  handover,
-  marDoses,
-  shiftStats,
-  wounds,
-  type MarDose,
-} from "../nurse-data";
-import {
-  fetchVitalsQueueApi,
-  recordVitalsApi,
-  VitalsQueueItem,
-} from "@/lib/api/nurse";
+import { fetchNurseHandoversApi, type NurseHandover } from "@/lib/api/nurse";
 import { toast } from "sonner";
 
 
-/* ---------- 05 handover (mock data) ---------- */
+/* ---------- 05 handover (real data) ---------- */
 
 export function HandoverPanel() {
-  const [notes, setNotes] = useState(handover);
+  const [notes, setNotes] = useState<NurseHandover[]>([]);
+  const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState({ bed: "", situation: "", recommendation: "" });
+
+  useEffect(() => {
+    fetchNurseHandoversApi()
+      .then((data) => {
+        setNotes(data.handovers);
+        setLoading(false);
+      })
+      .catch((err) => {
+        toast.error("Failed to load shift handovers");
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <section>
@@ -39,15 +39,19 @@ export function HandoverPanel() {
 
       <div className="grid gap-px lg:grid-cols-[1.6fr_1fr]" style={{ background: "var(--hairline)" }}>
         <div className="bg-background">
-          {notes
+          {loading ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">Loading handovers...</div>
+          ) : notes.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">No handover notes available.</div>
+          ) : notes
             .slice()
-            .sort((a, b) => (a.priority === "escalate" ? -1 : b.priority === "escalate" ? 1 : 0))
+            .sort((a, b) => (a.acuity === "critical" ? -1 : b.acuity === "critical" ? 1 : 0))
             .map((h) => (
               <div key={h.bed} className="hairline-b p-5 last:border-b-0">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="mono-label text-accent/80">{h.bed} · {h.patient}</p>
-                  <Pill tone={h.priority === "escalate" ? "bad" : h.priority === "watch" ? "warn" : "ok"}>
-                    {h.priority}
+                  <p className="mono-label text-accent/80">{h.bed} · {h.patientName || "Unknown"}</p>
+                  <Pill tone={h.acuity === "critical" ? "bad" : h.acuity === "guarded" ? "warn" : "ok"}>
+                    {h.acuity}
                   </Pill>
                 </div>
                 <dl className="mt-3 space-y-2 text-sm">
@@ -96,13 +100,15 @@ export function HandoverPanel() {
                 if (!draft.bed.trim() || !draft.situation.trim()) return;
                 setNotes((n) => [
                   {
+                    _id: Date.now().toString(),
                     bed: draft.bed,
-                    patient: "New entry",
+                    patientName: "New entry",
                     situation: draft.situation,
                     background: "—",
                     assessment: "—",
                     recommendation: draft.recommendation || "—",
-                    priority: "watch",
+                    acuity: "stable",
+                    status: "PENDING",
                   },
                   ...n,
                 ]);

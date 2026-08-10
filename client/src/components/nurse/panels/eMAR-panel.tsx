@@ -5,24 +5,11 @@ import { motion } from "motion/react";
 import { Check, X, PauseCircle, TriangleAlert, Droplets, Bandage, Bell } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, Sparkline, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import {
-  callBells,
-  fluidBalance,
-  handover,
-  marDoses,
-  shiftStats,
-  wounds,
-  type MarDose,
-} from "../nurse-data";
-import {
-  fetchVitalsQueueApi,
-  recordVitalsApi,
-  VitalsQueueItem,
-} from "@/lib/api/nurse";
+import { fetchMarDosesApi, type MarDose } from "@/lib/api/nurse";
 import { toast } from "sonner";
 
 
-/* ---------- 02 eMAR (mock data) ---------- */
+/* ---------- 02 eMAR (real data) ---------- */
 
 const stateTone: Record<MarDose["state"], Tone> = {
   due: "info",
@@ -33,8 +20,21 @@ const stateTone: Record<MarDose["state"], Tone> = {
 };
 
 export function EmarPanel() {
-  const [rows, setRows] = useState(marDoses);
+  const [rows, setRows] = useState<MarDose[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "due" | "high" | "controlled">("all");
+
+  useEffect(() => {
+    fetchMarDosesApi()
+      .then((data) => {
+        setRows(data.doses);
+        setLoading(false);
+      })
+      .catch((err) => {
+        toast.error("Failed to load medication records");
+        setLoading(false);
+      });
+  }, []);
 
   const visible = rows.filter((d) =>
     filter === "all"
@@ -47,7 +47,7 @@ export function EmarPanel() {
   );
 
   const set = (id: string, state: MarDose["state"]) =>
-    setRows((r) => r.map((d) => (d.id === id ? { ...d, state } : d)));
+    setRows((r) => r.map((d) => (d._id === id ? { ...d, state } : d)));
 
   return (
     <section>
@@ -81,8 +81,16 @@ export function EmarPanel() {
             </tr>
           </thead>
           <tbody>
-            {visible.map((d) => (
-              <tr key={d.id} className="hairline-b hover:bg-foreground/2">
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground align-middle">Loading medication records...</td>
+              </tr>
+            ) : visible.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground align-middle">No records match the current filter.</td>
+              </tr>
+            ) : visible.map((d) => (
+              <tr key={d._id} className="hairline-b hover:bg-foreground/2">
                 <Td>
                   <p className="mono-label text-accent/80">{d.bed}</p>
                   <p className="font-medium">{d.patient}</p>
@@ -116,13 +124,13 @@ export function EmarPanel() {
                 </Td>
                 <Td>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => set(d.id, "given")} className="hairline mono-label flex items-center gap-1 px-2.5 py-1.5">
+                    <button type="button" onClick={() => set(d._id, "given")} className="hairline mono-label flex items-center gap-1 px-2.5 py-1.5">
                       <Check className="size-3" /> Give
                     </button>
-                    <button type="button" onClick={() => set(d.id, "held")} className="hairline mono-label flex items-center gap-1 px-2.5 py-1.5">
+                    <button type="button" onClick={() => set(d._id, "held")} className="hairline mono-label flex items-center gap-1 px-2.5 py-1.5">
                       <PauseCircle className="size-3" /> Hold
                     </button>
-                    <button type="button" onClick={() => set(d.id, "refused")} className="hairline mono-label text-destructive flex items-center gap-1 px-2.5 py-1.5">
+                    <button type="button" onClick={() => set(d._id, "refused")} className="hairline mono-label text-destructive flex items-center gap-1 px-2.5 py-1.5">
                       <X className="size-3" /> Refused
                     </button>
                   </div>

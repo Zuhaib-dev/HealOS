@@ -5,31 +5,31 @@ import { motion } from "motion/react";
 import { Check, X, PauseCircle, TriangleAlert, Droplets, Bandage, Bell } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, Sparkline, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import {
-  callBells,
-  fluidBalance,
-  handover,
-  marDoses,
-  shiftStats,
-  wounds,
-  type MarDose,
-} from "../nurse-data";
-import {
-  fetchVitalsQueueApi,
-  recordVitalsApi,
-  VitalsQueueItem,
-} from "@/lib/api/nurse";
+import { fetchCallBellsApi, type CallBell } from "@/lib/api/nurse";
 import { toast } from "sonner";
 
 
-/* ---------- 06 call bells (mock data) ---------- */
+/* ---------- 06 call bells (real data) ---------- */
 
 function fmt(s: number) {
   return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
 }
 
-export function CallBellPanel() {
-  const [rows, setRows] = useState(callBells);
+export function CallBellsPanel() {
+  const [rows, setRows] = useState<CallBell[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCallBellsApi()
+      .then((data) => {
+        setRows(data.callBells);
+        setLoading(false);
+      })
+      .catch((err) => {
+        toast.error("Failed to load call bells");
+        setLoading(false);
+      });
+  }, []);
   const waiting = useMemo(() => rows.filter((r) => r.state === "waiting"), [rows]);
 
   return (
@@ -42,7 +42,11 @@ export function CallBellPanel() {
       />
 
       <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
-        {rows
+        {loading ? (
+          <div className="p-8 text-center text-sm text-muted-foreground col-span-3">Loading call bells...</div>
+        ) : rows.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground col-span-3">No call bells found.</div>
+        ) : rows
           .slice()
           .sort((a, b) => {
             const rank = (r: typeof a) => (r.state === "waiting" ? 0 : r.state === "accepted" ? 1 : 2);
@@ -51,7 +55,7 @@ export function CallBellPanel() {
           .map((c) => {
             const emergency = c.type === "emergency";
             return (
-              <div key={c.id} className="bg-background p-5">
+              <div key={c._id} className="bg-background p-5">
                 <div className="flex items-center justify-between gap-2">
                   <p className="mono-label text-accent/80">{c.bed}</p>
                   {c.state === "waiting" && <LiveDot tone={emergency ? "bad" : "ok"} />}
@@ -75,7 +79,7 @@ export function CallBellPanel() {
                     onClick={() =>
                       setRows((r) =>
                         r.map((x) =>
-                          x.id === c.id ? { ...x, state: "accepted", acceptedBy: "You" } : x,
+                          x._id === c._id ? { ...x, state: "accepted", acceptedBy: "You" } : x,
                         ),
                       )
                     }
@@ -84,7 +88,7 @@ export function CallBellPanel() {
                   </ActionButton>
                   <ActionButton
                     onClick={() =>
-                      setRows((r) => r.map((x) => (x.id === c.id ? { ...x, state: "closed" } : x)))
+                      setRows((r) => r.map((x) => (x._id === c._id ? { ...x, state: "closed" } : x)))
                     }
                   >
                     Close

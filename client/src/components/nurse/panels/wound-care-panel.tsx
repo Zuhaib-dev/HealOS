@@ -5,27 +5,28 @@ import { motion } from "motion/react";
 import { Check, X, PauseCircle, TriangleAlert, Droplets, Bandage, Bell } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, Sparkline, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import {
-  callBells,
-  fluidBalance,
-  handover,
-  marDoses,
-  shiftStats,
-  wounds,
-  type MarDose,
-} from "../nurse-data";
-import {
-  fetchVitalsQueueApi,
-  recordVitalsApi,
-  VitalsQueueItem,
-} from "@/lib/api/nurse";
+import { fetchWoundsApi, type Wound } from "@/lib/api/nurse";
 import { toast } from "sonner";
 
 
-/* ---------- 04 wound care (mock data) ---------- */
+/* ---------- 04 wound care (real data) ---------- */
 
-export function WoundPanel() {
+export function WoundCarePanel() {
+  const [wounds, setWounds] = useState<Wound[]>([]);
+  const [loading, setLoading] = useState(true);
   const [done, setDone] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    fetchWoundsApi()
+      .then((data) => {
+        setWounds(data.wounds);
+        setLoading(false);
+      })
+      .catch((err) => {
+        toast.error("Failed to load wound care records");
+        setLoading(false);
+      });
+  }, []);
   return (
     <section>
       <PanelHeader
@@ -36,7 +37,11 @@ export function WoundPanel() {
       />
 
       <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
-        {wounds.map((w) => (
+        {loading ? (
+          <div className="p-8 text-center text-sm text-muted-foreground col-span-3">Loading wound care records...</div>
+        ) : wounds.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground col-span-3">No wound care records found.</div>
+        ) : wounds.map((w) => (
           <div key={`${w.bed}-${w.site}`} className="bg-background p-5">
             <p className="mono-label text-accent/80">{w.bed}</p>
             <p className="mt-1 font-mono text-lg font-bold">{w.patient}</p>

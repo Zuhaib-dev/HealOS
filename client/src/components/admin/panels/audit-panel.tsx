@@ -70,9 +70,35 @@ function TablePanel({ children }: { children: React.ReactNode }) {
 }
 
 
+import { fetchAdminAuditLogsApi, AdminAuditLogData } from "@/lib/api/admin";
+
 /* ---------- 07 audit ---------- */
 
 export function AuditPanel() {
+  const [loading, setLoading] = useState(true);
+  const [dbLogs, setDbLogs] = useState<AdminAuditLogData[]>([]);
+
+  useEffect(() => {
+    const loadLogs = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchAdminAuditLogsApi();
+        if (res.success && res.logs) {
+          setDbLogs(res.logs);
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin audit logs", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadLogs();
+  }, []);
+
+  const totalEvents = dbLogs.length;
+  const privActions = dbLogs.filter(l => l.action.includes("Elevated") || l.action.includes("Role")).length;
+  const blockedAttempts = dbLogs.filter(l => l.level === "crit" && l.action.includes("Failed")).length;
+
   return (
     <section>
       <PanelHeader
@@ -82,30 +108,42 @@ export function AuditPanel() {
         actions={<ActionButton>Download 30-day log</ActionButton>}
       />
       <div className="hairline-b grid grid-cols-2 lg:grid-cols-4">
-        <Metric label="Events today" value="1,284" />
-        <Metric label="Privileged actions" value="37" />
-        <Metric label="Blocked attempts" value="5" />
+        <Metric label="Events loaded" value={String(totalEvents)} />
+        <Metric label="Privileged actions" value={String(privActions)} />
+        <Metric label="Blocked attempts" value={String(blockedAttempts)} />
         <Metric label="Open incidents" value="1" />
       </div>
-      <ol className="px-5 py-6 sm:px-8">
-        {audit.map((e) => (
-          <li key={e.at} className="hairline-b flex flex-wrap items-center gap-4 py-4">
-            <span className="mono-label text-muted-foreground w-20">{e.at}</span>
-            <span
-              className={`size-1.5 rounded-full ${
-                e.level === "crit"
-                  ? "bg-destructive animate-pulse"
-                  : e.level === "warn"
-                    ? "bg-accent"
-                    : "bg-muted-foreground/50"
-              }`}
-            />
-            <span className="min-w-0 flex-1 text-sm">{e.action}</span>
-            <span className="mono-label text-muted-foreground">{e.actor}</span>
-            <span className="mono-label">{e.target}</span>
-          </li>
-        ))}
-      </ol>
+      {loading ? (
+        <div className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
+          Loading audit logs from database...
+        </div>
+      ) : dbLogs.length > 0 ? (
+        <ol className="px-5 py-6 sm:px-8">
+          {dbLogs.map((e) => (
+            <li key={e._id} className="hairline-b flex flex-wrap items-center gap-4 py-4">
+              <span className="mono-label text-muted-foreground w-20">
+                {new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+              <span
+                className={`size-1.5 rounded-full ${
+                  e.level === "crit"
+                    ? "bg-destructive animate-pulse"
+                    : e.level === "warn"
+                      ? "bg-accent"
+                      : "bg-muted-foreground/50"
+                }`}
+              />
+              <span className="min-w-0 flex-1 text-sm">{e.action}</span>
+              <span className="mono-label text-muted-foreground">{e.actor}</span>
+              <span className="mono-label">{e.target || "system"}</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <div className="p-8 text-center mono-label text-xs text-muted-foreground">
+          No audit logs recorded yet.
+        </div>
+      )}
     </section>
   );
 }

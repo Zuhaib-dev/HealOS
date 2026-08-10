@@ -204,3 +204,63 @@ export const getInvoices = async (_req: Request, res: Response): Promise<void> =
     });
   }
 };
+
+/**
+ * GET /api/v1/admin/wards
+ * Returns all wards
+ */
+export const getWards = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { Ward } = await import("../models/ward.model.js");
+    const wards = await Ward.find().sort({ name: 1 });
+    res.status(StatusCodes.OK).json({ success: true, wards });
+  } catch (error) {
+    console.error("Error in getWards:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching wards" });
+  }
+};
+
+/**
+ * GET /api/v1/admin/inventory
+ * Returns all inventory supplies
+ */
+export const getInventory = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { Inventory } = await import("../models/inventory.model.js");
+    const inventory = await Inventory.find().sort({ itemName: 1 });
+    res.status(StatusCodes.OK).json({ success: true, inventory });
+  } catch (error) {
+    console.error("Error in getInventory:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching inventory" });
+  }
+};
+
+/**
+ * GET /api/v1/admin/audit-logs
+ * Returns audit logs
+ */
+export const getAuditLogs = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { AuditLog } = await import("../models/audit-log.model.js");
+    const logs = await AuditLog.find().sort({ timestamp: -1 }).limit(100);
+    res.status(StatusCodes.OK).json({ success: true, logs });
+  } catch (error) {
+    console.error("Error in getAuditLogs:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching audit logs" });
+  }
+};
+
+/**
+ * GET /api/v1/admin/integrations
+ * Returns integrations and API keys
+ */
+export const getIntegrations = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { Integration } = await import("../models/integration.model.js");
+    const integrations = await Integration.find().sort({ type: -1, name: 1, label: 1 });
+    res.status(StatusCodes.OK).json({ success: true, integrations });
+  } catch (error) {
+    console.error("Error in getIntegrations:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching integrations" });
+  }
+};

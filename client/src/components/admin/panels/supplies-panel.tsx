@@ -70,9 +70,31 @@ function TablePanel({ children }: { children: React.ReactNode }) {
 }
 
 
+import { fetchAdminInventoryApi, AdminInventoryData } from "@/lib/api/admin";
+
 /* ---------- 06 supplies ---------- */
 
 export function SuppliesPanel() {
+  const [loading, setLoading] = useState(true);
+  const [dbInventory, setDbInventory] = useState<AdminInventoryData[]>([]);
+
+  useEffect(() => {
+    const loadInventory = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchAdminInventoryApi();
+        if (res.success && res.inventory) {
+          setDbInventory(res.inventory);
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin inventory", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInventory();
+  }, []);
+
   return (
     <section>
       <PanelHeader
@@ -92,37 +114,51 @@ export function SuppliesPanel() {
           </tr>
         </thead>
         <tbody>
-          {supplies.map((s) => {
-            const low = s.stock < s.reorder;
-            return (
-              <tr key={s.code} className="hairline-b">
-                <Td>
-                  <span className="font-medium">{s.item}</span>
-                </Td>
-                <Td>
-                  <span className="mono-label text-muted-foreground">{s.code}</span>
-                </Td>
-                <Td>
-                  <span className="font-mono font-bold">{s.stock}</span>{" "}
-                  <span className="mono-label text-muted-foreground">{s.unit}</span>
-                </Td>
-                <Td>
-                  <span className="mono-label text-muted-foreground">
-                    {s.reorder} {s.unit}
-                  </span>
-                </Td>
-                <Td>
-                  {low ? (
-                    <span className="mono-label text-destructive flex items-center gap-1.5">
-                      <TriangleAlert className="size-3" /> reorder now
+          {loading ? (
+            <tr>
+              <td colSpan={5} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
+                Loading inventory data from database...
+              </td>
+            </tr>
+          ) : dbInventory.length > 0 ? (
+            dbInventory.map((s) => {
+              const low = s.currentStock < s.reorderThreshold;
+              return (
+                <tr key={s.itemCode} className="hairline-b">
+                  <Td>
+                    <span className="font-medium">{s.itemName}</span>
+                  </Td>
+                  <Td>
+                    <span className="mono-label text-muted-foreground">{s.itemCode}</span>
+                  </Td>
+                  <Td>
+                    <span className="font-mono font-bold">{s.currentStock}</span>{" "}
+                    <span className="mono-label text-muted-foreground">{s.unit}</span>
+                  </Td>
+                  <Td>
+                    <span className="mono-label text-muted-foreground">
+                      {s.reorderThreshold} {s.unit}
                     </span>
-                  ) : (
-                    <Pill tone="ok">healthy</Pill>
-                  )}
-                </Td>
-              </tr>
-            );
-          })}
+                  </Td>
+                  <Td>
+                    {low ? (
+                      <span className="mono-label text-destructive flex items-center gap-1.5">
+                        <TriangleAlert className="size-3" /> reorder now
+                      </span>
+                    ) : (
+                      <Pill tone="ok">healthy</Pill>
+                    )}
+                  </Td>
+                </tr>
+              );
+            })
+          ) : (
+            <tr>
+              <td colSpan={5} className="p-8 text-center mono-label text-xs text-muted-foreground">
+                No inventory items registered.
+              </td>
+            </tr>
+          )}
         </tbody>
       </TablePanel>
     </section>

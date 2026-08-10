@@ -141,3 +141,75 @@ export async function fetchAdminInvoicesApi() {
   }>("/admin/invoices");
   return response.data;
 }
+
+export interface AdminWardData {
+  _id: string;
+  name: string;
+  code: string;
+  capacity: number;
+  currentOccupancy: number;
+  department: string;
+}
+
+export async function fetchAdminWardsApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    wards: AdminWardData[];
+  }>("/admin/wards");
+  return response.data;
+}
+
+export interface AdminInventoryData {
+  _id: string;
+  itemName: string;
+  itemCode: string;
+  category: string;
+  currentStock: number;
+  reorderThreshold: number;
+  unit: string;
+}
+
+export async function fetchAdminInventoryApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    inventory: AdminInventoryData[];
+  }>("/admin/inventory");
+  return response.data;
+}
+
+export interface AdminAuditLogData {
+  _id: string;
+  actor: string;
+  action: string;
+  target?: string;
+  level: "info" | "warn" | "crit";
+  timestamp: string;
+}
+
+export async function fetchAdminAuditLogsApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    logs: AdminAuditLogData[];
+  }>("/admin/audit-logs");
+  return response.data;
+}
+
+export interface AdminIntegrationData {
+  _id: string;
+  type: "SERVICE" | "API_KEY";
+  name?: string;
+  category?: string;
+  status?: "connected" | "degraded" | "off";
+  detail?: string;
+  keyPrefix?: string;
+  scope?: string;
+  lastUsed?: string;
+}
+
+export async function fetchAdminIntegrationsApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    integrations: AdminIntegrationData[];
+  }>("/admin/integrations");
+  return response.data;
+}

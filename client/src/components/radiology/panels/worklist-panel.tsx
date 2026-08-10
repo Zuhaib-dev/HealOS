@@ -14,17 +14,7 @@ import {
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
-import {
-  worklist,
-  documents,
-  reportTemplates,
-  modalities,
-  criticalFindings,
-  tatStats,
-  bookingSlots,
-  type WorklistItem,
-} from "../radiology-data";
-import { fetchPendingOrdersApi, updateOrderStatusApi, uploadDiagnosticReportApi, DiagnosticOrderRecord } from "@/lib/api/radiology";
+import { fetchPendingOrdersApi, updateOrderStatusApi, fetchStatsApi, DiagnosticOrderRecord } from "@/lib/api/radiology";
 import { toast } from "sonner";
 
 /* ---------- primitives ---------- */
@@ -95,19 +85,23 @@ function ScannerGlyph({ active }: { active: boolean }) {
 export function WorklistPanel() {
   const { user } = useAuthStore();
   const [filter, setFilter] = useState<"all" | "stat" | "unreported">("all");
-  const [orders, setOrders] = useState<DiagnosticOrderRecord[]>([]);
+  const [stats, setStats] = useState<{ label: string, value: string, note: string }[]>([]);
 
-  const loadOrders = async () => {
+  const loadData = async () => {
     try {
-      const res = await fetchPendingOrdersApi();
-      if (res.status === "success") setOrders(res.data.orders);
+      const [ordersRes, statsRes] = await Promise.all([
+        fetchPendingOrdersApi(),
+        fetchStatsApi()
+      ]);
+      if (ordersRes.status === "success") setOrders(ordersRes.data.orders);
+      if (statsRes.status === "success") setStats(statsRes.data.stats);
     } catch (e) {
       console.error(e);
     }
   };
 
   useEffect(() => {
-    loadOrders();
+    loadData();
   }, []);
 
   const handleUpdateStatus = async (id: string, newStatus: "IN_PROGRESS" | "REPORTED" | "CANCELLED") => {
@@ -115,7 +109,7 @@ export function WorklistPanel() {
       const res = await updateOrderStatusApi(id, newStatus);
       if (res.status === "success") {
         toast.success(`Order status updated to ${newStatus}`);
-        loadOrders();
+        loadData();
       }
     } catch (e) {
       toast.error("Failed to update status");
@@ -148,7 +142,9 @@ export function WorklistPanel() {
       />
 
       <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-4" style={{ background: "var(--hairline)" }}>
-        {tatStats.map((s) => (
+        {stats.length === 0 ? (
+          <div className="col-span-full bg-background p-5 text-center text-muted-foreground">Loading stats...</div>
+        ) : stats.map((s) => (
           <div key={s.label} className="bg-background p-5">
             <p className="mono-label text-muted-foreground">{s.label}</p>
             <p className="mt-2 font-mono text-3xl font-bold tracking-tight">{s.value}</p>

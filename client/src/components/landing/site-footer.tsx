@@ -18,7 +18,7 @@ const columns = [
 export function SiteFooter() {
   return (
     <footer className="relative">
-      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+      <div className="mx-auto max-w-350 px-5 sm:px-8">
         <div className="hairline-t grid grid-cols-2 gap-10 py-14 lg:grid-cols-12">
           <div className="col-span-2 lg:col-span-4">
             <HealOSLogo size={30} />

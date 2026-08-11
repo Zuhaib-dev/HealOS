@@ -88,7 +88,7 @@ function Toggle({ label, note, initial }: { label: string; note: string; initial
         className={`hairline relative h-6 w-11 shrink-0 transition-colors ${on ? "bg-accent/25" : ""}`}
       >
         <motion.span
-          className={`absolute top-[3px] size-4 ${on ? "bg-accent" : "bg-muted-foreground/60"}`}
+          className={`absolute top-0.75 size-4 ${on ? "bg-accent" : "bg-muted-foreground/60"}`}
           animate={{ left: on ? 24 : 4 }}
           transition={{ type: "spring", stiffness: 420, damping: 30 }}
         />
@@ -129,7 +129,7 @@ export function SettingsPanel() {
                 <span className="mono-label text-muted-foreground">{label}</span>
                 <input
                   defaultValue={value}
-                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-[var(--hairline-strong)]"
+                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-(--hairline-strong)"
                 />
               </label>
             ))}

@@ -39,9 +39,9 @@ export function Hero() {
   return (
     <section id="top" className="relative overflow-hidden">
       <div className="bg-graph-paper pointer-events-none absolute inset-0 opacity-60" />
-      <div className="from-background pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t to-transparent" />
+      <div className="from-background pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-linear-to-t to-transparent" />
 
-      <div className="relative mx-auto max-w-[1400px] px-5 sm:px-8">
+      <div className="relative mx-auto max-w-350 px-5 sm:px-8">
         {/* top measurement rule */}
         <div className="hairline-b flex items-center justify-between py-4">
           <span className="mono-label text-muted-foreground flex items-center gap-2">
@@ -190,8 +190,8 @@ export function Hero() {
 
         {/* live floor ticker */}
         <div className="hairline-t hairline-b relative overflow-hidden py-3">
-          <div className="from-background pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r to-transparent" />
-          <div className="from-background pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l to-transparent" />
+          <div className="from-background pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-linear-to-r to-transparent" />
+          <div className="from-background pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-linear-to-l to-transparent" />
           <motion.div
             className="flex w-max gap-10"
             animate={{ x: ["0%", "-50%"] }}

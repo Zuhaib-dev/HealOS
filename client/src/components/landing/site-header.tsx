@@ -27,7 +27,7 @@ export function SiteHeader() {
         scrolled ? "hairline-b shadow-sm" : "border-b border-transparent"
       }`}
     >
-      <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-5 sm:px-8">
+      <div className="mx-auto flex h-16 max-w-350 items-center justify-between px-5 sm:px-8">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2" aria-label="HealOS home">
           <HealOSLogo size={32} />
@@ -117,7 +117,7 @@ export function SiteHeader() {
           animate={{ height: "auto", opacity: 1 }}
           className="hairline-t bg-background overflow-hidden lg:hidden"
         >
-          <div className="mx-auto max-w-[1400px] px-5 py-4 sm:px-8 space-y-2">
+          <div className="mx-auto max-w-350 px-5 py-4 sm:px-8 space-y-2">
             <a
               href="#features"
               onClick={() => setOpen(false)}

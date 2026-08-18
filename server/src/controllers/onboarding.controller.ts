@@ -30,7 +30,7 @@ const updatePatientProfileSchema = z.object({
   weight: z.number().optional(),
 });
 
-import { emitUserRoleUpdated, emitNewOnboardingRequest } from "../socket.js";
+import { emitAdminDataChanged, emitUserRoleUpdated, emitNewOnboardingRequest } from "../socket.js";
 
 // ==========================================
 // 1. Patient Profile Onboarding
@@ -69,6 +69,8 @@ export const updatePatientProfile = async (req: Request, res: Response): Promise
       }
       await userObj.save();
     }
+
+    emitAdminDataChanged(["patients", "users", "roles"], "patient_profile_updated");
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -230,6 +232,8 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
       emitUserRoleUpdated(user._id.toString(), profile.requestedRole);
     }
 
+    emitAdminDataChanged(["approvals", "staff", "users", "roles"], "onboarding_approved");
+
     res.status(StatusCodes.OK).json({
       success: true,
       message: `Profile approved. User role upgraded to ${profile.requestedRole}`,
@@ -272,6 +276,8 @@ export const rejectRequest = async (req: Request, res: Response): Promise<void> 
     profile.rejectionReason = parsed.data.rejectionReason;
     profile.reviewedBy = adminId;
     await profile.save();
+
+    emitAdminDataChanged(["approvals", "staff"], "onboarding_rejected");
 
     res.status(StatusCodes.OK).json({
       success: true,

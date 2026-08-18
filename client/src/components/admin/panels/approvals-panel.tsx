@@ -1,49 +1,11 @@
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { ProfessionalProfileData, fetchPendingOnboardingRequestsApi, approveOnboardingRequestApi, rejectOnboardingRequestApi } from "@/lib/api/onboarding";
 import { toast } from "sonner";
-import { motion } from "motion/react";
-import { ArrowUpRight, Check, X, TriangleAlert } from "lucide-react";
-import { useAuthStore } from "@/store/use-auth-store";
-import {
-  approvals,
-  staff,
-  wards,
-  audit,
-  invoices,
-  supplies,
-  throughput,
-} from "../admin-data";
+import { Check, X } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
+import { useAdminRealtime } from "../use-admin-realtime";
 
 /* ---------- shared primitives ---------- */
-
-function Metric({
-  label,
-  value,
-  delta,
-  suffix,
-}: {
-  label: string;
-  value: string;
-  delta?: string;
-  suffix?: string;
-}) {
-  return (
-    <div className="hairline-l px-5 py-5">
-      <p className="mono-label text-muted-foreground">{label}</p>
-      <p className="mt-3 font-mono text-3xl font-bold tracking-tight">
-        {value}
-        {suffix ? <span className="text-muted-foreground text-base"> {suffix}</span> : null}
-      </p>
-      {delta ? (
-        <p className="mono-label text-brass mt-2 flex items-center gap-1">
-          <ArrowUpRight className="size-3" />
-          {delta}
-        </p>
-      ) : null}
-    </div>
-  );
-}
 
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>;
@@ -77,10 +39,9 @@ function TablePanel({ children }: { children: React.ReactNode }) {
 export function ApprovalsPanel() {
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<ProfessionalProfileData[]>([]);
-  const [decided, setDecided] = useState<Record<string, "approved" | "rejected">>({});
   const [actionId, setActionId] = useState<string | null>(null);
 
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetchPendingOnboardingRequestsApi();
@@ -92,11 +53,13 @@ export function ApprovalsPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadRequests();
-  }, []);
+  }, [loadRequests]);
+
+  useAdminRealtime(["approvals", "staff", "users"], loadRequests);
 
   const handleApprove = async (id: string) => {
     try {
@@ -104,7 +67,7 @@ export function ApprovalsPanel() {
       const res = await approveOnboardingRequestApi(id);
       if (res.success) {
         toast.success(res.message || "Clinician request approved! Role upgraded.");
-        setDecided((prev) => ({ ...prev, [id]: "approved" }));
+        await loadRequests();
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to approve request");
@@ -125,7 +88,7 @@ export function ApprovalsPanel() {
       const res = await rejectOnboardingRequestApi(id, reason);
       if (res.success) {
         toast.success("Application rejected with reason");
-        setDecided((prev) => ({ ...prev, [id]: "rejected" }));
+        await loadRequests();
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to reject request");
@@ -153,12 +116,17 @@ export function ApprovalsPanel() {
           </tr>
         </thead>
         <tbody>
-          {requests.length > 0
-            ? requests.map((reqItem) => {
+          {loading ? (
+            <tr>
+              <td colSpan={5} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
+                Loading credential queue from MongoDB Atlas...
+              </td>
+            </tr>
+          ) : requests.length > 0 ? (
+            requests.map((reqItem) => {
                 const userObj = typeof reqItem.user === "object" ? reqItem.user : null;
                 const applicantName = userObj?.name || "Applicant";
                 const applicantEmail = userObj?.email || "";
-                const d = decided[reqItem._id];
                 const isBusy = actionId === reqItem._id;
 
                 return (
@@ -179,74 +147,35 @@ export function ApprovalsPanel() {
                       <span className="mono-label text-muted-foreground">{new Date(reqItem.createdAt).toLocaleDateString()}</span>
                     </Td>
                     <Td>
-                      {d ? (
-                        <Pill tone={d === "approved" ? "ok" : "bad"}>{d}</Pill>
-                      ) : (
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            disabled={isBusy}
-                            onClick={() => handleApprove(reqItem._id)}
-                            className="hairline mono-label bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 flex items-center gap-1.5 px-2.5 py-1.5 hover:opacity-75 cursor-pointer rounded"
-                          >
-                            <Check className="size-3" /> Approve
-                          </button>
-                          <button
-                            type="button"
-                            disabled={isBusy}
-                            onClick={() => handleReject(reqItem._id)}
-                            className="hairline mono-label text-destructive bg-destructive/10 border-destructive/30 flex items-center gap-1.5 px-2.5 py-1.5 hover:opacity-75 cursor-pointer rounded"
-                          >
-                            <X className="size-3" /> Reject
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => handleApprove(reqItem._id)}
+                          className="hairline mono-label bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 flex items-center gap-1.5 px-2.5 py-1.5 hover:opacity-75 cursor-pointer rounded"
+                        >
+                          <Check className="size-3" /> Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => handleReject(reqItem._id)}
+                          className="hairline mono-label text-destructive bg-destructive/10 border-destructive/30 flex items-center gap-1.5 px-2.5 py-1.5 hover:opacity-75 cursor-pointer rounded"
+                        >
+                          <X className="size-3" /> Reject
+                        </button>
+                      </div>
                     </Td>
                   </tr>
                 );
               })
-            : approvals.map((a) => {
-                const d = decided[a.id];
-                return (
-                  <tr key={a.id} className="hairline-b">
-                    <Td>
-                      <span className="mono-label text-muted-foreground">{a.id}</span>
-                    </Td>
-                    <Td>
-                      <p className="font-medium">{a.name}</p>
-                      <p className="mono-label text-muted-foreground">{a.role}</p>
-                    </Td>
-                    <Td>
-                      <span className="mono-label">{a.license}</span>
-                    </Td>
-                    <Td>
-                      <span className="mono-label text-muted-foreground">{a.submitted}</span>
-                    </Td>
-                    <Td>
-                      {d ? (
-                        <Pill tone={d === "approved" ? "ok" : "bad"}>{d}</Pill>
-                      ) : (
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setDecided((p) => ({ ...p, [a.id]: "approved" }))}
-                            className="hairline mono-label flex items-center gap-1.5 px-2.5 py-1.5 hover:opacity-75"
-                          >
-                            <Check className="size-3" /> Approve
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDecided((p) => ({ ...p, [a.id]: "rejected" }))}
-                            className="hairline mono-label text-muted-foreground flex items-center gap-1.5 px-2.5 py-1.5 hover:opacity-75"
-                          >
-                            <X className="size-3" /> Reject
-                          </button>
-                        </div>
-                      )}
-                    </Td>
-                  </tr>
-                );
-              })}
+          ) : (
+            <tr>
+              <td colSpan={5} className="p-8 text-center mono-label text-xs text-muted-foreground">
+                No pending credential requests.
+              </td>
+            </tr>
+          )}
         </tbody>
       </TablePanel>
     </section>

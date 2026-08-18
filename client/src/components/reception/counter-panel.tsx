@@ -7,6 +7,7 @@ import { Td, Th } from "@/components/workspace/ui";
 import { fetchPendingBillsApi, payBillApi } from "@/lib/api/reception";
 import { InvoiceRecord } from "@/lib/api/reception";
 import { toast } from "sonner";
+import { getSocket } from "@/lib/socket";
 
 export function CounterPanel() {
   const [bills, setBills] = useState<InvoiceRecord[]>([]);
@@ -27,6 +28,18 @@ export function CounterPanel() {
 
   useEffect(() => {
     loadBills();
+    const socket = getSocket();
+    if (socket) {
+      const handleUpdate = () => {
+        loadBills();
+      };
+      socket.on("invoice_updated", handleUpdate);
+      socket.on("invoice_created", handleUpdate);
+      return () => {
+        socket.off("invoice_updated", handleUpdate);
+        socket.off("invoice_created", handleUpdate);
+      };
+    }
   }, []);
 
   const handlePay = async (id: string) => {

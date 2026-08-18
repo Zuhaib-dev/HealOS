@@ -28,9 +28,22 @@ import {
 } from "@/lib/api/appointment";
 import { createRazorpayOrderApi, verifyRazorpayPaymentApi } from "@/lib/api/payment";
 import { toast } from "sonner";
-import { departments, slotTimes } from "../patient-data";
 import { useAuthStore } from "@/store/use-auth-store";
 import Image from "next/image";
+
+const departments = [
+  { id: "med", label: "General Medicine" },
+  { id: "cardio", label: "Cardiology" },
+  { id: "neuro", label: "Neurology" },
+  { id: "ortho", label: "Orthopedics" },
+  { id: "paed", label: "Pediatrics" },
+];
+
+const slotTimes = [
+  "09:00", "09:30", "10:00", "10:30",
+  "11:00", "11:30", "14:00", "14:30",
+  "15:00", "15:30", "16:00", "16:30"
+];
 
 declare global {
   interface Window {

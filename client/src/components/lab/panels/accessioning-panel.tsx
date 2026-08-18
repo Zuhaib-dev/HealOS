@@ -1,32 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { TestTube, PhoneCall, Check, X, Barcode, TriangleAlert } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import {
-  analysers,
-  collections,
-  criticalValues,
-  labStats,
-  pendingValidation,
-  samples,
-  type ResultLine,
-  type Sample,
-} from "../lab-data";
+import { fetchLabSamplesApi } from "@/lib/api/lab";
+import { getSocket } from "@/lib/socket";
+import { toast } from "sonner";
 
-const stageTone: Record<Sample["stage"], Tone> = {
-  accessioned: "info",
-  "on-analyser": "warn",
-  validated: "ok",
-  released: "ok",
-  rejected: "bad",
-};
 
-function flagTone(f: ResultLine["flag"]): Tone {
-  return f === "critical" ? "bad" : f === "normal" ? "ok" : "warn";
-}
 
 /** Animated tube-rack glyph — hand-drawn SVG, no raster assets. */
 function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
@@ -56,10 +39,38 @@ function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
 /* ---------- 02 accessioning ---------- */
 
 export function AccessioningPanel() {
-  const [rows, setRows] = useState(samples);
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "open" | "rejected">("all");
+
+  const loadSamples = async () => {
+    try {
+      const res = await fetchLabSamplesApi();
+      if (res.success) {
+        setRows(res.samples);
+      }
+    } catch (e) {
+      toast.error("Failed to load samples");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSamples();
+    const socket = getSocket();
+    if (socket) {
+      socket.on("lab_collection_updated", loadSamples);
+      socket.on("lab_report_validated", loadSamples);
+      return () => {
+        socket.off("lab_collection_updated", loadSamples);
+        socket.off("lab_report_validated", loadSamples);
+      };
+    }
+  }, []);
+
   const visible = rows.filter((s) =>
-    filter === "all" ? true : filter === "rejected" ? s.stage === "rejected" : s.stage !== "released",
+    filter === "all" ? true : filter === "rejected" ? s.status === "CANCELLED" : s.status !== "REPORTED",
   );
 
   return (
@@ -92,39 +103,46 @@ export function AccessioningPanel() {
             </tr>
           </thead>
           <tbody>
-            {visible.map((s) => {
-              const breach = s.tatMin > s.slaMin;
+            {loading ? (
+              <tr>
+                <td colSpan={8} className="p-8 text-center text-muted-foreground">Loading samples...</td>
+              </tr>
+            ) : visible.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="p-8 text-center text-muted-foreground">No samples found.</td>
+              </tr>
+            ) : visible.map((s) => {
+              const tat = s.tatMin || 0;
+              const sla = s.slaMin || 60;
+              const breach = tat > sla;
+              const patientName = s.patient?.name || "Unknown";
               return (
-                <tr key={s.accession} className="hairline-b hover:bg-foreground/2">
+                <tr key={s._id} className="hairline-b hover:bg-foreground/2">
                   <Td>
-                    <p className="mono-label">{s.accession}</p>
-                    <p className="mono-label text-muted-foreground">{s.reqId}</p>
+                    <p className="mono-label">{s.accessionNumber || s._id.slice(-8)}</p>
+                    <p className="mono-label text-muted-foreground">REQ-{s._id.slice(-6)}</p>
                   </Td>
-                  <Td><p className="font-medium">{s.patient}</p></Td>
+                  <Td><p className="font-medium">{patientName}</p></Td>
                   <Td>
-                    <p>{s.panel}</p>
-                    <p className="mono-label text-muted-foreground">{s.discipline}</p>
+                    <p>{s.testName}</p>
+                    <p className="mono-label text-muted-foreground">{s.testType}</p>
                   </Td>
-                  <Td><span className="mono-label">{s.analyser}</span></Td>
-                  <Td><span className="font-mono">{s.received}</span></Td>
+                  <Td><span className="mono-label">—</span></Td>
+                  <Td><span className="font-mono">{new Date(s.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></Td>
                   <Td>
-                    <span className={`font-mono ${breach ? "text-destructive" : ""}`}>{s.tatMin}′</span>
-                    <span className="mono-label text-muted-foreground"> / {s.slaMin}′</span>
+                    <span className={`font-mono ${breach ? "text-destructive" : ""}`}>{tat}′</span>
+                    <span className="mono-label text-muted-foreground"> / {sla}′</span>
                   </Td>
                   <Td>
                     <span className="inline-flex items-center gap-2">
-                      {s.stage === "on-analyser" && <LiveDot />}
-                      <Pill tone={stageTone[s.stage]}>{s.stage}</Pill>
+                      {s.status === "IN_PROGRESS" && <LiveDot />}
+                      <Pill tone={s.status === "REPORTED" ? "ok" : s.status === "CANCELLED" ? "bad" : "info"}>{s.status}</Pill>
                     </span>
-                    {s.rejectReason && <p className="mono-label text-destructive mt-1">{s.rejectReason}</p>}
                   </Td>
                   <Td>
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => setRows((r) => r.map((x) => x.accession === s.accession ? { ...x, stage: "on-analyser" } : x))} className="hairline mono-label px-2.5 py-1.5">
+                      <button type="button" className="hairline mono-label px-2.5 py-1.5" disabled>
                         <TestTube className="mr-1 inline size-3" /> Load
-                      </button>
-                      <button type="button" onClick={() => setRows((r) => r.map((x) => x.accession === s.accession ? { ...x, stage: "rejected", rejectReason: "Rejected at bench" } : x))} className="hairline mono-label text-destructive px-2.5 py-1.5">
-                        <X className="mr-1 inline size-3" /> Reject
                       </button>
                     </div>
                   </Td>

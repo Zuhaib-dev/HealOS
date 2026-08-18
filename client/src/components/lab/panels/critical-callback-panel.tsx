@@ -1,32 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { TestTube, PhoneCall, Check, X, Barcode, TriangleAlert } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import {
-  analysers,
-  collections,
-  criticalValues,
-  labStats,
-  pendingValidation,
-  samples,
-  type ResultLine,
-  type Sample,
-} from "../lab-data";
+import { fetchLabCriticalValuesApi } from "@/lib/api/lab";
+import { getSocket } from "@/lib/socket";
+import { toast } from "sonner";
 
-const stageTone: Record<Sample["stage"], Tone> = {
-  accessioned: "info",
-  "on-analyser": "warn",
-  validated: "ok",
-  released: "ok",
-  rejected: "bad",
-};
 
-function flagTone(f: ResultLine["flag"]): Tone {
-  return f === "critical" ? "bad" : f === "normal" ? "ok" : "warn";
-}
 
 /** Animated tube-rack glyph — hand-drawn SVG, no raster assets. */
 function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
@@ -56,8 +39,34 @@ function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
 /* ---------- 05 critical callback ---------- */
 
 export function CriticalPanel() {
-  const [rows, setRows] = useState(criticalValues);
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [target, setTarget] = useState("");
+
+  const loadCriticals = async () => {
+    try {
+      const res = await fetchLabCriticalValuesApi();
+      if (res.success) {
+        setRows(res.criticalValues);
+      }
+    } catch (e) {
+      toast.error("Failed to load critical values");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCriticals();
+    const socket = getSocket();
+    if (socket) {
+      socket.on("lab_report_validated", loadCriticals);
+      return () => {
+        socket.off("lab_report_validated", loadCriticals);
+      };
+    }
+  }, []);
+
   return (
     <section>
       <PanelHeader
@@ -68,19 +77,27 @@ export function CriticalPanel() {
       />
 
       <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
-        {rows.map((c) => (
-          <div key={c.accession} className="bg-background p-5">
+        {loading ? (
+          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-3">Loading critical values...</div>
+        ) : rows.length === 0 ? (
+          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-3">No pending critical values.</div>
+        ) : rows.map((c) => {
+          const patientName = c.patient?.name || "Unknown Patient";
+          const accession = c.order?.accessionNumber || c.order?._id?.slice(-8) || "N/A";
+          
+          return (
+          <div key={c._id} className="bg-background p-5">
             <div className="flex items-center justify-between gap-2">
-              <p className="mono-label text-accent/80">{c.accession}</p>
+              <p className="mono-label text-accent/80">{accession}</p>
               {!c.readBack && <LiveDot tone="bad" />}
             </div>
-            <p className="mt-1 font-mono text-lg font-bold">{c.patient}</p>
-            <p className="mono-label text-muted-foreground">{c.location}</p>
+            <p className="mt-1 font-mono text-lg font-bold">{patientName}</p>
+            <p className="mono-label text-muted-foreground">{c.order?.testName}</p>
 
             <div className="hairline mt-4 p-4">
-              <p className="mono-label text-muted-foreground">{c.analyte}</p>
-              <p className="text-destructive mt-1 font-mono text-2xl font-bold">{c.value}</p>
-              <p className="mono-label text-muted-foreground mt-1">detected {c.detected}</p>
+              <p className="mono-label text-muted-foreground">Findings</p>
+              <p className="text-destructive mt-1 font-mono text-base font-bold">{c.findings || "See report"}</p>
+              <p className="mono-label text-muted-foreground mt-1">detected {new Date(c.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
             </div>
 
             {c.readBack ? (
@@ -101,7 +118,7 @@ export function CriticalPanel() {
                     onClick={() =>
                       setRows((r) =>
                         r.map((x) =>
-                          x.accession === c.accession
+                          x._id === c._id
                             ? { ...x, readBack: true, calledTo: target || "on-call MO", calledAt: "now" }
                             : x,
                         ),
@@ -114,7 +131,7 @@ export function CriticalPanel() {
               </div>
             )}
           </div>
-        ))}
+        )})}
       </div>
 
       <div className="p-5 sm:px-8">

@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { getDiagnosticResultsApi } from "@/lib/api/doctor";
+import { getSocket } from "@/lib/socket";
 
 /* ---------- primitives ---------- */
 
@@ -86,11 +87,22 @@ export function ResultsPanel() {
   const [signed, setSigned] = useState<string[]>([]);
   const [filter, setFilter] = useState<"all" | "critical" | "unsigned">("all");
 
-  useEffect(() => {
+  const loadResults = () => {
     getDiagnosticResultsApi()
       .then(res => setResults(res.data.results || []))
       .catch(() => toast.error("Failed to load results"))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadResults();
+    const socket = getSocket();
+    if (socket) {
+      socket.on("report_ready", loadResults);
+      return () => {
+        socket.off("report_ready", loadResults);
+      };
+    }
   }, []);
 
   const rows = results.filter((r) =>

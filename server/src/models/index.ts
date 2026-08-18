@@ -29,3 +29,4 @@ export * from "./modality-machine.model.js";
 export * from "./critical-finding.model.js";
 export * from "./radiology-booking.model.js";
 export * from "./report-template.model.js";
+export * from "./lab-analyser.model.js";

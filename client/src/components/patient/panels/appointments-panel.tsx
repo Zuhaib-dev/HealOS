@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { useState } from "react";
 import {
   Calendar,
   Clock,
@@ -9,17 +8,15 @@ import {
   FileText,
   Building2,
   Stethoscope,
+  Loader2,
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  fetchPatientAppointmentsApi,
-  updateAppointmentStatusApi,
-  AppointmentRecord,
-} from "@/lib/api/appointment";
+import { updateAppointmentStatusApi } from "@/lib/api/appointment";
 import { toast } from "sonner";
-import { fetchPatientDashboardApi, DashboardConsultation } from "@/lib/api/patient";
+import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
+import { DashboardConsultation } from "@/lib/api/patient";
 import {
   Dialog,
   DialogContent,
@@ -29,34 +26,8 @@ import {
 
 export function AppointmentsPanel() {
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
-  const [loading, setLoading] = useState(true);
-  const [liveAppointments, setLiveAppointments] = useState<AppointmentRecord[]>([]);
-  const [consultations, setConsultations] = useState<DashboardConsultation[]>([]);
+  const { data, isLoading, refetch } = usePatientDashboard();
   const [selectedConsultation, setSelectedConsultation] = useState<DashboardConsultation | null>(null);
-
-  const loadAppointments = async () => {
-    try {
-      setLoading(true);
-      const [res, dashboardRes] = await Promise.all([
-        fetchPatientAppointmentsApi(),
-        fetchPatientDashboardApi()
-      ]);
-      if (res.success && res.appointments) {
-        setLiveAppointments(res.appointments);
-      }
-      if (dashboardRes.status === "success" && dashboardRes.data.consultations) {
-        setConsultations(dashboardRes.data.consultations);
-      }
-    } catch (err) {
-      console.error("Failed to fetch patient appointments", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadAppointments();
-  }, []);
 
   const handleCancel = async (id: string) => {
     if (!window.confirm("Are you sure you want to cancel this appointment booking?")) return;
@@ -64,12 +35,15 @@ export function AppointmentsPanel() {
       const res = await updateAppointmentStatusApi(id, "CANCELLED");
       if (res.success) {
         toast.success("Appointment cancelled");
-        loadAppointments();
+        refetch();
       }
     } catch (err) {
       toast.error("Failed to cancel appointment");
     }
   };
+
+  const liveAppointments = data?.appointments || [];
+  const consultations = data?.consultations || [];
 
   const filteredLive = liveAppointments.filter((a) =>
     tab === "upcoming"
@@ -106,7 +80,7 @@ export function AppointmentsPanel() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
-        {loading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (
               <Card key={i} className="animate-pulse shadow-none border-border/40">

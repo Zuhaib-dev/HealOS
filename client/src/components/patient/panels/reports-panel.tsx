@@ -31,23 +31,9 @@ import {
 } from "@/lib/api/onboarding";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import {
-  patient,
-  upcoming,
-  history,
-  departments,
-  slotTimes,
-  bookedTimes,
-  reports,
-  meds,
-  bills,
-  vitals,
-  messages,
-  careTeam,
-  type Appointment,
-} from "../patient-data";
 import { fetchPatientDashboardApi, PatientDashboardData, payInvoiceApi } from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
+import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
 
 /* ---------- primitives ---------- */
 
@@ -77,12 +63,6 @@ function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
 }
 
-function stateTone(s: Appointment["state"]) {
-  if (s === "confirmed" || s === "completed") return "ok";
-  if (s === "pending") return "warn";
-  return "bad";
-}
-
 /** Animated trend line — drawn, never an image. */
 function Trend({ series }: { series: number[] }) {
   const max = Math.max(...series);
@@ -110,40 +90,11 @@ function Trend({ series }: { series: number[] }) {
   );
 }
 
-function AppointmentRow({ a, actions }: { a: Appointment; actions?: React.ReactNode }) {
-  return (
-    <div className="bg-background flex flex-wrap items-center gap-4 px-5 py-4 sm:px-8">
-      <div className="w-28 shrink-0">
-        <p className="mono-label text-brass">{a.date}</p>
-        <p className="mono-label text-muted-foreground">{a.time}</p>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{a.reason}</p>
-        <p className="mono-label text-muted-foreground mt-1">
-          {a.dept} · {a.clinician}
-        </p>
-      </div>
-      <span className="mono-label text-muted-foreground hidden items-center gap-1.5 sm:flex">
-        {a.mode === "Video" ? <Video className="size-3" /> : <MapPin className="size-3" />}
-        {a.room}
-      </span>
-      <Pill tone={stateTone(a.state)}>{a.state}</Pill>
-      {actions}
-    </div>
-  );
-}
-
 /* ---------- 04 reports ---------- */
 
 export function ReportsPanel() {
   const [q, setQ] = useState("");
-  const [data, setData] = useState<PatientDashboardData | null>(null);
-
-  useEffect(() => {
-    fetchPatientDashboardApi().then(res => {
-      if (res.status === "success") setData(res.data);
-    }).catch(() => {});
-  }, []);
+  const { data, isLoading } = usePatientDashboard();
 
   const orders = data?.diagnosticOrders || [];
   const reports = data?.diagnosticReports || [];

@@ -7,6 +7,7 @@ import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, Sparkline, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
 import { fetchCallBellsApi, type CallBell } from "@/lib/api/nurse";
 import { toast } from "sonner";
+import { getSocket } from "@/lib/socket";
 
 
 /* ---------- 06 call bells (real data) ---------- */
@@ -19,7 +20,7 @@ export function CallBellsPanel() {
   const [rows, setRows] = useState<CallBell[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadCallBells = () => {
     fetchCallBellsApi()
       .then((data) => {
         setRows(data.callBells);
@@ -29,6 +30,19 @@ export function CallBellsPanel() {
         toast.error("Failed to load call bells");
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    loadCallBells();
+    const socket = getSocket();
+    if (socket) {
+      socket.on("call_bell_updated", loadCallBells);
+      socket.on("call_bell_created", loadCallBells);
+      return () => {
+        socket.off("call_bell_updated", loadCallBells);
+        socket.off("call_bell_created", loadCallBells);
+      };
+    }
   }, []);
   const waiting = useMemo(() => rows.filter((r) => r.state === "waiting"), [rows]);
 

@@ -12,6 +12,7 @@ import {
   MedicineRecord,
 } from "@/lib/api/pharmacy";
 import { toast } from "sonner";
+import { getSocket } from "@/lib/socket";
 
 
 /* ---------- 01 e-prescription queue ---------- */
@@ -27,8 +28,7 @@ export function RxQueuePanel() {
       if (res.success) {
         setRows(res.prescriptions);
       }
-    } catch (err) {
-      console.error("Failed to load prescriptions", err);
+    } catch (e) {
       toast.error("Failed to load prescriptions");
     } finally {
       setLoading(false);
@@ -37,6 +37,15 @@ export function RxQueuePanel() {
 
   useEffect(() => {
     loadPrescriptions();
+    const socket = getSocket();
+    if (socket) {
+      socket.on("prescription_created", loadPrescriptions);
+      socket.on("prescription_dispensed", loadPrescriptions);
+      return () => {
+        socket.off("prescription_created", loadPrescriptions);
+        socket.off("prescription_dispensed", loadPrescriptions);
+      };
+    }
   }, []);
 
   const handleDispense = async (consultationId: string, medicineId: string) => {

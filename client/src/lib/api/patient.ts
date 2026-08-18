@@ -72,7 +72,7 @@ export const fetchPatientDashboardApi = async () => {
     status: string;
     data: PatientDashboardData;
   }>("/patient/dashboard");
-  return response.data;
+  return response.data.data;
 };
 
 export const updatePatientHealthProfileApi = async (data: Partial<PatientProfileData>) => {

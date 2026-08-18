@@ -1,32 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { TestTube, PhoneCall, Check, X, Barcode, TriangleAlert } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import {
-  analysers,
-  collections,
-  criticalValues,
-  labStats,
-  pendingValidation,
-  samples,
-  type ResultLine,
-  type Sample,
-} from "../lab-data";
+import { fetchLabValidationApi, validateLabReportApi } from "@/lib/api/lab";
+import { getSocket } from "@/lib/socket";
+import { toast } from "sonner";
 
-const stageTone: Record<Sample["stage"], Tone> = {
-  accessioned: "info",
-  "on-analyser": "warn",
-  validated: "ok",
-  released: "ok",
-  rejected: "bad",
-};
 
-function flagTone(f: ResultLine["flag"]): Tone {
-  return f === "critical" ? "bad" : f === "normal" ? "ok" : "warn";
-}
 
 /** Animated tube-rack glyph — hand-drawn SVG, no raster assets. */
 function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
@@ -56,7 +39,45 @@ function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
 /* ---------- 04 validation & release ---------- */
 
 export function ValidationPanel() {
-  const [released, setReleased] = useState<Record<string, boolean>>({});
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadValidation = async () => {
+    try {
+      const res = await fetchLabValidationApi();
+      if (res.success) {
+        setRows(res.pending);
+      }
+    } catch (e) {
+      toast.error("Failed to load validation queue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadValidation();
+    const socket = getSocket();
+    if (socket) {
+      socket.on("lab_report_validated", loadValidation);
+      return () => {
+        socket.off("lab_report_validated", loadValidation);
+      };
+    }
+  }, []);
+
+  const handleValidate = async (id: string) => {
+    try {
+      const res = await validateLabReportApi(id);
+      if (res.success) {
+        toast.success("Validated and released");
+        loadValidation();
+      }
+    } catch (e) {
+      toast.error("Failed to validate report");
+    }
+  };
+
   return (
     <section>
       <PanelHeader
@@ -67,15 +88,25 @@ export function ValidationPanel() {
       />
 
       <div className="grid gap-px" style={{ background: "var(--hairline)" }}>
-        {pendingValidation.map((p) => {
-          const hasCritical = p.lines.some((l) => l.flag === "critical");
+        {loading ? (
+          <div className="bg-background p-8 text-center text-muted-foreground">Loading validation queue...</div>
+        ) : rows.length === 0 ? (
+          <div className="bg-background p-8 text-center text-muted-foreground">No reports pending validation.</div>
+        ) : rows.map((p) => {
+          const hasCritical = p.isCritical;
+          const patientName = p.patient?.name || "Unknown Patient";
+          const accession = p.order?.accessionNumber || p.order?._id?.slice(-8) || "N/A";
+          const lines = [
+            { analyte: p.order?.testName || "Analyte", value: p.findings || "See report", unit: "", ref: "—", delta: "—", flag: p.isCritical ? "critical" : "normal" }
+          ];
+
           return (
-            <div key={p.accession} className="bg-background p-5 sm:p-8">
+            <div key={p._id} className="bg-background p-5 sm:p-8">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="mono-label text-accent/80">{p.accession}</p>
-                  <p className="mt-1 font-mono text-xl font-bold">{p.patient}</p>
-                  <p className="mono-label text-muted-foreground">{p.panel} · {p.analyser}</p>
+                  <p className="mono-label text-accent/80">{accession}</p>
+                  <p className="mt-1 font-mono text-xl font-bold">{patientName}</p>
+                  <p className="mono-label text-muted-foreground">{p.order?.testName} · {p.order?.modality || "Lab"}</p>
                 </div>
                 {hasCritical && (
                   <Pill tone="bad">
@@ -97,7 +128,7 @@ export function ValidationPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {p.lines.map((l) => (
+                    {lines.map((l) => (
                       <tr key={l.analyte} className="hairline-b last:border-b-0">
                         <Td>{l.analyte}</Td>
                         <Td>
@@ -108,7 +139,7 @@ export function ValidationPanel() {
                         </Td>
                         <Td><span className="mono-label text-muted-foreground">{l.ref}</span></Td>
                         <Td><span className="mono-label">{l.delta}</span></Td>
-                        <Td><Pill tone={flagTone(l.flag)}>{l.flag}</Pill></Td>
+                        <Td><Pill tone={l.flag === "critical" ? "bad" : l.flag === "normal" ? "ok" : "warn"}>{l.flag}</Pill></Td>
                       </tr>
                     ))}
                   </tbody>
@@ -116,18 +147,12 @@ export function ValidationPanel() {
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <ActionButton tone="solid" onClick={() => setReleased((r) => ({ ...r, [p.accession]: true }))}>
-                  {released[p.accession] ? "Released ✓" : "Validate & release"}
+                <ActionButton tone="solid" onClick={() => handleValidate(p._id)}>
+                  Validate & release
                 </ActionButton>
                 <ActionButton>Repeat on analyser</ActionButton>
                 <ActionButton>Add interpretive comment</ActionButton>
               </div>
-              {released[p.accession] && (
-                <p className="mono-label text-brass mt-3">
-                  <Check className="mr-1 inline size-3" />
-                  Released to the ordering clinician and patient portal
-                </p>
-              )}
             </div>
           );
         })}

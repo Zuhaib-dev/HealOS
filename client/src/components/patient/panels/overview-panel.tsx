@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   TriangleAlert,
@@ -10,25 +9,21 @@ import {
   Users,
   AlertCircle,
   Stethoscope,
-  ShieldCheck
+  ShieldCheck,
+  Loader2
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchPatientProfileApi, PatientProfileData } from "@/lib/api/onboarding";
 import { useAuthStore } from "@/store/use-auth-store";
-import {
-  patient,
-  vitals,
-  careTeam,
-} from "../patient-data";
+import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
 
 /** Animated trend line — drawn, never an image. */
 function Trend({ series, color }: { series: number[], color?: string }) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
+  const max = Math.max(...series, 1);
+  const min = Math.min(...series, 0);
   const pts = series
     .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
+      const x = (i / Math.max(series.length - 1, 1)) * 100;
       const y = 30 - ((v - min) / Math.max(0.001, max - min)) * 24 - 3;
       return `${x},${y.toFixed(1)}`;
     })
@@ -51,27 +46,34 @@ function Trend({ series, color }: { series: number[], color?: string }) {
 
 export function OverviewPanel() {
   const { user } = useAuthStore();
-  const [profile, setProfile] = useState<PatientProfileData | null>(null);
+  const { data, isLoading, error } = usePatientDashboard();
 
-  useEffect(() => {
-    let isMounted = true;
-    fetchPatientProfileApi()
-      .then((res) => {
-        if (isMounted && res.success) {
-          setProfile(res.profile);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
+  if (error || !data) {
+    return (
+      <div className="p-8 text-center text-rose-500">
+        Failed to load patient data. Please try again.
+      </div>
+    );
+  }
+
+  const profile = data.profile;
   const userName = user?.name || "Patient";
   const userFirstName = userName.split(" ")[0];
   const userRole = user?.role || "PATIENT";
   const allergiesList = profile?.allergies?.length ? profile.allergies : ["No known drug allergies"];
   const bloodGroup = profile?.bloodGroup || "O+";
+  
+  // Extracting active conditions from consultations (mocked logic based on real data)
+  const conditions = data.consultations.map(c => c.diagnosis).filter(Boolean);
+  const uniqueConditions = conditions.length ? Array.from(new Set(conditions)) : ["No active conditions"];
 
   const getVitalIcon = (label: string) => {
     switch (label.toLowerCase()) {
@@ -95,6 +97,26 @@ export function OverviewPanel() {
     }
   };
 
+  // Convert real vitals to the format expected by the UI
+  const displayVitals = [];
+  if (data.vitals && data.vitals.length > 0) {
+    const latest = data.vitals[0];
+    if (latest.bloodPressure) {
+      displayVitals.push({ label: "Blood Pressure", value: latest.bloodPressure, unit: "mmHg", series: data.vitals.map(v => parseInt(v.bloodPressure.split('/')[0]) || 0).reverse(), note: "Latest reading" });
+    }
+    if (latest.heartRate) {
+      displayVitals.push({ label: "Heart Rate", value: latest.heartRate.toString(), unit: "bpm", series: data.vitals.map(v => v.heartRate).reverse(), note: "Latest reading" });
+    }
+    if (latest.temperature) {
+      displayVitals.push({ label: "Temperature", value: latest.temperature.toString(), unit: "°C", series: data.vitals.map(v => v.temperature).reverse(), note: "Latest reading" });
+    }
+  }
+
+  // Fallback to empty state if no vitals
+  if (displayVitals.length === 0) {
+    displayVitals.push({ label: "Vitals", value: "--", unit: "", series: [0], note: "No readings available" });
+  }
+
   return (
     <section className="pb-12">
       <PanelHeader
@@ -113,13 +135,13 @@ export function OverviewPanel() {
         
         {/* Vitals Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {vitals.slice(0, 4).map((v) => {
+          {displayVitals.map((v, i) => {
             const isWeight = v.label.toLowerCase() === "weight";
             const displayValue = isWeight && profile?.weight ? profile.weight : v.value;
             const displayNote = isWeight && profile?.weight ? "updated from profile" : v.note;
 
             return (
-              <Card key={v.label} className="shadow-sm border-border/60 hover:shadow-md transition-shadow">
+              <Card key={`${v.label}-${i}`} className="shadow-sm border-border/60 hover:shadow-md transition-shadow">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -135,7 +157,7 @@ export function OverviewPanel() {
                     </span>
                     <span className="text-muted-foreground text-sm font-medium">{v.unit}</span>
                   </div>
-                  <Trend series={v.series} color={getVitalColor(v.label)} />
+                  <Trend series={v.series.length > 0 ? v.series : [0]} color={getVitalColor(v.label)} />
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-3">
                     {displayNote}
                   </p>
@@ -220,7 +242,7 @@ export function OverviewPanel() {
                       Active Conditions
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {patient.conditions.map((c) => (
+                      {uniqueConditions.map((c) => (
                         <span key={c} className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 px-2.5 py-1.5 rounded-md text-xs font-semibold">
                           <Activity className="size-3.5" />
                           {c}
@@ -269,26 +291,25 @@ export function OverviewPanel() {
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="flex flex-col gap-4">
-                  {careTeam.map((c) => (
-                    <div key={c.name} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors cursor-pointer group">
-                      <div className="bg-primary/10 border border-primary/20 text-primary font-bold grid size-10 rounded-full shrink-0 place-items-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                        {c.name
-                          .replace("Dr. ", "")
-                          .replace("Sr. ", "")
-                          .split(" ")
-                          .map((p) => p[0])
-                          .join("")
-                          .slice(0, 2)}
+                  {data.consultations.length > 0 ? (
+                    Array.from(new Map(data.consultations.map(c => [c.doctor.firstName + c.doctor.lastName, c.doctor])).values()).map((doctor) => (
+                      <div key={doctor.firstName + doctor.lastName} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors cursor-pointer group">
+                        <div className="bg-primary/10 border border-primary/20 text-primary font-bold grid size-10 rounded-full shrink-0 place-items-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          {doctor.firstName[0]}
+                          {doctor.lastName[0]}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">Dr. {doctor.firstName} {doctor.lastName}</p>
+                          <p className="text-xs text-muted-foreground truncate font-medium mt-0.5 flex items-center gap-1.5">
+                            <Stethoscope className="size-3" />
+                            {doctor.role}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">{c.name}</p>
-                        <p className="text-xs text-muted-foreground truncate font-medium mt-0.5 flex items-center gap-1.5">
-                          <Stethoscope className="size-3" />
-                          {c.role}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No care team assigned yet.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -5,15 +5,7 @@ import { motion } from "motion/react";
 import { Check, X, PauseCircle, TriangleAlert, Droplets, Bandage, Bell } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, Sparkline, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import {
-  callBells,
-  fluidBalance,
-  handover,
-  marDoses,
-  shiftStats,
-  wounds,
-  type MarDose,
-} from "../nurse-data";
+
 import {
   fetchVitalsQueueApi,
   recordVitalsApi,

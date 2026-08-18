@@ -1,32 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { TestTube, PhoneCall, Check, X, Barcode, TriangleAlert } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import {
-  analysers,
-  collections,
-  criticalValues,
-  labStats,
-  pendingValidation,
-  samples,
-  type ResultLine,
-  type Sample,
-} from "../lab-data";
+import { fetchLabCollectionsApi, markLabCollectedApi } from "@/lib/api/lab";
+import { getSocket } from "@/lib/socket";
+import { toast } from "sonner";
 
-const stageTone: Record<Sample["stage"], Tone> = {
-  accessioned: "info",
-  "on-analyser": "warn",
-  validated: "ok",
-  released: "ok",
-  rejected: "bad",
-};
 
-function flagTone(f: ResultLine["flag"]): Tone {
-  return f === "critical" ? "bad" : f === "normal" ? "ok" : "warn";
-}
 
 /** Animated tube-rack glyph — hand-drawn SVG, no raster assets. */
 function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
@@ -56,7 +39,47 @@ function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
 /* ---------- 01 collection ---------- */
 
 export function CollectionPanel() {
-  const [rows, setRows] = useState(collections);
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadCollections = async () => {
+    try {
+      const res = await fetchLabCollectionsApi();
+      if (res.success) {
+        setRows(res.collections);
+      }
+    } catch (e) {
+      toast.error("Failed to load collections");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCollections();
+    const socket = getSocket();
+    if (socket) {
+      socket.on("lab_collection_updated", loadCollections);
+      socket.on("order_created", loadCollections);
+      return () => {
+        socket.off("lab_collection_updated", loadCollections);
+        socket.off("order_created", loadCollections);
+      };
+    }
+  }, []);
+
+  const handleMarkCollected = async (id: string) => {
+    try {
+      const res = await markLabCollectedApi(id);
+      if (res.success) {
+        toast.success("Marked as collected");
+        loadCollections();
+      }
+    } catch (e) {
+      toast.error("Failed to update status");
+    }
+  };
+
   return (
     <section>
       <PanelHeader
@@ -66,50 +89,53 @@ export function CollectionPanel() {
         actions={<ActionButton tone="solid">Print round labels</ActionButton>}
       />
 
-      <StatGrid stats={labStats} />
-
       <div className="hairline-t grid gap-px lg:grid-cols-2" style={{ background: "var(--hairline)" }}>
-        {rows.map((c) => (
-          <div key={c.id} className="bg-background p-5">
+        {loading ? (
+          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-2">Loading collections...</div>
+        ) : rows.length === 0 ? (
+          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-2">No collections pending.</div>
+        ) : rows.map((c) => {
+          const patientName = c.patient?.name || "Unknown Patient";
+          const patientMrn = c.patient?.mrn || c.patient?._id?.slice(-6) || "N/A";
+          
+          return (
+          <div key={c._id} className="bg-background p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="mono-label text-accent/80">{c.id} · {c.location}</p>
-                <p className="mt-1 font-mono text-lg font-bold">{c.patient}</p>
-                <p className="mono-label text-muted-foreground">{c.mrn} · requested {c.requested}</p>
+                <p className="mono-label text-accent/80">{c.accessionNumber || c._id.slice(-8)}</p>
+                <p className="mt-1 font-mono text-lg font-bold">{patientName}</p>
+                <p className="mono-label text-muted-foreground">{patientMrn}</p>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <Pill tone={c.priority === "stat" ? "bad" : c.priority === "urgent" ? "warn" : "mute"}>
+                <Pill tone={c.priority === "STAT" ? "bad" : c.priority === "URGENT" ? "warn" : "mute"}>
                   {c.priority}
                 </Pill>
-                {c.fasting && <Pill tone="info">fasting</Pill>}
               </div>
             </div>
 
-            <p className="mt-3 text-sm">{c.tests}</p>
+            <p className="mt-3 text-sm">{c.testName}</p>
 
             <div className="mt-3">
-              <RackGlyph tubes={c.tubes} />
+              <RackGlyph tubes={[{ colour: "var(--color-accent)", count: c.items.length }]} />
               <div className="mono-label text-muted-foreground flex flex-wrap gap-3">
-                {c.tubes.map((t) => (
-                  <span key={t.type}>{t.count} × {t.type}</span>
-                ))}
+                <span>1 × Standard Tube</span>
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
               <ActionButton
                 tone="solid"
-                onClick={() => setRows((r) => r.map((x) => (x.id === c.id ? { ...x, collected: true } : x)))}
+                onClick={() => handleMarkCollected(c._id)}
+                disabled={c.status === "IN_PROGRESS"}
               >
-                {c.collected ? "Collected ✓" : "Mark collected"}
+                {c.status === "IN_PROGRESS" ? "Collected ✓" : "Mark collected"}
               </ActionButton>
               <ActionButton>
                 <Barcode className="mr-1 inline size-3" /> Scan tube
               </ActionButton>
-              <ActionButton>Unable to collect</ActionButton>
             </div>
           </div>
-        ))}
+        )})}
       </div>
     </section>
   );

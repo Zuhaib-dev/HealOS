@@ -14,6 +14,7 @@ import receptionRouter from "./reception.routes.js";
 import pharmacyRouter from "./pharmacy.routes.js";
 import nurseRouter from "./nurse.routes.js";
 import paymentRouter from "./payment.routes.js";
+import labRouter from "./lab.routes.js";
 
 export const apiRouter = Router();
 
@@ -32,6 +33,7 @@ apiRouter.get("/", (_req, res) => {
       appointments: "/api/v1/appointments",
       admin: "/api/v1/admin",
       doctor: "/api/v1/doctor",
+      lab: "/api/v1/lab",
     },
   });
 });
@@ -50,3 +52,4 @@ apiRouter.use("/reception", receptionRouter);
 apiRouter.use("/pharmacy", pharmacyRouter);
 apiRouter.use("/nurse", nurseRouter);
 apiRouter.use("/payment", paymentRouter);
+apiRouter.use("/lab", labRouter);

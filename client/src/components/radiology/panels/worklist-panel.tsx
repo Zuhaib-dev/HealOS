@@ -16,6 +16,7 @@ import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
 import { fetchPendingOrdersApi, updateOrderStatusApi, fetchStatsApi, DiagnosticOrderRecord } from "@/lib/api/radiology";
 import { toast } from "sonner";
+import { getSocket } from "@/lib/socket";
 
 /* ---------- primitives ---------- */
 
@@ -24,15 +25,16 @@ function Pill({
   tone,
 }: {
   children: React.ReactNode;
-  tone: "ok" | "warn" | "bad" | "mute";
+  tone: "info" | "warn" | "bad" | "ok" | "mute";
 }) {
-  const map = {
-    ok: "bg-accent/12 text-brass",
-    warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
-    mute: "bg-foreground/[0.04] text-muted-foreground",
-  } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  const bg =
+    tone === "bad" ? "bg-destructive/15 text-destructive" :
+    tone === "warn" ? "bg-amber-500/15 text-amber-600 dark:text-amber-400" :
+    tone === "ok" ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" :
+    tone === "info" ? "bg-blue-500/15 text-blue-600 dark:text-blue-400" :
+    "bg-foreground/5 text-muted-foreground";
+
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-medium ${bg}`}>{children}</span>;
 }
 
 function Th({ children }: { children: React.ReactNode }) {

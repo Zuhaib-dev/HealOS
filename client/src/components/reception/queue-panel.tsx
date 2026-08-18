@@ -7,6 +7,7 @@ import { LiveDot, Pill } from "@/components/workspace/ui";
 import { fetchQueueApi, AppointmentRecord } from "@/lib/api/reception";
 import { updateAppointmentStatusApi } from "@/lib/api/appointment";
 import { toast } from "sonner";
+import { getSocket } from "@/lib/socket";
 
 export function QueuePanel() {
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
@@ -21,6 +22,18 @@ export function QueuePanel() {
 
   useEffect(() => {
     loadQueue();
+    const socket = getSocket();
+    if (socket) {
+      const handleUpdate = () => {
+        loadQueue();
+      };
+      socket.on("appointment_updated", handleUpdate);
+      socket.on("appointment_created", handleUpdate);
+      return () => {
+        socket.off("appointment_updated", handleUpdate);
+        socket.off("appointment_created", handleUpdate);
+      };
+    }
   }, []);
 
   const handleUpdateStatus = async (id: string, status: "CONFIRMED" | "COMPLETED" | "CANCELLED" | "IN_PROGRESS" | "NO_SHOW") => {

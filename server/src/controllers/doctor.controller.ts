@@ -13,6 +13,7 @@ import {
 import { AppError } from "../middleware/error-handler.js";
 import ImageKit from "imagekit";
 import fs from "fs";
+import { getIO } from "../socket.js";
 
 // Initialize ImageKit
 const imagekit = new ImageKit({
@@ -110,6 +111,14 @@ export const saveConsultation = async (req: Request, res: Response) => {
       }));
       await DiagnosticOrder.insertMany(ordersToCreate);
     }
+    
+    const io = getIO();
+    if (io) {
+      io.emit("consultation_saved", { consultation });
+      if (diagnosticOrders && diagnosticOrders.length > 0) {
+        io.emit("order_created");
+      }
+    }
 
     res.status(200).json({
       status: "success",
@@ -151,6 +160,11 @@ export const orderDiagnostic = async (req: Request, res: Response) => {
       priority,
       clinicalNotes,
     });
+    
+    const io = getIO();
+    if (io) {
+      io.emit("order_created", { order });
+    }
 
     res.status(201).json({
       status: "success",
@@ -409,6 +423,8 @@ export const createClinicalNote = async (req: Request, res: Response) => {
       content,
       tags,
     });
+    const io = getIO();
+    if (io) io.emit("note_created", { note });
     res.status(201).json({ status: "success", data: { note } });
   } catch (error) {
     res.status(500).json({ status: "error", message: "Failed to create note" });
@@ -451,6 +467,8 @@ export const createHandover = async (req: Request, res: Response) => {
       assessment,
       tasks,
     });
+    const io = getIO();
+    if (io) io.emit("handover_created", { handover });
     res.status(201).json({ status: "success", data: { handover } });
   } catch (error) {
     res.status(500).json({ status: "error", message: "Failed to create handover" });

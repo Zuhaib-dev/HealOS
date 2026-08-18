@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 // imports removed
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
+import { getSocket } from "@/lib/socket";
 
 /* ---------- primitives ---------- */
 
@@ -102,6 +103,18 @@ export function ClinicPanel() {
 
   useEffect(() => {
     loadAppointments();
+    const socket = getSocket();
+    if (socket) {
+      const handleUpdate = () => {
+        loadAppointments();
+      };
+      socket.on("appointment_updated", handleUpdate);
+      socket.on("appointment_created", handleUpdate);
+      return () => {
+        socket.off("appointment_updated", handleUpdate);
+        socket.off("appointment_created", handleUpdate);
+      };
+    }
   }, []);
 
   const handleUpdateStatus = async (id: string, status: "CONFIRMED" | "COMPLETED" | "CANCELLED") => {

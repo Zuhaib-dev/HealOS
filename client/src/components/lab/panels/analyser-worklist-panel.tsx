@@ -1,32 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { TestTube, PhoneCall, Check, X, Barcode, TriangleAlert } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import {
-  analysers,
-  collections,
-  criticalValues,
-  labStats,
-  pendingValidation,
-  samples,
-  type ResultLine,
-  type Sample,
-} from "../lab-data";
+import { fetchLabAnalysersApi } from "@/lib/api/lab";
+import { toast } from "sonner";
 
-const stageTone: Record<Sample["stage"], Tone> = {
-  accessioned: "info",
-  "on-analyser": "warn",
-  validated: "ok",
-  released: "ok",
-  rejected: "bad",
-};
 
-function flagTone(f: ResultLine["flag"]): Tone {
-  return f === "critical" ? "bad" : f === "normal" ? "ok" : "warn";
-}
 
 /** Animated tube-rack glyph — hand-drawn SVG, no raster assets. */
 function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
@@ -56,6 +38,26 @@ function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
 /* ---------- 03 analyser worklist ---------- */
 
 export function AnalyserPanel() {
+  const [analysers, setAnalysers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadAnalysers = async () => {
+    try {
+      const res = await fetchLabAnalysersApi();
+      if (res.success) {
+        setAnalysers(res.analysers);
+      }
+    } catch (e) {
+      toast.error("Failed to load analysers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAnalysers();
+  }, []);
+
   return (
     <section>
       <PanelHeader
@@ -66,13 +68,17 @@ export function AnalyserPanel() {
       />
 
       <div className="grid gap-px lg:grid-cols-2" style={{ background: "var(--hairline)" }}>
-        {analysers.map((a) => {
+        {loading ? (
+          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-2">Loading analysers...</div>
+        ) : analysers.length === 0 ? (
+          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-2">No analysers configured.</div>
+        ) : analysers.map((a) => {
           const running = a.state === "running";
           return (
-            <div key={a.id} className="bg-background p-5">
+            <div key={a._id} className="bg-background p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="mono-label text-accent/80">{a.id}</p>
+                  <p className="mono-label text-accent/80">{a._id.slice(-6).toUpperCase()}</p>
                   <p className="mt-1 font-mono text-lg font-bold">{a.name}</p>
                   <p className="mono-label text-muted-foreground">{a.discipline}</p>
                 </div>
@@ -100,10 +106,10 @@ export function AnalyserPanel() {
               </svg>
 
               <dl className="mono-label mt-3 space-y-1.5">
-                <div className="flex justify-between"><dt className="text-muted-foreground">Queue</dt><dd>{a.queue} samples</dd></div>
-                <div className="flex justify-between"><dt className="text-muted-foreground">Throughput</dt><dd>{a.throughput}</dd></div>
-                <div className="flex justify-between"><dt className="text-muted-foreground">Last QC pass</dt><dd>{a.qcLastPass}</dd></div>
-                <div className="flex justify-between"><dt className="text-muted-foreground">Uptime 30d</dt><dd>{a.uptime}</dd></div>
+                <div className="flex justify-between"><dt className="text-muted-foreground">Queue</dt><dd>{a.queue || 0} samples</dd></div>
+                <div className="flex justify-between"><dt className="text-muted-foreground">Throughput</dt><dd>{a.throughput || "—"}</dd></div>
+                <div className="flex justify-between"><dt className="text-muted-foreground">Last QC pass</dt><dd>{a.qcLastPass || "—"}</dd></div>
+                <div className="flex justify-between"><dt className="text-muted-foreground">Uptime 30d</dt><dd>{a.uptime || "100%"}</dd></div>
               </dl>
 
               <div className="mt-4 flex flex-wrap gap-2">

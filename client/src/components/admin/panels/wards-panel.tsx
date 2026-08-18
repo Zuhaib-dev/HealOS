@@ -1,45 +1,8 @@
 import { useCallback, useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { ArrowUpRight } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 
 /* ---------- shared primitives ---------- */
-
-function Metric({
-  label,
-  value,
-  delta,
-  suffix,
-}: {
-  label: string;
-  value: string;
-  delta?: string;
-  suffix?: string;
-}) {
-  return (
-    <div className="hairline-l px-5 py-5">
-      <p className="mono-label text-muted-foreground">{label}</p>
-      <p className="mt-3 font-mono text-3xl font-bold tracking-tight">
-        {value}
-        {suffix ? <span className="text-muted-foreground text-base"> {suffix}</span> : null}
-      </p>
-      {delta ? (
-        <p className="mono-label text-brass mt-2 flex items-center gap-1">
-          <ArrowUpRight className="size-3" />
-          {delta}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>;
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
 
 function Pill({ children, tone }: { children: React.ReactNode; tone: "ok" | "warn" | "bad" | "mute" }) {
   const map = {
@@ -50,15 +13,6 @@ function Pill({ children, tone }: { children: React.ReactNode; tone: "ok" | "war
   } as const;
   return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
 }
-
-function TablePanel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="hairline-b overflow-x-auto">
-      <table className="w-full min-w-180 border-collapse">{children}</table>
-    </div>
-  );
-}
-
 
 import { fetchAdminWardsApi, AdminWardData } from "@/lib/api/admin";
 import { useAdminRealtime } from "../use-admin-realtime";

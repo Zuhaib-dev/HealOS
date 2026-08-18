@@ -32,33 +32,6 @@ function Metric({
   );
 }
 
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>;
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
-
-function Pill({ children, tone }: { children: React.ReactNode; tone: "ok" | "warn" | "bad" | "mute" }) {
-  const map = {
-    ok: "bg-accent/12 text-brass",
-    warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
-    mute: "bg-foreground/[0.04] text-muted-foreground",
-  } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
-}
-
-function TablePanel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="hairline-b overflow-x-auto">
-      <table className="w-full min-w-180 border-collapse">{children}</table>
-    </div>
-  );
-}
-
-
 import { fetchAdminAuditLogsApi, AdminAuditLogData } from "@/lib/api/admin";
 import { useAdminRealtime } from "../use-admin-realtime";
 

@@ -1,36 +1,8 @@
 import { useCallback, useState, useEffect } from "react";
-import { ArrowUpRight, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 
 /* ---------- shared primitives ---------- */
-
-function Metric({
-  label,
-  value,
-  delta,
-  suffix,
-}: {
-  label: string;
-  value: string;
-  delta?: string;
-  suffix?: string;
-}) {
-  return (
-    <div className="hairline-l px-5 py-5">
-      <p className="mono-label text-muted-foreground">{label}</p>
-      <p className="mt-3 font-mono text-3xl font-bold tracking-tight">
-        {value}
-        {suffix ? <span className="text-muted-foreground text-base"> {suffix}</span> : null}
-      </p>
-      {delta ? (
-        <p className="mono-label text-brass mt-2 flex items-center gap-1">
-          <ArrowUpRight className="size-3" />
-          {delta}
-        </p>
-      ) : null}
-    </div>
-  );
-}
 
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>;

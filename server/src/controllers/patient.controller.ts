@@ -27,22 +27,22 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
       patient: patientId,
       status: { $in: ["PENDING", "CONFIRMED"] },
     })
-      .populate("doctor", "firstName lastName role specialization")
+      .populate("doctor", "name role specialization")
       .sort({ date: 1, timeSlot: 1 });
 
     // 2. Get Consultations (History & Prescriptions)
     const consultations = await Consultation.find({ patient: patientId })
-      .populate("doctor", "firstName lastName role")
+      .populate("doctor", "name role")
       .sort({ createdAt: -1 });
 
     // 3. Get Diagnostic Orders (Pending & Completed)
     const diagnosticOrders = await DiagnosticOrder.find({ patient: patientId })
-      .populate("doctor", "firstName lastName")
+      .populate("doctor", "name")
       .sort({ createdAt: -1 });
 
     // 4. Get Diagnostic Reports
     const diagnosticReports = await DiagnosticReport.find({ patient: patientId })
-      .populate("uploadedBy", "firstName lastName")
+      .populate("uploadedBy", "name")
       .sort({ createdAt: -1 });
 
     // 5. Get Vitals

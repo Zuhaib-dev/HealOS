@@ -292,14 +292,13 @@ export function OverviewPanel() {
               <CardContent className="pt-6">
                 <div className="flex flex-col gap-4">
                   {data.consultations.length > 0 ? (
-                    Array.from(new Map(data.consultations.map(c => [c.doctor.firstName + c.doctor.lastName, c.doctor])).values()).map((doctor) => (
-                      <div key={doctor.firstName + doctor.lastName} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors cursor-pointer group">
+                    Array.from(new Map(data.consultations.map(c => [c.doctor.name, c.doctor])).values()).map((doctor) => (
+                      <div key={doctor.name} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors cursor-pointer group">
                         <div className="bg-primary/10 border border-primary/20 text-primary font-bold grid size-10 rounded-full shrink-0 place-items-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                          {doctor.firstName[0]}
-                          {doctor.lastName[0]}
+                          {doctor.name[0]}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">Dr. {doctor.firstName} {doctor.lastName}</p>
+                          <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">Dr. {doctor.name}</p>
                           <p className="text-xs text-muted-foreground truncate font-medium mt-0.5 flex items-center gap-1.5">
                             <Stethoscope className="size-3" />
                             {doctor.role}

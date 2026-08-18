@@ -27,8 +27,7 @@ export interface DashboardVitals {
 export interface DashboardConsultation {
   _id: string;
   doctor: {
-    firstName: string;
-    lastName: string;
+    name: string;
     role: string;
   };
   diagnosis: string;
@@ -51,8 +50,7 @@ export interface DashboardDiagnosticReport {
   fileUrl?: string;
   findings: string;
   uploadedBy: {
-    firstName: string;
-    lastName: string;
+    name: string;
   };
   createdAt: string;
 }

@@ -84,7 +84,7 @@ export function WardsPanel() {
   }, []);
 
   useEffect(() => {
-    loadWards();
+    void Promise.resolve().then(loadWards);
   }, [loadWards]);
 
   useAdminRealtime(["wards", "patients"], loadWards);

@@ -83,7 +83,7 @@ export function SuppliesPanel() {
   }, []);
 
   useEffect(() => {
-    loadInventory();
+    void Promise.resolve().then(loadInventory);
   }, [loadInventory]);
 
   useAdminRealtime(["inventory", "supplies"], loadInventory);

@@ -70,6 +70,7 @@ export const emitUserRoleUpdated = (userId: string, newRole: string) => {
     io.to(`user:${userId}`).emit("user:role_updated", { userId, newRole });
     // Also notify global admin & role rooms
     io.emit("role:changed", { userId, newRole });
+    emitAdminDataChanged(["users", "staff", "roles"], "role_updated");
   }
 };
 
@@ -92,5 +93,16 @@ export const emitAppointmentUpdated = (appointmentData: any) => {
 export const emitNewOnboardingRequest = (requestData: any) => {
   if (io) {
     io.to("admin").emit("onboarding:new_request", requestData);
+    emitAdminDataChanged(["approvals", "staff"], "onboarding_created");
+  }
+};
+
+export const emitAdminDataChanged = (resources: string[], reason: string) => {
+  if (io) {
+    io.to("admin").emit("admin:data_changed", {
+      resources,
+      reason,
+      timestamp: new Date().toISOString(),
+    });
   }
 };

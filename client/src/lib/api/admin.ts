@@ -1,5 +1,19 @@
 import apiClient from "../api-client";
 
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+export interface PaginatedAdminParams {
+  page?: number;
+  limit?: number;
+  q?: string;
+  role?: string;
+}
+
 export interface AdminUserData {
   _id: string;
   name: string;
@@ -38,24 +52,26 @@ export interface FacilityStatsData {
 /**
  * Fetch all registered users
  */
-export async function fetchAdminUsersApi() {
+export async function fetchAdminUsersApi(params?: PaginatedAdminParams) {
   const response = await apiClient.get<{
     success: boolean;
     users: AdminUserData[];
     count: number;
-  }>("/admin/users");
+    pagination: PaginationMeta;
+  }>("/admin/users", { params });
   return response.data;
 }
 
 /**
  * Fetch all registered patient profiles
  */
-export async function fetchAdminPatientsApi() {
+export async function fetchAdminPatientsApi(params?: PaginatedAdminParams) {
   const response = await apiClient.get<{
     success: boolean;
     patients: AdminPatientData[];
     count: number;
-  }>("/admin/patients");
+    pagination: PaginationMeta;
+  }>("/admin/patients", { params });
   return response.data;
 }
 
@@ -211,5 +227,20 @@ export async function fetchAdminIntegrationsApi() {
     success: boolean;
     integrations: AdminIntegrationData[];
   }>("/admin/integrations");
+  return response.data;
+}
+
+export interface AdminRoleData {
+  role: string;
+  seats: number;
+  scopes: Record<string, "full" | "read" | "none">;
+}
+
+export async function fetchAdminRolesApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    permissionScopes: string[];
+    roles: AdminRoleData[];
+  }>("/admin/roles");
   return response.data;
 }

@@ -4,19 +4,55 @@ import { User, UserRole } from "../models/user.model.js";
 import { PatientProfile } from "../models/patient-profile.model.js";
 import { ProfessionalProfile } from "../models/professional-profile.model.js";
 import { Appointment } from "../models/appointment.model.js";
-import { emitUserRoleUpdated } from "../socket.js";
+import { emitAdminDataChanged, emitUserRoleUpdated } from "../socket.js";
+
+const getPagination = (req: Request) => {
+  const page = Math.max(Number(req.query.page) || 1, 1);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 100);
+  const skip = (page - 1) * limit;
+  return { page, limit, skip };
+};
+
+const paginationMeta = (page: number, limit: number, total: number) => ({
+  page,
+  limit,
+  total,
+  pages: Math.max(Math.ceil(total / limit), 1),
+});
 
 /**
  * GET /api/v1/admin/users
  * Returns list of all system users
  */
-export const getAllUsers = async (_req: Request, res: Response): Promise<void> => {
+export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const users = await User.find().select("-passwordHash").sort({ createdAt: -1 });
+    const { page, limit, skip } = getPagination(req);
+    const queryText = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const role = typeof req.query.role === "string" ? req.query.role.trim() : "";
+    const query: Record<string, any> = {};
+
+    if (queryText) {
+      query.$or = [
+        { name: { $regex: queryText, $options: "i" } },
+        { email: { $regex: queryText, $options: "i" } },
+        { phone: { $regex: queryText, $options: "i" } },
+      ];
+    }
+
+    if (role && Object.values(UserRole).includes(role as UserRole)) {
+      query.role = role;
+    }
+
+    const [users, total] = await Promise.all([
+      User.find(query).select("-passwordHash").sort({ createdAt: -1 }).skip(skip).limit(limit),
+      User.countDocuments(query),
+    ]);
+
     res.status(StatusCodes.OK).json({
       success: true,
       users,
-      count: users.length,
+      count: total,
+      pagination: paginationMeta(page, limit, total),
     });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
@@ -31,13 +67,45 @@ export const getAllUsers = async (_req: Request, res: Response): Promise<void> =
  * GET /api/v1/admin/patients
  * Returns list of all patient profiles
  */
-export const getAllPatients = async (_req: Request, res: Response): Promise<void> => {
+export const getAllPatients = async (req: Request, res: Response): Promise<void> => {
   try {
-    const patients = await PatientProfile.find().populate("user", "name email phone avatarUrl role").sort({ createdAt: -1 });
+    const { page, limit, skip } = getPagination(req);
+    const queryText = typeof req.query.q === "string" ? req.query.q.trim() : "";
+
+    const matchingUsers = queryText
+      ? await User.find({
+          $or: [
+            { name: { $regex: queryText, $options: "i" } },
+            { email: { $regex: queryText, $options: "i" } },
+            { phone: { $regex: queryText, $options: "i" } },
+          ],
+        }).select("_id")
+      : [];
+
+    const query = queryText
+      ? {
+          $or: [
+            { user: { $in: matchingUsers.map((user) => user._id) } },
+            { emergencyContactName: { $regex: queryText, $options: "i" } },
+            { emergencyPhone: { $regex: queryText, $options: "i" } },
+          ],
+        }
+      : {};
+
+    const [patients, total] = await Promise.all([
+      PatientProfile.find(query)
+        .populate("user", "name email phone avatarUrl role")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      PatientProfile.countDocuments(query),
+    ]);
+
     res.status(StatusCodes.OK).json({
       success: true,
       patients,
-      count: patients.length,
+      count: total,
+      pagination: paginationMeta(page, limit, total),
     });
   } catch (error) {
     console.error("Error in getAllPatients:", error);
@@ -110,6 +178,7 @@ export const updateUserRole = async (req: Request, res: Response): Promise<void>
 
     // Emit socket event for real-time role promotion in client browser
     emitUserRoleUpdated(user._id.toString(), role);
+    emitAdminDataChanged(["users", "staff", "roles", "audit"], "admin_role_update");
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -145,6 +214,52 @@ export const getStaff = async (_req: Request, res: Response): Promise<void> => {
       success: false,
       message: "Server error fetching staff list",
     });
+  }
+};
+
+/**
+ * GET /api/v1/admin/roles
+ * Returns role seat counts and static permission scopes for visible roles
+ */
+export const getRoles = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const counts = await User.aggregate([
+      { $group: { _id: "$role", seats: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const seatMap = counts.reduce<Record<string, number>>((acc, row) => {
+      acc[row._id] = row.seats;
+      return acc;
+    }, {});
+
+    const scopesByRole: Record<string, Record<string, "full" | "read" | "none">> = {
+      ADMIN: { Records: "full", Orders: "full", Prescribe: "none", Billing: "full", Admin: "full", Audit: "full" },
+      DOCTOR: { Records: "full", Orders: "full", Prescribe: "full", Billing: "read", Admin: "none", Audit: "none" },
+      RADIOLOGIST: { Records: "read", Orders: "read", Prescribe: "none", Billing: "none", Admin: "none", Audit: "none" },
+      NURSE: { Records: "read", Orders: "read", Prescribe: "none", Billing: "none", Admin: "none", Audit: "none" },
+      PATIENT: { Records: "read", Orders: "none", Prescribe: "none", Billing: "read", Admin: "none", Audit: "none" },
+      RECEPTIONIST: { Records: "read", Orders: "read", Prescribe: "none", Billing: "read", Admin: "none", Audit: "none" },
+      PHARMACIST: { Records: "read", Orders: "read", Prescribe: "none", Billing: "none", Admin: "none", Audit: "none" },
+      EMERGENCY_DOCTOR: { Records: "full", Orders: "full", Prescribe: "full", Billing: "none", Admin: "none", Audit: "none" },
+      LAB_TECHNICIAN: { Records: "read", Orders: "read", Prescribe: "none", Billing: "none", Admin: "none", Audit: "none" },
+      USER: { Records: "none", Orders: "none", Prescribe: "none", Billing: "none", Admin: "none", Audit: "none" },
+    };
+
+    const roles = Object.values(UserRole).map((role) => ({
+      role,
+      seats: seatMap[role] || 0,
+      scopes: scopesByRole[role],
+    }));
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      permissionScopes: ["Records", "Orders", "Prescribe", "Billing", "Admin", "Audit"],
+      roles,
+    });
+  } catch (error) {
+    console.error("Error in getRoles:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching roles" });
   }
 };
 

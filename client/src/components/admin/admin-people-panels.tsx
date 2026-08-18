@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { LogOut, KeyRound, ShieldCheck, ShieldOff, Copy, Plus } from "lucide-react";
 import { ActionButton, PanelHeader } from "./admin-shell";
@@ -7,17 +7,17 @@ import {
   fetchAdminPatientsApi,
   fetchAdminScheduleApi,
   fetchAdminIntegrationsApi,
+  fetchAdminRolesApi,
   updateUserRoleApi,
   AdminUserData,
   AdminPatientData,
   AdminAppointmentData,
   AdminIntegrationData,
+  AdminRoleData,
+  PaginationMeta,
 } from "@/lib/api/admin";
 import { toast } from "sonner";
-import {
-  roleMatrix,
-  permissionScopes,
-} from "./admin-data-people";
+import { useAdminRealtime } from "./use-admin-realtime";
 
 /* ---------- local primitives ---------- */
 
@@ -45,6 +45,42 @@ function Pill({
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
   return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+}
+
+function PaginationControls({
+  pagination,
+  onPageChange,
+}: {
+  pagination: PaginationMeta | null;
+  onPageChange: (page: number) => void;
+}) {
+  if (!pagination || pagination.pages <= 1) return null;
+
+  return (
+    <div className="hairline-b flex flex-wrap items-center justify-between gap-3 px-5 py-3 sm:px-8">
+      <p className="mono-label text-muted-foreground">
+        Page {pagination.page} of {pagination.pages} · {pagination.total} records
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => onPageChange(pagination.page - 1)}
+          disabled={pagination.page <= 1}
+          className="mono-label hairline px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(pagination.page + 1)}
+          disabled={pagination.page >= pagination.pages}
+          className="mono-label hairline px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function initials(name: string) {
@@ -91,25 +127,32 @@ function Avatar({ name, online }: { name: string; online: boolean }) {
 export function UsersPanel() {
   const [dbUsers, setDbUsers] = useState<AdminUserData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "online" | "no-mfa">("all");
+  const [filter, setFilter] = useState<"all" | "verified" | "unverified">("all");
   const [revoked, setRevoked] = useState<string[]>([]);
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
+
+  const loadUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchAdminUsersApi({ page, limit: 10, q: query || undefined });
+      if (res.success && res.users) {
+        setDbUsers(res.users);
+        setPagination(res.pagination);
+      }
+    } catch (err) {
+      console.error("Failed to fetch admin users", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, query]);
 
   useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        setLoading(true);
-        const res = await fetchAdminUsersApi();
-        if (res.success && res.users) {
-          setDbUsers(res.users);
-        }
-      } catch (err) {
-        console.error("Failed to fetch admin users", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadUsers();
-  }, []);
+  }, [loadUsers]);
+
+  useAdminRealtime(["users", "roles"], loadUsers);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
@@ -126,6 +169,11 @@ export function UsersPanel() {
   };
 
   const verifiedCount = dbUsers.filter((u) => u.isEmailVerified).length;
+  const visibleUsers = dbUsers.filter((u) => {
+    if (filter === "verified") return u.isEmailVerified;
+    if (filter === "unverified") return !u.isEmailVerified;
+    return true;
+  });
 
   return (
     <div>
@@ -156,11 +204,20 @@ export function UsersPanel() {
       </div>
 
       <div className="hairline-b flex gap-1 px-5 py-3 sm:px-8">
+        <input
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Search name, email or phone"
+          className="mono-label hairline placeholder:text-muted-foreground mr-3 w-full max-w-xs bg-transparent px-3 py-2 outline-none"
+        />
         {(
           [
             ["all", "All users"],
-            ["online", "Online"],
-            ["no-mfa", "2FA missing"],
+            ["verified", "Verified"],
+            ["unverified", "Unverified"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -197,8 +254,8 @@ export function UsersPanel() {
                   Loading system accounts from MongoDB Atlas...
                 </td>
               </tr>
-            ) : dbUsers.length > 0 ? (
-              dbUsers.map((u) => {
+            ) : visibleUsers.length > 0 ? (
+              visibleUsers.map((u) => {
                 const isRevoked = revoked.includes(u._id);
                 return (
                   <tr key={u._id} className="hairline-b">
@@ -287,6 +344,7 @@ export function UsersPanel() {
           </tbody>
         </table>
       </div>
+      <PaginationControls pagination={pagination} onPageChange={setPage} />
     </div>
   );
 }
@@ -297,30 +355,29 @@ export function PatientsPanel() {
   const [dbPatients, setDbPatients] = useState<AdminPatientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
+
+  const loadPatients = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchAdminPatientsApi({ page, limit: 10, q: q || undefined });
+      if (res.success && res.patients) {
+        setDbPatients(res.patients);
+        setPagination(res.pagination);
+      }
+    } catch (err) {
+      console.error("Failed to fetch admin patients", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, q]);
 
   useEffect(() => {
-    const loadPatients = async () => {
-      try {
-        setLoading(true);
-        const res = await fetchAdminPatientsApi();
-        if (res.success && res.patients) {
-          setDbPatients(res.patients);
-        }
-      } catch (err) {
-        console.error("Failed to fetch admin patients", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadPatients();
-  }, []);
+  }, [loadPatients]);
 
-  const filteredPatients = dbPatients.filter((p) => {
-    const name = p.user?.name || "";
-    const email = p.user?.email || "";
-    const search = q.toLowerCase();
-    return name.toLowerCase().includes(search) || email.toLowerCase().includes(search);
-  });
+  useAdminRealtime(["patients", "users"], loadPatients);
 
   return (
     <div>
@@ -338,7 +395,10 @@ export function PatientsPanel() {
       <div className="hairline-b px-5 py-3 sm:px-8">
         <input
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(1);
+          }}
           placeholder="Filter by name or email"
           className="mono-label hairline placeholder:text-muted-foreground w-full max-w-xs bg-transparent px-3 py-2 outline-none"
         />
@@ -363,8 +423,8 @@ export function PatientsPanel() {
                   Loading patient registry from MongoDB Atlas...
                 </td>
               </tr>
-            ) : filteredPatients.length > 0 ? (
-              filteredPatients.map((p) => (
+            ) : dbPatients.length > 0 ? (
+              dbPatients.map((p) => (
                 <tr key={p._id} className="hairline-b">
                   <Td>
                     <span className="mono-label text-muted-foreground">{p._id.slice(-8).toUpperCase()}</span>
@@ -409,6 +469,7 @@ export function PatientsPanel() {
           </tbody>
         </table>
       </div>
+      <PaginationControls pagination={pagination} onPageChange={setPage} />
     </div>
   );
 }
@@ -419,22 +480,25 @@ export function SchedulePanel() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<AdminAppointmentData[]>([]);
 
-  useEffect(() => {
-    const loadSchedule = async () => {
-      try {
-        setLoading(true);
-        const res = await fetchAdminScheduleApi();
-        if (res.success && res.appointments) {
-          setAppointments(res.appointments);
-        }
-      } catch (err) {
-        console.error("Failed to fetch admin schedule", err);
-      } finally {
-        setLoading(false);
+  const loadSchedule = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchAdminScheduleApi();
+      if (res.success && res.appointments) {
+        setAppointments(res.appointments);
       }
-    };
-    loadSchedule();
+    } catch (err) {
+      console.error("Failed to fetch admin schedule", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadSchedule();
+  }, [loadSchedule]);
+
+  useAdminRealtime(["schedule", "appointments"], loadSchedule);
 
   const scheduleWindow = { from: 7, to: 20 };
   const span = scheduleWindow.to - scheduleWindow.from;
@@ -548,6 +612,31 @@ export function SchedulePanel() {
 /* ---------- 07 · Roles & permissions ---------- */
 
 export function RolesPanel() {
+  const [loading, setLoading] = useState(true);
+  const [permissionScopes, setPermissionScopes] = useState<string[]>([]);
+  const [roles, setRoles] = useState<AdminRoleData[]>([]);
+
+  const loadRoles = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchAdminRolesApi();
+      if (res.success) {
+        setPermissionScopes(res.permissionScopes);
+        setRoles(res.roles);
+      }
+    } catch (err) {
+      console.error("Failed to fetch admin roles", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRoles();
+  }, [loadRoles]);
+
+  useAdminRealtime(["roles", "users"], loadRoles);
+
   return (
     <div>
       <PanelHeader
@@ -568,7 +657,14 @@ export function RolesPanel() {
             </tr>
           </thead>
           <tbody>
-            {roleMatrix.map((r) => (
+            {loading ? (
+              <tr>
+                <td colSpan={permissionScopes.length + 2} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
+                  Loading role seats from database...
+                </td>
+              </tr>
+            ) : roles.length > 0 ? (
+              roles.map((r) => (
               <tr key={r.role} className="hairline-b">
                 <Td>
                   <span className="font-medium">{r.role}</span>
@@ -591,7 +687,14 @@ export function RolesPanel() {
                   );
                 })}
               </tr>
-            ))}
+              ))
+            ) : (
+              <tr>
+                <td colSpan={permissionScopes.length + 2} className="p-8 text-center mono-label text-xs text-muted-foreground">
+                  No roles found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -606,22 +709,25 @@ export function IntegrationsPanel() {
   const [loading, setLoading] = useState(true);
   const [dbIntegrations, setDbIntegrations] = useState<AdminIntegrationData[]>([]);
 
-  useEffect(() => {
-    const loadIntegrations = async () => {
-      try {
-        setLoading(true);
-        const res = await fetchAdminIntegrationsApi();
-        if (res.success && res.integrations) {
-          setDbIntegrations(res.integrations);
-        }
-      } catch (err) {
-        console.error("Failed to fetch admin integrations", err);
-      } finally {
-        setLoading(false);
+  const loadIntegrations = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchAdminIntegrationsApi();
+      if (res.success && res.integrations) {
+        setDbIntegrations(res.integrations);
       }
-    };
-    loadIntegrations();
+    } catch (err) {
+      console.error("Failed to fetch admin integrations", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadIntegrations();
+  }, [loadIntegrations]);
+
+  useAdminRealtime(["integrations"], loadIntegrations);
 
   const services = dbIntegrations.filter(i => i.type === "SERVICE");
   const apiKeysList = dbIntegrations.filter(i => i.type === "API_KEY");

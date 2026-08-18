@@ -83,7 +83,7 @@ export function BillingPanel() {
   }, []);
 
   useEffect(() => {
-    loadInvoices();
+    void Promise.resolve().then(loadInvoices);
   }, [loadInvoices]);
 
   useAdminRealtime(["billing", "invoices", "patients"], loadInvoices);

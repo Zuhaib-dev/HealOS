@@ -170,7 +170,7 @@ export function OverviewPanel() {
   }, []);
 
   useEffect(() => {
-    loadOverview();
+    void Promise.resolve().then(loadOverview);
   }, [loadOverview]);
 
   useAdminRealtime(["users", "patients", "staff", "roles", "wards", "billing", "inventory", "audit", "approvals"], loadOverview);

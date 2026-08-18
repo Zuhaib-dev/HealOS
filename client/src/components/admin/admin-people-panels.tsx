@@ -21,6 +21,11 @@ import { useAdminRealtime } from "./use-admin-realtime";
 
 /* ---------- local primitives ---------- */
 
+function getApiErrorMessage(error: unknown, fallback: string) {
+  const maybeError = error as { response?: { data?: { message?: string } } };
+  return maybeError.response?.data?.message || fallback;
+}
+
 function Th({ children }: { children: React.ReactNode }) {
   return (
     <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
@@ -149,7 +154,7 @@ export function UsersPanel() {
   }, [page, query]);
 
   useEffect(() => {
-    loadUsers();
+    void Promise.resolve().then(loadUsers);
   }, [loadUsers]);
 
   useAdminRealtime(["users", "roles"], loadUsers);
@@ -163,8 +168,8 @@ export function UsersPanel() {
           prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u))
         );
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update user role");
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, "Failed to update user role"));
     }
   };
 
@@ -374,7 +379,7 @@ export function PatientsPanel() {
   }, [page, q]);
 
   useEffect(() => {
-    loadPatients();
+    void Promise.resolve().then(loadPatients);
   }, [loadPatients]);
 
   useAdminRealtime(["patients", "users"], loadPatients);
@@ -495,7 +500,7 @@ export function SchedulePanel() {
   }, []);
 
   useEffect(() => {
-    loadSchedule();
+    void Promise.resolve().then(loadSchedule);
   }, [loadSchedule]);
 
   useAdminRealtime(["schedule", "appointments"], loadSchedule);
@@ -632,7 +637,7 @@ export function RolesPanel() {
   }, []);
 
   useEffect(() => {
-    loadRoles();
+    void Promise.resolve().then(loadRoles);
   }, [loadRoles]);
 
   useAdminRealtime(["roles", "users"], loadRoles);
@@ -724,7 +729,7 @@ export function IntegrationsPanel() {
   }, []);
 
   useEffect(() => {
-    loadIntegrations();
+    void Promise.resolve().then(loadIntegrations);
   }, [loadIntegrations]);
 
   useAdminRealtime(["integrations"], loadIntegrations);

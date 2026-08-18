@@ -7,6 +7,11 @@ import { useAdminRealtime } from "../use-admin-realtime";
 
 /* ---------- shared primitives ---------- */
 
+function getApiErrorMessage(error: unknown, fallback: string) {
+  const maybeError = error as { response?: { data?: { message?: string } } };
+  return maybeError.response?.data?.message || fallback;
+}
+
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>;
 }
@@ -46,7 +51,7 @@ export function ApprovalsPanel() {
   }, []);
 
   useEffect(() => {
-    loadRequests();
+    void Promise.resolve().then(loadRequests);
   }, [loadRequests]);
 
   useAdminRealtime(["approvals", "staff", "users"], loadRequests);
@@ -59,8 +64,8 @@ export function ApprovalsPanel() {
         toast.success(res.message || "Clinician request approved! Role upgraded.");
         await loadRequests();
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to approve request");
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, "Failed to approve request"));
     } finally {
       setActionId(null);
     }
@@ -80,8 +85,8 @@ export function ApprovalsPanel() {
         toast.success("Application rejected with reason");
         await loadRequests();
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to reject request");
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, "Failed to reject request"));
     } finally {
       setActionId(null);
     }

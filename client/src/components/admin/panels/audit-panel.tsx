@@ -83,7 +83,7 @@ export function AuditPanel() {
   }, []);
 
   useEffect(() => {
-    loadLogs();
+    void Promise.resolve().then(loadLogs);
   }, [loadLogs]);
 
   useAdminRealtime(["audit"], loadLogs);

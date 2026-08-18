@@ -7,6 +7,6 @@ export default defineConfig({
       // implement node event listeners here
     },
     specPattern: "cypress/e2e/**/*.cy.{js,jsx,ts,tsx}",
-    supportFile: false, // We will just use raw tests for simplicity
+    supportFile: "cypress/support/e2e.ts",
   },
 });

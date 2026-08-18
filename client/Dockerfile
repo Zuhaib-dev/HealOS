@@ -1,25 +1,27 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
 WORKDIR /app
-
-# Copy workspace package manifests
 COPY package*.json turbo.json ./
 COPY packages/shared/package*.json ./packages/shared/
 COPY client/package*.json ./client/
 COPY server/package*.json ./server/
-
-# Install dependencies
 RUN npm ci
 
-# Copy source code
 COPY packages/shared ./packages/shared
 COPY client ./client
-
-# Build ONLY the shared library
 RUN npx turbo run build --filter=@healos/shared
+RUN npx turbo run build --filter=@healos/client
 
-WORKDIR /app/client
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+COPY --from=builder /app/client/public ./client/public
+COPY --from=builder /app/client/.next/standalone ./
+COPY --from=builder /app/client/.next/static ./client/.next/static
 
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD ["node", "client/server.js"]

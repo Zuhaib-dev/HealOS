@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
@@ -61,6 +61,7 @@ function TablePanel({ children }: { children: React.ReactNode }) {
 
 
 import { fetchAdminWardsApi, AdminWardData } from "@/lib/api/admin";
+import { useAdminRealtime } from "../use-admin-realtime";
 
 /* ---------- 04 wards ---------- */
 
@@ -68,22 +69,25 @@ export function WardsPanel() {
   const [loading, setLoading] = useState(true);
   const [dbWards, setDbWards] = useState<AdminWardData[]>([]);
 
-  useEffect(() => {
-    const loadWards = async () => {
-      try {
-        setLoading(true);
-        const res = await fetchAdminWardsApi();
-        if (res.success && res.wards) {
-          setDbWards(res.wards);
-        }
-      } catch (err) {
-        console.error("Failed to fetch admin wards", err);
-      } finally {
-        setLoading(false);
+  const loadWards = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchAdminWardsApi();
+      if (res.success && res.wards) {
+        setDbWards(res.wards);
       }
-    };
-    loadWards();
+    } catch (err) {
+      console.error("Failed to fetch admin wards", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadWards();
+  }, [loadWards]);
+
+  useAdminRealtime(["wards", "patients"], loadWards);
 
   return (
     <section>

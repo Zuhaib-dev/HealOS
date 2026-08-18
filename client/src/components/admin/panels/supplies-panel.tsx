@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { ArrowUpRight, TriangleAlert } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 
@@ -60,6 +60,7 @@ function TablePanel({ children }: { children: React.ReactNode }) {
 
 
 import { fetchAdminInventoryApi, AdminInventoryData } from "@/lib/api/admin";
+import { useAdminRealtime } from "../use-admin-realtime";
 
 /* ---------- 06 supplies ---------- */
 
@@ -67,22 +68,25 @@ export function SuppliesPanel() {
   const [loading, setLoading] = useState(true);
   const [dbInventory, setDbInventory] = useState<AdminInventoryData[]>([]);
 
-  useEffect(() => {
-    const loadInventory = async () => {
-      try {
-        setLoading(true);
-        const res = await fetchAdminInventoryApi();
-        if (res.success && res.inventory) {
-          setDbInventory(res.inventory);
-        }
-      } catch (err) {
-        console.error("Failed to fetch admin inventory", err);
-      } finally {
-        setLoading(false);
+  const loadInventory = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchAdminInventoryApi();
+      if (res.success && res.inventory) {
+        setDbInventory(res.inventory);
       }
-    };
-    loadInventory();
+    } catch (err) {
+      console.error("Failed to fetch admin inventory", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadInventory();
+  }, [loadInventory]);
+
+  useAdminRealtime(["inventory", "supplies"], loadInventory);
 
   return (
     <section>

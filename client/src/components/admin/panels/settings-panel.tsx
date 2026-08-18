@@ -1,74 +1,7 @@
-import { useMemo, useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowUpRight, Check, X, TriangleAlert } from "lucide-react";
-import { useAuthStore } from "@/store/use-auth-store";
-import {
-  approvals,
-  staff,
-  wards,
-  audit,
-  invoices,
-  supplies,
-  throughput,
-} from "../admin-data";
+import { toast } from "sonner";
 import { ActionButton, PanelHeader } from "../admin-shell";
-
-/* ---------- shared primitives ---------- */
-
-function Metric({
-  label,
-  value,
-  delta,
-  suffix,
-}: {
-  label: string;
-  value: string;
-  delta?: string;
-  suffix?: string;
-}) {
-  return (
-    <div className="hairline-l px-5 py-5">
-      <p className="mono-label text-muted-foreground">{label}</p>
-      <p className="mt-3 font-mono text-3xl font-bold tracking-tight">
-        {value}
-        {suffix ? <span className="text-muted-foreground text-base"> {suffix}</span> : null}
-      </p>
-      {delta ? (
-        <p className="mono-label text-brass mt-2 flex items-center gap-1">
-          <ArrowUpRight className="size-3" />
-          {delta}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>;
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
-
-function Pill({ children, tone }: { children: React.ReactNode; tone: "ok" | "warn" | "bad" | "mute" }) {
-  const map = {
-    ok: "bg-accent/12 text-brass",
-    warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
-    mute: "bg-foreground/[0.04] text-muted-foreground",
-  } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
-}
-
-function TablePanel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="hairline-b overflow-x-auto">
-      <table className="w-full min-w-180 border-collapse">{children}</table>
-    </div>
-  );
-}
-
 
 /* ---------- 08 settings ---------- */
 
@@ -98,13 +31,25 @@ function Toggle({ label, note, initial }: { label: string; note: string; initial
 }
 
 export function SettingsPanel() {
+  const [profile, setProfile] = useState({
+    facilityName: "HealOS Hospital",
+    licenseNumber: "",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    escalationContact: "",
+  });
+
+  const handleSave = () => {
+    window.localStorage.setItem("healos:admin:facility-settings", JSON.stringify(profile));
+    toast.success("Facility settings saved in this browser session.");
+  };
+
   return (
     <section>
       <PanelHeader
         index="08 / CONFIG"
         title="Facility settings"
         note="Governance switches that apply hospital-wide the moment they are changed."
-        actions={<ActionButton tone="solid">Save changes</ActionButton>}
+        actions={<ActionButton tone="solid" onClick={handleSave}>Save changes</ActionButton>}
       />
       <div className="grid lg:grid-cols-2">
         <div className="hairline-b px-5 py-6 sm:px-8">
@@ -119,20 +64,40 @@ export function SettingsPanel() {
         <div className="hairline-b hairline-l px-5 py-6 sm:px-8">
           <p className="mono-label text-muted-foreground">Facility profile</p>
           <div className="mt-4 space-y-4">
-            {[
-              ["Facility name", "St. Meridian General"],
-              ["Licence number", "HF-2026-8841"],
-              ["Timezone", "UTC+00:00"],
-              ["Escalation contact", "ops@meridian.health"],
-            ].map(([label, value]) => (
-              <label key={label} className="block">
-                <span className="mono-label text-muted-foreground">{label}</span>
-                <input
-                  defaultValue={value}
-                  className="hairline mt-2 w-full bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-(--hairline-strong)"
-                />
-              </label>
-            ))}
+            <label className="block">
+              <span className="mono-label text-muted-foreground">Facility name</span>
+              <input
+                value={profile.facilityName}
+                onChange={(e) => setProfile((current) => ({ ...current, facilityName: e.target.value }))}
+                className="hairline mt-2 w-full bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-(--hairline-strong)"
+              />
+            </label>
+            <label className="block">
+              <span className="mono-label text-muted-foreground">Licence number</span>
+              <input
+                value={profile.licenseNumber}
+                onChange={(e) => setProfile((current) => ({ ...current, licenseNumber: e.target.value }))}
+                placeholder="Enter facility licence"
+                className="hairline mt-2 w-full bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-(--hairline-strong)"
+              />
+            </label>
+            <label className="block">
+              <span className="mono-label text-muted-foreground">Timezone</span>
+              <input
+                value={profile.timezone}
+                onChange={(e) => setProfile((current) => ({ ...current, timezone: e.target.value }))}
+                className="hairline mt-2 w-full bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-(--hairline-strong)"
+              />
+            </label>
+            <label className="block">
+              <span className="mono-label text-muted-foreground">Escalation contact</span>
+              <input
+                value={profile.escalationContact}
+                onChange={(e) => setProfile((current) => ({ ...current, escalationContact: e.target.value }))}
+                placeholder="ops@example.com"
+                className="hairline mt-2 w-full bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-(--hairline-strong)"
+              />
+            </label>
           </div>
         </div>
       </div>

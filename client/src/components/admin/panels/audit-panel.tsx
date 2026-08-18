@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 
@@ -60,6 +60,7 @@ function TablePanel({ children }: { children: React.ReactNode }) {
 
 
 import { fetchAdminAuditLogsApi, AdminAuditLogData } from "@/lib/api/admin";
+import { useAdminRealtime } from "../use-admin-realtime";
 
 /* ---------- 07 audit ---------- */
 
@@ -67,22 +68,25 @@ export function AuditPanel() {
   const [loading, setLoading] = useState(true);
   const [dbLogs, setDbLogs] = useState<AdminAuditLogData[]>([]);
 
-  useEffect(() => {
-    const loadLogs = async () => {
-      try {
-        setLoading(true);
-        const res = await fetchAdminAuditLogsApi();
-        if (res.success && res.logs) {
-          setDbLogs(res.logs);
-        }
-      } catch (err) {
-        console.error("Failed to fetch admin audit logs", err);
-      } finally {
-        setLoading(false);
+  const loadLogs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchAdminAuditLogsApi();
+      if (res.success && res.logs) {
+        setDbLogs(res.logs);
       }
-    };
-    loadLogs();
+    } catch (err) {
+      console.error("Failed to fetch admin audit logs", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
+
+  useAdminRealtime(["audit"], loadLogs);
 
   const totalEvents = dbLogs.length;
   const privActions = dbLogs.filter(l => l.action.includes("Elevated") || l.action.includes("Role")).length;

@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
@@ -61,6 +61,7 @@ function TablePanel({ children }: { children: React.ReactNode }) {
 
 
 import { fetchAdminStaffApi, AdminStaffData } from "@/lib/api/admin";
+import { useAdminRealtime } from "../use-admin-realtime";
 
 /* ---------- 03 staff ---------- */
 
@@ -69,22 +70,25 @@ export function StaffPanel() {
   const [loading, setLoading] = useState(true);
   const [dbStaff, setDbStaff] = useState<AdminStaffData[]>([]);
 
-  useEffect(() => {
-    const loadStaff = async () => {
-      try {
-        setLoading(true);
-        const res = await fetchAdminStaffApi();
-        if (res.success && res.staff) {
-          setDbStaff(res.staff);
-        }
-      } catch (err) {
-        console.error("Failed to fetch admin staff", err);
-      } finally {
-        setLoading(false);
+  const loadStaff = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchAdminStaffApi();
+      if (res.success && res.staff) {
+        setDbStaff(res.staff);
       }
-    };
-    loadStaff();
+    } catch (err) {
+      console.error("Failed to fetch admin staff", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadStaff();
+  }, [loadStaff]);
+
+  useAdminRealtime(["staff", "users", "roles", "approvals"], loadStaff);
 
   const depts = useMemo(() => ["All", ...new Set(dbStaff.map((s) => s.department || "General"))], [dbStaff]);
   const rows = filter === "All" ? dbStaff : dbStaff.filter((s) => (s.department || "General") === filter);
@@ -154,11 +158,11 @@ export function StaffPanel() {
                       <motion.div
                         className="bg-accent h-full"
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.floor(Math.random() * 40) + 20}%` }}
+                        animate={{ width: `${s.status === "APPROVED" ? 100 : s.status === "REJECTED" ? 0 : 50}%` }}
                         transition={{ duration: 0.8 }}
                       />
                     </div>
-                    <span className="mono-label text-muted-foreground">Live</span>
+                    <span className="mono-label text-muted-foreground">{s.status === "APPROVED" ? "Active" : "Review"}</span>
                   </div>
                 </Td>
               </tr>

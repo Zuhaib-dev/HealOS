@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 
@@ -60,6 +60,7 @@ function TablePanel({ children }: { children: React.ReactNode }) {
 
 
 import { fetchAdminInvoicesApi, AdminInvoiceData } from "@/lib/api/admin";
+import { useAdminRealtime } from "../use-admin-realtime";
 
 /* ---------- 05 billing ---------- */
 
@@ -67,22 +68,25 @@ export function BillingPanel() {
   const [loading, setLoading] = useState(true);
   const [invoicesData, setInvoicesData] = useState<AdminInvoiceData[]>([]);
 
-  useEffect(() => {
-    const loadInvoices = async () => {
-      try {
-        setLoading(true);
-        const res = await fetchAdminInvoicesApi();
-        if (res.success && res.invoices) {
-          setInvoicesData(res.invoices);
-        }
-      } catch (err) {
-        console.error("Failed to fetch admin invoices", err);
-      } finally {
-        setLoading(false);
+  const loadInvoices = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchAdminInvoicesApi();
+      if (res.success && res.invoices) {
+        setInvoicesData(res.invoices);
       }
-    };
-    loadInvoices();
+    } catch (err) {
+      console.error("Failed to fetch admin invoices", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadInvoices();
+  }, [loadInvoices]);
+
+  useAdminRealtime(["billing", "invoices", "patients"], loadInvoices);
 
   const totalCollected = invoicesData
     .filter((i) => i.status === "PAID")

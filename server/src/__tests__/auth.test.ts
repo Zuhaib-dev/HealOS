@@ -1,7 +1,11 @@
 import request from "supertest";
 import app from "../app";
-import { User, UserRole } from "../models/user.model";
+import { User } from "../models/user.model";
 import { API_PREFIX } from "@healos/shared";
+
+jest.mock("../utils/mailer", () => ({
+  sendOtpEmail: jest.fn().mockResolvedValue(true),
+}));
 
 describe("Authentication API", () => {
   const registerPayload = {
@@ -17,9 +21,7 @@ describe("Authentication API", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.user.email).toBe(registerPayload.email);
-    expect(res.body.data.user.role).toBe(UserRole.USER);
-    expect(res.body.data.token).toBeDefined();
+    expect(res.body.email).toBe(registerPayload.email);
 
     // Verify it was saved to DB
     const userInDb = await User.findOne({ email: registerPayload.email });
@@ -29,19 +31,21 @@ describe("Authentication API", () => {
   it("should not allow registration with an existing email", async () => {
     // Register once
     await request(app).post(`${API_PREFIX}/auth/register`).send(registerPayload);
+    await User.updateOne({ email: registerPayload.email }, { isEmailVerified: true });
 
     // Try again
     const res = await request(app)
       .post(`${API_PREFIX}/auth/register`)
       .send(registerPayload);
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toMatch(/Email already in use/i);
+    expect(res.body.message).toMatch(/already exists/i);
   });
 
   it("should successfully login with correct credentials", async () => {
     await request(app).post(`${API_PREFIX}/auth/register`).send(registerPayload);
+    await User.updateOne({ email: registerPayload.email }, { isEmailVerified: true });
 
     const res = await request(app)
       .post(`${API_PREFIX}/auth/login`)
@@ -52,11 +56,12 @@ describe("Authentication API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.token).toBeDefined();
+    expect(res.body.token).toBeDefined();
   });
 
   it("should fail login with incorrect password", async () => {
     await request(app).post(`${API_PREFIX}/auth/register`).send(registerPayload);
+    await User.updateOne({ email: registerPayload.email }, { isEmailVerified: true });
 
     const res = await request(app)
       .post(`${API_PREFIX}/auth/login`)

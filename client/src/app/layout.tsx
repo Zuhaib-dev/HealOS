@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://heal-os-client.vercel.app"),
+  metadataBase: new URL("https://healos-theta.vercel.app"),
   title: {
     default: "HealOS | Modern Healthcare Management",
     template: "%s | HealOS",
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "HealOS | Modern Healthcare Management",
     description: "The Operating System for Modern Hospitals. Seamlessly unified patient records, revenue analytics, and clinician workflows.",
-    url: "https://heal-os-client.vercel.app",
+    url: "https://healos-theta.vercel.app",
     siteName: "HealOS",
     locale: "en_US",
     type: "website",

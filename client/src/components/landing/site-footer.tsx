@@ -69,7 +69,7 @@ export function SiteFooter() {
               Terms
             </a>
             <a href="#top" className="hover:text-foreground transition-colors">
-              HIPAA
+              HIPAA 
             </a>
           </span>
         </div>

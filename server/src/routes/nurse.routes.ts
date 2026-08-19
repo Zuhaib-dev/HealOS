@@ -7,9 +7,12 @@ import {
   getPatientVitals,
   getFluidBalances,
   getCallBells,
+  resolveCallBell,
   getMarDoses,
+  administerMarDose,
   getWounds,
   getHandovers,
+  createHandover,
 } from "../controllers/nurse.controller.js";
 
 const router = express.Router();
@@ -23,8 +26,11 @@ router.get("/vitals/:patientId", getPatientVitals);
 
 router.get("/fluids", getFluidBalances);
 router.get("/call-bells", getCallBells);
+router.patch("/call-bells/:id/resolve", resolveCallBell);
 router.get("/emar", getMarDoses);
+router.patch("/emar/:id/administer", administerMarDose);
 router.get("/wounds", getWounds);
 router.get("/handovers", getHandovers);
+router.post("/handovers", createHandover);
 
 export default router;

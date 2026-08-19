@@ -101,9 +101,18 @@ export function CallBellsPanel() {
                     Accept
                   </ActionButton>
                   <ActionButton
-                    onClick={() =>
-                      setRows((r) => r.map((x) => (x._id === c._id ? { ...x, state: "closed" } : x)))
-                    }
+                    onClick={async () => {
+                      try {
+                        const { resolveCallBellApi } = await import("@/lib/api/nurse");
+                        const res = await resolveCallBellApi(c._id);
+                        if (res.success) {
+                          setRows((r) => r.map((x) => (x._id === c._id ? { ...x, state: "closed" } : x)));
+                          toast.success("Call bell resolved");
+                        }
+                      } catch (err) {
+                        toast.error("Failed to resolve call bell");
+                      }
+                    }}
                   >
                     Close
                   </ActionButton>

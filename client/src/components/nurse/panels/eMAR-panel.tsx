@@ -46,8 +46,19 @@ export function EmarPanel() {
           : d.controlled,
   );
 
-  const set = (id: string, state: MarDose["state"]) =>
+  const set = async (id: string, state: MarDose["state"]) => {
+    if (state === "given") {
+      try {
+        const { administerMarDoseApi } = await import("@/lib/api/nurse");
+        await administerMarDoseApi(id);
+        toast.success("Dose administered and logged.");
+      } catch (err) {
+        toast.error("Failed to log administration.");
+        return;
+      }
+    }
     setRows((r) => r.map((d) => (d._id === id ? { ...d, state } : d)));
+  };
 
   return (
     <section>
@@ -124,15 +135,21 @@ export function EmarPanel() {
                 </Td>
                 <Td>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => set(d._id, "given")} className="hairline mono-label flex items-center gap-1 px-2.5 py-1.5">
-                      <Check className="size-3" /> Give
-                    </button>
-                    <button type="button" onClick={() => set(d._id, "held")} className="hairline mono-label flex items-center gap-1 px-2.5 py-1.5">
-                      <PauseCircle className="size-3" /> Hold
-                    </button>
-                    <button type="button" onClick={() => set(d._id, "refused")} className="hairline mono-label text-destructive flex items-center gap-1 px-2.5 py-1.5">
-                      <X className="size-3" /> Refused
-                    </button>
+                    {d.state === "due" || d.state === "overdue" ? (
+                      <>
+                        <button type="button" onClick={() => set(d._id, "given")} className="hairline mono-label flex items-center gap-1 px-2.5 py-1.5 hover:bg-foreground/5">
+                          <Check className="size-3" /> Give
+                        </button>
+                        <button type="button" onClick={() => set(d._id, "held")} className="hairline mono-label flex items-center gap-1 px-2.5 py-1.5 hover:bg-foreground/5">
+                          <PauseCircle className="size-3" /> Hold
+                        </button>
+                        <button type="button" onClick={() => set(d._id, "refused")} className="hairline mono-label text-destructive flex items-center gap-1 px-2.5 py-1.5 hover:bg-destructive/10">
+                          <X className="size-3" /> Refused
+                        </button>
+                      </>
+                    ) : (
+                      <span className="mono-label text-muted-foreground text-xs">{d.state.toUpperCase()}</span>
+                    )}
                   </div>
                 </Td>
               </tr>

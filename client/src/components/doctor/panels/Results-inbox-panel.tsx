@@ -204,17 +204,29 @@ export function ResultsPanel() {
                       )}
                     </Td>
                     <Td>
-                      {isSigned ? (
-                        <Pill tone="mute">signed</Pill>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setSigned((s) => [...s, r._id])}
-                          className="mono-label hairline px-3 py-1.5"
-                        >
-                          acknowledge
-                        </button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {r.fileUrl && (
+                          <a
+                            href={`http://localhost:5001${r.fileUrl}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mono-label hairline px-3 py-1.5 text-accent hover:bg-accent/10"
+                          >
+                            view pdf
+                          </a>
+                        )}
+                        {isSigned ? (
+                          <Pill tone="mute">signed</Pill>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setSigned((s) => [...s, r._id])}
+                            className="mono-label hairline px-3 py-1.5"
+                          >
+                            acknowledge
+                          </button>
+                        )}
+                      </div>
                     </Td>
                   </motion.tr>
                 );

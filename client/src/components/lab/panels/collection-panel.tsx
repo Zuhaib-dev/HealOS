@@ -5,9 +5,10 @@ import { motion } from "motion/react";
 import { TestTube, PhoneCall, Check, X, Barcode, TriangleAlert } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, LiveDot, Pill, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
-import { fetchLabCollectionsApi, markLabCollectedApi } from "@/lib/api/lab";
+import { fetchLabCollectionsApi, markLabCollectedApi, uploadLabReportApi } from "@/lib/api/lab";
 import { getSocket } from "@/lib/socket";
 import { toast } from "sonner";
+import { UploadCloud } from "lucide-react";
 
 
 
@@ -80,6 +81,25 @@ export function CollectionPanel() {
     }
   };
 
+  const handleUpload = async (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+      toast.info("Uploading result...");
+      const res = await uploadLabReportApi(id, formData);
+      if (res.success) {
+        toast.success("Result uploaded successfully");
+        loadCollections();
+      }
+    } catch (error) {
+      toast.error("Failed to upload result");
+    }
+  };
+
   return (
     <section>
       <PanelHeader
@@ -130,6 +150,19 @@ export function CollectionPanel() {
               >
                 {c.status === "IN_PROGRESS" ? "Collected ✓" : "Mark collected"}
               </ActionButton>
+              {c.status === "IN_PROGRESS" && (
+                <label className="cursor-pointer relative">
+                  <input
+                    type="file"
+                    className="absolute hidden"
+                    accept=".pdf,image/*"
+                    onChange={(e) => handleUpload(c._id, e)}
+                  />
+                  <span className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground border border-border">
+                    <UploadCloud className="size-3.5" /> Upload PDF Result
+                  </span>
+                </label>
+              )}
               <ActionButton>
                 <Barcode className="mr-1 inline size-3" /> Scan tube
               </ActionButton>

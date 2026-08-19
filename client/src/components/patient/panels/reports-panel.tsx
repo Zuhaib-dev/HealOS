@@ -104,23 +104,25 @@ export function ReportsPanel() {
       id: o._id,
       name: o.testName,
       kind: o.testType,
-      dept: o.doctor?.firstName ? `Dr. ${o.doctor.firstName} ${o.doctor.lastName}` : "Doctor",
+      dept: o.doctor?.name ? `Dr. ${o.doctor.name}` : "Doctor",
       date: new Date(o.createdAt).toLocaleDateString(),
       status: o.status === "REPORTED" ? "ready" : "pending",
       flagged: false,
       pages: 0,
-      size: ""
+      size: "",
+      fileUrl: null
     })),
     ...reports.map(r => ({
       id: r._id,
       name: r.title || "Uploaded Report",
       kind: "REPORT",
-      dept: r.uploadedBy?.firstName ? `${r.uploadedBy.firstName} ${r.uploadedBy.lastName}` : "Lab",
+      dept: r.uploadedBy?.name ? r.uploadedBy.name : "Lab",
       date: new Date(r.createdAt).toLocaleDateString(),
       status: "ready",
       flagged: false, // We could add logic for flags later
       pages: 1,
-      size: "PDF"
+      size: "PDF",
+      fileUrl: r.fileUrl || null
     }))
   ];
 
@@ -194,12 +196,25 @@ export function ReportsPanel() {
                 </Td>
                 <Td>
                   <div className="text-muted-foreground flex items-center gap-3">
-                    <button type="button" aria-label="View" className="hover:text-foreground">
-                      <Eye className="size-3.5" />
-                    </button>
-                    <button type="button" aria-label="Download" className="hover:text-foreground">
-                      <Download className="size-3.5" />
-                    </button>
+                    {r.fileUrl ? (
+                      <>
+                        <a href={`http://localhost:5001${r.fileUrl}`} target="_blank" rel="noopener noreferrer" aria-label="View" className="hover:text-foreground">
+                          <Eye className="size-3.5" />
+                        </a>
+                        <a href={`http://localhost:5001${r.fileUrl}`} download aria-label="Download" className="hover:text-foreground">
+                          <Download className="size-3.5" />
+                        </a>
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" aria-label="View" className="hover:text-foreground opacity-50 cursor-not-allowed">
+                          <Eye className="size-3.5" />
+                        </button>
+                        <button type="button" aria-label="Download" className="hover:text-foreground opacity-50 cursor-not-allowed">
+                          <Download className="size-3.5" />
+                        </button>
+                      </>
+                    )}
                     <button type="button" aria-label="Share" className="hover:text-foreground">
                       <Share2 className="size-3.5" />
                     </button>

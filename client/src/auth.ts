@@ -40,6 +40,7 @@ const syncGoogleUserWithBackend = async (profile: {
 };
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID || "",

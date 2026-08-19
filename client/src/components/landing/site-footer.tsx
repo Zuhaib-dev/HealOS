@@ -14,7 +14,7 @@ const columns = [
     links: ["Documentation", "Status", "Security", "Changelog"],
   },
 ];
-
+ 
 export function SiteFooter() {
   return (
     <footer className="relative">

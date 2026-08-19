@@ -96,23 +96,34 @@ export function HandoverPanel() {
           <div className="mt-3">
             <ActionButton
               tone="solid"
-              onClick={() => {
-                if (!draft.bed.trim() || !draft.situation.trim()) return;
-                setNotes((n) => [
-                  {
-                    _id: Date.now().toString(),
-                    bed: draft.bed,
+              disabled={loading}
+              onClick={async () => {
+                if (!draft.bed.trim() || !draft.situation.trim()) {
+                  toast.error("Bed and Situation are required");
+                  return;
+                }
+                
+                try {
+                  const { createHandoverApi, fetchNurseHandoversApi } = await import("@/lib/api/nurse");
+                  const res = await createHandoverApi({
                     patientName: "New entry",
+                    bed: draft.bed,
                     situation: draft.situation,
                     background: "—",
                     assessment: "—",
                     recommendation: draft.recommendation || "—",
                     acuity: "stable",
-                    status: "PENDING",
-                  },
-                  ...n,
-                ]);
-                setDraft({ bed: "", situation: "", recommendation: "" });
+                  });
+                  
+                  if (res.success) {
+                    toast.success("Handover note posted");
+                    setDraft({ bed: "", situation: "", recommendation: "" });
+                    const refreshed = await fetchNurseHandoversApi();
+                    setNotes(refreshed.handovers);
+                  }
+                } catch (err) {
+                  toast.error("Failed to post handover note");
+                }
               }}
             >
               Post to handover

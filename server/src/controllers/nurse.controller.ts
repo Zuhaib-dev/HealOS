@@ -152,6 +152,30 @@ export const getCallBells = async (_req: Request, res: Response): Promise<void> 
 };
 
 /**
+ * PATCH /api/v1/nurse/call-bells/:id/resolve
+ * Resolve a call bell
+ */
+export const resolveCallBell = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { CallBell } = await import("../models/call-bell.model.js");
+    const callBell = await CallBell.findByIdAndUpdate(
+      id,
+      { state: "closed" },
+      { new: true }
+    );
+    if (!callBell) {
+      res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Call bell not found" });
+      return;
+    }
+    res.status(StatusCodes.OK).json({ success: true, callBell });
+  } catch (error) {
+    console.error("Error in resolveCallBell:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error resolving call bell" });
+  }
+};
+
+/**
  * GET /api/v1/nurse/emar
  * Get medication administration records
  */
@@ -163,6 +187,30 @@ export const getMarDoses = async (_req: Request, res: Response): Promise<void> =
   } catch (error) {
     console.error("Error in getMarDoses:", error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching medication doses" });
+  }
+};
+
+/**
+ * PATCH /api/v1/nurse/emar/:id/administer
+ * Mark a medication dose as given
+ */
+export const administerMarDose = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { MarDose } = await import("../models/mar-dose.model.js");
+    const dose = await MarDose.findByIdAndUpdate(
+      id,
+      { state: "given" },
+      { new: true }
+    );
+    if (!dose) {
+      res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Dose not found" });
+      return;
+    }
+    res.status(StatusCodes.OK).json({ success: true, dose });
+  } catch (error) {
+    console.error("Error in administerMarDose:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error administering dose" });
   }
 };
 
@@ -194,6 +242,33 @@ export const getHandovers = async (_req: Request, res: Response): Promise<void> 
   } catch (error) {
     console.error("Error in getHandovers:", error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching handovers" });
+  }
+};
+
+/**
+ * POST /api/v1/nurse/handovers
+ * Create a new nurse handover
+ */
+export const createHandover = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { patientName, bed, situation, background, assessment, recommendation, acuity } = req.body;
+    const { Handover } = await import("../models/handover.model.js");
+    const handover = new Handover({
+      patientName,
+      bed,
+      situation,
+      background,
+      assessment,
+      recommendation,
+      acuity,
+      status: "PENDING",
+      type: "NURSE_SHIFT",
+    });
+    await handover.save();
+    res.status(StatusCodes.CREATED).json({ success: true, handover });
+  } catch (error) {
+    console.error("Error in createHandover:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error creating handover" });
   }
 };
 

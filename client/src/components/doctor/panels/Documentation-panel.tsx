@@ -2,15 +2,8 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { useAuthStore } from "@/store/use-auth-store";
-import {
-  fetchDoctorAppointmentsApi,
-  updateAppointmentStatusApi,
-  AppointmentRecord,
-} from "@/lib/api/appointment";
 import { toast } from "sonner";
-import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
-import { getClinicalNotesApi, createClinicalNoteApi } from "@/lib/api/doctor";
+import { getClinicalNotesApi, createClinicalNoteApi, getAssignedPatientsApi } from "@/lib/api/doctor";
 
 const noteTemplates = [
   "Progress Note (SOAP)",
@@ -20,89 +13,65 @@ const noteTemplates = [
   "Consult Note",
 ];
 
-/* ---------- primitives ---------- */
-
-function Pill({
-  children,
-  tone,
-}: {
-  children: React.ReactNode;
-  tone: "ok" | "warn" | "bad" | "mute";
-}) {
-  const map = {
-    ok: "bg-accent/12 text-brass",
-    warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
-    mute: "bg-foreground/[0.04] text-muted-foreground",
-  } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
-  );
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
-
-/** Animated vitals sparkline — drawn, never an image. */
-function Vitals({ series }: { series: number[] }) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
-  const pts = series
-    .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
-      const y = 30 - ((v - min) / Math.max(1, max - min)) * 26 - 2;
-      return `${x},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  return (
-    <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-8 w-24 shrink-0">
-      <motion.polyline
-        points={pts}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="1.6"
-        vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-      />
-    </svg>
-  );
-}
-
-function acuityPill(a: "critical" | "guarded" | "stable") {
-  return a === "critical" ? (
-    <Pill tone="bad">critical</Pill>
-  ) : a === "guarded" ? (
-    <Pill tone="warn">guarded</Pill>
-  ) : (
-    <Pill tone="ok">stable</Pill>
-  );
-}
-
-/* ---------- 06 · Documentation ---------- */
-
 export function NotesPanel() {
   const [template, setTemplate] = useState(noteTemplates[0]!);
   const [body, setBody] = useState(
     "SUBJECTIVE\n\nOBJECTIVE\n  Obs: \n  Exam: \n\nASSESSMENT\n\nPLAN\n  1. ",
   );
   const [notes, setNotes] = useState<any[]>([]);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [notesRes, patientsRes] = await Promise.all([
+        getClinicalNotesApi(),
+        getAssignedPatientsApi()
+      ]);
+      setNotes(notesRes.data?.notes || []);
+      setPatients(patientsRes.data?.patients || []);
+    } catch (error) {
+      toast.error("Failed to load clinical notes or patients");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    getClinicalNotesApi()
-      .then(res => setNotes(res.data.notes || []))
-      .catch(() => toast.error("Failed to load notes"))
-      .finally(() => setLoading(false));
+    loadData();
   }, []);
+
+  const handleSaveNote = async () => {
+    if (!selectedPatientId) {
+      toast.error("Please select a patient first.");
+      return;
+    }
+    if (!body.trim()) {
+      toast.error("Note content cannot be empty.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const res = await createClinicalNoteApi({
+        patientId: selectedPatientId,
+        category: template,
+        content: body,
+      });
+      if (res.status === "success") {
+        toast.success("Note signed and filed successfully!");
+        setBody("SUBJECTIVE\n\nOBJECTIVE\n  Obs: \n  Exam: \n\nASSESSMENT\n\nPLAN\n  1. ");
+        loadData();
+      }
+    } catch (error) {
+      toast.error("Failed to save clinical note.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div>
@@ -113,12 +82,10 @@ export function NotesPanel() {
         actions={
           <ActionButton
             tone="solid"
-            onClick={() => {
-              setSaved(true);
-              window.setTimeout(() => setSaved(false), 1800);
-            }}
+            onClick={handleSaveNote}
+            disabled={saving || !selectedPatientId}
           >
-            {saved ? "Signed & filed" : "Sign note"}
+            {saving ? "Signing..." : "Sign note"}
           </ActionButton>
         }
       />
@@ -143,9 +110,21 @@ export function NotesPanel() {
           </div>
         </div>
         <div className="p-5 sm:p-8">
-          <p className="mono-label text-muted-foreground">
-            {template} · (Select a patient to save note)
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+            <p className="mono-label text-muted-foreground">
+              {template}
+            </p>
+            <select
+              value={selectedPatientId}
+              onChange={(e) => setSelectedPatientId(e.target.value)}
+              className="bg-background border border-(--hairline) px-3 py-1.5 text-sm mono-label outline-none focus:border-accent"
+            >
+              <option value="">-- Select Patient --</option>
+              {patients.map(p => (
+                <option key={p._id} value={p._id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}

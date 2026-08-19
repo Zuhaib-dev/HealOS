@@ -34,6 +34,27 @@ import { toast } from "sonner";
 import { fetchPatientDashboardApi, PatientDashboardData, payInvoiceApi } from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
+import { createRazorpayOrderApi, verifyRazorpayPaymentApi } from "@/lib/api/payment";
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 /* ---------- primitives ---------- */
 
@@ -101,15 +122,78 @@ function Trend({ series }: { series: number[] }) {
 export function BillingPanel() {
   const { data, isLoading, refetch } = usePatientDashboard();
 
-  const handlePay = async (id: string) => {
+  useEffect(() => {
+    loadRazorpayScript();
+  }, []);
+
+  const { user } = useAuthStore();
+  const [processing, setProcessing] = useState<string | null>(null);
+
+  const handleOnlinePay = async (id: string, amount: number) => {
     try {
+      setProcessing(id);
+      // 1. Create Order
+      const orderRes = await createRazorpayOrderApi({ amount, receipt: id });
+      if (!orderRes.success) throw new Error("Failed to create Razorpay order");
+
+      // 2. Open Razorpay
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_V0P16tZ8KXX30y",
+        amount: orderRes.order.amount,
+        currency: "INR",
+        name: "HealOS",
+        description: "Invoice Payment",
+        order_id: orderRes.order.id,
+        handler: async function (response: any) {
+          try {
+            // 3. Verify Payment
+            await verifyRazorpayPaymentApi({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              invoiceId: id,
+            });
+            toast.success("Payment successful!");
+            refetch();
+          } catch (err: any) {
+            toast.error(err.response?.data?.message || "Payment verification failed");
+          } finally {
+            setProcessing(null);
+          }
+        },
+        prefill: {
+          name: user?.name,
+          email: user?.email,
+        },
+        theme: {
+          color: "#10b981",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function () {
+        toast.error("Payment failed. Please try again.");
+        setProcessing(null);
+      });
+      rzp.open();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to initiate payment");
+      setProcessing(null);
+    }
+  };
+
+  const handleCashPay = async (id: string) => {
+    try {
+      setProcessing(id);
       const res = await payInvoiceApi(id);
       if (res.success) {
-        toast.success("Payment successful!");
+        toast.success("Paid with Cash (Demo)!");
         refetch();
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to process payment");
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -175,9 +259,21 @@ export function BillingPanel() {
                   <div className="flex gap-2">
                     <ActionButton>Receipt</ActionButton>
                     {b.status !== "PAID" && b.status !== "CANCELLED" && (
-                      <ActionButton tone="solid" onClick={() => handlePay(b._id)}>
-                        Pay Now
-                      </ActionButton>
+                      <>
+                        <ActionButton 
+                          tone="solid" 
+                          onClick={() => handleOnlinePay(b._id, b.totalAmount)}
+                          disabled={processing === b._id}
+                        >
+                          {processing === b._id ? "Processing..." : "Pay Online"}
+                        </ActionButton>
+                        <ActionButton 
+                          onClick={() => handleCashPay(b._id)}
+                          disabled={processing === b._id}
+                        >
+                          Cash (Demo)
+                        </ActionButton>
+                      </>
                     )}
                   </div>
                 </Td>

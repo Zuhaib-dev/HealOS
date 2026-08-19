@@ -111,12 +111,37 @@ export function StaffPanel() {
                 </Td>
                 <Td>
                   <p className="font-medium">{s.user?.name || "Unknown"}</p>
-                  <p className="mono-label text-muted-foreground">
-                    {s.user?.role || "USER"} · {s.department || "General"}
+                  <p className="mono-label text-muted-foreground mt-1 text-xs">
+                    {s.department || "General"}
                   </p>
                 </Td>
                 <Td>
-                  <span className="mono-label">{s.designation || "Staff"}</span>
+                  <select
+                    value={s.user?.role || "USER"}
+                    onChange={async (e) => {
+                      const newRole = e.target.value;
+                      if (!s.user?._id) return;
+                      try {
+                        const { updateUserRoleApi } = await import("@/lib/api/admin");
+                        await updateUserRoleApi(s.user._id, newRole);
+                        import("sonner").then(m => m.toast.success(`Role updated to ${newRole}`));
+                        loadStaff();
+                      } catch (err) {
+                        import("sonner").then(m => m.toast.error("Failed to update role"));
+                      }
+                    }}
+                    className="bg-transparent border border-(--hairline) px-2 py-1 text-xs mono-label outline-none focus:border-accent"
+                  >
+                    <option value="USER">USER</option>
+                    <option value="PATIENT">PATIENT</option>
+                    <option value="DOCTOR">DOCTOR</option>
+                    <option value="NURSE">NURSE</option>
+                    <option value="PHARMACIST">PHARMACIST</option>
+                    <option value="RADIOLOGIST">RADIOLOGIST</option>
+                    <option value="LAB_TECHNICIAN">LAB_TECHNICIAN</option>
+                    <option value="RECEPTIONIST">RECEPTIONIST</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
                 </Td>
                 <Td>
                   <Pill tone={s.status === "APPROVED" ? "ok" : s.status === "REJECTED" ? "bad" : "warn"}>

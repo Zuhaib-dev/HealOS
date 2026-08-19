@@ -102,6 +102,11 @@ export function HandoverPanel() {
                   toast.error("Bed and Situation are required");
                   return;
                 }
+                const bedRegex = /^[A-Za-z0-9-]+$/;
+                if (!bedRegex.test(draft.bed.trim())) {
+                  toast.error("Bed must contain only letters, numbers, and hyphens");
+                  return;
+                }
                 
                 try {
                   const { createHandoverApi, fetchNurseHandoversApi } = await import("@/lib/api/nurse");

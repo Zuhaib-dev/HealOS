@@ -85,6 +85,13 @@ export function CollectionPanel() {
     const file = e.target.files?.[0];
     if (!file) return;
     
+    const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    const validExts = [".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx", ".webp"];
+    if (!validExts.includes(ext) && !file.type.startsWith("image/")) {
+      toast.error("Please upload a PDF, Image, or Word document.");
+      return;
+    }
+    
     const formData = new FormData();
     formData.append("file", file);
     
@@ -155,7 +162,7 @@ export function CollectionPanel() {
                   <input
                     type="file"
                     className="absolute hidden"
-                    accept=".pdf,image/*"
+                    accept=".pdf,image/*,.doc,.docx"
                     onChange={(e) => handleUpload(c._id, e)}
                   />
                   <span className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground border border-border">

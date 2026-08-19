@@ -102,7 +102,7 @@ export function MedsPanel() {
       dose: m.dosage,
       freq: m.frequency,
       started: new Date(c.createdAt).toLocaleDateString(),
-      prescriber: c.doctor?.firstName ? `Dr. ${c.doctor.firstName} ${c.doctor.lastName}` : "Doctor",
+      prescriber: c.doctor?.name ? `Dr. ${c.doctor.name}` : "Doctor",
       state: "active",
       refillsLeft: 0,
       instructions: m.instructions

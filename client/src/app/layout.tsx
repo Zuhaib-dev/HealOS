@@ -18,8 +18,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://heal-os-client.vercel.app"),
   title: {
-    default: "HealOS — The Operating System for Modern Hospitals",
+    default: "HealOS | Modern Healthcare Management",
     template: "%s | HealOS",
   },
   description:
@@ -34,6 +35,33 @@ export const metadata: Metadata = {
     "radiology",
     "HealOS",
   ],
+  authors: [{ name: "Zuhaib Rashid", url: "https://zuhiabrashid.com" }],
+  creator: "Zuhaib Rashid",
+  publisher: "Zuhaib Rashid",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: "HealOS | Modern Healthcare Management",
+    description: "The Operating System for Modern Hospitals. Seamlessly unified patient records, revenue analytics, and clinician workflows.",
+    url: "https://heal-os-client.vercel.app",
+    siteName: "HealOS",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "HealOS | Modern Healthcare Management",
+    description: "The Operating System for Modern Hospitals.",
+    creator: "@zuhiabrashid", // Optional, adjust if different handle
+  },
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 import { RealtimeSocketProvider } from "@/components/providers/socket-provider";

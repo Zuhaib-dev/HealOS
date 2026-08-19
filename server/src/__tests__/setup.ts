@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 
 let mongoServer: MongoMemoryServer;
 
+jest.setTimeout(60000); // 60 seconds timeout for CI to download MongoDB binary
+
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();

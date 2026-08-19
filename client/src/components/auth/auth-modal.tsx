@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { useAuthStore } from "@/store/use-auth-store";
 import {
@@ -112,6 +113,11 @@ export function AuthModal() {
       toast.error("Please enter both email and password");
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -144,6 +150,11 @@ export function AuthModal() {
     e.preventDefault();
     if (!name || !email || !password) {
       toast.error("Please fill in all fields");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address");
       return;
     }
     if (password.length < 6) {
@@ -211,6 +222,11 @@ export function AuthModal() {
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (phone.trim()) {
+      const phoneRegex = /^[0-9+\-\s()]+$/;
+      if (!phoneRegex.test(phone)) {
+        toast.error("Please enter a valid phone number");
+        return;
+      }
       try {
         await updatePhoneApi(phone);
         toast.success("Phone number saved!");
@@ -465,7 +481,7 @@ export function AuthModal() {
                 </div>
 
                 <div className="flex justify-center py-2">
-                  <InputOTP maxLength={6} value={otp} onChange={(val: string) => setOtp(val)}>
+                  <InputOTP maxLength={6} value={otp} onChange={(val: string) => setOtp(val)} pattern={REGEXP_ONLY_DIGITS}>
                     <InputOTPGroup>
                       <InputOTPSlot index={0} />
                       <InputOTPSlot index={1} />

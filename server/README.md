@@ -1,78 +1,105 @@
-<div align="center">
-  <h1>⚙️ HealOS Server</h1>
-  <p>The backend API and websocket server for HealOS.</p>
-</div>
+# HealOS Backend ⚙️
 
-## 🛠 Tech Stack
+![Backend Banner](https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=2034&auto=format&fit=crop)
 
-- **Runtime**: [Node.js](https://nodejs.org/)
-- **Framework**: [Express.js](https://expressjs.com/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Database**: [MongoDB](https://www.mongodb.com/) (with [Mongoose](https://mongoosejs.com/) ODM)
-- **Real-time Comm.**: [Socket.IO](https://socket.io/)
-- **Validation**: Zod / Express-Validator (via `@healos/shared`)
-
-## 📂 Directory Structure
-
-```
-server/
-└── src/
-    ├── config/        # Environment and DB configuration
-    ├── controllers/   # Route handler functions
-    ├── middleware/    # Auth, error handling, validation middleware
-    ├── models/        # Mongoose database schemas
-    ├── routes/        # Express route definitions
-    ├── services/      # Complex business logic (separated from controllers)
-    ├── sockets/       # Socket.IO event handlers (realtime features)
-    └── utils/         # Helper functions (logging, formatting)
-```
-
-## 🚀 Getting Started
-
-Ensure you are in the root directory of the monorepo or inside the `server` directory.
-You must have a running MongoDB instance and your `.env` configured correctly.
-
-### Environment Variables
-
-Required environment variables in the root `.env` file (or `server/.env`):
-
-```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/healos
-JWT_SECRET=your_super_secret_key
-# Add other secrets as needed (AWS, Twilio, etc.)
-```
-
-### Running in Development
-
-To start the server in development mode (with hot-reloading via `ts-node-dev` or `nodemon`):
-
-```bash
-# From the root of the monorepo:
-npm run dev:server
-
-# Or from within the server directory:
-npm run dev
-```
-
-The API will be available at [http://localhost:5000](http://localhost:5000).
-
-### Building for Production
-
-To compile TypeScript to JavaScript for production:
-
-```bash
-# From the root of the monorepo:
-npm run build:server
-```
-
-This will output the compiled files to the `dist/` directory.
-
-## 🔐 Authentication & Security
-
-- Passwords are encrypted using **bcrypt**.
-- Authentication is handled via **JSON Web Tokens (JWT)**.
-- Sensitive routes are protected by the `auth` middleware.
+The backend service for HealOS, providing robust RESTful APIs, real-time WebSocket communication, and secure data management using **Express.js**, **TypeScript**, and **MongoDB**.
 
 ---
-*Part of the [HealOS Monorepo](../README.md).*
+
+## 🚀 Technologies Used
+
+- **Framework**: Express.js (v5)
+- **Language**: TypeScript
+- **Database**: MongoDB Atlas via Mongoose (v8)
+- **Authentication**: JWT (JSON Web Tokens) & bcryptjs
+- **Real-time**: Socket.io
+- **Payments**: Razorpay (Server-side validation)
+- **Security**: Helmet, express-rate-limit, CORS
+- **Testing**: Jest & Supertest
+
+---
+
+## 📂 Project Structure
+
+```text
+server/
+├── src/
+│   ├── app.ts                  # Application entry point and configuration
+│   ├── controllers/            # Request handlers (logic for each route)
+│   ├── middleware/             # Custom middleware (Auth, Error handling, RBAC)
+│   ├── models/                 # Mongoose schemas and interfaces
+│   ├── routes/                 # API route definitions
+│   └── __tests__/              # Jest integration & unit tests
+├── jest.config.js              # Jest configuration
+├── tsconfig.json               # TypeScript compiler options
+└── package.json
+```
+
+---
+
+## 🔒 Security & Authentication
+
+The backend implements strict Role-Based Access Control (RBAC). 
+All protected routes verify an incoming JWT Bearer token and check the authenticated user's `role` against an allowed list:
+
+```typescript
+// Example from routes
+router.use(verifyToken);
+router.use(requireRole([UserRole.DOCTOR, UserRole.NURSE]));
+```
+
+### Supported Roles:
+`ADMIN`, `DOCTOR`, `NURSE`, `PHARMACIST`, `LAB_TECHNICIAN`, `RECEPTIONIST`, `PATIENT`, `USER`
+
+---
+
+## 📡 Real-time Events (WebSockets)
+
+Socket.io is integrated tightly into the Express server to broadcast changes instantly without requiring the client to poll:
+
+- `consultation_saved`: Notifies doctors of updated notes.
+- `call_bell_created` / `call_bell_updated`: Instantly alerts nurses of patient needs.
+- `prescription_created`: Pushes new scripts straight to the pharmacy queue.
+- `order_created`: Notifies the lab of new diagnostic requirements.
+
+---
+
+## 🛠️ Development Setup
+
+1. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Environment Configuration:**
+   Create a `.env` file in the `server` directory and add:
+   ```env
+   PORT=5001
+   MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/healos
+   JWT_SECRET=super_secret_jwt_key
+   RAZORPAY_KEY_ID=your_razorpay_key
+   RAZORPAY_KEY_SECRET=your_razorpay_secret
+   ```
+
+3. **Run Development Server (with hot reload):**
+   ```bash
+   npm run dev
+   ```
+
+4. **Run Tests:**
+   ```bash
+   npm run test
+   ```
+
+---
+
+## 🚢 Deployment
+
+The backend is configured for simple deployment to platforms like **Render** or **Heroku**.
+The `package.json` includes `build` (`tsc`) and `start` (`node dist/app.js`) scripts.
+
+1. Connect your repository to Render.
+2. Select the `server` folder as the root directory.
+3. Use the build command: `npm install && npm run build`.
+4. Use the start command: `npm start`.
+5. Don't forget to populate your Environment Variables in the Render dashboard!

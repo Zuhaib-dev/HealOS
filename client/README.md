@@ -1,64 +1,86 @@
-<div align="center">
-  <h1>💻 HealOS Client</h1>
-  <p>The frontend application for HealOS, built with Next.js 15.</p>
-</div>
+# HealOS Frontend 🖥️
 
-## 🛠 Tech Stack
+![Client Banner](https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=2070&auto=format&fit=crop)
 
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
-- **Animations**: [Framer Motion](https://www.framer.com/motion/)
-- **State Management**: [Zustand](https://docs.pmnd.rs/zustand/getting-started/introduction)
-- **Data Fetching**: React Query / Custom API Client
-
-## 📂 Directory Structure
-
-```
-client/
-└── src/
-    ├── app/           # Next.js App Router (Pages, Layouts, API Routes)
-    ├── components/    # Reusable UI components, forms, and charts
-    ├── hooks/         # Custom React hooks
-    ├── lib/           # Utility functions and API client setup
-    ├── store/         # Zustand global state stores
-    └── types/         # Client-specific TypeScript interfaces
-```
-
-## 🚀 Getting Started
-
-Ensure you are in the root directory of the monorepo or inside the `client` directory.
-
-### Running in Development
-
-To start the client in development mode (with Hot Module Replacement):
-
-```bash
-# From the root of the monorepo:
-npm run dev:client
-
-# Or from within the client directory:
-npm run dev
-```
-The application will be available at [http://localhost:3000](http://localhost:3000).
-
-### Building for Production
-
-To create an optimized production build:
-
-```bash
-# From the root of the monorepo:
-npm run build:client
-```
-
-This will output the build artifacts to the `.next` folder, ready for deployment.
-
-## 🎨 Styling & Design
-
-This project utilizes **Tailwind CSS v4** for utility-first styling. The design system features:
-- A glassmorphism aesthetic with floating dashboard elements.
-- A carefully curated dark-mode color palette (teal, soft blue, dark backgrounds).
-- Smooth micro-interactions powered by **Framer Motion**.
+The frontend application for HealOS, built with **Next.js** (App Router), **React 19**, and **Tailwind CSS v4**. It serves as the primary interface for all 7 user roles (Admin, Doctor, Nurse, Pharmacist, Lab Technician, Receptionist, and Patient), providing a highly responsive, real-time experience.
 
 ---
-*Part of the [HealOS Monorepo](../README.md).*
+
+## 🚀 Technologies Used
+
+- **Framework**: Next.js (App Router)
+- **UI Library**: React 19
+- **Styling**: Tailwind CSS v4, Framer Motion for animations
+- **State Management**: Zustand (Global Auth/Theme State), React Query (Async Server State)
+- **Components**: Radix UI (Unstyled, accessible primitives), Lucide Icons
+- **Real-time**: Socket.io-client
+- **Payments**: Razorpay Checkout SDK
+- **Forms & Validation**: React Hook Form + Zod
+
+---
+
+## 📂 Project Structure
+
+```text
+client/
+├── cypress/                # E2E Tests for clinical flows
+├── public/                 # Static assets and images
+├── src/
+│   ├── app/                # Next.js App Router pages and layouts
+│   ├── components/         # Reusable UI components & Workspace specific panels
+│   │   ├── admin/          # Admin-specific panels
+│   │   ├── doctor/         # Doctor-specific panels
+│   │   ├── nurse/          # Nurse-specific panels
+│   │   ├── patient/        # Patient-specific panels
+│   │   ├── pharmacy/       # Pharmacy-specific panels
+│   │   ├── lab/            # Lab-specific panels
+│   │   └── workspace/      # Shared dashboard shells and layout wrappers
+│   ├── lib/                # API clients, Socket configuration, Utility functions
+│   └── store/              # Zustand global state (Auth, Theme)
+├── next.config.ts          # Next.js configuration
+├── tailwind.config.ts      # Tailwind CSS v4 configuration
+└── package.json
+```
+
+---
+
+## ⚡ Key Features
+
+- **Role-based Dashboards**: Dynamically renders distinct navigation and panels based on the authenticated user's role.
+- **Real-time Data Streams**: Uses Socket.io to push live updates for Call Bells, Lab Reports, Appointments, and eMAR modifications directly to the active components.
+- **Optimistic UI Updates**: Instant feedback on UI interactions (like completing tasks or administering medications) while syncing with the backend in the background.
+- **Responsive Layout**: Adapts gracefully to mobile devices (great for Nurses logging eMAR at the bedside) and large desktop monitors (ideal for Admins and Doctors).
+
+---
+
+## 🛠️ Development Setup
+
+1. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Environment Configuration:**
+   Create a `.env.local` file in the `client` directory and populate it with the following:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:5001/api/v1
+   NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key
+   ```
+
+3. **Run Development Server:**
+   ```bash
+   npm run dev
+   ```
+   *The app will be available at `http://localhost:3000`.*
+
+4. **Run E2E Tests (Cypress):**
+   ```bash
+   npx cypress open
+   ```
+
+---
+
+## 🚢 Deployment
+
+The client is optimized for deployment on **Vercel**.
+Simply connect your repository to Vercel, set the Root Directory to `client`, and configure your Environment Variables (`NEXT_PUBLIC_API_URL`). Vercel will automatically detect Next.js and build the project using `next build`.

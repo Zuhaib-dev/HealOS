@@ -39,3 +39,12 @@ export const fetchLabStatsApi = async () => {
   const response = await apiClient.get("/lab/stats");
   return response.data;
 };
+
+export const uploadLabReportApi = async (orderId: string, formData: FormData) => {
+  const response = await apiClient.post(`/lab/reports/${orderId}/upload`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};

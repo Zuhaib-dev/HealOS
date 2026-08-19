@@ -15,6 +15,9 @@ router.patch("/collections/:id/collect", markCollected);
 router.get("/samples", getSamples);
 router.get("/validation", getPendingValidation);
 router.patch("/validation/:id", validateReport);
+import { upload } from "../controllers/radiology.controller.js";
+import { uploadLabReport } from "../controllers/lab.controller.js";
+router.post("/reports/:id/upload", upload.single("file"), uploadLabReport);
 
 router.get("/analysers", getAnalysers);
 router.get("/critical", getCriticalValues);

@@ -1,6 +1,55 @@
 import { Request, Response } from "express";
 import { DiagnosticOrder, DiagnosticReport, LabAnalyser } from "../models/index.js";
 import { getIO } from "../socket.js";
+import { AppError } from "../middleware/error-handler.js";
+import fs from "fs";
+import path from "path";
+
+export const uploadLabReport = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params; // Order ID
+    const uploadedBy = req.user?.id;
+    const file = req.file;
+
+    if (!file) {
+      throw new AppError("Please upload a PDF or Image file", 400);
+    }
+
+    const order = await DiagnosticOrder.findById(id);
+    if (!order) {
+      fs.unlinkSync(file.path);
+      throw new AppError("Diagnostic order not found", 404);
+    }
+
+    const fileUrl = `/uploads/reports/${file.filename}`;
+
+    const report = await DiagnosticReport.create({
+      patient: order.patient,
+      order: order._id,
+      uploadedBy,
+      fileUrl,
+      fileName: file.originalname,
+      title: "Lab Result - " + order.testName,
+      state: "pending sign",
+    });
+
+    order.status = "REPORTED" as any;
+    await order.save();
+
+    res.status(201).json({
+      status: "success",
+      data: { report, order },
+    });
+  } catch (error: any) {
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(error.statusCode || 500).json({
+      status: "error",
+      message: error.message || "Failed to upload report",
+    });
+  }
+};
 
 export const getCollections = async (_req: Request, res: Response) => {
   try {

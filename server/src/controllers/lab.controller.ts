@@ -3,7 +3,7 @@ import { DiagnosticOrder, DiagnosticReport, LabAnalyser } from "../models/index.
 import { getIO } from "../socket.js";
 import { AppError } from "../middleware/error-handler.js";
 import fs from "fs";
-import path from "path";
+
 
 export const uploadLabReport = async (req: Request, res: Response) => {
   try {

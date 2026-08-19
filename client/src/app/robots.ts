@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/', '/dashboard/', '/admin/', '/doctor/', '/patient/', '/nurse/', '/reception/', '/pharmacy/', '/radiology/', '/lab/'],
     },
-    sitemap: 'https://heal-os-client.vercel.app/sitemap.xml',
+    sitemap: 'https://healos-theta.vercel.app/sitemap.xml',
   }
 }

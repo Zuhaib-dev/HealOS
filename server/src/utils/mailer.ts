@@ -31,14 +31,21 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<boolean>
       return true;
     }
 
+    // Force Node to resolve to IPv4 first for Nodemailer
+    const dns = await import('dns');
+    const { address } = await dns.promises.lookup(envConfig.SMTP_HOST, { family: 4 });
+
     const transporter = nodemailer.createTransport({
-      host: envConfig.SMTP_HOST,
+      host: address, // Use the resolved IPv4 address directly
       port: envConfig.SMTP_PORT,
       secure: envConfig.SMTP_PORT === 465,
       auth: {
         user: envConfig.SMTP_USER,
         pass: envConfig.SMTP_PASS,
       },
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
     await transporter.sendMail({

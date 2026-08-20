@@ -30,8 +30,8 @@
     "mongoose": "^8",
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
+    "nodemailer": "^8.0.11",
     "razorpay": "^2.9.8",
-    "resend": "^6.21.0",
     "socket.io": "^4.8.3",
     "zod": "^3.24"
   },
@@ -45,6 +45,7 @@
     "@types/morgan": "^1.9.9",
     "@types/multer": "^2.2.0",
     "@types/node": "^22",
+    "@types/nodemailer": "^8.0.1",
     "@types/supertest": "^7.2.1",
     "@typescript-eslint/eslint-plugin": "^8",
     "@typescript-eslint/parser": "^8",

@@ -30,7 +30,7 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<boolean>
     // you MUST use 'onboarding@resend.dev' as the from address, 
     // and you can only send emails to the email address registered with your Resend account.
     // We try to use your EMAIL_FROM, but if it's unverified, Resend will throw an error.
-    const { data, error } = await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: "onboarding@resend.dev", // STRICTLY REQUIRED for unverified domains
       to: [email],
       subject: `[HealOS] Your Verification Code: ${otp}`,

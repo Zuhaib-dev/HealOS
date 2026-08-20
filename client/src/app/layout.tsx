@@ -62,6 +62,9 @@ export const metadata: Metadata = {
     shortcut: "/icon.svg",
     apple: "/icon.svg",
   },
+  verification: {
+    google: "terZRkP5xAisMxUTVWZ_rW6MXSuOeuAFITryD0CBDxA",
+  },
 };
 
 import { RealtimeSocketProvider } from "@/components/providers/socket-provider";

@@ -1,5 +1,8 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { envConfig } from "../config/env";
+
+// Initialize Resend with the provided API key
+const resend = new Resend(envConfig.RESEND_API_KEY || "fallback_key");
 
 export const sendOtpEmail = async (email: string, otp: string): Promise<boolean> => {
   try {
@@ -23,43 +26,30 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<boolean>
       </div>
     `;
 
-    // If SMTP credentials aren't set in dev, log to console as fallback
-    if (!envConfig.SMTP_USER || !envConfig.SMTP_PASS) {
-      console.log(`\n==========================================`);
-      console.log(`📧 [DEV FALLBACK] OTP Code for ${email}: ${otp}`);
-      console.log(`==========================================\n`);
-      return true;
-    }
-
-    // Force Node to resolve to IPv4 first for Nodemailer
-    const dns = await import('dns');
-    const { address } = await dns.promises.lookup(envConfig.SMTP_HOST, { family: 4 });
-
-    const transporter = nodemailer.createTransport({
-      host: address, // Use the resolved IPv4 address directly
-      port: envConfig.SMTP_PORT,
-      secure: envConfig.SMTP_PORT === 465,
-      auth: {
-        user: envConfig.SMTP_USER,
-        pass: envConfig.SMTP_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
-
-    await transporter.sendMail({
-      from: envConfig.EMAIL_FROM,
-      to: email,
+    // Important for Resend: If you haven't verified a custom domain yet,
+    // you MUST use 'onboarding@resend.dev' as the from address, 
+    // and you can only send emails to the email address registered with your Resend account.
+    // We try to use your EMAIL_FROM, but if it's unverified, Resend will throw an error.
+    const { data, error } = await resend.emails.send({
+      from: "onboarding@resend.dev", // STRICTLY REQUIRED for unverified domains
+      to: [email],
       subject: `[HealOS] Your Verification Code: ${otp}`,
       html: htmlContent,
     });
 
-    console.log(`✅ Verification OTP sent to ${email}`);
+    if (error) {
+      console.error("❌ Resend API Error:", error);
+      console.log(`\n==========================================`);
+      console.log(`📧 [DEV EMERGENCY FALLBACK] OTP Code for ${email}: ${otp}`);
+      console.log(`==========================================\n`);
+      return false;
+    }
+
+    console.log(`✅ Verification OTP sent to ${email} via Resend`);
     return true;
   } catch (error) {
-    console.error("❌ Failed to send OTP email:", error);
-    // Print fallback OTP in console so development is never blocked by SMTP errors
+    console.error("❌ Failed to execute Resend API request:", error);
+    // Print fallback OTP in console so development is never blocked
     console.log(`\n==========================================`);
     console.log(`📧 [DEV EMERGENCY FALLBACK] OTP Code for ${email}: ${otp}`);
     console.log(`==========================================\n`);

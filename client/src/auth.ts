@@ -22,7 +22,7 @@ const syncGoogleUserWithBackend = async (profile: {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-auth-sync-secret": process.env.AUTH_SYNC_SECRET || "",
+      "x-sync-secret": process.env.AUTH_SYNC_SECRET || "",
     },
     body: JSON.stringify({
       email: profile.email,

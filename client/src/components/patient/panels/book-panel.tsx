@@ -257,7 +257,7 @@ export function BookPanel() {
                   key={d.id}
                   type="button"
                   onClick={() => setDept(d)}
-                  className={`snap-start shrink-0 min-w-[140px] px-4 py-4 rounded-xl border transition-all text-left flex flex-col gap-2 ${
+                  className={`snap-start shrink-0 min-w-35 px-4 py-4 rounded-xl border transition-all text-left flex flex-col gap-2 ${
                     dept.id === d.id
                       ? "border-primary bg-primary text-primary-foreground shadow-md -translate-y-1"
                       : "border-border/60 bg-card hover:bg-muted hover:border-border"

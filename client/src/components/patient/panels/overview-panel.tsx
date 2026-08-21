@@ -170,7 +170,7 @@ export function OverviewPanel() {
         {/* BMI & Health Stats row */}
         {profile?.height && profile?.weight && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            <Card className="shadow-sm border-border/60 bg-gradient-to-br from-indigo-500/10 to-transparent">
+            <Card className="shadow-sm border-border/60 bg-linear-to-br from-indigo-500/10 to-transparent">
               <CardContent className="p-5 flex flex-col justify-center">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                   Body Mass Index (BMI)
@@ -255,7 +255,7 @@ export function OverviewPanel() {
             </Card>
 
             <Card className="shadow-sm border-border/60 overflow-hidden relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent pointer-events-none" />
               <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
                 <div>
                   <h3 className="font-mono text-2xl font-bold tracking-tight text-foreground">

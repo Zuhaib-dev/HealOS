@@ -359,7 +359,7 @@ function ConsultationForm({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="fixed inset-0 bg-background z-[100] flex flex-col overflow-y-auto w-full h-full"
+      className="fixed inset-0 bg-background z-100 flex flex-col overflow-y-auto w-full h-full"
     >
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-(--hairline) px-4 py-3 flex items-center justify-between">
         <div>

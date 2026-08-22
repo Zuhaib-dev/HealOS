@@ -2,6 +2,10 @@
 // HealOS Server — Application Entry Point
 // ============================================
 import "dotenv/config";
+import dns from "node:dns";
+// Render IPv6 workaround for Nodemailer and other outbound requests
+dns.setDefaultResultOrder("ipv4first");
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";

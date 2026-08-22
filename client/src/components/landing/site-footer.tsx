@@ -1,17 +1,30 @@
+import Link from "next/link";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 
 const columns = [
   {
     title: "Platform",
-    links: ["Record", "Roster", "Radiology", "Ledger", "Governance"],
+    links: [
+      { label: "HealOS", href: "/" },
+      { label: "Features", href: "/testimonials#features" },
+      { label: "About", href: "/about" },
+    ],
   },
   {
-    title: "Company",
-    links: ["About", "Clinical advisory", "Careers", "Press"],
+    title: "Portals",
+    links: [
+      { label: "Clinicians", href: "/doctor" },
+      { label: "Patients", href: "/patient" },
+      { label: "Radiology", href: "/radiology" },
+      { label: "Console", href: "/admin" },
+    ],
   },
   {
-    title: "Resources",
-    links: ["Documentation", "Status", "Security", "Changelog"],
+    title: "Account",
+    links: [
+      { label: "Sign In", href: "/login" },
+      { label: "Get Started →", href: "/register" },
+    ],
   },
 ];
  
@@ -36,13 +49,13 @@ export function SiteFooter() {
               <p className="mono-label text-brass">{col.title}</p>
               <ul className="mt-5 space-y-3">
                 {col.links.map((l) => (
-                  <li key={l}>
-                    <a
-                      href="#top"
+                  <li key={l.label}>
+                    <Link
+                      href={l.href}
                       className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                     >
-                      {l}
-                    </a>
+                      {l.label}
+                    </Link>
                   </li>
                 ))}
               </ul>

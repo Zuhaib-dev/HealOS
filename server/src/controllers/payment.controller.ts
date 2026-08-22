@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import Razorpay from "razorpay";
 import crypto from "crypto";
-import { Appointment, Invoice } from "../models";
-import { AppError } from "../middleware/error-handler";
+import { Appointment, Invoice } from "../models/index.js";
+import { AppError } from "../middleware/error-handler.js";
+import { getIO } from "../socket.js";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_V0P16tZ8KXX30y",
@@ -90,6 +91,11 @@ export const verifyPayment = async (req: Request, res: Response) => {
           }
         }
         await invoice.save();
+        
+        const io = getIO();
+        if (io) {
+          io.emit("invoice_paid", { invoiceId: invoice._id });
+        }
       }
     }
 

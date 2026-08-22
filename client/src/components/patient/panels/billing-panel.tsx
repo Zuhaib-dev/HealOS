@@ -184,21 +184,6 @@ export function BillingPanel() {
     }
   };
 
-  const handleCashPay = async (id: string) => {
-    try {
-      setProcessing(id);
-      const res = await payInvoiceApi(id);
-      if (res.success) {
-        toast.success("Paid with Cash (Demo)!");
-        refetch();
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to process payment");
-    } finally {
-      setProcessing(null);
-    }
-  };
-
   const invoiceRows = data?.invoices || [];
   const outstandingAmount = invoiceRows
     .filter((i) => i.status !== "PAID" && i.status !== "CANCELLED")
@@ -268,12 +253,6 @@ export function BillingPanel() {
                           disabled={processing === b._id}
                         >
                           {processing === b._id ? "Processing..." : "Pay Online"}
-                        </ActionButton>
-                        <ActionButton 
-                          onClick={() => handleCashPay(b._id)}
-                          disabled={processing === b._id}
-                        >
-                          Cash (Demo)
                         </ActionButton>
                       </>
                     )}

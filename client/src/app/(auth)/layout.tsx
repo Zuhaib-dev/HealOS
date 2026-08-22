@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Authenticate | HealOS",
@@ -44,12 +45,24 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* Right Pane - Auth Form */}
       <div className="relative flex w-full flex-1 flex-col justify-center bg-background px-5 py-12 sm:px-8 lg:w-1/2 lg:px-20 xl:px-24">
+        {/* Back to Home (desktop) */}
+        <Link
+          href="/"
+          className="absolute top-6 left-6 hidden lg:inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors sm:top-8 sm:left-8"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="font-mono text-xs">Home</span>
+        </Link>
+
         <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-50 flex items-center gap-4">
           <ThemeToggle />
         </div>
         
-        {/* Mobile Logo */}
-        <div className="absolute top-6 left-6 lg:hidden">
+        {/* Mobile Logo + Back Arrow */}
+        <div className="absolute top-6 left-6 lg:hidden flex items-center gap-3">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
           <Link href="/" className="inline-flex items-center gap-2">
             <HealOSLogo size={28} />
           </Link>

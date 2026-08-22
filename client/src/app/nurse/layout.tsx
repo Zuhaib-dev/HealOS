@@ -6,12 +6,12 @@ import { RoleGuard } from "@/components/auth/role-guard";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 
 const sections = [
-  { id: "rounds", label: "Ward Rounds", icon: ClipboardList },
-  { id: "emar", label: "eMAR / Meds", icon: Pill },
-  { id: "wounds", label: "Wound Care", icon: Bandage },
-  { id: "fluids", label: "Fluid Balance", icon: Droplet },
-  { id: "bells", label: "Call Bells", icon: Bell },
-  { id: "handover", label: "Shift Handover", icon: MessagesSquare },
+  { id: "rounds", label: "Rounds", icon: ClipboardList },
+  { id: "emar", label: "Meds", icon: Pill },
+  { id: "wounds", label: "Wounds", icon: Bandage },
+  { id: "fluids", label: "Fluids", icon: Droplet },
+  { id: "bells", label: "Bells", icon: Bell },
+  { id: "handover", label: "Handover", icon: MessagesSquare },
 ];
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {

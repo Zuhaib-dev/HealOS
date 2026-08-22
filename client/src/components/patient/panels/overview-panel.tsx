@@ -282,7 +282,7 @@ export function OverviewPanel() {
                 <p className="text-[10px] mono-label text-primary uppercase tracking-wider mb-2">Upcoming</p>
                 <div className="flex justify-between items-start gap-4">
                   <div>
-                    <p className="font-semibold text-foreground">{upcomingAppointments[0].doctorName}</p>
+                    <p className="font-semibold text-foreground">Dr. {upcomingAppointments[0].doctor.name}</p>
                     <p className="text-sm text-muted-foreground">{upcomingAppointments[0].department}</p>
                   </div>
                   <div className="text-right">

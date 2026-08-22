@@ -5,6 +5,13 @@ export const metadata: Metadata = {
   description: "Hospital administration, staff management, and analytics.",
 };
 
+import { RoleGuard } from "@/components/auth/role-guard";
+import { AdminShell } from "@/components/admin/admin-shell";
+
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <RoleGuard allowedRoles={["ADMIN"]}>
+      <AdminShell>{children}</AdminShell>
+    </RoleGuard>
+  );
 }

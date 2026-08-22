@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Activity,
   BedDouble,
@@ -46,17 +47,18 @@ export const sections = [
 export type SectionId = (typeof sections)[number]["id"];
 
 export function AdminShell({
-  active,
-  onSelect,
   children,
 }: {
-  active: SectionId;
-  onSelect: (id: SectionId) => void;
   children: ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const { user } = useAuthStore();
-  const currentSection = sections.find((s) => s.id === active);
+  const pathname = usePathname();
+
+  // Determine current section based on URL
+  const currentSection = sections.find((s) => 
+    s.id === "overview" ? pathname === "/admin" : pathname.startsWith(`/admin/${s.id}`)
+  ) || sections[0];
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -132,14 +134,14 @@ export function AdminShell({
           </div>
 
           <nav className="flex flex-col gap-1">
-            {sections.map((s, i) => {
+            {sections.map((s) => {
               const Icon = s.icon;
-              const isActive = active === s.id;
+              const isActive = s.id === "overview" ? pathname === "/admin" : pathname.startsWith(`/admin/${s.id}`);
+              const href = s.id === "overview" ? "/admin" : `/admin/${s.id}`;
               return (
-                <button
+                <Link
                   key={s.id}
-                  type="button"
-                  onClick={() => onSelect(s.id)}
+                  href={href}
                   className={`mono-label group relative flex items-center gap-3 px-3.5 py-2 rounded-lg text-left transition-all cursor-pointer text-xs ${
                     isActive
                       ? "bg-primary text-primary-foreground font-semibold shadow-sm"
@@ -148,7 +150,7 @@ export function AdminShell({
                 >
                   <Icon className={`size-3.5 ${isActive ? "text-primary-foreground" : "text-primary/70 group-hover:text-primary"}`} />
                   <span className="truncate">{s.label}</span>
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -171,20 +173,23 @@ export function AdminShell({
         <main className="min-w-0 flex-1">
           {/* Mobile Header Tabs */}
           <div className="border-b border-border/60 flex gap-1.5 overflow-x-auto p-2 bg-card/40 md:hidden">
-            {sections.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => onSelect(s.id)}
-                className={`mono-label text-xs shrink-0 px-3 py-1.5 rounded-md transition-colors ${
-                  active === s.id
-                    ? "bg-primary text-primary-foreground font-semibold"
-                    : "text-muted-foreground bg-muted/30"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
+            {sections.map((s) => {
+              const isActive = s.id === "overview" ? pathname === "/admin" : pathname.startsWith(`/admin/${s.id}`);
+              const href = s.id === "overview" ? "/admin" : `/admin/${s.id}`;
+              return (
+                <Link
+                  key={s.id}
+                  href={href}
+                  className={`mono-label text-xs shrink-0 px-3 py-1.5 rounded-md transition-colors ${
+                    isActive
+                      ? "bg-primary text-primary-foreground font-semibold"
+                      : "text-muted-foreground bg-muted/30"
+                  }`}
+                >
+                  {s.label}
+                </Link>
+              );
+            })}
           </div>
           {children}
         </main>

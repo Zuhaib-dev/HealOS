@@ -79,8 +79,13 @@ Socket.io is integrated tightly into the Express server to broadcast changes ins
    JWT_SECRET=super_secret_jwt_key
    RAZORPAY_KEY_ID=your_razorpay_key
    RAZORPAY_KEY_SECRET=your_razorpay_secret
+   GMAIL_CLIENT_ID=your_google_oauth_client_id
+   GMAIL_CLIENT_SECRET=your_google_oauth_client_secret
+   GMAIL_REFRESH_TOKEN=your_google_oauth_refresh_token
+   GMAIL_USER=your-email@gmail.com
+   GMAIL_FROM="HealOS <your-email@gmail.com>"
    RESEND_API_KEY=your_resend_api_key
-   EMAIL_FROM="HealOS <verify@your-domain.com>"
+   EMAIL_FROM="HealOS <noreply@send.zuahibrashid.com>"
    ```
 
 3. **Run Development Server (with hot reload):**
@@ -108,4 +113,4 @@ The `package.json` includes `build` (`tsc`) and `start` (`node dist/app.js`) scr
 
 ### Production email delivery
 
-Render free web services block outbound SMTP ports `25`, `465`, and `587`. For OTP emails on Render free, configure `RESEND_API_KEY` and set `EMAIL_FROM` to a sender address from a verified Resend domain. The server will use Resend over HTTPS in production when `RESEND_API_KEY` is present, and fall back to SMTP only when API email is not configured.
+Render free web services block outbound SMTP ports `25`, `465`, and `587`. For OTP emails on Render free without buying a domain, configure Gmail API credentials: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `GMAIL_USER`, and `GMAIL_FROM`. This sends through Google's HTTPS API instead of SMTP. If you have a verified sending domain, you can use `RESEND_API_KEY` instead. SMTP is kept for local development or hosts that allow SMTP egress.

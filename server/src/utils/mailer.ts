@@ -2,6 +2,66 @@ import nodemailer from "nodemailer";
 import { envConfig } from "../config/env";
 
 const isSmtpConfigured = Boolean(envConfig.SMTP_USER && envConfig.SMTP_PASS);
+const isGmailApiConfigured = Boolean(
+  envConfig.GMAIL_CLIENT_ID &&
+    envConfig.GMAIL_CLIENT_SECRET &&
+    envConfig.GMAIL_REFRESH_TOKEN &&
+    envConfig.GMAIL_USER
+);
+
+const encodeBase64Url = (value: string): string => {
+  return Buffer.from(value).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+};
+
+const sendWithGmailApi = async (email: string, otp: string, html: string): Promise<void> => {
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      client_id: envConfig.GMAIL_CLIENT_ID || "",
+      client_secret: envConfig.GMAIL_CLIENT_SECRET || "",
+      refresh_token: envConfig.GMAIL_REFRESH_TOKEN || "",
+      grant_type: "refresh_token",
+    }),
+  });
+
+  if (!tokenResponse.ok) {
+    const errorBody = await tokenResponse.text();
+    throw new Error(`Gmail token refresh failed with ${tokenResponse.status}: ${errorBody}`);
+  }
+
+  const tokenBody = (await tokenResponse.json()) as { access_token?: string };
+  if (!tokenBody.access_token) {
+    throw new Error("Gmail token refresh response did not include an access token.");
+  }
+
+  const from = envConfig.GMAIL_FROM || `HealOS <${envConfig.GMAIL_USER}>`;
+  const mimeMessage = [
+    `From: ${from}`,
+    `To: ${email}`,
+    `Subject: [HealOS] Your Verification Code: ${otp}`,
+    "MIME-Version: 1.0",
+    "Content-Type: text/html; charset=UTF-8",
+    "",
+    html,
+  ].join("\r\n");
+
+  const sendResponse = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${tokenBody.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ raw: encodeBase64Url(mimeMessage) }),
+  });
+
+  if (!sendResponse.ok) {
+    const errorBody = await sendResponse.text();
+    throw new Error(`Gmail API send failed with ${sendResponse.status}: ${errorBody}`);
+  }
+};
 
 const sendWithResend = async (email: string, otp: string, html: string): Promise<void> => {
   const response = await fetch("https://api.resend.com/emails", {
@@ -70,6 +130,12 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<boolean>
       </div>
     `;
 
+    if (isGmailApiConfigured) {
+      await sendWithGmailApi(email, otp, htmlContent);
+      console.log(`✅ Verification OTP sent to ${email} via Gmail API`);
+      return true;
+    }
+
     if (envConfig.RESEND_API_KEY) {
       await sendWithResend(email, otp, htmlContent);
       console.log(`✅ Verification OTP sent to ${email} via Resend`);
@@ -79,7 +145,9 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<boolean>
     // If email credentials aren't set in dev, log to console as fallback
     if (!isSmtpConfigured) {
       if (envConfig.NODE_ENV === "production") {
-        console.error("❌ Email delivery is not configured. Set RESEND_API_KEY or SMTP credentials.");
+        console.error(
+          "❌ Email delivery is not configured. Set Gmail API, RESEND_API_KEY, or SMTP credentials."
+        );
         return false;
       }
 

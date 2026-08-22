@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { getOrdersAndMedsApi } from "@/lib/api/doctor";
+import { getSocket } from "@/lib/socket";
 
 /* ---------- primitives ---------- */
 
@@ -86,7 +87,7 @@ export function OrdersPanel() {
   const [dataList, setDataList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadData = () => {
     getOrdersAndMedsApi()
       .then(res => {
         const { orders = [], consultations = [] } = res.data || {};
@@ -98,6 +99,18 @@ export function OrdersPanel() {
       })
       .catch(() => toast.error("Failed to load orders"))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadData();
+
+    const socket = getSocket();
+    if (socket) {
+      socket.on("appointment_updated", loadData);
+      return () => {
+        socket.off("appointment_updated", loadData);
+      };
+    }
   }, []);
 
   return (

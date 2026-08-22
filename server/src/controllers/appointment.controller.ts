@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { Appointment, AppointmentStatus, AppointmentType, PaymentMethod as ApptPaymentMethod, PaymentStatus as ApptPaymentStatus, User, UserRole, ProfessionalProfile, Invoice, InvoiceStatus, InvoicePaymentMethod } from "../models";
+import { Appointment, AppointmentStatus, AppointmentType, PaymentMethod as ApptPaymentMethod, PaymentStatus as ApptPaymentStatus, User, UserRole, ProfessionalProfile, Invoice, InvoiceStatus, InvoicePaymentMethod } from "../models/index.js";
 import { z } from "zod";
+import { getIO } from "../socket.js";
 
 const bookAppointmentSchema = z.object({
   doctorId: z.string().min(1, "Doctor selection is required"),
@@ -94,6 +95,11 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
       .populate("doctor", "name email avatarUrl phone")
       .populate("patient", "name email phone avatarUrl");
 
+    const io = getIO();
+    if (io) {
+      io.emit("appointment_created", { appointmentId: appointment._id, doctorId });
+    }
+
     res.status(StatusCodes.CREATED).json({
       success: true,
       message: "Appointment booked successfully!",
@@ -131,18 +137,28 @@ export const getPatientAppointments = async (req: Request, res: Response): Promi
   }
 };
 
-// 3. Fetch Doctor's Assigned Appointments
+// 3. Fetch Doctor's Assigned Appointments (with Pagination and Sort)
 export const getDoctorAppointments = async (req: Request, res: Response): Promise<void> => {
   try {
     const doctorId = req.user?._id;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const totalCount = await Appointment.countDocuments({ doctor: doctorId });
 
     const appointments = await Appointment.find({ doctor: doctorId })
       .populate("patient", "name email phone avatarUrl")
-      .sort({ date: 1, timeSlot: 1 });
+      .sort({ date: -1, timeSlot: -1 })
+      .skip(skip)
+      .limit(limit);
 
     res.status(StatusCodes.OK).json({
       success: true,
       count: appointments.length,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
       appointments,
     });
   } catch (error) {
@@ -188,6 +204,11 @@ export const updateAppointmentStatus = async (req: Request, res: Response): Prom
     const updated = await Appointment.findById(id)
       .populate("doctor", "name email avatarUrl")
       .populate("patient", "name email avatarUrl");
+
+    const io = getIO();
+    if (io) {
+      io.emit("appointment_updated", { appointmentId: id, status: parsed.data.status });
+    }
 
     res.status(StatusCodes.OK).json({
       success: true,

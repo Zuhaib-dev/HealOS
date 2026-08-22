@@ -1,11 +1,12 @@
 "use client";
 
-import { UserPlus, Users, Monitor } from "lucide-react";
+import { UserPlus, Users, Monitor, LayoutDashboard } from "lucide-react";
 
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 
 const sections = [
-  { id: "registration", label: "New Patient", icon: UserPlus },
+  { id: "overview", label: "Home", icon: LayoutDashboard },
+  { id: "new", label: "New Patient", icon: UserPlus },
   { id: "queue", label: "Waiting Room", icon: Users },
   { id: "counter", label: "Front Counter", icon: Monitor },
 ];

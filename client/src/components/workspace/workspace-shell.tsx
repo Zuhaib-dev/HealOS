@@ -84,7 +84,7 @@ export function WorkspaceShell({
             <span className="bg-destructive absolute top-1 right-1 size-1.5 animate-pulse rounded-full" />
           </button>
           <ThemeToggle />
-          <div className="hairline-l hidden items-center gap-3 pl-4 sm:flex">
+          <div className="hairline-l flex items-center gap-2 pl-3 sm:gap-3 sm:pl-4">
             <UserProfileMenu />
           </div>
         </div>

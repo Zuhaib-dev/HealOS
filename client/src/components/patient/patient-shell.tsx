@@ -118,7 +118,7 @@ export function PatientShell({
 
             <ThemeToggle />
 
-            <div className="border-l border-border/60 pl-3 hidden md:block">
+            <div className="border-l border-border/60 pl-3 block">
               <UserProfileMenu />
             </div>
           </div>

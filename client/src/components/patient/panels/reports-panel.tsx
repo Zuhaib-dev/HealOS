@@ -114,7 +114,7 @@ export function ReportsPanel() {
       formData.append("file", file);
 
       const token = useAuthStore.getState().token;
-      const res = await fetch("http://localhost:5001/api/patient/upload", {
+      const res = await fetch("http://localhost:5001/api/v1/patient/upload", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

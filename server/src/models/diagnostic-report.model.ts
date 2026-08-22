@@ -24,7 +24,7 @@ export interface IDiagnosticReport extends Document {
 
 const diagnosticReportSchema = new Schema<IDiagnosticReport>(
   {
-    order: { type: Schema.Types.ObjectId, ref: "DiagnosticOrder", required: true },
+    order: { type: Schema.Types.ObjectId, ref: "DiagnosticOrder" },
     patient: { type: Schema.Types.ObjectId, ref: "User", required: true },
     radiologist: { type: Schema.Types.ObjectId, ref: "User" },
     uploadedBy: { type: String },

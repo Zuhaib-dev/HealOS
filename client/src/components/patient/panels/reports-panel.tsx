@@ -96,7 +96,46 @@ function Trend({ series }: { series: number[] }) {
 
 export function ReportsPanel() {
   const [q, setQ] = useState("");
-  const { data, isLoading } = usePatientDashboard();
+  const { data, isLoading, refetch } = usePatientDashboard();
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error("File size exceeds 25 MB limit");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const token = useAuthStore.getState().token;
+      const res = await fetch("http://localhost:5001/api/patient/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (res.ok && json.status === "success") {
+        toast.success("Document uploaded successfully");
+        refetch();
+      } else {
+        throw new Error(json.message || "Failed to upload document");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred during upload");
+    } finally {
+      setIsUploading(false);
+      e.target.value = ""; // Reset input
+    }
+  };
 
   const orders = data?.diagnosticOrders || [];
   const reports = data?.diagnosticReports || [];
@@ -238,7 +277,16 @@ export function ReportsPanel() {
               them before the visit. PDF or photo, up to 25 MB.
             </p>
           </div>
-          <ActionButton tone="solid">Upload document</ActionButton>
+          <label className={`relative overflow-hidden cursor-pointer flex items-center justify-center px-4 py-2 bg-foreground text-background font-bold text-xs uppercase tracking-wider rounded-lg transition-all ${isUploading ? "opacity-70 cursor-wait" : "hover:bg-foreground/90"}`}>
+            {isUploading ? "Uploading..." : "Upload document"}
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.dcm"
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+              onChange={handleFileUpload}
+              disabled={isUploading}
+            />
+          </label>
         </div>
       </div>
     </section>

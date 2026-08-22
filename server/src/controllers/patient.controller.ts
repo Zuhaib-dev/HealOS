@@ -166,3 +166,40 @@ export const payInvoice = async (req: Request, res: Response) => {
     });
   }
 };
+
+// ==========================================
+// 4. Upload Document
+// ==========================================
+export const uploadPatientDocument = async (req: Request, res: Response) => {
+  try {
+    const patientId = req.user?._id;
+    if (!patientId) throw new AppError("Unauthorized", 401);
+
+    if (!req.file) {
+      throw new AppError("No file uploaded", 400);
+    }
+
+    const fileUrl = `/uploads/reports/${req.file.filename}`;
+    const fileSizeMB = (req.file.size / (1024 * 1024)).toFixed(2) + " MB";
+
+    const report = new DiagnosticReport({
+      patient: patientId,
+      uploadedBy: req.user?.name || "Patient",
+      fileUrl,
+      fileName: req.file.originalname,
+      fileSize: fileSizeMB,
+      kind: "Prior report",
+      state: "verified",
+    });
+
+    await report.save();
+
+    res.status(201).json({
+      status: "success",
+      message: "Document uploaded successfully",
+      data: report,
+    });
+  } catch (error: any) {
+    throw new AppError(error.message || "Failed to upload document", 500);
+  }
+};

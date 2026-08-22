@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2 } from "lucide-react";
+import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2, Eye } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
 import {
@@ -207,16 +207,17 @@ export function ResultsPanel() {
                     </Td>
                     <Td>
                       <div className="flex items-center gap-2">
-                        {r.fileUrl && (
-                          <a
-                            href={`http://localhost:5001${r.fileUrl}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mono-label hairline px-3 py-1.5 text-accent hover:bg-accent/10"
-                          >
-                            view pdf
-                          </a>
-                        )}
+                            {r.fileUrl && (
+                              <a 
+                                href={r.fileUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"
+                                title="View Document"
+                              >
+                                <Eye className="size-4" />
+                              </a>
+                            )}
                         {isSigned ? (
                           <Pill tone="mute">signed</Pill>
                         ) : (

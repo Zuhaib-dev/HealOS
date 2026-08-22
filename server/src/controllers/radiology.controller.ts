@@ -4,6 +4,14 @@ import path from "path";
 import fs from "fs";
 import { DiagnosticOrder, DiagnosticReport } from "../models/index.js";
 import { AppError } from "../middleware/error-handler.js";
+import ImageKit from "imagekit";
+
+// Initialize ImageKit
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY || "public_key",
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY || "private_key",
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/your_endpoint"
+});
 
 // Ensure uploads directory exists
 const uploadDir = path.join(process.cwd(), "uploads", "reports");
@@ -105,7 +113,17 @@ export const uploadReport = async (req: Request, res: Response) => {
       throw new AppError("Diagnostic order not found", 404);
     }
 
-    const fileUrl = `/uploads/reports/${file.filename}`;
+    let fileUrl = "";
+    if (file) {
+      const fileBuffer = fs.readFileSync(file.path);
+      const uploadResponse = await imagekit.upload({
+        file: fileBuffer,
+        fileName: `radiology_report_${order._id}_${Date.now()}`,
+        folder: "/hms/reports",
+      });
+      fileUrl = uploadResponse.url;
+      fs.unlinkSync(file.path);
+    }
 
     const report = await DiagnosticReport.create({
       patient: order.patient,

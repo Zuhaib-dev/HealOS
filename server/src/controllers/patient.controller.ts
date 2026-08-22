@@ -11,6 +11,15 @@ import {
 import { z } from "zod";
 import { AppError } from "../middleware/error-handler.js";
 import { getIO } from "../socket.js";
+import ImageKit from "imagekit";
+import fs from "fs";
+
+// Initialize ImageKit
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY || "public_key",
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY || "private_key",
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/your_endpoint"
+});
 
 // ==========================================
 // 1. Get Patient Dashboard
@@ -179,8 +188,20 @@ export const uploadPatientDocument = async (req: Request, res: Response) => {
       throw new AppError("No file uploaded", 400);
     }
 
-    const fileUrl = `/uploads/reports/${req.file.filename}`;
     const fileSizeMB = (req.file.size / (1024 * 1024)).toFixed(2) + " MB";
+
+    let fileUrl = "";
+    if (req.file) {
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const uploadResponse = await imagekit.upload({
+        file: fileBuffer,
+        fileName: `patient_report_${patientId}_${Date.now()}`,
+        folder: "/hms/reports",
+      });
+      fileUrl = uploadResponse.url;
+      // clean up temp file
+      fs.unlinkSync(req.file.path);
+    }
 
     const { title } = req.body;
 
@@ -203,6 +224,9 @@ export const uploadPatientDocument = async (req: Request, res: Response) => {
       data: report,
     });
   } catch (error: any) {
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
     throw new AppError(error.message || "Failed to upload document", 500);
   }
 };

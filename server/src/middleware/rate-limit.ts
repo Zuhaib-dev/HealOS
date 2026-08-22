@@ -13,6 +13,7 @@ export const authRateLimiter = rateLimit({
   legacyHeaders: false,
   statusCode: StatusCodes.TOO_MANY_REQUESTS,
   message: authLimitResponse,
+  skip: () => process.env.NODE_ENV === "test",
 });
 
 export const otpRateLimiter = rateLimit({
@@ -25,4 +26,5 @@ export const otpRateLimiter = rateLimit({
     success: false,
     message: "Too many OTP requests. Please wait before trying again.",
   },
+  skip: () => process.env.NODE_ENV === "test",
 });

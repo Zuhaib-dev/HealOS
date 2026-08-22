@@ -1,3 +1,5 @@
+"use client";
+
 export { OverviewPanel } from "./panels/overview-panel";
 export { BookPanel } from "./panels/book-panel";
 export { AppointmentsPanel } from "./panels/appointments-panel";

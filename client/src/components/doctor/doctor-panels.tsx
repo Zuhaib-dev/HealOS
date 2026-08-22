@@ -1,3 +1,5 @@
+"use client";
+
 export { ShiftPanel } from "./panels/Shift-board-panel";
 export { RoundsPanel } from "./panels/My-patients-panel";
 export { ClinicPanel } from "./panels/Clinic-list-panel";

@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Activity,
   Stethoscope,
@@ -42,18 +43,23 @@ const mainMobileTabs = ["shift", "clinic", "rounds", "profile"];
 export type DoctorSectionId = (typeof doctorSections)[number]["id"];
 
 export function DoctorShell({
-  active,
-  onSelect,
   children,
 }: {
-  active: DoctorSectionId;
-  onSelect: (id: DoctorSectionId) => void;
   children: ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const { user } = useAuthStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const currentSection = doctorSections.find((s) => s.id === active);
+  const pathname = usePathname();
+
+  const currentSection = doctorSections.find((s) =>
+    s.id === "shift" ? pathname === "/doctor" : pathname.startsWith(`/doctor/${s.id}`)
+  ) || doctorSections[0];
+
+  // Helper to check if a section is active
+  const isSectionActive = (id: string) => {
+    return id === "shift" ? pathname === "/doctor" : pathname.startsWith(`/doctor/${id}`);
+  };
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -129,14 +135,14 @@ export function DoctorShell({
           </div>
 
           <nav className="flex flex-col gap-1">
-            {doctorSections.map((s, i) => {
+            {doctorSections.map((s) => {
               const Icon = s.icon;
-              const isActive = active === s.id;
+              const isActive = isSectionActive(s.id);
+              const href = s.id === "shift" ? "/doctor" : `/doctor/${s.id}`;
               return (
-                <button
+                <Link
                   key={s.id}
-                  type="button"
-                  onClick={() => onSelect(s.id)}
+                  href={href}
                   className={`mono-label group relative flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-left transition-all cursor-pointer text-xs ${
                     isActive
                       ? "bg-primary text-primary-foreground font-semibold shadow-sm"
@@ -145,7 +151,7 @@ export function DoctorShell({
                 >
                   <Icon className={`size-4 ${isActive ? "text-primary-foreground" : "text-primary/70 group-hover:text-primary"}`} />
                   <span>{s.label}</span>
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -175,7 +181,7 @@ export function DoctorShell({
           <div className="mx-auto w-full">
             <AnimatePresence mode="wait">
               <motion.div
-                key={active}
+                key={pathname}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
@@ -195,15 +201,13 @@ export function DoctorShell({
             .filter((s) => mainMobileTabs.includes(s.id))
             .map((s) => {
               const Icon = s.icon;
-              const isActive = active === s.id;
+              const isActive = isSectionActive(s.id);
+              const href = s.id === "shift" ? "/doctor" : `/doctor/${s.id}`;
               return (
-                <button
+                <Link
                   key={s.id}
-                  type="button"
-                  onClick={() => {
-                    onSelect(s.id);
-                    setIsMoreOpen(false);
-                  }}
+                  href={href}
+                  onClick={() => setIsMoreOpen(false)}
                   className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none group tap-highlight-transparent"
                 >
                   <motion.div 
@@ -222,7 +226,7 @@ export function DoctorShell({
                   >
                     {s.label.split(" ")[0]}
                   </span>
-                </button>
+                </Link>
               );
             })}
 
@@ -235,16 +239,16 @@ export function DoctorShell({
               >
                 <div
                   className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                    isMoreOpen || !mainMobileTabs.includes(active)
+                    isMoreOpen || !mainMobileTabs.some(id => isSectionActive(id))
                       ? "text-primary"
                       : "text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
-                  <MoreHorizontal className="size-5" strokeWidth={isMoreOpen || !mainMobileTabs.includes(active) ? 2.5 : 2} />
+                  <MoreHorizontal className="size-5" strokeWidth={isMoreOpen || !mainMobileTabs.some(id => isSectionActive(id)) ? 2.5 : 2} />
                 </div>
                 <span
                   className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                    isMoreOpen || !mainMobileTabs.includes(active) ? "text-primary font-semibold" : "text-muted-foreground"
+                    isMoreOpen || !mainMobileTabs.some(id => isSectionActive(id)) ? "text-primary font-semibold" : "text-muted-foreground"
                   }`}
                 >
                   More
@@ -258,15 +262,13 @@ export function DoctorShell({
                   .filter((s) => !mainMobileTabs.includes(s.id))
                   .map((s) => {
                     const Icon = s.icon;
-                    const isActive = active === s.id;
+                    const isActive = isSectionActive(s.id);
+                    const href = s.id === "shift" ? "/doctor" : `/doctor/${s.id}`;
                     return (
-                      <button
+                      <Link
                         key={s.id}
-                        type="button"
-                        onClick={() => {
-                          onSelect(s.id);
-                          setIsMoreOpen(false);
-                        }}
+                        href={href}
+                        onClick={() => setIsMoreOpen(false)}
                         className="flex flex-col items-center justify-start gap-2 group tap-highlight-transparent"
                       >
                         <div
@@ -285,7 +287,7 @@ export function DoctorShell({
                         >
                           {s.label}
                         </span>
-                      </button>
+                      </Link>
                     );
                   })}
               </div>

@@ -1,10 +1,24 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Pharmacy Dashboard | HealOS",
-  description: "Inventory, prescriptions, and dispensaries.",
-};
+import { RoleGuard } from "@/components/auth/role-guard";
+import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RoleGuard allowedRoles={["PHARMACIST", "ADMIN"]}>
+      <WorkspaceShell
+        navId="pharmacy"
+        breadcrumb="Medicines management / Pharmacy"
+        searchPlaceholder="Search script, drug, SKU"
+        sections={sections}
+        
+        
+        statusTitle="Dispensary"
+        statusLine="Main pharmacy open"
+        statusNote="Connected to backend"
+      >
+        {children}
+      </WorkspaceShell>
+    </RoleGuard>
+  );
 }

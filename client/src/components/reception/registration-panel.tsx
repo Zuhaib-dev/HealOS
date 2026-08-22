@@ -1,68 +1,68 @@
 "use client";
 
+/* Hallmark · macrostructure: Form Split · genre: modern-minimal
+ * states: hover, focus, error
+ * contrast: pass
+ */
+
 import { useState, useEffect } from "react";
-import { motion } from "motion/react";
-import { UserPlus, Check, IdCard } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { UserPlus, Check, AlertCircle, Loader2 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Card, StatGrid } from "@/components/workspace/ui";
+import { Card } from "@/components/workspace/ui";
 import { registerPatientApi } from "@/lib/api/reception";
-import { toast } from "sonner";
-
-const deskStats = [
-  { label: "Registrations today", value: "182", note: "41 new · 141 repeat" },
-  { label: "Tokens waiting", value: "23", note: "avg wait 14 min" },
-  { label: "Counter collections", value: "₹4.82 L", note: "cash + card + UPI" },
-  { label: "Insurance captured", value: "96.4%", note: "target 95%" },
-];
-
 import { fetchAvailableDoctorsApi } from "@/lib/api/appointment";
+import { toast } from "sonner";
 
 export function RegistrationPanel() {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     phone: "",
-    abhaNumber: "",
     dateOfBirth: "",
     gender: "",
     address: "",
     department: "",
     payer: "self",
-    policyNumber: "",
   });
   
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [issued, setIssued] = useState<any>(null); // To store response data
-  const [departments, setDepartments] = useState<string[]>(["General medicine"]);
+  const [issued, setIssued] = useState<any>(null);
+  const [departments, setDepartments] = useState<string[]>([
+    "General Medicine", "Cardiology", "Orthopedics", "Pediatrics", "Neurology"
+  ]);
 
   useEffect(() => {
     fetchAvailableDoctorsApi().then(res => {
       if (res.success && res.doctors.length > 0) {
         const depts = Array.from(new Set(res.doctors.map(d => d.specialization)));
-        setDepartments(depts);
-        setForm(f => ({ ...f, department: depts[0] }));
+        setDepartments(depts.length > 0 ? depts : ["General Medicine", "Cardiology", "Orthopedics", "Pediatrics", "Neurology"]);
+        setForm(f => ({ ...f, department: depts[0] || "General Medicine" }));
       }
     }).catch(console.error);
   }, []);
 
-  const field = (k: keyof typeof form, label: string, placeholder = "") => (
-    <label className="mono-label text-muted-foreground block">
-      {label}
-      <input
-        value={form[k]}
-        onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-        placeholder={placeholder}
-        className="hairline text-foreground mt-1 w-full bg-transparent px-3 py-2 text-sm outline-none"
-      />
-    </label>
-  );
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!form.firstName.trim()) newErrors.firstName = "First name is required";
+    if (!form.phone.trim()) newErrors.phone = "Phone number is required";
+    else if (!/^\+?[\d\s-]{10,}$/.test(form.phone)) newErrors.phone = "Invalid phone number";
+    if (!form.gender) newErrors.gender = "Sex is required";
+    if (!form.department) newErrors.department = "Select a department";
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleRegister = async () => {
-    if (!form.firstName || !form.phone) {
-      toast.error("Please fill required fields (First Name, Phone)");
+    if (!validate()) {
+      toast.error("Please fix the errors in the form.");
       return;
     }
+
     setLoading(true);
+    setErrors({});
     try {
       const res = await registerPatientApi(form);
       if (res.status === "success") {
@@ -72,13 +72,11 @@ export function RegistrationPanel() {
           firstName: "",
           lastName: "",
           phone: "",
-          abhaNumber: "",
           dateOfBirth: "",
           gender: "",
           address: "",
           department: departments[0]!,
           payer: "self",
-          policyNumber: "",
         });
       }
     } catch (e: any) {
@@ -88,106 +86,272 @@ export function RegistrationPanel() {
     }
   };
 
+  const FloatingInput = ({ 
+    label, 
+    value, 
+    onChange, 
+    placeholder, 
+    error,
+    type = "text"
+  }: { 
+    label: string, 
+    value: string, 
+    onChange: (val: string) => void, 
+    placeholder?: string,
+    error?: string,
+    type?: string
+  }) => (
+    <div className="relative group">
+      <label className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5 block group-focus-within:text-primary transition-colors">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            if (error) setErrors(prev => ({ ...prev, [label.toLowerCase().replace(" ", "")]: "" }));
+          }}
+          placeholder={placeholder}
+          className={`w-full bg-background border ${error ? "border-rose-500/50" : "border-border/60"} rounded-xl px-4 py-3 text-sm text-foreground outline-none transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10`}
+        />
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, x: -5 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0 }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-500"
+            >
+              <AlertCircle className="size-4" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      <AnimatePresence>
+        {error && (
+          <motion.p 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="text-rose-500 text-[10px] mt-1.5 font-medium ml-1"
+          >
+            {error}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+
   return (
-    <section>
+    <section className="pb-24 lg:pb-0 min-h-[calc(100vh-4rem)] flex flex-col">
       <PanelHeader
         index="01 / front desk"
-        title="Patient registration"
-        note="New and repeat registration with ABHA linkage, payer capture and instant OPD token issue."
-        actions={<ActionButton tone="solid">Scan existing card</ActionButton>}
+        title="New Registration"
+        note="Register new walk-in patients and instantly issue OPD tokens."
       />
 
-      <StatGrid stats={deskStats} />
+      <div className="flex-1 grid lg:grid-cols-[1.5fr_1fr] bg-background">
+        
+        {/* Left Column: Form */}
+        <div className="p-4 sm:p-6 lg:p-10 border-r border-border/60 overflow-y-auto">
+          <div className="max-w-2xl">
+            <h2 className="font-display text-xl font-bold tracking-tight mb-6">Patient Details</h2>
+            
+            <div className="grid gap-5 sm:grid-cols-2 mb-8">
+              <FloatingInput 
+                label="First Name" 
+                value={form.firstName} 
+                onChange={(val) => setForm({ ...form, firstName: val })} 
+                placeholder="e.g. Priya"
+                error={errors.firstName}
+              />
+              <FloatingInput 
+                label="Last Name" 
+                value={form.lastName} 
+                onChange={(val) => setForm({ ...form, lastName: val })} 
+                placeholder="e.g. Nair"
+              />
+              <FloatingInput 
+                label="Mobile Phone" 
+                value={form.phone} 
+                onChange={(val) => setForm({ ...form, phone: val })} 
+                placeholder="+91"
+                error={errors.phone}
+              />
+              <FloatingInput 
+                label="Date of Birth" 
+                type="date"
+                value={form.dateOfBirth} 
+                onChange={(val) => setForm({ ...form, dateOfBirth: val })} 
+              />
+              <div className="sm:col-span-2">
+                <FloatingInput 
+                  label="Address" 
+                  value={form.address} 
+                  onChange={(val) => setForm({ ...form, address: val })} 
+                  placeholder="Full address (optional)"
+                />
+              </div>
+            </div>
 
-      <div className="hairline-t grid gap-px lg:grid-cols-[1.3fr_1fr]" style={{ background: "var(--hairline)" }}>
-        <div className="bg-background p-5 sm:p-8">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {field("firstName", "First Name", "e.g. Priya")}
-            {field("lastName", "Last Name", "e.g. Nair")}
-            {field("phone", "Mobile", "+91")}
-            {field("dateOfBirth", "Date of birth", "YYYY-MM-DD")}
-            {field("gender", "Sex", "Female / Male / Other")}
-            {field("abhaNumber", "ABHA number", "14-digit ABHA")}
-            {field("policyNumber", "Policy / TPA number", "optional")}
-          </div>
-          {field("address", "Address")}
+            <div className="mb-8">
+              <label className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-3 block">
+                Sex assigned at birth <span className="text-rose-500">*</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {["Female", "Male"].map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...form, gender: g });
+                      setErrors(prev => ({ ...prev, gender: "" }));
+                    }}
+                    className={`px-5 py-2.5 rounded-full text-xs font-semibold transition-all duration-300 border ${
+                      form.gender === g 
+                        ? "bg-primary border-primary text-primary-foreground shadow-md scale-105" 
+                        : "bg-background border-border/60 text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+              {errors.gender && <p className="text-rose-500 text-[10px] mt-2 font-medium ml-1">{errors.gender}</p>}
+            </div>
 
-          <p className="mono-label text-muted-foreground mt-5">Department</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {departments.map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setForm({ ...form, department: d })}
-                className={`mono-label px-3 py-2 ${form.department === d ? "bg-foreground text-background" : "hairline"}`}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
+            <div className="mb-8">
+              <label className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-3 block">
+                Target Department <span className="text-rose-500">*</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {departments.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setForm({ ...form, department: d })}
+                    className={`px-4 py-2 rounded-xl text-xs font-medium transition-all duration-300 border ${
+                      form.department === d 
+                        ? "bg-primary/10 border-primary/30 text-primary" 
+                        : "bg-background border-border/60 text-muted-foreground hover:border-border hover:bg-muted/30"
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <p className="mono-label text-muted-foreground mt-5">Payer</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {["self", "insurance", "corporate", "scheme"].map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setForm({ ...form, payer: p })}
-                className={`mono-label px-3 py-2 ${form.payer === p ? "bg-foreground text-background" : "hairline"}`}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+            <div className="mb-10">
+              <label className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-3 block">
+                Payer
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: "self", label: "Self Pay" },
+                  { id: "insurance", label: "Insurance / TPA" },
+                  { id: "corporate", label: "Corporate" },
+                ].map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setForm({ ...form, payer: p.id })}
+                    className={`px-4 py-2 rounded-xl text-xs font-medium transition-all duration-300 border ${
+                      form.payer === p.id 
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600" 
+                        : "bg-background border-border/60 text-muted-foreground hover:border-border hover:bg-muted/30"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <div className="mt-6 flex flex-wrap gap-2">
-            <ActionButton tone="solid" onClick={handleRegister}>
-              <UserPlus className="mr-1 inline size-3" />
-              {loading ? "Registering..." : "Register & issue token"}
+            <ActionButton tone="solid" onClick={handleRegister} className="w-full sm:w-auto px-8 py-6 text-sm">
+              {loading ? (
+                <><Loader2 className="mr-2 inline size-4 animate-spin" /> Registering...</>
+              ) : (
+                <><UserPlus className="mr-2 inline size-4" /> Issue Token & Register</>
+              )}
             </ActionButton>
-            <ActionButton>Verify ABHA (OTP)</ActionButton>
+            
           </div>
         </div>
 
-        <div className="bg-background p-5 sm:p-8">
-          <p className="mono-label text-muted-foreground">Registration slip</p>
+        {/* Right Column: Slip & Status */}
+        <div className="p-4 sm:p-6 lg:p-10 bg-card/20 flex flex-col">
+          <h2 className="font-display text-xl font-bold tracking-tight mb-6 text-muted-foreground">Registration Slip</h2>
+          
           {issued ? (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="hairline mt-3 p-5">
-              <p className="mono-label text-brass">
-                <Check className="mr-1 inline size-3" />
-                Registered · {issued.patient._id.slice(-6)}
-              </p>
-              <p className="mt-4 font-mono text-4xl font-bold">{issued.token}</p>
-              <p className="mono-label text-muted-foreground mt-1">
-                {issued.appointment.department} · payer {issued.invoice.payer}
-              </p>
-              <p className="mono-label text-muted-foreground mt-4">
-                {issued.patient.name} · {issued.patient.phone || "no mobile"}
-              </p>
-              {issued.patient.abhaNumber && (
-                <p className="mono-label text-brass mt-2">
-                  <IdCard className="mr-1 inline size-3" />
-                  ABHA linked
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              className="bg-background border border-border/60 rounded-3xl p-8 shadow-sm relative overflow-hidden"
+            >
+              {/* Slip background decoration */}
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+                <UserPlus className="size-32" />
+              </div>
+              
+              <div className="relative z-10">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider rounded-full mb-6">
+                  <Check className="size-3" strokeWidth={3} />
+                  Registered
+                </div>
+                
+                <p className="mono-label text-xs text-muted-foreground uppercase tracking-wider mb-1">OPD Token</p>
+                <p className="font-mono text-6xl font-bold tracking-tighter text-foreground mb-6">
+                  {issued.token}
                 </p>
-              )}
+                
+                <div className="space-y-4 border-t border-border/60 pt-6">
+                  <div>
+                    <p className="mono-label text-[10px] text-muted-foreground uppercase">Patient Name</p>
+                    <p className="font-semibold mt-0.5">{issued.patient.name}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="mono-label text-[10px] text-muted-foreground uppercase">MRN ID</p>
+                      <p className="font-mono text-sm mt-0.5">{issued.patient._id.slice(-8).toUpperCase()}</p>
+                    </div>
+                    <div>
+                      <p className="mono-label text-[10px] text-muted-foreground uppercase">Department</p>
+                      <p className="font-mono text-sm mt-0.5">{issued.appointment.department}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           ) : (
-            <p className="text-muted-foreground mt-3 text-sm">
-              Complete the form and issue a token — the slip prints here with MRN, queue number and payer.
-            </p>
+            <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border/60 rounded-3xl p-8 text-center bg-background/50">
+              <UserPlus className="size-10 text-muted-foreground/30 mb-4" />
+              <p className="font-medium text-foreground">Waiting for registration...</p>
+              <p className="text-sm text-muted-foreground mt-2 max-w-[250px]">
+                Complete the form on the left. The patient slip will print here automatically.
+              </p>
+            </div>
           )}
 
-          <div className="mt-6">
-            <Card>
-              <p className="mono-label text-muted-foreground">Consent &amp; identity</p>
-              <ul className="mono-label mt-3 space-y-2">
-                <li>Photo ID verified at counter</li>
-                <li>Data-sharing consent captured (ABDM)</li>
-                <li>Insurance eligibility checked live with TPA</li>
+          <div className="mt-auto pt-8">
+            <Card className="bg-background/80 border-border/40">
+              <p className="mono-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-3">Identity Guidelines</p>
+              <ul className="text-sm text-muted-foreground space-y-2">
+                <li className="flex items-start gap-2">
+                  <div className="size-1.5 rounded-full bg-primary/50 mt-1.5 shrink-0" />
+                  <span>Verify photo ID at the counter before completing registration.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="size-1.5 rounded-full bg-primary/50 mt-1.5 shrink-0" />
+                  <span>Ask for mobile number confirmation to link past records.</span>
+                </li>
               </ul>
             </Card>
           </div>
         </div>
+
       </div>
     </section>
   );

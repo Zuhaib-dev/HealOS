@@ -36,7 +36,7 @@ export function RxQueuePanel() {
   const [paymentMode, setPaymentMode] = useState<"CASH" | "ONLINE" | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
-  const [billSent, setBillSent] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<"IDLE" | "WAITING" | "PAID">("IDLE");
 
   // Custom Item Modal/State
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -75,7 +75,7 @@ export function RxQueuePanel() {
     setSelectedRx(rx);
     setPaymentMode(null);
     setIsPaid(false);
-    setBillSent(false);
+    setPaymentStatus("IDLE");
     setShowCustomInput(false);
     
     // Populate cart with prescribed items
@@ -132,8 +132,14 @@ export function RxQueuePanel() {
   }, [cart]);
 
   const handleSendBill = () => {
-    setBillSent(true);
-    toast.success("Bill sent to patient's HealOS app.");
+    setPaymentStatus("WAITING");
+    toast.info("Waiting for patient to pay via HealOS app...");
+    
+    // Simulate webhook response from payment gateway
+    setTimeout(() => {
+      setPaymentStatus("PAID");
+      toast.success("Online payment verified! You may now dispense.");
+    }, 4000);
   };
 
   const handleCheckout = async () => {
@@ -512,17 +518,25 @@ export function RxQueuePanel() {
                                <p className="text-sm text-muted-foreground leading-relaxed mb-6">
                                  The patient can scan this dynamic QR code to instantly pay <strong className="text-foreground">₹{totalCost}</strong> from their phone.
                                </p>
-                               <button 
-                                 type="button"
-                                 onClick={handleSendBill}
-                                 className={`w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${
-                                   billSent 
-                                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
-                                     : "bg-indigo-500 text-white hover:bg-indigo-600 shadow-md"
-                                 }`}
-                               >
-                                 {billSent ? <><Check className="size-4" /> Bill Sent to App</> : <><Send className="size-4" /> Send Bill to Patient Portal</>}
-                               </button>
+                               {paymentStatus === "IDLE" && (
+                                 <button 
+                                   type="button"
+                                   onClick={handleSendBill}
+                                   className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all bg-indigo-500 text-white hover:bg-indigo-600 shadow-md"
+                                 >
+                                   <Send className="size-4" /> Send Bill to Patient Portal
+                                 </button>
+                               )}
+                               {paymentStatus === "WAITING" && (
+                                 <div className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                   <Loader2 className="size-4 animate-spin" /> Waiting for Payment...
+                                 </div>
+                               )}
+                               {paymentStatus === "PAID" && (
+                                 <div className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                   <Check className="size-4" /> Payment Verified
+                                 </div>
+                               )}
                             </div>
                           </motion.div>
                         )}
@@ -549,7 +563,7 @@ export function RxQueuePanel() {
                         <ActionButton 
                           tone="solid" 
                           onClick={handleCheckout} 
-                          disabled={isProcessing || !paymentMode || totalCost === 0}
+                          disabled={isProcessing || !paymentMode || totalCost === 0 || (paymentMode === "ONLINE" && paymentStatus !== "PAID")}
                           className={`w-full py-6 text-base font-bold justify-center transition-all ${
                             paymentMode === "ONLINE" ? "bg-indigo-500 hover:bg-indigo-600 text-white" : ""
                           }`}

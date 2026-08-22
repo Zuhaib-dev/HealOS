@@ -63,6 +63,11 @@ const envSchema = z
     SMTP_PORT: z.coerce.number().default(587),
     SMTP_USER: z.string().optional(),
     SMTP_PASS: z.string().optional(),
+    GMAIL_CLIENT_ID: z.string().optional(),
+    GMAIL_CLIENT_SECRET: z.string().optional(),
+    GMAIL_REFRESH_TOKEN: z.string().optional(),
+    GMAIL_USER: z.string().optional(),
+    GMAIL_FROM: z.string().optional(),
     RESEND_API_KEY: z.string().optional(),
     EMAIL_FROM: z.string().default("HealOS <noreply@healos.com>"),
   })

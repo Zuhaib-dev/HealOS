@@ -31,6 +31,20 @@ export const resendOtpApi = async (email: string): Promise<AuthResponse> => {
   return response.data;
 };
 
+export const forgotPasswordApi = async (email: string): Promise<AuthResponse> => {
+  const response = await apiClient.post<AuthResponse>("/auth/forgot-password", { email });
+  return response.data;
+};
+
+export const resetPasswordApi = async (data: {
+  email: string;
+  otp: string;
+  password: string;
+}): Promise<AuthResponse> => {
+  const response = await apiClient.post<AuthResponse>("/auth/reset-password", data);
+  return response.data;
+};
+
 export const loginUserApi = async (data: {
   email: string;
   password: string;

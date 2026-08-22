@@ -180,9 +180,12 @@ export function PatientShell({
         {/* Main Content Area */}
         <main className="min-w-0 flex-1 relative">
           {/* Mobile "Header" - just the title of the current section */}
-          <div className="md:hidden border-b border-border/60 bg-card/40 p-4 sticky top-16 z-30 backdrop-blur-md flex items-center gap-2">
-            {currentSection && <currentSection.icon className="size-4 text-primary" />}
-            <h1 className="font-semibold text-sm">{currentSection?.label}</h1>
+          <div className="md:hidden border-b border-border/60 bg-card/40 p-3 px-4 sticky top-0 z-30 backdrop-blur-md flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {currentSection && <currentSection.icon className="size-4 text-primary" />}
+              <h1 className="font-semibold text-sm">{currentSection?.label}</h1>
+            </div>
+            <UserProfileMenu />
           </div>
           
           <div className="mx-auto w-full max-w-5xl">

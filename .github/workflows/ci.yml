@@ -30,11 +30,17 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Cache MongoDB Binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-8.2.6
+
       - name: Backend API Tests
-        run: npm run test
+        run: npx jest --runInBand
         working-directory: ./server
-        # We run the tests directly in the server workspace for simplicity, 
-        # though turborepo could also handle it via `npm run test` if configured.
+        env:
+          MONGOMS_VERSION: 8.2.6
 
       - name: Build Projects
         run: npm run build

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 let mongoServer: MongoMemoryServer;
 
-jest.setTimeout(60000); // 60 seconds timeout for CI to download MongoDB binary
+jest.setTimeout(120_000); // 120 seconds timeout for CI to download MongoDB binary
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
@@ -13,7 +13,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await mongoose.disconnect();
-  await mongoServer.stop();
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
 });
 
 afterEach(async () => {

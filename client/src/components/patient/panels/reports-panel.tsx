@@ -244,10 +244,10 @@ export function ReportsPanel() {
                   <div className="text-muted-foreground flex items-center gap-3">
                     {r.fileUrl ? (
                       <>
-                        <a href={`http://localhost:5001${r.fileUrl}`} target="_blank" rel="noopener noreferrer" aria-label="View" className="hover:text-foreground">
+                        <a href={r.fileUrl} target="_blank" rel="noopener noreferrer" aria-label="View" className="hover:text-foreground">
                           <Eye className="size-3.5" />
                         </a>
-                        <a href={`http://localhost:5001${r.fileUrl}`} download aria-label="Download" className="hover:text-foreground">
+                        <a href={r.fileUrl} download aria-label="Download" className="hover:text-foreground">
                           <Download className="size-3.5" />
                         </a>
                       </>

@@ -345,7 +345,7 @@ export function ShiftPanel() {
                                </div>
                                {r.fileUrl && (
                                  <a 
-                                   href={`http://localhost:5001${r.fileUrl}`} 
+                                   href={r.fileUrl} 
                                    target="_blank" 
                                    rel="noopener noreferrer" 
                                    className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"

@@ -73,12 +73,84 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": "https://healos-theta.vercel.app/#creator",
+        "name": "Zuhaib Rashid",
+        "url": "https://zuhaibrashid.com",
+        "sameAs": [
+          "https://github.com/Zuhaib-dev",
+          "https://www.linkedin.com/in/zuhaib-rashid-661345318/",
+          "https://x.com/xuhaib_x9"
+        ]
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://healos-theta.vercel.app/#organization",
+        "name": "HealOS",
+        "url": "https://healos-theta.vercel.app",
+        "logo": "https://healos-theta.vercel.app/icon.svg",
+        "founder": {
+          "@id": "https://healos-theta.vercel.app/#creator"
+        },
+        "sameAs": [
+          "https://github.com/Zuhaib-dev",
+          "https://www.linkedin.com/in/zuhaib-rashid-661345318/",
+          "https://x.com/xuhaib_x9"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://healos-theta.vercel.app/#website",
+        "url": "https://healos-theta.vercel.app",
+        "name": "HealOS",
+        "description": "The Operating System for Modern Hospitals. Seamlessly unified patient records, revenue analytics, and clinician workflows.",
+        "publisher": {
+          "@id": "https://healos-theta.vercel.app/#organization"
+        },
+        "author": {
+          "@id": "https://healos-theta.vercel.app/#creator"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://healos-theta.vercel.app/#softwareapplication",
+        "name": "HealOS App",
+        "operatingSystem": "All",
+        "applicationCategory": "HealthApplication",
+        "author": {
+          "@id": "https://healos-theta.vercel.app/#creator"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    ]
+  };
+
   return (
     <html
       lang="en"
       className={`${workSans.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <meta name="application-name" content="HealOS" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="HealOS" />
+        <meta name="theme-color" content="#10b981" />
+      </head>
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider
           attribute="class"

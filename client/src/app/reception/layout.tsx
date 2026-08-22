@@ -1,6 +1,14 @@
 "use client";
 
+import { UserPlus, Users, Monitor } from "lucide-react";
+
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
+
+const sections = [
+  { id: "registration", label: "New Patient", icon: UserPlus },
+  { id: "queue", label: "Waiting Room", icon: Users },
+  { id: "counter", label: "Front Counter", icon: Monitor },
+];
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   return (

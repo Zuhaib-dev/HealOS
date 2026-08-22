@@ -1,7 +1,17 @@
 "use client";
 
+import { TestTube, ListChecks, Activity, CheckCircle, Siren } from "lucide-react";
+
 import { RoleGuard } from "@/components/auth/role-guard";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
+
+const sections = [
+  { id: "collection", label: "Phlebotomy Queue", icon: TestTube },
+  { id: "accession", label: "Accessioning", icon: ListChecks },
+  { id: "analysers", label: "Auto-Analyzers", icon: Activity },
+  { id: "validation", label: "Result Validation", icon: CheckCircle },
+  { id: "critical", label: "Critical Results", icon: Siren },
+];
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   return (

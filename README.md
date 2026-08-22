@@ -66,21 +66,36 @@ HealOS provides tailored dashboards and tools for 7 different user roles:
 
 ---
 
-## 🚀 Tech Stack Overview
+## 🚀 Comprehensive Tech Stack
 
-### Frontend (`/client`)
-- **Framework**: Next.js 14+ (React 19)
-- **Styling**: Tailwind CSS v4, Framer Motion
-- **State Management**: Zustand, React Query
-- **UI Components**: Radix UI, Lucide Icons
+### Frontend (Client)
+- **Core Framework**: [Next.js 15 (App Router)](https://nextjs.org/) & [React 19](https://react.dev/)
+- **Styling & UI**: 
+  - [Tailwind CSS v4](https://tailwindcss.com/) (using modern logical properties and zero-config CSS variables)
+  - Custom *Emerald Prestige* Design System (clinical interface focus)
+  - [Framer Motion](https://www.framer.com/motion/) (Silky-smooth microinteractions and structural page transitions)
+  - [Lucide React](https://lucide.dev/) (Consistent, clean iconography)
+- **State Management & Data Fetching**: 
+  - [Zustand](https://zustand-demo.pmnd.rs/) (Lightweight global state for Auth & UI)
+  - [TanStack React Query](https://tanstack.com/query) (Server state caching and synchronization)
+- **Forms & Validation**: React Hook Form, Zod
+- **Typography**: `next/font` (JetBrains Mono for data/UI, Work Sans for prose)
+- **SEO & Performance**: 
+  - Next.js Metadata API, dynamic `sitemap.xml`, and JSON-LD Structured Data
+  - Strict Client Component separation (`"use client"`) to maximize Server Components
 
-### Backend (`/server`)
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Language**: TypeScript
-- **Database**: MongoDB (via Mongoose)
-- **Real-time**: Socket.io
-- **Payments**: Razorpay
+### Backend (Server)
+- **Runtime & Framework**: [Node.js](https://nodejs.org/) & [Express.js](https://expressjs.com/)
+- **Language**: TypeScript (Strict typing across API borders)
+- **Database**: [MongoDB](https://www.mongodb.com/) & [Mongoose](https://mongoosejs.com/) (NoSQL ODM)
+- **Real-time Engine**: [Socket.io](https://socket.io/) (Pub/Sub for immediate clinical updates)
+- **Authentication**: JWT (JSON Web Tokens) with strictly typed Role-Based Access Control (RBAC)
+- **Payments**: [Razorpay API](https://razorpay.com/) (For patient invoices and online billing)
+
+### Architecture & Patterns
+- **Decoupled Monorepo**: Separate `/client` and `/server` environments
+- **Role Guards**: Custom Higher-Order Components ensuring strict URL routing for 9 different user types
+- **Hallmark Protocol**: Structural variety and anti-slop design in public landing pages (Marquee Heroes, Workbenches, Long Documents)
 
 ---
 

@@ -23,12 +23,12 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
       throw new AppError("Patient not found", 404);
     }
 
-    // 1. Get Upcoming Appointments
+    // 1. Get Appointments
     const appointments = await Appointment.find({
       patient: patientId,
     })
       .populate("doctor", "name role specialization")
-      .sort({ date: 1, timeSlot: 1 });
+      .sort({ date: -1, timeSlot: -1 });
 
     // 2. Get Consultations (History & Prescriptions)
     const consultations = await Consultation.find({ patient: patientId })

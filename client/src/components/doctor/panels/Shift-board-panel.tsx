@@ -11,6 +11,7 @@ import { getDashboardStatsApi, getPatientHistoryApi } from "@/lib/api/doctor";
 import { AnimatePresence } from "motion/react";
 import { Loader2, Activity, FileText, Pill as PillIcon, FileDigit, ChevronRight, User as UserIcon } from "lucide-react";
 import { ConsultationForm } from "@/components/doctor/shared/consultation-form";
+import { getSocket } from "@/lib/socket";
 
 /* ---------- primitives ---------- */
 
@@ -85,7 +86,7 @@ export function ShiftPanel() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadStats = () => {
     getDashboardStatsApi()
       .then((res) => {
         setStats(res.data);
@@ -96,6 +97,20 @@ export function ShiftPanel() {
       .finally(() => {
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    loadStats();
+
+    const socket = getSocket();
+    if (socket) {
+      socket.on("appointment_updated", loadStats);
+      socket.on("appointment_created", loadStats);
+      return () => {
+        socket.off("appointment_updated", loadStats);
+        socket.off("appointment_created", loadStats);
+      };
+    }
   }, []);
 
   const statCards = [

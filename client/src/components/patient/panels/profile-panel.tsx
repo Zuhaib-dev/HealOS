@@ -12,7 +12,7 @@ export function ProfilePanel() {
   const { user, updateUser } = useAuthStore();
   const [saving, setSaving] = useState(false);
   const [dob, setDob] = useState("");
-  const [gender, setGender] = useState<"MALE" | "FEMALE" | "OTHER">("MALE");
+  const [gender, setGender] = useState<"MALE" | "FEMALE">("MALE");
   const [bloodGroup, setBloodGroup] = useState<"A+" | "A-" | "B+" | "B-" | "O+" | "O-" | "AB+" | "AB-">("O+");
   const [emergencyPhone, setEmergencyPhone] = useState("");
   const [emergencyContactName, setEmergencyContactName] = useState("");

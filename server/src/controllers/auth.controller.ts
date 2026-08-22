@@ -59,6 +59,18 @@ const generate6DigitOtp = (): string => {
   return randomInt(100000, 1000000).toString();
 };
 
+const sendOtpOrRespond = async (res: Response, email: string, otp: string): Promise<boolean> => {
+  const emailSent = await sendOtpEmail(email, otp);
+  if (emailSent) return true;
+
+  await OTP.deleteMany({ email, otp });
+  res.status(StatusCodes.BAD_GATEWAY).json({
+    success: false,
+    message: "We couldn't send the verification email right now. Please try again in a moment.",
+  });
+  return false;
+};
+
 // Helper to generate JWT Token
 const generateToken = (userId: string, role: UserRole): string => {
   return jwt.sign({ userId, role: normalizeUserRole(role) }, envConfig.JWT_SECRET, {
@@ -223,7 +235,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     await OTP.create({ email, otp: otpCode });
 
     // Send OTP email via Nodemailer
-    await sendOtpEmail(email, otpCode);
+    if (!(await sendOtpOrRespond(res, email, otpCode))) return;
 
     res.status(StatusCodes.CREATED).json({
       success: true,
@@ -333,7 +345,7 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
     await OTP.deleteMany({ email });
     await OTP.create({ email, otp: otpCode });
 
-    await sendOtpEmail(email, otpCode);
+    if (!(await sendOtpOrRespond(res, email, otpCode))) return;
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -390,7 +402,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       const otpCode = generate6DigitOtp();
       await OTP.deleteMany({ email });
       await OTP.create({ email, otp: otpCode });
-      await sendOtpEmail(email, otpCode);
+      if (!(await sendOtpOrRespond(res, email, otpCode))) return;
 
       res.status(StatusCodes.FORBIDDEN).json({
         success: false,

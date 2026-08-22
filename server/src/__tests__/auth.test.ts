@@ -1,13 +1,21 @@
 import request from "supertest";
 import app from "../app";
 import { User } from "../models/user.model";
+import { OTP } from "../models/otp.model";
 import { API_PREFIX } from "@healos/shared";
+import { sendOtpEmail } from "../utils/mailer";
 
 jest.mock("../utils/mailer", () => ({
   sendOtpEmail: jest.fn().mockResolvedValue(true),
 }));
 
 describe("Authentication API", () => {
+  const mockedSendOtpEmail = jest.mocked(sendOtpEmail);
+
+  beforeEach(() => {
+    mockedSendOtpEmail.mockResolvedValue(true);
+  });
+
   const registerPayload = {
     name: "Test User",
     email: "test@example.com",
@@ -26,6 +34,21 @@ describe("Authentication API", () => {
     // Verify it was saved to DB
     const userInDb = await User.findOne({ email: registerPayload.email });
     expect(userInDb).toBeTruthy();
+  });
+
+  it("should fail registration when OTP email delivery fails", async () => {
+    mockedSendOtpEmail.mockResolvedValue(false);
+
+    const res = await request(app)
+      .post(`${API_PREFIX}/auth/register`)
+      .send(registerPayload);
+
+    expect(res.status).toBe(502);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/couldn't send/i);
+
+    const otpInDb = await OTP.findOne({ email: registerPayload.email });
+    expect(otpInDb).toBeNull();
   });
 
   it("should not allow registration with an existing email", async () => {

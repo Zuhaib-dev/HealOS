@@ -83,12 +83,15 @@ export const fetchPatientAppointmentsApi = async () => {
   return response.data;
 };
 
-export const fetchDoctorAppointmentsApi = async () => {
+export const fetchDoctorAppointmentsApi = async (page: number = 1, limit: number = 10) => {
   const response = await apiClient.get<{
     success: boolean;
     count: number;
+    totalCount: number;
+    totalPages: number;
+    currentPage: number;
     appointments: AppointmentRecord[];
-  }>("/appointments/doctor");
+  }>(`/appointments/doctor?page=${page}&limit=${limit}`);
   return response.data;
 };
 

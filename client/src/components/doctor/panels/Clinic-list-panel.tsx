@@ -88,13 +88,18 @@ export function ClinicPanel() {
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [activeConsultation, setActiveConsultation] = useState<AppointmentRecord | null>(null);
+  
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const loadAppointments = async () => {
+  const loadAppointments = async (currentPage: number = page) => {
     try {
       setLoading(true);
-      const res = await fetchDoctorAppointmentsApi();
+      const res = await fetchDoctorAppointmentsApi(currentPage, 10);
       if (res.success && res.appointments) {
         setAppointments(res.appointments);
+        if (res.totalPages) setTotalPages(res.totalPages);
+        setPage(currentPage);
       }
     } catch (err) {
       console.error("Failed to load doctor appointments", err);
@@ -108,7 +113,7 @@ export function ClinicPanel() {
     const socket = getSocket();
     if (socket) {
       const handleUpdate = () => {
-        loadAppointments();
+        loadAppointments(page);
       };
       socket.on("appointment_updated", handleUpdate);
       socket.on("appointment_created", handleUpdate);
@@ -132,7 +137,7 @@ export function ClinicPanel() {
       const res = await updateAppointmentStatusApi(id, status);
       if (res.success) {
         toast.success(`Appointment marked as ${status}`);
-        loadAppointments();
+        loadAppointments(page);
       }
     } catch (err) {
       toast.error("Failed to update appointment status");
@@ -151,7 +156,7 @@ export function ClinicPanel() {
             onBack={() => setActiveConsultation(null)}
             onComplete={() => {
               setActiveConsultation(null);
-              loadAppointments();
+              loadAppointments(page);
             }}
           />
         )}
@@ -266,6 +271,31 @@ export function ClinicPanel() {
           </tbody>
         </table>
       </div>
+      
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-border/40 bg-background">
+          <p className="mono-label text-muted-foreground text-xs">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={page === 1}
+              onClick={() => loadAppointments(page - 1)}
+              className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-border/60 hover:bg-muted disabled:opacity-50 transition-colors"
+            >
+              Prev
+            </button>
+            <button
+              disabled={page === totalPages}
+              onClick={() => loadAppointments(page + 1)}
+              className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-border/60 hover:bg-muted disabled:opacity-50 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

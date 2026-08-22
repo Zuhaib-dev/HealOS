@@ -10,6 +10,7 @@ import {
 } from "../models/index.js";
 import { z } from "zod";
 import { AppError } from "../middleware/error-handler.js";
+import { getIO } from "../socket.js";
 
 // ==========================================
 // 1. Get Patient Dashboard
@@ -78,7 +79,7 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
 
 const profileSchema = z.object({
   dob: z.string().optional(),
-  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
+  gender: z.enum(["MALE", "FEMALE"]).optional(),
   bloodGroup: z.enum(["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]).optional(),
   emergencyPhone: z.string().optional(),
   emergencyContactName: z.string().optional(),
@@ -152,6 +153,11 @@ export const payInvoice = async (req: Request, res: Response) => {
     }
     
     await invoice.save();
+
+    const io = getIO();
+    if (io) {
+      io.emit("invoice_paid", { invoiceId: invoice._id });
+    }
 
     res.status(200).json({ success: true, message: "Invoice paid successfully", invoice });
   } catch (error: any) {

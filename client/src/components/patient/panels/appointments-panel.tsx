@@ -28,6 +28,8 @@ import {
 
 export function AppointmentsPanel() {
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
+  const [page, setPage] = useState(1);
+  const limit = 6;
   const { data, isLoading, refetch } = usePatientDashboard();
   const [selectedConsultation, setSelectedConsultation] = useState<DashboardConsultation | null>(null);
 
@@ -53,6 +55,9 @@ export function AppointmentsPanel() {
       : a.status === "COMPLETED" || a.status === "CANCELLED"
   );
 
+  const paginatedAppointments = filteredLive.slice((page - 1) * limit, page * limit);
+  const totalPages = Math.ceil(filteredLive.length / limit);
+
   return (
     <section className="pb-12">
       <PanelHeader
@@ -62,7 +67,7 @@ export function AppointmentsPanel() {
         actions={
           <div className="flex bg-muted/50 p-1 rounded-md border border-border/40">
             <button
-              onClick={() => setTab("upcoming")}
+              onClick={() => { setTab("upcoming"); setPage(1); }}
               className={`text-xs px-3 py-1.5 rounded transition-all ${
                 tab === "upcoming" ? "bg-background shadow-sm font-semibold" : "text-muted-foreground"
               }`}
@@ -70,7 +75,7 @@ export function AppointmentsPanel() {
               Upcoming
             </button>
             <button
-              onClick={() => setTab("past")}
+              onClick={() => { setTab("past"); setPage(1); }}
               className={`text-xs px-3 py-1.5 rounded transition-all ${
                 tab === "past" ? "bg-background shadow-sm font-semibold" : "text-muted-foreground"
               }`}
@@ -91,8 +96,9 @@ export function AppointmentsPanel() {
             ))}
           </div>
         ) : filteredLive.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {filteredLive.map((a) => (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {paginatedAppointments.map((a) => (
               <Card
                 key={a._id}
                 className="group relative shadow-sm border-border/60 hover:shadow-md hover:border-primary/20 transition-all overflow-hidden flex flex-col"
@@ -192,8 +198,33 @@ export function AppointmentsPanel() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-8 pt-6 border-t border-border/40">
+                <span className="mono-label text-xs text-muted-foreground">
+                  Showing {(page - 1) * limit + 1} to {Math.min(page * limit, filteredLive.length)} of {filteredLive.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-border/60 hover:bg-muted disabled:opacity-50 transition-colors"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    disabled={page === totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-border/60 hover:bg-muted disabled:opacity-50 transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-card/30 rounded-xl border border-dashed border-border/60">
             <Calendar className="size-10 text-muted-foreground/30 mb-4" />

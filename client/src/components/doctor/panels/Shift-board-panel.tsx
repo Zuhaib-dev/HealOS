@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { getDashboardStatsApi, getPatientHistoryApi } from "@/lib/api/doctor";
 import { AnimatePresence } from "motion/react";
 import { Loader2, Activity, FileText, Pill as PillIcon, FileDigit, ChevronRight, User as UserIcon } from "lucide-react";
+import { ConsultationForm } from "@/components/doctor/shared/consultation-form";
 
 /* ---------- primitives ---------- */
 
@@ -109,6 +110,7 @@ export function ShiftPanel() {
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyData, setHistoryData] = useState<any>(null);
+  const [showConsultation, setShowConsultation] = useState(false);
 
   const handleViewPatient = async (patient: any) => {
     setSelectedPatient(patient);
@@ -252,6 +254,10 @@ export function ShiftPanel() {
                  </button>
                </div>
 
+               <div className="px-6 py-4 bg-muted/30 border-b border-border/40 flex justify-end">
+                 <ActionButton tone="solid" onClick={() => setShowConsultation(true)}>+ Start Consultation</ActionButton>
+               </div>
+
                <div className="flex-1 overflow-y-auto p-6 bg-muted/10 custom-scrollbar">
                  {historyLoading ? (
                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
@@ -339,6 +345,17 @@ export function ShiftPanel() {
           </>
         )}
       </AnimatePresence>
+
+      {showConsultation && selectedPatient && (
+        <ConsultationForm 
+          patient={selectedPatient}
+          onBack={() => setShowConsultation(false)}
+          onComplete={() => {
+            setShowConsultation(false);
+            handleViewPatient(selectedPatient); // refresh history
+          }}
+        />
+      )}
     </div>
   );
 }

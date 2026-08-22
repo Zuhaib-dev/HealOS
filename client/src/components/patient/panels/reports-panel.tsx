@@ -98,6 +98,7 @@ export function ReportsPanel() {
   const [q, setQ] = useState("");
   const { data, isLoading, refetch } = usePatientDashboard();
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadTitle, setUploadTitle] = useState("");
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -112,6 +113,9 @@ export function ReportsPanel() {
       setIsUploading(true);
       const formData = new FormData();
       formData.append("file", file);
+      if (uploadTitle.trim()) {
+        formData.append("title", uploadTitle.trim());
+      }
 
       const token = useAuthStore.getState().token;
       const res = await fetch("http://localhost:5001/api/v1/patient/upload", {
@@ -133,6 +137,7 @@ export function ReportsPanel() {
       toast.error(err.message || "An error occurred during upload");
     } finally {
       setIsUploading(false);
+      setUploadTitle("");
       e.target.value = ""; // Reset input
     }
   };
@@ -277,16 +282,26 @@ export function ReportsPanel() {
               them before the visit. PDF or photo, up to 25 MB.
             </p>
           </div>
-          <label className={`relative overflow-hidden cursor-pointer flex items-center justify-center px-4 py-2 bg-foreground text-background font-bold text-xs uppercase tracking-wider rounded-lg transition-all ${isUploading ? "opacity-70 cursor-wait" : "hover:bg-foreground/90"}`}>
-            {isUploading ? "Uploading..." : "Upload document"}
-            <input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png,.dcm"
-              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-              onChange={handleFileUpload}
+          <div className="flex items-center gap-3">
+            <input 
+              type="text" 
+              placeholder="Report name (optional)" 
+              value={uploadTitle}
+              onChange={e => setUploadTitle(e.target.value)}
               disabled={isUploading}
+              className="hairline mono-label placeholder:text-muted-foreground bg-transparent px-3 py-2 outline-none w-48 text-xs"
             />
-          </label>
+            <label className={`relative overflow-hidden cursor-pointer flex items-center justify-center px-4 py-2 bg-foreground text-background font-bold text-xs uppercase tracking-wider rounded-lg transition-all ${isUploading ? "opacity-70 cursor-wait" : "hover:bg-foreground/90"}`}>
+              {isUploading ? "Uploading..." : "Upload"}
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.dcm"
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                onChange={handleFileUpload}
+                disabled={isUploading}
+              />
+            </label>
+          </div>
         </div>
       </div>
     </section>

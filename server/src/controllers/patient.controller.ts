@@ -182,8 +182,11 @@ export const uploadPatientDocument = async (req: Request, res: Response) => {
     const fileUrl = `/uploads/reports/${req.file.filename}`;
     const fileSizeMB = (req.file.size / (1024 * 1024)).toFixed(2) + " MB";
 
+    const { title } = req.body;
+
     const report = new DiagnosticReport({
       patient: patientId,
+      title: title || req.file.originalname,
       uploadedBy: req.user?.name || "Patient",
       fileUrl,
       fileName: req.file.originalname,

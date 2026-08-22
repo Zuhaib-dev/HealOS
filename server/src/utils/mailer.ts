@@ -1,6 +1,53 @@
 import nodemailer from "nodemailer";
 import { envConfig } from "../config/env";
 
+const isSmtpConfigured = Boolean(envConfig.SMTP_USER && envConfig.SMTP_PASS);
+
+const sendWithResend = async (email: string, otp: string, html: string): Promise<void> => {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${envConfig.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: envConfig.EMAIL_FROM,
+      to: [email],
+      subject: `[HealOS] Your Verification Code: ${otp}`,
+      html,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Resend API failed with ${response.status}: ${errorBody}`);
+  }
+};
+
+const sendWithSmtp = async (email: string, otp: string, html: string): Promise<void> => {
+  const secure = envConfig.SMTP_PORT === 465;
+  const transporter = nodemailer.createTransport({
+    host: envConfig.SMTP_HOST,
+    port: envConfig.SMTP_PORT,
+    secure,
+    requireTLS: !secure,
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 30000,
+    auth: {
+      user: envConfig.SMTP_USER,
+      pass: envConfig.SMTP_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: envConfig.EMAIL_FROM,
+    to: email,
+    subject: `[HealOS] Your Verification Code: ${otp}`,
+    html,
+  });
+};
+
 export const sendOtpEmail = async (email: string, otp: string): Promise<boolean> => {
   try {
     const htmlContent = `
@@ -23,39 +70,39 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<boolean>
       </div>
     `;
 
-    // If SMTP credentials aren't set in dev, log to console as fallback
-    if (!envConfig.SMTP_USER || !envConfig.SMTP_PASS) {
+    if (envConfig.RESEND_API_KEY) {
+      await sendWithResend(email, otp, htmlContent);
+      console.log(`✅ Verification OTP sent to ${email} via Resend`);
+      return true;
+    }
+
+    // If email credentials aren't set in dev, log to console as fallback
+    if (!isSmtpConfigured) {
+      if (envConfig.NODE_ENV === "production") {
+        console.error("❌ Email delivery is not configured. Set RESEND_API_KEY or SMTP credentials.");
+        return false;
+      }
+
       console.log(`\n==========================================`);
       console.log(`📧 [DEV FALLBACK] OTP Code for ${email}: ${otp}`);
       console.log(`==========================================\n`);
       return true;
     }
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: envConfig.SMTP_USER,
-        pass: envConfig.SMTP_PASS,
-      },
-    });
+    await sendWithSmtp(email, otp, htmlContent);
 
-    await transporter.sendMail({
-      from: envConfig.EMAIL_FROM,
-      to: email,
-      subject: `[HealOS] Your Verification Code: ${otp}`,
-      html: htmlContent,
-    });
-
-    console.log(`✅ Verification OTP sent to ${email}`);
+    console.log(`✅ Verification OTP sent to ${email} via SMTP`);
     return true;
   } catch (error) {
     console.error("❌ Failed to send OTP email:", error);
-    // Print fallback OTP in console so development is never blocked by SMTP errors
-    console.log(`\n==========================================`);
-    console.log(`📧 [DEV EMERGENCY FALLBACK] OTP Code for ${email}: ${otp}`);
-    console.log(`==========================================\n`);
+
+    if (envConfig.NODE_ENV !== "production") {
+      // Print fallback OTP in console so development is never blocked by email provider errors
+      console.log(`\n==========================================`);
+      console.log(`📧 [DEV EMERGENCY FALLBACK] OTP Code for ${email}: ${otp}`);
+      console.log(`==========================================\n`);
+    }
+
     return false;
   }
 };

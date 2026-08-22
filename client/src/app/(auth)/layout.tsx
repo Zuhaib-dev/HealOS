@@ -6,9 +6,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 export const metadata: Metadata = {
   title: "Authenticate | HealOS",
   description: "Secure login and registration for HealOS, the operating system for healthcare.",
-  alternates: {
-    canonical: "/login",
-  }
 };
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -19,7 +16,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Background Graphic elements */}
         <div className="absolute inset-0 z-0 bg-graph-paper opacity-20 invert pointer-events-none" />
         <div className="absolute inset-x-0 bottom-0 z-0 h-1/2 bg-linear-to-t from-emerald-950 to-transparent pointer-events-none" />
-        <div className="absolute -left-48 -top-48 z-0 h-[40rem] w-[40rem] rounded-full bg-emerald-500/20 blur-[100px] pointer-events-none" />
+        <div className="absolute -left-48 -top-48 z-0 h-160 w-160 rounded-full bg-emerald-500/20 blur-[100px] pointer-events-none" />
         
         <div className="relative z-10 flex flex-1 flex-col justify-between p-12 lg:p-16">
           <Link href="/" className="inline-flex items-center gap-2 text-emerald-50 w-max">

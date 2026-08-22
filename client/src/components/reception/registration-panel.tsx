@@ -14,6 +14,65 @@ import { registerPatientApi } from "@/lib/api/reception";
 import { fetchAvailableDoctorsApi } from "@/lib/api/appointment";
 import { toast } from "sonner";
 
+/* ---------- primitives ---------- */
+
+const FloatingInput = ({ 
+  label, 
+  value, 
+  onChange, 
+  placeholder, 
+  error,
+  type = "text"
+}: { 
+  label: string, 
+  value: string, 
+  onChange: (val: string) => void, 
+  placeholder?: string,
+  error?: string,
+  type?: string
+}) => (
+  <div className="relative group">
+    <label className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5 block group-focus-within:text-primary transition-colors">
+      {label}
+    </label>
+    <div className="relative">
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
+        placeholder={placeholder}
+        className={`w-full bg-background border ${error ? "border-rose-500/50" : "border-border/60"} rounded-xl px-4 py-3 text-sm text-foreground outline-none transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10`}
+      />
+      <AnimatePresence>
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, x: -5 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0 }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-500"
+          >
+            <AlertCircle className="size-4" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+    <AnimatePresence>
+      {error && (
+        <motion.p 
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className="text-rose-500 text-[10px] mt-1.5 font-medium ml-1"
+        >
+          {error}
+        </motion.p>
+      )}
+    </AnimatePresence>
+  </div>
+);
+
 export function RegistrationPanel() {
   const [form, setForm] = useState({
     firstName: "",
@@ -86,64 +145,6 @@ export function RegistrationPanel() {
     }
   };
 
-  const FloatingInput = ({ 
-    label, 
-    value, 
-    onChange, 
-    placeholder, 
-    error,
-    type = "text"
-  }: { 
-    label: string, 
-    value: string, 
-    onChange: (val: string) => void, 
-    placeholder?: string,
-    error?: string,
-    type?: string
-  }) => (
-    <div className="relative group">
-      <label className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5 block group-focus-within:text-primary transition-colors">
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            if (error) setErrors(prev => ({ ...prev, [label.toLowerCase().replace(" ", "")]: "" }));
-          }}
-          placeholder={placeholder}
-          className={`w-full bg-background border ${error ? "border-rose-500/50" : "border-border/60"} rounded-xl px-4 py-3 text-sm text-foreground outline-none transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10`}
-        />
-        <AnimatePresence>
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, x: -5 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0 }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-500"
-            >
-              <AlertCircle className="size-4" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-      <AnimatePresence>
-        {error && (
-          <motion.p 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="text-rose-500 text-[10px] mt-1.5 font-medium ml-1"
-          >
-            {error}
-          </motion.p>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-
   return (
     <section className="pb-24 lg:pb-0 min-h-[calc(100vh-4rem)] flex flex-col">
       <PanelHeader
@@ -163,20 +164,29 @@ export function RegistrationPanel() {
               <FloatingInput 
                 label="First Name" 
                 value={form.firstName} 
-                onChange={(val) => setForm({ ...form, firstName: val })} 
+                onChange={(val) => {
+                  setForm({ ...form, firstName: val });
+                  if (errors.firstName) setErrors(prev => ({ ...prev, firstName: "" }));
+                }}
                 placeholder="e.g. Priya"
                 error={errors.firstName}
               />
               <FloatingInput 
                 label="Last Name" 
                 value={form.lastName} 
-                onChange={(val) => setForm({ ...form, lastName: val })} 
+                onChange={(val) => {
+                  setForm({ ...form, lastName: val });
+                  if (errors.lastName) setErrors(prev => ({ ...prev, lastName: "" }));
+                }}
                 placeholder="e.g. Nair"
               />
               <FloatingInput 
                 label="Mobile Phone" 
                 value={form.phone} 
-                onChange={(val) => setForm({ ...form, phone: val })} 
+                onChange={(val) => {
+                  setForm({ ...form, phone: val });
+                  if (errors.phone) setErrors(prev => ({ ...prev, phone: "" }));
+                }}
                 placeholder="+91"
                 error={errors.phone}
               />
@@ -190,7 +200,10 @@ export function RegistrationPanel() {
                 <FloatingInput 
                   label="Address" 
                   value={form.address} 
-                  onChange={(val) => setForm({ ...form, address: val })} 
+                  onChange={(val) => {
+                    setForm({ ...form, address: val });
+                    if (errors.address) setErrors(prev => ({ ...prev, address: "" }));
+                  }}
                   placeholder="Full address (optional)"
                 />
               </div>

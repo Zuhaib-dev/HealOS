@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ type LoginStep = "signin" | "otp" | "forgot" | "reset";
 
 export default function LoginClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
   const { setAuth } = useAuthStore();
   
   const [step, setStep] = useState<LoginStep>("signin");
@@ -49,6 +51,11 @@ export default function LoginClient() {
   }, [step, resendTimer]);
 
   const handleRoleRedirect = (role: string) => {
+    if (callbackUrl) {
+      router.push(callbackUrl);
+      return;
+    }
+    
     switch (role?.toUpperCase()) {
       case "ADMIN": router.push("/admin"); break;
       case "DOCTOR": router.push("/doctor"); break;
@@ -202,7 +209,7 @@ export default function LoginClient() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      await nextAuthSignIn("google", { callbackUrl: "/" });
+      await nextAuthSignIn("google", { callbackUrl: callbackUrl || "/" });
     } catch (err) {
       toast.error("Google sign in failed");
       setGoogleLoading(false);

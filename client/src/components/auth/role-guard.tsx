@@ -84,7 +84,8 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
       if (!token) {
         if (isActive) setIsChecking(false);
         if (pathname !== "/") {
-          router.push("/");
+          const callbackUrl = encodeURIComponent(pathname);
+          router.push(`/login?callbackUrl=${callbackUrl}`);
         }
         return;
       }

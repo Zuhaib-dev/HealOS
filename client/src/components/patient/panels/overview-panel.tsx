@@ -18,7 +18,9 @@ import {
   Stethoscope,
   ShieldCheck,
   Loader2,
-  ChevronRight
+  ChevronRight,
+  CalendarClock,
+  Pill
 } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
@@ -129,6 +131,14 @@ export function OverviewPanel() {
   const bmi = (profile?.height && profile?.weight) 
     ? (profile.weight / Math.pow(profile.heightUnit === "ft" ? profile.height * 0.3048 : profile.height / 100, 2)).toFixed(1)
     : "--";
+
+  const upcomingAppointments = data.appointments
+    ?.filter(a => a.status === "PENDING" || a.status === "CONFIRMED")
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) || [];
+
+  const activeMedicines = data.consultations
+    ?.flatMap(c => c.medicines || [])
+    .filter(m => !m.isDispensed) || [];
 
   return (
     <section className="pb-12 max-w-350 mx-auto pt-6 px-4 sm:px-6">
@@ -262,6 +272,62 @@ export function OverviewPanel() {
           <Link href="/patient/appointments" className="mono-label text-xs text-primary mt-auto pt-4 hover:underline">
             View all encounters →
           </Link>
+        </CellShell>
+
+        {/* Tile E: Upcoming Appointments (Square/Wide) */}
+        <CellShell id="E" title="Next Visit" className="lg:col-span-5" delay={0.5} icon={CalendarClock}>
+          <div className="flex flex-col gap-3 flex-1 justify-center h-full">
+            {upcomingAppointments.length > 0 ? (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                <p className="text-[10px] mono-label text-primary uppercase tracking-wider mb-2">Upcoming</p>
+                <div className="flex justify-between items-start gap-4">
+                  <div>
+                    <p className="font-semibold text-foreground">{upcomingAppointments[0].doctorName}</p>
+                    <p className="text-sm text-muted-foreground">{upcomingAppointments[0].department}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono text-foreground font-bold">{upcomingAppointments[0].timeSlot}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(upcomingAppointments[0].date).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center p-4">
+                <CalendarClock className="size-8 mx-auto text-muted-foreground/30 mb-3" />
+                <p className="text-sm text-muted-foreground font-medium">No upcoming visits</p>
+                <Link href="/patient/book" className="text-xs text-primary hover:underline mt-1 inline-block">Book an appointment</Link>
+              </div>
+            )}
+          </div>
+        </CellShell>
+
+        {/* Tile F: Active Medicines (Wide) */}
+        <CellShell id="F" title="Prescriptions" className="lg:col-span-7" delay={0.6} icon={Pill}>
+          <div className="flex flex-col gap-2 flex-1">
+            {activeMedicines.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                {activeMedicines.slice(0, 4).map((med, idx) => (
+                  <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-background border border-border/60">
+                    <div className="bg-amber-500/10 text-amber-500 p-2 rounded-lg">
+                      <Pill className="size-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground truncate">{med.name}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono truncate mt-0.5">
+                        {med.dosage} · {med.frequency}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4 text-muted-foreground">
+                <Pill className="size-8 text-muted-foreground/30 mb-3" />
+                <p className="text-sm font-medium">No active prescriptions</p>
+                <p className="text-xs mt-1">You're all caught up.</p>
+              </div>
+            )}
+          </div>
         </CellShell>
 
       </div>

@@ -26,11 +26,11 @@ const ticker = [
 
 export function Hero() {
   const router = useRouter();
-  const { isAuthenticated, user, openAuthModal } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
   const handleBookAppointment = () => {
     if (!isAuthenticated) {
-      openAuthModal("login");
+      router.push("/login");
     } else {
       router.push("/patient");
     }

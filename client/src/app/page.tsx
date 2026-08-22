@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/landing/site-header";
 import { Hero } from "@/components/landing/hero";
 import { Features } from "@/components/landing/features";
 import { PatientJourney } from "@/components/landing/patient-journey";
+import { InstrumentBento } from "@/components/landing/instrument-bento";
 import { WhyHealOS } from "@/components/landing/why-healos";
 import { Testimonials } from "@/components/landing/testimonials";
 import { FaqSection } from "@/components/landing/faq-section";
@@ -50,6 +51,7 @@ export default function LandingPage() {
         <Features />
         <WhyHealOS />
         <PatientJourney />
+        <InstrumentBento />
         <Testimonials />
         <FaqSection />
         <CtaSection />

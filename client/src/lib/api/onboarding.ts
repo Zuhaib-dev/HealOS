@@ -25,7 +25,7 @@ export interface ProfessionalProfileData {
 export interface PatientProfileData {
   _id?: string;
   dob?: string;
-  gender?: "MALE" | "FEMALE" | "OTHER";
+  gender?: "MALE" | "FEMALE";
   bloodGroup?: "A+" | "A-" | "B+" | "B-" | "O+" | "O-" | "AB+" | "AB-";
   emergencyPhone?: string;
   emergencyContactName?: string;

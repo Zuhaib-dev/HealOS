@@ -10,7 +10,7 @@ import crypto from "crypto";
 // ==========================================
 export const registerPatientAndCreateToken = async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, phone, dateOfBirth, gender, address, department, payer, abhaNumber } = req.body;
+    const { firstName, lastName, phone, dateOfBirth, gender, address, department, payer } = req.body;
 
     if (!firstName || !phone || !department) {
       throw new AppError("First name, phone, and department are required", 400);
@@ -37,9 +37,8 @@ export const registerPatientAndCreateToken = async (req: Request, res: Response)
       patientProfile = new PatientProfile({
         user: patient._id,
         dateOfBirth: dateOfBirth || null,
-        gender: gender || "Other",
+        gender: gender || "FEMALE",
         address,
-        abhaNumber,
       });
       await patientProfile.save();
     } else {
@@ -49,9 +48,8 @@ export const registerPatientAndCreateToken = async (req: Request, res: Response)
         patientProfile = new PatientProfile({
           user: patient._id,
           dateOfBirth: dateOfBirth || null,
-          gender: gender || "Other",
+          gender: gender || "FEMALE",
           address,
-          abhaNumber,
         });
         await patientProfile.save();
       }

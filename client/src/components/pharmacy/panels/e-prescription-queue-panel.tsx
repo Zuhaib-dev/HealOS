@@ -298,7 +298,7 @@ export function RxQueuePanel() {
               >
                 
                 {/* 1. CART & COUNSELING */}
-                <div className="p-6 sm:p-8 lg:p-10 border-b border-border/40">
+                <div className="p-4 sm:p-6 lg:p-8 border-b border-border/40">
                   <div className="flex items-center justify-between gap-4 mb-8">
                     <div>
                       <div className="flex items-center gap-3 mb-2">
@@ -366,7 +366,7 @@ export function RxQueuePanel() {
                                 : "bg-card border-border/40 opacity-60 grayscale"
                           }`}
                         >
-                          <div className="flex items-start gap-4">
+                          <div className="flex items-start gap-3 sm:gap-4">
                             <button
                               disabled={item.isLocked || isPaid}
                               onClick={() => updateCartItem(item.id, { selected: !item.selected })}
@@ -402,9 +402,9 @@ export function RxQueuePanel() {
 
                           {/* Pricing & Quantity Controls */}
                           {!item.isLocked && (
-                            <div className={`flex items-center gap-4 ${!item.selected ? "pointer-events-none opacity-50" : ""}`}>
-                              <div className="flex flex-col items-end">
-                                <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Unit Price</span>
+                            <div className={`mt-2 sm:mt-0 flex items-center justify-between sm:justify-end gap-2 sm:gap-4 pt-3 sm:pt-0 border-t sm:border-0 border-border/30 ${!item.selected ? "pointer-events-none opacity-50" : ""}`}>
+                              <div className="flex flex-col items-start sm:items-end">
+                                <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Price</span>
                                 <div className="relative">
                                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs">₹</span>
                                   <input 
@@ -412,35 +412,35 @@ export function RxQueuePanel() {
                                     disabled={isPaid}
                                     value={item.price} 
                                     onChange={(e) => updateCartItem(item.id, { price: Number(e.target.value) })}
-                                    className="w-20 bg-card border border-border/60 rounded px-2 pl-5 py-1 text-xs font-mono outline-none focus:border-primary/50 text-right"
+                                    className="w-16 sm:w-20 bg-card border border-border/60 rounded px-1 sm:px-2 pl-5 py-1.5 sm:py-1 text-xs font-mono outline-none focus:border-primary/50 text-right"
                                   />
                                 </div>
                               </div>
 
-                              <div className="flex flex-col items-end">
+                              <div className="flex flex-col items-center sm:items-end">
                                 <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Qty</span>
-                                <div className="flex items-center gap-2 border border-border/60 bg-card rounded p-0.5">
+                                <div className="flex items-center gap-1 sm:gap-2 border border-border/60 bg-card rounded p-1 sm:p-0.5">
                                   <button 
                                     disabled={item.quantity <= 1 || isPaid}
                                     onClick={() => updateCartItem(item.id, { quantity: item.quantity - 1 })}
-                                    className="p-1 rounded bg-background hover:bg-muted text-foreground transition-colors disabled:opacity-50"
+                                    className="p-1 sm:p-1 rounded bg-background hover:bg-muted text-foreground transition-colors disabled:opacity-50"
                                   >
                                     <Minus className="size-3" />
                                   </button>
-                                  <span className="font-mono text-xs w-4 text-center">{item.quantity}</span>
+                                  <span className="font-mono text-xs w-4 sm:w-6 text-center">{item.quantity}</span>
                                   <button 
                                     disabled={isPaid}
                                     onClick={() => updateCartItem(item.id, { quantity: item.quantity + 1 })}
-                                    className="p-1 rounded bg-background hover:bg-muted text-foreground transition-colors disabled:opacity-50"
+                                    className="p-1 sm:p-1 rounded bg-background hover:bg-muted text-foreground transition-colors disabled:opacity-50"
                                   >
                                     <Plus className="size-3" />
                                   </button>
                                 </div>
                               </div>
                               
-                              <div className="w-20 text-right">
+                              <div className="w-16 sm:w-20 text-right">
                                 <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground block mb-1">Subtotal</span>
-                                <span className="font-mono font-bold">₹{item.price * item.quantity}</span>
+                                <span className="font-mono font-bold text-sm sm:text-base">₹{item.price * item.quantity}</span>
                               </div>
                             </div>
                           )}
@@ -451,7 +451,7 @@ export function RxQueuePanel() {
                 </div>
 
                 {/* 2. POS Checkout */}
-                <div className="p-6 sm:p-8 lg:p-10 flex-1 flex flex-col bg-background/30">
+                <div className="p-4 sm:p-6 lg:p-8 flex-1 flex flex-col bg-background/30 pb-24 sm:pb-8">
                   
                   {isPaid ? (
                     <motion.div 
@@ -578,12 +578,12 @@ export function RxQueuePanel() {
                         )}
                       </AnimatePresence>
 
-                      <div className="mt-auto pt-6 border-t border-border/40">
+                      <div className="fixed sm:relative bottom-16 sm:bottom-0 left-0 right-0 sm:mt-auto pt-4 sm:pt-6 border-t border-border/40 bg-background/80 sm:bg-transparent backdrop-blur-xl sm:backdrop-blur-none p-4 sm:p-0 z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] sm:shadow-none">
                         <ActionButton 
                           tone="solid" 
                           onClick={handleCheckout} 
                           disabled={isProcessing || !paymentMode || totalCost === 0 || (paymentMode === "ONLINE" && paymentStatus !== "PAID")}
-                          className={`w-full py-6 text-base font-bold justify-center transition-all ${
+                          className={`w-full py-4 sm:py-6 text-base font-bold justify-center transition-all ${
                             paymentMode === "ONLINE" ? "bg-indigo-500 hover:bg-indigo-600 text-white" : ""
                           }`}
                         >

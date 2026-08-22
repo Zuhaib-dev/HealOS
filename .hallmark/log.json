@@ -1,0 +1,23 @@
+[
+  {
+    "date": "2026-08-22",
+    "macrostructure": "Workbench",
+    "theme": "Emerald Prestige",
+    "enrichment": "E4 Interface Led",
+    "brief": "Features / Platform overview"
+  },
+  {
+    "date": "2026-08-22",
+    "macrostructure": "Marquee Hero",
+    "theme": "Emerald Prestige",
+    "enrichment": "E2 Ambient Light",
+    "brief": "Testimonials / Trust signals"
+  },
+  {
+    "date": "2026-08-22",
+    "macrostructure": "Long Document",
+    "theme": "Emerald Prestige",
+    "enrichment": "E5 Parallax Break",
+    "brief": "About / Clinical Mission"
+  }
+]

@@ -108,25 +108,39 @@ export function Hero() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.75 }}
-                className="mt-10 flex flex-wrap items-center gap-4"
+                className="mt-10 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
               >
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   type="button"
                   onClick={handleBookAppointment}
-                  className="bg-primary text-primary-foreground mono-label group inline-flex items-center gap-2.5 px-6 py-4 rounded-md font-semibold text-xs transition-all hover:opacity-90 shadow-md cursor-pointer"
+                  className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-full bg-primary px-7 py-4 text-xs font-semibold text-primary-foreground shadow-lg transition-all hover:bg-primary/90 hover:shadow-primary/25 cursor-pointer mono-label overflow-hidden"
                 >
-                  <Calendar className="size-4 text-primary-foreground" />
-                  Book Doctor Appointment
-                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-                </button>
+                  <span className="relative z-10 flex items-center gap-2.5">
+                    <Calendar className="size-4" />
+                    Book Doctor Appointment
+                    <motion.span
+                      initial={{ x: 0 }}
+                      whileHover={{ x: 4 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      className="inline-block"
+                    >
+                      <ArrowRight className="size-4" />
+                    </motion.span>
+                  </span>
+                  <div className="absolute inset-0 z-0 bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                </motion.button>
 
-                <Link
-                  href="/onboarding"
-                  className="hairline-t hairline-b border border-border/80 text-foreground hover:border-primary/40 bg-card/50 hover:bg-muted/60 mono-label inline-flex items-center gap-2 px-6 py-4 rounded-md font-semibold text-xs transition-colors"
-                >
-                  <Stethoscope className="size-4 text-emerald-500" />
-                  Clinician Verification & Portal
-                </Link>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
+                  <Link
+                    href="/onboarding"
+                    className="group flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-border/80 bg-background/50 px-7 py-4 text-xs font-semibold text-foreground shadow-sm backdrop-blur-sm transition-colors hover:border-emerald-500/30 hover:bg-muted/80 mono-label"
+                  >
+                    <Stethoscope className="size-4 text-emerald-500 transition-transform group-hover:scale-110" />
+                    Clinician Verification & Portal
+                  </Link>
+                </motion.div>
               </motion.div>
 
               {/* Quick Feature Highlights */}

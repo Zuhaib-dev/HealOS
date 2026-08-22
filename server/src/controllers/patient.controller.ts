@@ -26,7 +26,6 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
     // 1. Get Upcoming Appointments
     const appointments = await Appointment.find({
       patient: patientId,
-      status: { $in: ["PENDING", "CONFIRMED"] },
     })
       .populate("doctor", "name role specialization")
       .sort({ date: 1, timeSlot: 1 });

@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   CalendarPlus,
@@ -49,18 +50,23 @@ const mainMobileTabs = ["overview", "book", "appointments", "messages"];
 const moreMobileTabs = ["reports", "meds", "billing", "profile"];
 
 export function PatientShell({
-  active,
-  onSelect,
   children,
 }: {
-  active: PatientSectionId;
-  onSelect: (id: PatientSectionId) => void;
   children: ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const { user } = useAuthStore();
-  const currentSection = patientSections.find((s) => s.id === active);
+  const pathname = usePathname();
+
+  const currentSection = patientSections.find((s) =>
+    s.id === "overview" ? pathname === "/patient" : pathname.startsWith(`/patient/${s.id}`)
+  ) || patientSections[0];
+
+  // Helper to check if a section is active
+  const isSectionActive = (id: string) => {
+    return id === "overview" ? pathname === "/patient" : pathname.startsWith(`/patient/${id}`);
+  };
 
   return (
     <div className="bg-background text-foreground min-h-screen pb-24 md:pb-0">
@@ -138,12 +144,12 @@ export function PatientShell({
           <nav className="flex flex-col gap-1">
             {patientSections.map((s) => {
               const Icon = s.icon;
-              const isActive = active === s.id;
+              const isActive = isSectionActive(s.id);
+              const href = s.id === "overview" ? "/patient" : `/patient/${s.id}`;
               return (
-                <button
+                <Link
                   key={s.id}
-                  type="button"
-                  onClick={() => onSelect(s.id)}
+                  href={href}
                   className={`mono-label group relative flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-left transition-all cursor-pointer text-xs ${
                     isActive
                       ? "bg-primary text-primary-foreground font-semibold shadow-sm"
@@ -152,7 +158,7 @@ export function PatientShell({
                 >
                   <Icon className={`size-4 ${isActive ? "text-primary-foreground" : "text-primary/70 group-hover:text-primary"}`} />
                   <span>{s.label}</span>
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -182,7 +188,7 @@ export function PatientShell({
           <div className="mx-auto w-full max-w-5xl">
             <AnimatePresence mode="wait">
               <motion.div
-                key={active}
+                key={pathname}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
@@ -202,12 +208,13 @@ export function PatientShell({
             .filter((s) => mainMobileTabs.includes(s.id))
             .map((s) => {
               const Icon = s.icon;
-              const isActive = active === s.id;
+              const isActive = isSectionActive(s.id);
+              const href = s.id === "overview" ? "/patient" : `/patient/${s.id}`;
               return (
-                <button
+                <Link
                   key={s.id}
-                  type="button"
-                  onClick={() => onSelect(s.id)}
+                  href={href}
+                  onClick={() => setIsMoreOpen(false)}
                   className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none group tap-highlight-transparent"
                 >
                   <motion.div 
@@ -226,7 +233,7 @@ export function PatientShell({
                   >
                     {s.label}
                   </span>
-                </button>
+                </Link>
               );
             })}
 
@@ -238,12 +245,12 @@ export function PatientShell({
                 className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none group tap-highlight-transparent"
               >
                 <div className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                  moreMobileTabs.includes(active) ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                  moreMobileTabs.some(id => isSectionActive(id)) ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                 }`}>
-                  <Menu className={`size-5 ${moreMobileTabs.includes(active) ? "fill-primary/20" : ""}`} strokeWidth={moreMobileTabs.includes(active) ? 2.5 : 2} />
+                  <Menu className={`size-5 ${moreMobileTabs.some(id => isSectionActive(id)) ? "fill-primary/20" : ""}`} strokeWidth={moreMobileTabs.some(id => isSectionActive(id)) ? 2.5 : 2} />
                 </div>
                 <span className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                  moreMobileTabs.includes(active) ? "text-primary font-semibold" : "text-muted-foreground"
+                  moreMobileTabs.some(id => isSectionActive(id)) ? "text-primary font-semibold" : "text-muted-foreground"
                 }`}>
                   More
                 </span>
@@ -261,15 +268,13 @@ export function PatientShell({
                   .filter((s) => moreMobileTabs.includes(s.id))
                   .map((s) => {
                     const Icon = s.icon;
-                    const isActive = active === s.id;
+                    const isActive = isSectionActive(s.id);
+                    const href = s.id === "overview" ? "/patient" : `/patient/${s.id}`;
                     return (
-                      <button
+                      <Link
                         key={s.id}
-                        type="button"
-                        onClick={() => {
-                          onSelect(s.id);
-                          setIsMoreOpen(false);
-                        }}
+                        href={href}
+                        onClick={() => setIsMoreOpen(false)}
                         className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
                           isActive
                             ? "bg-primary/10 text-primary border border-primary/20"
@@ -278,7 +283,7 @@ export function PatientShell({
                       >
                         <Icon className="size-6" strokeWidth={isActive ? 2.5 : 2} />
                         <span className="text-[11px] font-semibold tracking-wide">{s.label}</span>
-                      </button>
+                      </Link>
                     );
                   })}
               </div>

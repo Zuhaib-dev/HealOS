@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ScanLine,
   ListChecks,
@@ -35,17 +36,22 @@ export const radiologySections = [
 export type RadiologySectionId = (typeof radiologySections)[number]["id"];
 
 export function RadiologyShell({
-  active,
-  onSelect,
   children,
 }: {
-  active: RadiologySectionId;
-  onSelect: (id: RadiologySectionId) => void;
   children: ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const { user } = useAuthStore();
-  const currentSection = radiologySections.find((s) => s.id === active);
+  const pathname = usePathname();
+
+  const currentSection = radiologySections.find((s) =>
+    s.id === "worklist" ? pathname === "/radiology" : pathname.startsWith(`/radiology/${s.id}`)
+  ) || radiologySections[0];
+
+  // Helper to check if a section is active
+  const isSectionActive = (id: string) => {
+    return id === "worklist" ? pathname === "/radiology" : pathname.startsWith(`/radiology/${id}`);
+  };
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -121,14 +127,14 @@ export function RadiologyShell({
           </div>
 
           <nav className="flex flex-col gap-1">
-            {radiologySections.map((s, i) => {
+            {radiologySections.map((s) => {
               const Icon = s.icon;
-              const isActive = active === s.id;
+              const isActive = isSectionActive(s.id);
+              const href = s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
               return (
-                <button
+                <Link
                   key={s.id}
-                  type="button"
-                  onClick={() => onSelect(s.id)}
+                  href={href}
                   className={`mono-label group relative flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-left transition-all cursor-pointer text-xs ${
                     isActive
                       ? "bg-primary text-primary-foreground font-semibold shadow-sm"
@@ -137,7 +143,7 @@ export function RadiologyShell({
                 >
                   <Icon className={`size-4 ${isActive ? "text-primary-foreground" : "text-primary/70 group-hover:text-primary"}`} />
                   <span>{s.label}</span>
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -160,20 +166,23 @@ export function RadiologyShell({
         <main className="min-w-0 flex-1">
           {/* Mobile Header Tabs */}
           <div className="border-b border-border/60 flex gap-1.5 overflow-x-auto p-2 bg-card/40 md:hidden">
-            {radiologySections.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => onSelect(s.id)}
-                className={`mono-label text-xs shrink-0 px-3 py-1.5 rounded-md transition-colors ${
-                  active === s.id
-                    ? "bg-primary text-primary-foreground font-semibold"
-                    : "text-muted-foreground bg-muted/30"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
+            {radiologySections.map((s) => {
+              const isActive = isSectionActive(s.id);
+              const href = s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
+              return (
+                <Link
+                  key={s.id}
+                  href={href}
+                  className={`mono-label text-xs shrink-0 px-3 py-1.5 rounded-md transition-colors ${
+                    isActive
+                      ? "bg-primary text-primary-foreground font-semibold"
+                      : "text-muted-foreground bg-muted/30"
+                  }`}
+                >
+                  {s.label}
+                </Link>
+              );
+            })}
           </div>
           {children}
         </main>

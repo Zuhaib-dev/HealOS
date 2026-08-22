@@ -1,10 +1,14 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Patient Portal | HealOS",
-  description: "View appointments, test results, and medical history.",
-};
+import { RoleGuard } from "@/components/auth/role-guard";
+import { PatientShell } from "@/components/patient/patient-shell";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+export default function PatientLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RoleGuard allowedRoles={["PATIENT", "ADMIN"]}>
+      <PatientShell  >
+        {children}
+      </PatientShell>
+    </RoleGuard>
+  );
 }

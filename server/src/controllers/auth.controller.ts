@@ -45,6 +45,16 @@ const resendOtpSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+});
+
+const resetPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+  otp: z.string().regex(/^\d{6}$/, "OTP must be exactly 6 digits"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
@@ -59,11 +69,16 @@ const generate6DigitOtp = (): string => {
   return randomInt(100000, 1000000).toString();
 };
 
-const sendOtpOrRespond = async (res: Response, email: string, otp: string): Promise<boolean> => {
-  const emailSent = await sendOtpEmail(email, otp);
+const sendOtpOrRespond = async (
+  res: Response,
+  email: string,
+  otp: string,
+  purpose: "email_verification" | "password_reset" = "email_verification"
+): Promise<boolean> => {
+  const emailSent = await sendOtpEmail(email, otp, purpose);
   if (emailSent) return true;
 
-  await OTP.deleteMany({ email, otp });
+  await OTP.deleteMany({ email, otp, purpose });
   res.status(StatusCodes.BAD_GATEWAY).json({
     success: false,
     message: "We couldn't send the verification email right now. Please try again in a moment.",
@@ -231,8 +246,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     // Generate & save 6-digit OTP
     const otpCode = generate6DigitOtp();
-    await OTP.deleteMany({ email }); // Delete old OTPs for this email
-    await OTP.create({ email, otp: otpCode });
+    await OTP.deleteMany({ email, purpose: "email_verification" }); // Delete old OTPs for this email
+    await OTP.create({ email, otp: otpCode, purpose: "email_verification" });
 
     // Send OTP email via Nodemailer
     if (!(await sendOtpOrRespond(res, email, otpCode))) return;
@@ -270,7 +285,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
 
     const { email, otp } = parsed.data;
 
-    const otpRecord = await OTP.findOne({ email, otp });
+    const otpRecord = await OTP.findOne({ email, otp, purpose: "email_verification" });
     if (!otpRecord) {
       res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -293,7 +308,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
     await user.save();
 
     // Delete used OTP
-    await OTP.deleteMany({ email });
+    await OTP.deleteMany({ email, purpose: "email_verification" });
 
     // Issue JWT token
     const normalizedRole = normalizeUserRole(user.role);
@@ -340,10 +355,17 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
+    if (user.isEmailVerified) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "This email is already verified. Please log in.",
+      });
+      return;
+    }
 
     const otpCode = generate6DigitOtp();
-    await OTP.deleteMany({ email });
-    await OTP.create({ email, otp: otpCode });
+    await OTP.deleteMany({ email, purpose: "email_verification" });
+    await OTP.create({ email, otp: otpCode, purpose: "email_verification" });
 
     if (!(await sendOtpOrRespond(res, email, otpCode))) return;
 
@@ -400,8 +422,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     if (!user.isEmailVerified) {
       // Re-send OTP automatically
       const otpCode = generate6DigitOtp();
-      await OTP.deleteMany({ email });
-      await OTP.create({ email, otp: otpCode });
+      await OTP.deleteMany({ email, purpose: "email_verification" });
+      await OTP.create({ email, otp: otpCode, purpose: "email_verification" });
       if (!(await sendOtpOrRespond(res, email, otpCode))) return;
 
       res.status(StatusCodes.FORBIDDEN).json({

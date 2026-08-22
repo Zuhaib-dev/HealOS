@@ -1,10 +1,14 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Doctor Dashboard | HealOS",
-  description: "Patient consultations, medical records, and prescriptions.",
-};
+import { RoleGuard } from "@/components/auth/role-guard";
+import { DoctorShell } from "@/components/doctor/doctor-shell";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+export default function DoctorLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RoleGuard allowedRoles={["DOCTOR", "ADMIN"]}>
+      <DoctorShell  >
+        {children}
+      </DoctorShell>
+    </RoleGuard>
+  );
 }

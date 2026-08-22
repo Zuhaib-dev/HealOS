@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2 } from "lucide-react";

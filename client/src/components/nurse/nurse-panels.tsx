@@ -1,3 +1,5 @@
+"use client";
+
 export { VitalsRoundsPanel } from "./panels/vitals-rounds-(REAL-DATA)-panel";
 export { EmarPanel } from "./panels/eMAR-panel";
 export { FluidBalancePanel as FluidPanel } from "./panels/fluid-balance-panel";

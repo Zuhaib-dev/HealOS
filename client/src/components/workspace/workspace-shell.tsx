@@ -1,6 +1,7 @@
 import { useState, type ComponentType, type ReactNode } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Search, Bell } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -16,8 +17,6 @@ export function WorkspaceShell({
   breadcrumb,
   searchPlaceholder,
   sections,
-  active,
-  onSelect,
   user,
   statusTitle,
   statusLine,
@@ -28,8 +27,6 @@ export function WorkspaceShell({
   breadcrumb: string;
   searchPlaceholder: string;
   sections: readonly WorkspaceSection[];
-  active: string;
-  onSelect: (id: string) => void;
   user?: { name: string; role: string; initials: string };
   statusTitle: string;
   statusLine: string;
@@ -38,6 +35,12 @@ export function WorkspaceShell({
   children: ReactNode;
 }) {
   const [query, setQuery] = useState("");
+  const pathname = usePathname();
+
+  const defaultSectionId = sections[0]?.id;
+  const isSectionActive = (id: string) => {
+    return id === defaultSectionId ? pathname === `/${navId}` : pathname.startsWith(`/${navId}/${id}`);
+  };
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -80,12 +83,12 @@ export function WorkspaceShell({
           <nav className="flex flex-col gap-0.5">
             {sections.map((s, i) => {
               const Icon = s.icon;
-              const isActive = active === s.id;
+              const isActive = isSectionActive(s.id);
+              const href = s.id === defaultSectionId ? `/${navId}` : `/${navId}/${s.id}`;
               return (
-                <button
+                <Link
                   key={s.id}
-                  type="button"
-                  onClick={() => onSelect(s.id)}
+                  href={href}
                   className={`mono-label group relative flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
                     isActive
                       ? "bg-accent/10 text-foreground"
@@ -101,7 +104,7 @@ export function WorkspaceShell({
                   <span className="text-accent/60">{String(i + 1).padStart(2, "0")}</span>
                   <Icon className="size-3.5" />
                   {s.label}
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -118,18 +121,21 @@ export function WorkspaceShell({
 
         <main className="min-w-0 flex-1">
           <div className="hairline-b flex gap-1 overflow-x-auto px-3 py-2 md:hidden">
-            {sections.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => onSelect(s.id)}
-                className={`mono-label shrink-0 px-3 py-2 ${
-                  active === s.id ? "bg-accent/10 text-foreground" : "text-muted-foreground"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
+            {sections.map((s) => {
+              const isActive = isSectionActive(s.id);
+              const href = s.id === defaultSectionId ? `/${navId}` : `/${navId}/${s.id}`;
+              return (
+                <Link
+                  key={s.id}
+                  href={href}
+                  className={`mono-label shrink-0 px-3 py-2 ${
+                    isActive ? "bg-accent/10 text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {s.label}
+                </Link>
+              );
+            })}
           </div>
           {children}
         </main>

@@ -1,3 +1,5 @@
+"use client";
+
 export { CollectionPanel } from "./panels/collection-panel";
 export { AccessioningPanel } from "./panels/accessioning-panel";
 export { AnalyserPanel } from "./panels/analyser-worklist-panel";

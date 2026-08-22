@@ -1,3 +1,5 @@
+"use client";
+
 export { WorklistPanel } from "./panels/worklist-panel";
 export { UploadPanel } from "./panels/upload-panel";
 export { ReportingPanel } from "./panels/reporting-panel";

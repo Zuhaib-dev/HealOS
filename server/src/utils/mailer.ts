@@ -13,7 +13,7 @@ const encodeBase64Url = (value: string): string => {
   return Buffer.from(value).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 };
 
-const sendWithGmailApi = async (email: string, otp: string, html: string): Promise<void> => {
+const sendWithGmailApi = async (email: string, subject: string, html: string): Promise<void> => {
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: {
@@ -41,7 +41,7 @@ const sendWithGmailApi = async (email: string, otp: string, html: string): Promi
   const mimeMessage = [
     `From: ${from}`,
     `To: ${email}`,
-    `Subject: [HealOS] Your Verification Code: ${otp}`,
+    `Subject: ${subject}`,
     "MIME-Version: 1.0",
     "Content-Type: text/html; charset=UTF-8",
     "",
@@ -63,7 +63,7 @@ const sendWithGmailApi = async (email: string, otp: string, html: string): Promi
   }
 };
 
-const sendWithResend = async (email: string, otp: string, html: string): Promise<void> => {
+const sendWithResend = async (email: string, subject: string, html: string): Promise<void> => {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -73,7 +73,7 @@ const sendWithResend = async (email: string, otp: string, html: string): Promise
     body: JSON.stringify({
       from: envConfig.EMAIL_FROM,
       to: [email],
-      subject: `[HealOS] Your Verification Code: ${otp}`,
+      subject,
       html,
     }),
   });
@@ -84,7 +84,7 @@ const sendWithResend = async (email: string, otp: string, html: string): Promise
   }
 };
 
-const sendWithSmtp = async (email: string, otp: string, html: string): Promise<void> => {
+const sendWithSmtp = async (email: string, subject: string, html: string): Promise<void> => {
   const secure = envConfig.SMTP_PORT === 465;
   const transporter = nodemailer.createTransport({
     host: envConfig.SMTP_HOST,
@@ -103,13 +103,18 @@ const sendWithSmtp = async (email: string, otp: string, html: string): Promise<v
   await transporter.sendMail({
     from: envConfig.EMAIL_FROM,
     to: email,
-    subject: `[HealOS] Your Verification Code: ${otp}`,
+    subject,
     html,
   });
 };
 
-export const sendOtpEmail = async (email: string, otp: string): Promise<boolean> => {
+export const sendOtpEmail = async (
+  email: string,
+  otp: string,
+  purpose: "email_verification" | "password_reset" = "email_verification"
+): Promise<boolean> => {
   try {
+    const isPasswordReset = purpose === "password_reset";
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
         <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #e0e0e0;">
@@ -117,8 +122,8 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<boolean>
           <p style="color: #666666; margin: 5px 0 0 0; font-size: 14px;">Operating System for Healthcare</p>
         </div>
         <div style="padding: 30px 0; text-align: center;">
-          <h2 style="color: #333333; margin-top: 0;">Email Verification Code</h2>
-          <p style="color: #666666; font-size: 16px; line-height: 1.5;">Please use the 6-digit verification code below to complete your registration or login:</p>
+          <h2 style="color: #333333; margin-top: 0;">${isPasswordReset ? "Password Reset Code" : "Email Verification Code"}</h2>
+          <p style="color: #666666; font-size: 16px; line-height: 1.5;">Please use the 6-digit code below to ${isPasswordReset ? "reset your password" : "complete your registration or login"}:</p>
           <div style="margin: 25px 0; padding: 15px; background-color: #f0fdf4; border: 1px dashed #0d9488; border-radius: 6px; display: inline-block;">
             <span style="font-family: monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0f766e;">${otp}</span>
           </div>
@@ -129,16 +134,20 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<boolean>
         </div>
       </div>
     `;
+    const logAction = isPasswordReset ? "Password reset OTP" : "Verification OTP";
+    const subject = isPasswordReset
+      ? `[HealOS] Your Password Reset Code: ${otp}`
+      : `[HealOS] Your Verification Code: ${otp}`;
 
     if (isGmailApiConfigured) {
-      await sendWithGmailApi(email, otp, htmlContent);
-      console.log(`✅ Verification OTP sent to ${email} via Gmail API`);
+      await sendWithGmailApi(email, subject, htmlContent);
+      console.log(`✅ ${logAction} sent to ${email} via Gmail API`);
       return true;
     }
 
     if (envConfig.RESEND_API_KEY) {
-      await sendWithResend(email, otp, htmlContent);
-      console.log(`✅ Verification OTP sent to ${email} via Resend`);
+      await sendWithResend(email, subject, htmlContent);
+      console.log(`✅ ${logAction} sent to ${email} via Resend`);
       return true;
     }
 
@@ -152,14 +161,14 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<boolean>
       }
 
       console.log(`\n==========================================`);
-      console.log(`📧 [DEV FALLBACK] OTP Code for ${email}: ${otp}`);
+      console.log(`📧 [DEV FALLBACK] ${logAction} Code for ${email}: ${otp}`);
       console.log(`==========================================\n`);
       return true;
     }
 
-    await sendWithSmtp(email, otp, htmlContent);
+    await sendWithSmtp(email, subject, htmlContent);
 
-    console.log(`✅ Verification OTP sent to ${email} via SMTP`);
+    console.log(`✅ ${logAction} sent to ${email} via SMTP`);
     return true;
   } catch (error) {
     console.error("❌ Failed to send OTP email:", error);
@@ -167,7 +176,7 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<boolean>
     if (envConfig.NODE_ENV !== "production") {
       // Print fallback OTP in console so development is never blocked by email provider errors
       console.log(`\n==========================================`);
-      console.log(`📧 [DEV EMERGENCY FALLBACK] OTP Code for ${email}: ${otp}`);
+      console.log(`📧 [DEV EMERGENCY FALLBACK] ${logAction} Code for ${email}: ${otp}`);
       console.log(`==========================================\n`);
     }
 

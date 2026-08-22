@@ -7,7 +7,7 @@ import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 const sections = [
   { id: "overview", label: "Home", icon: LayoutDashboard },
   { id: "new", label: "New Patient", icon: UserPlus },
-  { id: "queue", label: "Waiting Room", icon: Users },
+  { id: "queue", label: "Queue", icon: Users },
   { id: "counter", label: "Front Counter", icon: Monitor },
 ];
 

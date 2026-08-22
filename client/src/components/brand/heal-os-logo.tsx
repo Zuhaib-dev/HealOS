@@ -119,6 +119,7 @@ export function HealOSLogo({ className, showWordmark = true, size = 34 }: HealOS
             cy="24"
             r="1.9"
             className="fill-accent"
+            initial={{ cx: 9, opacity: 0, scale: 1 }}
             animate={{ cx: [9, 39], opacity: [0, 1, 1, 0], scale: [1, 1.5, 1, 1.5, 1] }}
             transition={{ duration: 2.6, repeat: Infinity, ease: "linear", delay: 1.4 }}
           />

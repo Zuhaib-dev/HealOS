@@ -13,7 +13,7 @@ interface RoleGuardProps {
 export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, user, token, _hasHydrated, openAuthModal, setUser, logout } =
+  const { isAuthenticated, user, token, _hasHydrated, setUser, logout } =
     useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
 
@@ -128,7 +128,6 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     allowedRoleKey,
     pathname,
     router,
-    openAuthModal,
     setUser,
     logout,
   ]);

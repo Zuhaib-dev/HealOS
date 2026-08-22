@@ -28,8 +28,6 @@ interface AuthState {
   user: AuthUser | null;
   token: string | null;
   isAuthenticated: boolean;
-  isAuthModalOpen: boolean;
-  authModalTab: "login" | "register";
   _hasHydrated: boolean;
   
   // Actions
@@ -38,8 +36,6 @@ interface AuthState {
   updateUser: (partialUser: Partial<AuthUser>) => void;
   setToken: (token: string) => void;
   logout: () => void;
-  openAuthModal: (tab?: "login" | "register") => void;
-  closeAuthModal: () => void;
   setHasHydrated: (state: boolean) => void;
 }
 
@@ -49,8 +45,6 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
-      isAuthModalOpen: false,
-      authModalTab: "login",
       _hasHydrated: false,
 
       setAuth: (user, token) =>
@@ -58,7 +52,6 @@ export const useAuthStore = create<AuthState>()(
           user,
           token,
           isAuthenticated: true,
-          isAuthModalOpen: false,
         }),
 
       setUser: (user) => set({ user }),
@@ -84,14 +77,6 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
         });
       },
-
-      openAuthModal: (tab = "login") =>
-        set({
-          isAuthModalOpen: true,
-          authModalTab: tab,
-        }),
-
-      closeAuthModal: () => set({ isAuthModalOpen: false }),
 
       setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
     }),

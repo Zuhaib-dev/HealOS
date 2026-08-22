@@ -1,7 +1,6 @@
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthModal } from "@/components/auth/auth-modal";
 import { AuthSessionBridge } from "@/components/auth/auth-session-bridge";
 import type { Metadata } from "next";
 import { Work_Sans, JetBrains_Mono } from "next/font/google";
@@ -92,7 +91,6 @@ export default function RootLayout({
             <RealtimeSocketProvider>
               {children}
             </RealtimeSocketProvider>
-            <AuthModal />
             <Toaster position="top-right" />
           </QueryProvider>
         </ThemeProvider>

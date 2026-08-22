@@ -63,6 +63,7 @@ const envSchema = z
     SMTP_PORT: z.coerce.number().default(587),
     SMTP_USER: z.string().optional(),
     SMTP_PASS: z.string().optional(),
+    RESEND_API_KEY: z.string().optional(),
     EMAIL_FROM: z.string().default("HealOS <noreply@healos.com>"),
   })
   .superRefine((env, ctx) => {

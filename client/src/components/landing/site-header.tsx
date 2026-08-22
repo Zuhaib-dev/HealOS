@@ -12,7 +12,7 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const { isAuthenticated, user, openAuthModal, logout } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -61,33 +61,33 @@ export function SiteHeader() {
               <UserProfileMenu />
             ) : (
               <div className="hidden sm:flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => openAuthModal("login")}
+                <Link
+                  href="/login"
                   className="mono-label text-muted-foreground hover:text-foreground px-4 py-2 text-xs font-semibold transition-colors cursor-pointer"
                 >
                   Sign In
-                </button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                  onClick={() => openAuthModal("register")}
-                  className="group relative flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary/90 cursor-pointer mono-label overflow-hidden"
-                >
-                  <span className="relative z-10 flex items-center gap-1.5">
-                    Get Started
-                    <motion.span
-                      initial={{ x: 0 }}
-                      whileHover={{ x: 3 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                      className="inline-block"
-                    >
-                      →
-                    </motion.span>
-                  </span>
-                  <div className="absolute inset-0 z-0 bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
-                </motion.button>
+                </Link>
+                <Link href="/register" className="group">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="button"
+                    className="relative flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary/90 cursor-pointer mono-label overflow-hidden"
+                  >
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      Get Started
+                      <motion.span
+                        initial={{ x: 0 }}
+                        whileHover={{ x: 3 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                        className="inline-block"
+                      >
+                        →
+                      </motion.span>
+                    </span>
+                    <div className="absolute inset-0 z-0 bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                  </motion.button>
+                </Link>
               </div>
             )}
 
@@ -135,20 +135,20 @@ export function SiteHeader() {
               
               {!isAuthenticated ? (
                 <div className="mt-4 flex flex-col gap-3 border-t border-border/50 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => { setOpen(false); openAuthModal("login"); }}
-                    className="mono-label w-full rounded-xl border border-border/50 bg-background px-4 py-3 text-sm font-semibold hover:bg-muted"
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="mono-label w-full rounded-xl border border-border/50 bg-background px-4 py-3 text-sm font-semibold hover:bg-muted text-center"
                   >
                     Sign In
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setOpen(false); openAuthModal("register"); }}
-                    className="mono-label w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setOpen(false)}
+                    className="mono-label w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 text-center"
                   >
                     Get Started →
-                  </button>
+                  </Link>
                 </div>
               ) : (
                 <div className="mt-4 border-t border-border/50 pt-4">

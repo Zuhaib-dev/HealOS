@@ -40,7 +40,7 @@ import {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { isAuthenticated, user, openAuthModal, updateUser } = useAuthStore();
+  const { isAuthenticated, user, updateUser } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<"patient" | "clinician">("patient");
 
@@ -74,7 +74,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      openAuthModal("login");
+      router.push("/login");
       return;
     }
 
@@ -112,7 +112,7 @@ export default function OnboardingPage() {
     };
 
     loadData();
-  }, [isAuthenticated, user, openAuthModal]);
+  }, [isAuthenticated, user, router]);
 
   const handlePatientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

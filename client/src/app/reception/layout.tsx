@@ -19,7 +19,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
       sections={sections}
       
       
-      user={{ name: user?.name || "Front Desk", role: user?.role || "Front desk", initials: getInitials(user?.name) }}
+      user={{ name: "Front Desk", role: "Front desk", initials: "FD" }}
       statusTitle="Counter"
       statusLine="Counter 2 open"
       statusNote="23 tokens waiting · float balanced"

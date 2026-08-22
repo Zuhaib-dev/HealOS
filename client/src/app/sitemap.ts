@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next'
-
+ 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
@@ -9,7 +9,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: 'https://healos-theta.vercel.app/contact',
+      url: 'https://healos-theta.vercel.app/about',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: 'https://healos-theta.vercel.app/features',
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: 'https://healos-theta.vercel.app/testimonials',
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.8,
@@ -17,14 +29,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: 'https://healos-theta.vercel.app/login',
       lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.9,
+      changeFrequency: 'yearly',
+      priority: 0.5,
     },
     {
       url: 'https://healos-theta.vercel.app/register',
       lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
+      changeFrequency: 'yearly',
+      priority: 0.5,
+    }
   ]
 }

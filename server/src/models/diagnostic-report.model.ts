@@ -8,6 +8,7 @@ export interface IDiagnosticReport extends Document {
   reportUrl?: string; // URL to PDF/DICOM in cloud storage
   fileUrl?: string;
   fileName?: string;
+  title?: string;
   fileSize?: string;
   comments?: string;
   findings?: string; // Summary of results
@@ -31,6 +32,7 @@ const diagnosticReportSchema = new Schema<IDiagnosticReport>(
     reportUrl: { type: String },
     fileUrl: { type: String },
     fileName: { type: String },
+    title: { type: String },
     fileSize: { type: String },
     comments: { type: String },
     findings: { type: String },

@@ -9,7 +9,7 @@ import { updateAppointmentStatusApi, AppointmentRecord } from "@/lib/api/appoint
 import { toast } from "sonner";
 import { getDashboardStatsApi, getPatientHistoryApi } from "@/lib/api/doctor";
 import { AnimatePresence } from "motion/react";
-import { Loader2, Activity, FileText, Pill as PillIcon, FileDigit, ChevronRight, User as UserIcon } from "lucide-react";
+import { Loader2, Activity, FileText, Pill as PillIcon, FileDigit, ChevronRight, User as UserIcon, Eye } from "lucide-react";
 import { ConsultationForm } from "@/components/doctor/shared/consultation-form";
 import { getSocket } from "@/lib/socket";
 
@@ -339,10 +339,21 @@ export function ShiftPanel() {
                                <div className="size-10 bg-indigo-500/10 text-indigo-500 rounded-lg flex items-center justify-center shrink-0">
                                  <FileDigit className="size-5" />
                                </div>
-                               <div>
-                                 <p className="font-bold text-sm">{r.testName || "Lab Report"}</p>
+                               <div className="flex-1">
+                                 <p className="font-bold text-sm">{r.title || r.fileName || r.testName || "Diagnostic Report"}</p>
                                  <p className="text-xs text-muted-foreground">Uploaded: {new Date(r.createdAt).toLocaleDateString()}</p>
                                </div>
+                               {r.fileUrl && (
+                                 <a 
+                                   href={`http://localhost:5001${r.fileUrl}`} 
+                                   target="_blank" 
+                                   rel="noopener noreferrer" 
+                                   className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"
+                                   title="View Document"
+                                 >
+                                   <Eye className="size-4" />
+                                 </a>
+                               )}
                              </div>
                            ))
                          ) : (

@@ -63,7 +63,7 @@ export function SiteHeader() {
               <div className="hidden sm:flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="mono-label text-muted-foreground hover:text-foreground px-4 py-2 text-xs font-semibold transition-colors cursor-pointer"
+                  className="mono-label text-muted-foreground hover:text-foreground px-4 py-2 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
                 >
                   Sign In
                 </Link>
@@ -72,7 +72,7 @@ export function SiteHeader() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     type="button"
-                    className="relative flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary/90 cursor-pointer mono-label overflow-hidden"
+                    className="relative flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary/90 cursor-pointer mono-label overflow-hidden whitespace-nowrap shrink-0"
                   >
                     <span className="relative z-10 flex items-center gap-1.5">
                       Get Started

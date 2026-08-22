@@ -81,7 +81,7 @@ const sendOtpOrRespond = async (
   await OTP.deleteMany({ email, otp, purpose });
   res.status(StatusCodes.BAD_GATEWAY).json({
     success: false,
-    message: "We couldn't send the verification email right now. Please try again in a moment.",
+    message: `We couldn't send the ${purpose === "password_reset" ? "password reset" : "verification"} email right now. Please try again in a moment.`,
   });
   return false;
 };
@@ -383,7 +383,105 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
 };
 
 // ---------------------------
-// 5. Login (Email + Password)
+// 5. Forgot Password
+// ---------------------------
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!isDbConnected(res)) return;
+
+    const parsed = forgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid email",
+      });
+      return;
+    }
+
+    const { email } = parsed.data;
+    const user = await User.findOne({ email });
+    if (!user || !user.password) {
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: "If an account exists for this email, a reset code has been sent.",
+      });
+      return;
+    }
+
+    const otpCode = generate6DigitOtp();
+    await OTP.deleteMany({ email, purpose: "password_reset" });
+    await OTP.create({ email, otp: otpCode, purpose: "password_reset" });
+
+    if (!(await sendOtpOrRespond(res, email, otpCode, "password_reset"))) return;
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "If an account exists for this email, a reset code has been sent.",
+    });
+  } catch (error) {
+    console.error("Error in forgotPassword:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to send password reset code",
+    });
+  }
+};
+
+// ---------------------------
+// 6. Reset Password
+// ---------------------------
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!isDbConnected(res)) return;
+
+    const parsed = resetPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid reset request",
+        errors: parsed.error.format(),
+      });
+      return;
+    }
+
+    const { email, otp, password } = parsed.data;
+    const otpRecord = await OTP.findOne({ email, otp, purpose: "password_reset" });
+    if (!otpRecord) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid or expired reset code. Please request a new one.",
+      });
+      return;
+    }
+
+    const user = await User.findOne({ email });
+    if (!user || !user.password) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "User account not found",
+      });
+      return;
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    await user.save();
+    await OTP.deleteMany({ email, purpose: "password_reset" });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Password reset successfully. Please sign in with your new password.",
+    });
+  } catch (error) {
+    console.error("Error in resetPassword:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to reset password",
+    });
+  }
+};
+
+// ---------------------------
+// 7. Login (Email + Password)
 // ---------------------------
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {

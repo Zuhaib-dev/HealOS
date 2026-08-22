@@ -25,7 +25,7 @@ export function SiteHeader() {
     <>
       <div className="fixed inset-x-0 top-0 z-50 flex justify-center p-4 sm:p-6 pointer-events-none">
         <header
-          className={`pointer-events-auto flex w-full max-w-5xl items-center justify-between rounded-full border border-border/40 bg-background/80 px-4 py-2.5 backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`pointer-events-auto flex w-full max-w-5xl items-center rounded-full border border-border/40 bg-background/80 px-4 py-2.5 backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             scrolled ? "shadow-lg shadow-black/5 dark:shadow-black/20 translate-y-0" : "shadow-sm translate-y-2 sm:translate-y-4"
           }`}
         >
@@ -35,7 +35,7 @@ export function SiteHeader() {
           </Link>
 
           {/* Center Navigation Links */}
-          <nav className="hidden items-center gap-7 lg:flex">
+          <nav className="hidden items-center gap-8 lg:flex ml-10 mr-auto">
             <Link href="/about" className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors">
               About
             </Link>
@@ -49,12 +49,12 @@ export function SiteHeader() {
               Contact
             </a>
             <Link href="/patient" className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors">
-              Patient Portal
+              Patient
             </Link>
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-auto">
             {!isAuthenticated && <ThemeToggle />}
 
             {isAuthenticated && user ? (
@@ -132,7 +132,7 @@ export function SiteHeader() {
               <Link href="/features" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Features</Link>
               <Link href="/testimonials" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Testimonials</Link>
               <a href="#contact" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Contact</a>
-              <Link href="/patient" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Patient Portal</Link>
+              <Link href="/patient" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Patient</Link>
               
               {!isAuthenticated ? (
                 <div className="mt-4 flex flex-col gap-3 border-t border-border/50 pt-4">

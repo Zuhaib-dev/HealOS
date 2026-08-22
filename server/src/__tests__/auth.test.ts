@@ -13,6 +13,7 @@ describe("Authentication API", () => {
   const mockedSendOtpEmail = jest.mocked(sendOtpEmail);
 
   beforeEach(() => {
+    mockedSendOtpEmail.mockClear();
     mockedSendOtpEmail.mockResolvedValue(true);
   });
 
@@ -49,6 +50,66 @@ describe("Authentication API", () => {
 
     const otpInDb = await OTP.findOne({ email: registerPayload.email });
     expect(otpInDb).toBeNull();
+  });
+
+  it("should resend email verification OTP for an unverified user", async () => {
+    await request(app).post(`${API_PREFIX}/auth/register`).send(registerPayload);
+    mockedSendOtpEmail.mockClear();
+
+    const res = await request(app)
+      .post(`${API_PREFIX}/auth/resend-otp`)
+      .send({ email: registerPayload.email });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(mockedSendOtpEmail).toHaveBeenCalledWith(
+      registerPayload.email,
+      expect.stringMatching(/^\d{6}$/),
+      "email_verification"
+    );
+
+    const otpInDb = await OTP.findOne({ email: registerPayload.email, purpose: "email_verification" });
+    expect(otpInDb).toBeTruthy();
+  });
+
+  it("should send a password reset OTP and reset the password", async () => {
+    const newPassword = "NewPassword123!";
+    await request(app).post(`${API_PREFIX}/auth/register`).send(registerPayload);
+    await User.updateOne({ email: registerPayload.email }, { isEmailVerified: true });
+    mockedSendOtpEmail.mockClear();
+
+    const forgotRes = await request(app)
+      .post(`${API_PREFIX}/auth/forgot-password`)
+      .send({ email: registerPayload.email });
+
+    expect(forgotRes.status).toBe(200);
+    expect(forgotRes.body.success).toBe(true);
+    expect(mockedSendOtpEmail).toHaveBeenCalledWith(
+      registerPayload.email,
+      expect.stringMatching(/^\d{6}$/),
+      "password_reset"
+    );
+
+    const resetOtp = await OTP.findOne({ email: registerPayload.email, purpose: "password_reset" });
+    expect(resetOtp).toBeTruthy();
+
+    const resetRes = await request(app)
+      .post(`${API_PREFIX}/auth/reset-password`)
+      .send({ email: registerPayload.email, otp: resetOtp?.otp, password: newPassword });
+
+    expect(resetRes.status).toBe(200);
+    expect(resetRes.body.success).toBe(true);
+
+    const oldLoginRes = await request(app)
+      .post(`${API_PREFIX}/auth/login`)
+      .send({ email: registerPayload.email, password: registerPayload.password });
+    expect(oldLoginRes.status).toBe(401);
+
+    const newLoginRes = await request(app)
+      .post(`${API_PREFIX}/auth/login`)
+      .send({ email: registerPayload.email, password: newPassword });
+    expect(newLoginRes.status).toBe(200);
+    expect(newLoginRes.body.success).toBe(true);
   });
 
   it("should not allow registration with an existing email", async () => {

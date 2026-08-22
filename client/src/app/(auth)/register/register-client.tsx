@@ -120,7 +120,7 @@ export default function RegisterClient() {
         setCanResend(false);
       }
     } catch (err: any) {
-      toast.error("Failed to resend OTP");
+      toast.error(err.response?.data?.message || "Failed to resend OTP");
     } finally {
       setLoading(false);
     }

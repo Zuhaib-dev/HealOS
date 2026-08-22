@@ -10,12 +10,12 @@ import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useAuthStore } from "@/store/use-auth-store";
-import { loginUserApi, verifyOtpApi, resendOtpApi, updatePhoneApi } from "@/lib/api/auth";
+import { forgotPasswordApi, loginUserApi, resendOtpApi, resetPasswordApi, verifyOtpApi } from "@/lib/api/auth";
 import { toast } from "sonner";
-import { Lock, Mail, ArrowRight, ShieldCheck, KeyRound, Phone, CheckCircle2 } from "lucide-react";
+import { Lock, Mail, ArrowRight, ShieldCheck, KeyRound } from "lucide-react";
 import { signIn as nextAuthSignIn } from "next-auth/react";
 
-type LoginStep = "signin" | "otp" | "phone";
+type LoginStep = "signin" | "otp" | "forgot" | "reset";
 
 export default function LoginClient() {
   const router = useRouter();
@@ -29,7 +29,7 @@ export default function LoginClient() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
-  const [phone, setPhone] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
 
   // OTP Timer
   const [resendTimer, setResendTimer] = useState(60);
@@ -37,7 +37,7 @@ export default function LoginClient() {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (step === "otp" && resendTimer > 0) {
+    if ((step === "otp" || step === "reset") && resendTimer > 0) {
       setCanResend(false);
       interval = setInterval(() => {
         setResendTimer((prev) => prev - 1);
@@ -124,7 +124,76 @@ export default function LoginClient() {
         setCanResend(false);
       }
     } catch (err: any) {
-      toast.error("Failed to resend OTP");
+      toast.error(err.response?.data?.message || "Failed to resend OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email address");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await forgotPasswordApi(email);
+      if (res.success) {
+        toast.success("Reset code sent if the account exists.");
+        setOtp("");
+        setResetPassword("");
+        setResendTimer(60);
+        setStep("reset");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to send reset code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length !== 6) {
+      toast.error("Please enter 6 digit code");
+      return;
+    }
+    if (resetPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await resetPasswordApi({ email, otp, password: resetPassword });
+      if (res.success) {
+        toast.success("Password reset. Sign in with your new password.");
+        setPassword("");
+        setOtp("");
+        setResetPassword("");
+        setStep("signin");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to reset password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendResetCode = async () => {
+    if (!canResend) return;
+    setLoading(true);
+    try {
+      const res = await forgotPasswordApi(email);
+      if (res.success) {
+        toast.success("New reset code sent!");
+        setResendTimer(60);
+        setCanResend(false);
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to resend reset code");
     } finally {
       setLoading(false);
     }
@@ -146,12 +215,14 @@ export default function LoginClient() {
         <h1 className="font-mono text-2xl font-bold tracking-tight text-foreground">
           {step === "signin" && "Sign In"}
           {step === "otp" && "Verify Email"}
-          {step === "phone" && "Setup Profile"}
+          {step === "forgot" && "Reset Password"}
+          {step === "reset" && "Enter Reset Code"}
         </h1>
         <p className="mono-label mt-2 text-xs text-muted-foreground">
           {step === "signin" && "Welcome back to your clinical workspace"}
           {step === "otp" && `We sent a 6-digit code to ${email}`}
-          {step === "phone" && "Add your contact phone number to complete setup"}
+          {step === "forgot" && "We'll send a 6-digit reset code to your email"}
+          {step === "reset" && `We sent a reset code to ${email}`}
         </p>
       </div>
 
@@ -205,7 +276,16 @@ export default function LoginClient() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="mono-label text-xs">Password</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="password" className="mono-label text-xs">Password</Label>
+                <button
+                  type="button"
+                  onClick={() => setStep("forgot")}
+                  className="mono-label text-[10px] text-emerald-600 hover:text-emerald-500"
+                >
+                  Forgot password?
+                </button>
+              </div>
               <div className="relative">
                 <Lock className="text-muted-foreground absolute left-3.5 top-3.5 size-4" />
                 <Input
@@ -238,6 +318,127 @@ export default function LoginClient() {
               </Link>
             </div>
           </motion.form>
+        )}
+
+        {step === "forgot" && (
+          <motion.form
+            key="forgot"
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            onSubmit={handleForgotPassword}
+            className="space-y-5"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="forgot-email" className="mono-label text-xs">Email Address</Label>
+              <div className="relative">
+                <Mail className="text-muted-foreground absolute left-3.5 top-3.5 size-4" />
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  placeholder="doctor@healos.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 h-11 font-sans text-sm rounded-xl border-border/50 bg-muted/20 focus-visible:bg-background focus-visible:ring-emerald-500/50"
+                  required
+                />
+              </div>
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              type="submit"
+              disabled={loading}
+              className="bg-primary text-primary-foreground mono-label w-full py-4 rounded-xl text-xs font-semibold shadow-md transition-all hover:bg-primary/90 mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {loading ? "Sending code..." : "Send Reset Code"}
+              {!loading && <ArrowRight className="size-3.5" />}
+            </motion.button>
+
+            <button
+              type="button"
+              onClick={() => setStep("signin")}
+              className="mono-label w-full text-center text-xs text-muted-foreground hover:text-foreground mt-2 py-2"
+            >
+              Back to sign in
+            </button>
+          </motion.form>
+        )}
+
+        {step === "reset" && (
+          <motion.div
+            key="reset"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            className="space-y-6"
+          >
+            <div className="flex justify-center py-6">
+              <div className="bg-emerald-500/10 text-emerald-500 p-4 rounded-full">
+                <KeyRound className="size-8" />
+              </div>
+            </div>
+            <form onSubmit={handleResetPassword} className="space-y-6 flex flex-col items-center">
+              <InputOTP maxLength={6} pattern={REGEXP_ONLY_DIGITS} value={otp} onChange={(val: string) => setOtp(val)}>
+                <InputOTPGroup className="gap-2">
+                  <InputOTPSlot index={0} className="w-11 h-12 text-lg rounded-md border-border/50" />
+                  <InputOTPSlot index={1} className="w-11 h-12 text-lg rounded-md border-border/50" />
+                  <InputOTPSlot index={2} className="w-11 h-12 text-lg rounded-md border-border/50" />
+                  <InputOTPSlot index={3} className="w-11 h-12 text-lg rounded-md border-border/50" />
+                  <InputOTPSlot index={4} className="w-11 h-12 text-lg rounded-md border-border/50" />
+                  <InputOTPSlot index={5} className="w-11 h-12 text-lg rounded-md border-border/50" />
+                </InputOTPGroup>
+              </InputOTP>
+
+              <div className="space-y-2 w-full">
+                <Label htmlFor="reset-password" className="mono-label text-xs">New Password</Label>
+                <div className="relative">
+                  <Lock className="text-muted-foreground absolute left-3.5 top-3.5 size-4" />
+                  <Input
+                    id="reset-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    className="pl-10 h-11 font-sans text-sm rounded-xl border-border/50 bg-muted/20 focus-visible:bg-background focus-visible:ring-emerald-500/50"
+                    required
+                  />
+                </div>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={loading || otp.length < 6 || resetPassword.length < 6}
+                className="bg-primary text-primary-foreground mono-label w-full py-4 rounded-xl text-xs font-semibold shadow-md transition-all hover:bg-primary/90 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? "Resetting..." : "Reset Password"}
+                {!loading && <KeyRound className="size-3.5" />}
+              </motion.button>
+            </form>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                disabled={!canResend || loading}
+                onClick={handleResendResetCode}
+                className="mono-label text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
+              >
+                {canResend ? "Resend Reset Code" : `Resend available in ${resendTimer}s`}
+              </button>
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => setStep("signin")}
+                  className="mono-label text-[10px] text-muted-foreground/60 hover:text-foreground uppercase tracking-wider"
+                >
+                  Back to sign in
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
 
         {step === "otp" && (

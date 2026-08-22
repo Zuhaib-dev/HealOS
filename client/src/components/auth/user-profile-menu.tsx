@@ -232,45 +232,46 @@ export function UserProfileMenu() {
             </Link>
           </DropdownMenuItem>
 
-          {/* Conditional Onboarding Prompts */}
-          {!isPatientComplete ? (
-            <DropdownMenuItem asChild>
-              <Link
-                href="/onboarding"
-                className="flex items-center justify-between p-2 text-xs font-medium cursor-pointer rounded-md bg-rose-500/10 hover:bg-rose-500/15 transition-colors border border-rose-500/20 text-rose-600 dark:text-rose-400"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Heart className="size-4 text-rose-500 animate-pulse" />
-                  <span className="font-semibold">Complete Patient Setup</span>
-                </div>
-                <Badge variant="outline" className="text-[9px] bg-rose-500/20 border-rose-500/30 px-1.5 py-0">
-                  Action Required
-                </Badge>
-              </Link>
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem asChild>
-              <Link
-                href="/onboarding"
-                className="flex items-center gap-2.5 p-2 text-xs font-medium cursor-pointer rounded-md hover:bg-muted/60 transition-colors"
-              >
-                <FileText className="size-4 text-rose-500" />
-                <span>My Patient Health Record</span>
-              </Link>
-            </DropdownMenuItem>
-          )}
-
-          {/* Show Clinician Application ONLY for standard users */}
+          {/* Conditional Onboarding Prompts - ONLY for standard users/patients */}
           {(user.role === "USER" || user.role === "PATIENT" || user.role === "patient") && (
-            <DropdownMenuItem asChild>
-              <Link
-                href="/onboarding"
-                className="flex items-center gap-2.5 p-2 text-xs font-medium cursor-pointer rounded-md hover:bg-muted/60 transition-colors"
-              >
-                <Stethoscope className="size-4 text-emerald-500" />
-                <span>Apply as Clinician / Doctor</span>
-              </Link>
-            </DropdownMenuItem>
+            <>
+              {!isPatientComplete ? (
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/onboarding"
+                    className="flex items-center justify-between p-2 text-xs font-medium cursor-pointer rounded-md bg-rose-500/10 hover:bg-rose-500/15 transition-colors border border-rose-500/20 text-rose-600 dark:text-rose-400"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Heart className="size-4 text-rose-500 animate-pulse" />
+                      <span className="font-semibold">Complete Patient Setup</span>
+                    </div>
+                    <Badge variant="outline" className="text-[9px] bg-rose-500/20 border-rose-500/30 px-1.5 py-0">
+                      Action Required
+                    </Badge>
+                  </Link>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/patient/records"
+                    className="flex items-center gap-2.5 p-2 text-xs font-medium cursor-pointer rounded-md hover:bg-muted/60 transition-colors"
+                  >
+                    <FileText className="size-4 text-rose-500" />
+                    <span>My Patient Health Record</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuItem asChild>
+                <Link
+                  href="/onboarding"
+                  className="flex items-center gap-2.5 p-2 text-xs font-medium cursor-pointer rounded-md hover:bg-muted/60 transition-colors"
+                >
+                  <Stethoscope className="size-4 text-emerald-500" />
+                  <span>Apply as Clinician / Doctor</span>
+                </Link>
+              </DropdownMenuItem>
+            </>
           )}
         </DropdownMenuGroup>
 

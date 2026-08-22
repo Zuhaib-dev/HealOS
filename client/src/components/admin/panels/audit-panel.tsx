@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback, useState, useEffect } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";

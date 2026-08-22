@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback, useState, useEffect } from "react";
 import { ProfessionalProfileData, fetchPendingOnboardingRequestsApi, approveOnboardingRequestApi, rejectOnboardingRequestApi } from "@/lib/api/onboarding";
 import { toast } from "sonner";

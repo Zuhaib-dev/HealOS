@@ -85,7 +85,7 @@ Socket.io is integrated tightly into the Express server to broadcast changes ins
    GMAIL_USER=your-email@gmail.com
    GMAIL_FROM="HealOS <your-email@gmail.com>"
    RESEND_API_KEY=your_resend_api_key
-   EMAIL_FROM="HealOS <noreply@send.zuahibrashid.com>"
+   EMAIL_FROM="HealOS <noreply@send.zuhaibrashid.com>"
    ```
 
 3. **Run Development Server (with hot reload):**

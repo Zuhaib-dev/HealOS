@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { ActionButton, PanelHeader } from "../admin-shell";

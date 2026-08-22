@@ -45,9 +45,9 @@ export function SiteHeader() {
             <Link href="/testimonials" className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors">
               Testimonials
             </Link>
-            <a href="#contact" className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors">
+            <Link href="/contact" className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors">
               Contact
-            </a>
+            </Link>
             <Link href="/patient" className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors">
               Patient
             </Link>
@@ -131,7 +131,7 @@ export function SiteHeader() {
               <Link href="/about" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">About</Link>
               <Link href="/features" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Features</Link>
               <Link href="/testimonials" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Testimonials</Link>
-              <a href="#contact" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Contact</a>
+              <Link href="/contact" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Contact</Link>
               <Link href="/patient" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Patient</Link>
               
               {!isAuthenticated ? (

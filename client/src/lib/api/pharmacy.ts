@@ -42,3 +42,15 @@ export const dispenseMedicineApi = async (consultationId: string, medicineId: st
   });
   return response.data;
 };
+
+export const createPharmacyBillApi = async (consultationId: string, cartItems: any[], totalAmount: number) => {
+  const response = await apiClient.post<{
+    success: boolean;
+    message: string;
+    invoice: any;
+  }>(`/pharmacy/prescriptions/${consultationId}/bill`, {
+    cartItems,
+    totalAmount,
+  });
+  return response.data;
+};

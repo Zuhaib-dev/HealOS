@@ -9,7 +9,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, X, Pill, ShieldCheck, CreditCard, Banknote, QrCode, Smartphone, Loader2, ArrowRight, ActivitySquare, AlertCircle, Search, Plus, Minus, Send } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { fetchPendingPrescriptionsApi, dispenseMedicineApi, PendingPrescriptionRecord } from "@/lib/api/pharmacy";
+import { fetchPendingPrescriptionsApi, dispenseMedicineApi, createPharmacyBillApi, PendingPrescriptionRecord } from "@/lib/api/pharmacy";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 
@@ -63,9 +63,22 @@ export function RxQueuePanel() {
       const reload = () => loadPrescriptions();
       socket.on("prescription_created", reload);
       socket.on("prescription_dispensed", reload);
+      
+      const onInvoicePaid = () => {
+        setPaymentStatus(prev => {
+          if (prev === "WAITING") {
+             toast.success("Online payment verified by backend! You may now dispense.");
+             return "PAID";
+          }
+          return prev;
+        });
+      };
+      socket.on("invoice_paid", onInvoicePaid);
+      
       return () => {
         socket.off("prescription_created", reload);
         socket.off("prescription_dispensed", reload);
+        socket.off("invoice_paid", onInvoicePaid);
       };
     }
   }, []);
@@ -131,15 +144,21 @@ export function RxQueuePanel() {
     }, 0);
   }, [cart]);
 
-  const handleSendBill = () => {
-    setPaymentStatus("WAITING");
-    toast.info("Waiting for patient to pay via HealOS app...");
-    
-    // Simulate webhook response from payment gateway
-    setTimeout(() => {
-      setPaymentStatus("PAID");
-      toast.success("Online payment verified! You may now dispense.");
-    }, 4000);
+  const handleSendBill = async () => {
+    if (!selectedRx) return;
+    try {
+      setPaymentStatus("WAITING");
+      toast.info("Sending bill to patient portal...");
+      
+      const itemsToBill = cart.filter(m => m.selected && !m.isLocked);
+      await createPharmacyBillApi(selectedRx._id, itemsToBill, totalCost);
+      toast.success("Bill sent! Waiting for patient to pay via HealOS app...");
+      
+      // Real socket event will flip the status to PAID
+    } catch (e) {
+      toast.error("Failed to send bill.");
+      setPaymentStatus("IDLE");
+    }
   };
 
   const handleCheckout = async () => {

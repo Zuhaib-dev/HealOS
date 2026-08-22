@@ -161,7 +161,7 @@ export const sendOtpEmail = async (
       }
 
       console.log(`\n==========================================`);
-      console.log(`📧 [DEV FALLBACK] ${logAction} Code for ${email}: ${otp}`);
+      console.log(`📧 [DEV FALLBACK] OTP Code for ${email}: ${otp}`);
       console.log(`==========================================\n`);
       return true;
     }
@@ -176,7 +176,7 @@ export const sendOtpEmail = async (
     if (envConfig.NODE_ENV !== "production") {
       // Print fallback OTP in console so development is never blocked by email provider errors
       console.log(`\n==========================================`);
-      console.log(`📧 [DEV EMERGENCY FALLBACK] ${logAction} Code for ${email}: ${otp}`);
+      console.log(`📧 [DEV EMERGENCY FALLBACK] OTP Code for ${email}: ${otp}`);
       console.log(`==========================================\n`);
     }
 

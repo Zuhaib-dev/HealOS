@@ -7,7 +7,7 @@ import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 
 const sections = [
   { id: "queue", label: "Rx Queue", icon: Pill },
-  { id: "dispense", label: "Dispensing", icon: CheckCircle },
+  { id: "history", label: "Past Orders", icon: CheckCircle },
 ];
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {

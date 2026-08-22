@@ -1,4 +1,4 @@
 "use client";
 
 export { RxQueuePanel } from "./panels/e-prescription-queue-panel";
-export { DispensePanel } from "./panels/dispense-panel";
+export { PastOrdersPanel } from "./panels/past-orders-panel";

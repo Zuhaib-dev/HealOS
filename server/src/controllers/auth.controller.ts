@@ -88,8 +88,8 @@ const sendOtpOrRespond = async (
 };
 
 // Helper to generate JWT Token
-const generateToken = (userId: string, role: UserRole): string => {
-  return jwt.sign({ userId, role: normalizeUserRole(role) }, envConfig.JWT_SECRET, {
+const generateToken = (userId: string, role: UserRole, tokenVersion: number = 0): string => {
+  return jwt.sign({ userId, role: normalizeUserRole(role), tokenVersion }, envConfig.JWT_SECRET, {
     expiresIn: envConfig.JWT_EXPIRES_IN as any,
   });
 };
@@ -183,7 +183,7 @@ export const syncGoogleUser = async (req: Request, res: Response): Promise<void>
     }
 
     const normalizedRole = normalizeUserRole(user.role);
-    const token = generateToken(user._id.toString(), normalizedRole);
+    const token = generateToken(user._id.toString(), normalizedRole, user.tokenVersion);
 
     await logAudit(`user:${user._id.toString().slice(-6)}`, "Successful SSO login via Google", `email:${user.email}`, "info");
 
@@ -315,7 +315,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
 
     // Issue JWT token
     const normalizedRole = normalizeUserRole(user.role);
-    const token = generateToken(user._id.toString(), normalizedRole);
+    const token = generateToken(user._id.toString(), normalizedRole, user.tokenVersion);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -536,7 +536,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const normalizedRole = normalizeUserRole(user.role);
-    const token = generateToken(user._id.toString(), normalizedRole);
+    const token = generateToken(user._id.toString(), normalizedRole, user.tokenVersion);
 
     await logAudit(`user:${user._id.toString().slice(-6)}`, "Successful password login", `email:${user.email}`, "info");
 

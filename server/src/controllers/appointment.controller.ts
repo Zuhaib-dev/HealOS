@@ -64,19 +64,31 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
 
     const paymentStatus = paymentMethod === ApptPaymentMethod.ONLINE ? ApptPaymentStatus.PENDING_ONLINE : ApptPaymentStatus.PENDING_CASH;
 
-    const appointment = await Appointment.create({
-      patient: patientId,
-      doctor: doctorId,
-      department,
-      date,
-      timeSlot,
-      reason,
-      type,
-      status: AppointmentStatus.PENDING,
-      paymentMethod,
-      paymentStatus,
-      amount: 400,
-    });
+    let appointment;
+    try {
+      appointment = await Appointment.create({
+        patient: patientId,
+        doctor: doctorId,
+        department,
+        date,
+        timeSlot,
+        reason,
+        type,
+        status: AppointmentStatus.PENDING,
+        paymentMethod,
+        paymentStatus,
+        amount: 400,
+      });
+    } catch (createError: any) {
+      if (createError.code === 11000) {
+        res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          message: "This doctor is already booked for the selected time slot. Please select another slot.",
+        });
+        return;
+      }
+      throw createError;
+    }
 
     // Generate Invoice
     await Invoice.create({
@@ -192,6 +204,17 @@ export const updateAppointmentStatus = async (req: Request, res: Response): Prom
         message: "Appointment record not found",
       });
       return;
+    }
+
+    // IDOR Check
+    if (req.user?.role !== UserRole.ADMIN && req.user?.role !== UserRole.RECEPTIONIST) {
+      if (appointment.doctor.toString() !== req.user?._id?.toString()) {
+        res.status(StatusCodes.FORBIDDEN).json({
+          success: false,
+          message: "You do not have permission to update this appointment's status.",
+        });
+        return;
+      }
     }
 
     appointment.status = parsed.data.status;

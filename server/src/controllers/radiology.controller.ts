@@ -44,7 +44,9 @@ export const getOrders = async (_req: Request, res: Response): Promise<void> => 
     const orders = await DiagnosticOrder.find({ testType: "RADIOLOGY" })
       .populate("patient", "firstName lastName dateOfBirth gender phone")
       .populate("doctor", "firstName lastName")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
 
     res.status(200).json({
       status: "success",
@@ -115,7 +117,7 @@ export const uploadReport = async (req: Request, res: Response) => {
 
     let fileUrl = "";
     if (file) {
-      const fileBuffer = fs.readFileSync(file.path);
+      const fileBuffer = await fs.promises.readFile(file.path);
       const uploadResponse = await imagekit.upload({
         file: fileBuffer,
         fileName: `radiology_report_${order._id}_${Date.now()}`,
@@ -161,7 +163,9 @@ export const getDocuments = async (_req: Request, res: Response): Promise<void> 
       .populate("patient", "firstName lastName")
       .populate("radiologist", "firstName lastName")
       .populate("order", "accessionNumber testName")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
 
     res.status(200).json({
       status: "success",
@@ -181,7 +185,7 @@ export const getDocuments = async (_req: Request, res: Response): Promise<void> 
 export const getTemplates = async (_req: Request, res: Response): Promise<void> => {
   try {
     const { ReportTemplate } = await import("../models/index.js");
-    const templates = await ReportTemplate.find();
+    const templates = await ReportTemplate.find().lean();
     res.status(200).json({ status: "success", data: { templates } });
   } catch (error: any) {
     res.status(500).json({ status: "error", message: error.message });
@@ -194,7 +198,7 @@ export const getTemplates = async (_req: Request, res: Response): Promise<void> 
 export const getModalities = async (_req: Request, res: Response): Promise<void> => {
   try {
     const { ModalityMachine } = await import("../models/index.js");
-    const modalities = await ModalityMachine.find();
+    const modalities = await ModalityMachine.find().lean();
     res.status(200).json({ status: "success", data: { modalities } });
   } catch (error: any) {
     res.status(500).json({ status: "error", message: error.message });
@@ -207,7 +211,7 @@ export const getModalities = async (_req: Request, res: Response): Promise<void>
 export const getCriticalFindings = async (_req: Request, res: Response): Promise<void> => {
   try {
     const { CriticalFinding } = await import("../models/index.js");
-    const findings = await CriticalFinding.find().sort({ createdAt: -1 });
+    const findings = await CriticalFinding.find().sort({ createdAt: -1 }).lean();
     res.status(200).json({ status: "success", data: { findings } });
   } catch (error: any) {
     res.status(500).json({ status: "error", message: error.message });
@@ -220,7 +224,7 @@ export const getCriticalFindings = async (_req: Request, res: Response): Promise
 export const getBookings = async (_req: Request, res: Response): Promise<void> => {
   try {
     const { RadiologyBooking } = await import("../models/index.js");
-    const bookings = await RadiologyBooking.find().sort({ time: 1 });
+    const bookings = await RadiologyBooking.find().sort({ time: 1 }).lean();
     res.status(200).json({ status: "success", data: { bookings } });
   } catch (error: any) {
     res.status(500).json({ status: "error", message: error.message });

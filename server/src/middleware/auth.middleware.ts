@@ -16,6 +16,7 @@ declare global {
 interface JwtPayload {
   userId: string;
   role: UserRole;
+  tokenVersion?: number;
 }
 
 export const verifyToken = async (
@@ -49,6 +50,14 @@ export const verifyToken = async (
       res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: "The user belonging to this token does no longer exist.",
+      });
+      return;
+    }
+
+    if (user.tokenVersion !== decoded.tokenVersion) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: "Your session has expired or your role was changed. Please log in again.",
       });
       return;
     }

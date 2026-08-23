@@ -6,6 +6,24 @@ import { ProfessionalProfile } from "../models/professional-profile.model.js";
 import { Appointment } from "../models/appointment.model.js";
 import { emitAdminDataChanged, emitUserRoleUpdated } from "../socket.js";
 import { logAudit } from "../utils/audit.js";
+import { z } from "zod";
+
+const wardSchema = z.object({
+  name: z.string().min(1),
+  code: z.string().min(1),
+  capacity: z.number().int().nonnegative(),
+  currentOccupancy: z.number().int().nonnegative().optional(),
+  department: z.string().optional(),
+});
+
+const inventorySchema = z.object({
+  itemName: z.string().min(1),
+  itemCode: z.string().min(1),
+  category: z.string().optional(),
+  currentStock: z.number().int().nonnegative(),
+  reorderThreshold: z.number().int().nonnegative().optional(),
+  unit: z.string().min(1),
+});
 
 const getPagination = (req: Request) => {
   const page = Math.max(Number(req.query.page) || 1, 1);
@@ -175,6 +193,7 @@ export const updateUserRole = async (req: Request, res: Response): Promise<void>
     }
 
     user.role = role;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
 
     // Emit socket event for real-time role promotion in client browser
@@ -434,8 +453,13 @@ export const getIntegrations = async (_req: Request, res: Response): Promise<voi
 
 export const createWard = async (req: Request, res: Response): Promise<void> => {
   try {
+    const parsed = wardSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid ward data", errors: parsed.error.format() });
+      return;
+    }
     const { Ward } = await import("../models/ward.model.js");
-    const ward = await Ward.create(req.body);
+    const ward = await Ward.create(parsed.data);
     emitAdminDataChanged(["wards"], "ward_created");
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
     await logAudit(actor, `Created ward ${ward.name}`, `ward:${ward._id.toString().slice(-6)}`, "info");
@@ -448,8 +472,13 @@ export const createWard = async (req: Request, res: Response): Promise<void> => 
 
 export const updateWard = async (req: Request, res: Response): Promise<void> => {
   try {
+    const parsed = wardSchema.partial().safeParse(req.body);
+    if (!parsed.success) {
+      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid ward data", errors: parsed.error.format() });
+      return;
+    }
     const { Ward } = await import("../models/ward.model.js");
-    const ward = await Ward.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const ward = await Ward.findByIdAndUpdate(req.params.id, parsed.data, { new: true });
     if (!ward) { res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Ward not found" }); return; }
     emitAdminDataChanged(["wards"], "ward_updated");
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
@@ -478,8 +507,13 @@ export const deleteWard = async (req: Request, res: Response): Promise<void> => 
 
 export const createInventoryItem = async (req: Request, res: Response): Promise<void> => {
   try {
+    const parsed = inventorySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid inventory data", errors: parsed.error.format() });
+      return;
+    }
     const { Inventory } = await import("../models/inventory.model.js");
-    const item = await Inventory.create(req.body);
+    const item = await Inventory.create(parsed.data);
     emitAdminDataChanged(["inventory"], "inventory_created");
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
     await logAudit(actor, `Created inventory item ${item.itemName}`, `inventory:${item._id.toString().slice(-6)}`, "info");
@@ -492,8 +526,13 @@ export const createInventoryItem = async (req: Request, res: Response): Promise<
 
 export const updateInventoryItem = async (req: Request, res: Response): Promise<void> => {
   try {
+    const parsed = inventorySchema.partial().safeParse(req.body);
+    if (!parsed.success) {
+      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid inventory data", errors: parsed.error.format() });
+      return;
+    }
     const { Inventory } = await import("../models/inventory.model.js");
-    const item = await Inventory.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const item = await Inventory.findByIdAndUpdate(req.params.id, parsed.data, { new: true });
     if (!item) { res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Item not found" }); return; }
     emitAdminDataChanged(["inventory"], "inventory_updated");
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";

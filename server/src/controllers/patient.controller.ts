@@ -37,34 +37,39 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
       patient: patientId,
     })
       .populate("doctor", "name role specialization")
-      .sort({ date: -1, timeSlot: -1 });
+      .sort({ date: -1, timeSlot: -1 })
+      .lean();
 
     // 2. Get Consultations (History & Prescriptions)
     const consultations = await Consultation.find({ patient: patientId })
       .populate("doctor", "name role")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     // 3. Get Diagnostic Orders (Pending & Completed)
     const diagnosticOrders = await DiagnosticOrder.find({ patient: patientId })
       .populate("doctor", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     // 4. Get Diagnostic Reports
     const diagnosticReports = await DiagnosticReport.find({ patient: patientId })
       .populate("uploadedBy", "name")
       .populate("order", "testName testType")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     // 5. Get Vitals
-    const vitals = await Vitals.find({ patient: patientId }).sort({ createdAt: -1 });
+    const vitals = await Vitals.find({ patient: patientId }).sort({ createdAt: -1 }).lean();
 
     // 6. Get Invoices
     const invoices = await Invoice.find({ patient: patientId })
       .populate("appointment", "date timeSlot")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
       
     // 7. Get Profile
-    const profile = await PatientProfile.findOne({ user: patientId });
+    const profile = await PatientProfile.findOne({ user: patientId }).lean();
 
     res.status(200).json({
       status: "success",
@@ -195,7 +200,7 @@ export const uploadPatientDocument = async (req: Request, res: Response) => {
     let fileUrl = "";
     if (req.file) {
       try {
-        const fileBuffer = fs.readFileSync(req.file.path);
+        const fileBuffer = await fs.promises.readFile(req.file.path);
         const uploadResponse = await imagekit.upload({
           file: fileBuffer,
           fileName: `patient_report_${patientId}_${Date.now()}`,

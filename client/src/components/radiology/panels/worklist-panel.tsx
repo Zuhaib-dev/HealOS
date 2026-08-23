@@ -121,6 +121,27 @@ export function WorklistPanel() {
     }
   };
 
+  const handleUpload = async (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append("reportFile", file);
+    formData.append("comments", "Uploaded inline from worklist");
+    
+    try {
+      toast.info("Uploading report...");
+      const { uploadDiagnosticReportApi } = await import("@/lib/api/radiology");
+      const res = await uploadDiagnosticReportApi(id, formData);
+      if (res.status === "success") {
+        toast.success("Report uploaded successfully");
+        loadData();
+      }
+    } catch (error) {
+      toast.error("Failed to upload report");
+    }
+  };
+
   const rows = orders.filter((w) =>
     filter === "all"
       ? true
@@ -170,6 +191,7 @@ export function WorklistPanel() {
               <Th>Room</Th>
               <Th>TAT / SLA</Th>
               <Th>Radiologist</Th>
+              <Th>Actions</Th>
             </tr>
           </thead>
           <tbody>
@@ -218,6 +240,20 @@ export function WorklistPanel() {
                   </Td>
                   <Td>
                     <span className="mono-label text-muted-foreground">{w.radiologist || "unassigned"}</span>
+                  </Td>
+                  <Td>
+                    <label className="cursor-pointer relative inline-block">
+                      <input
+                        type="file"
+                        className="absolute hidden"
+                        accept=".pdf,.dcm,.zip,.jpg,.jpeg,.png"
+                        onChange={(e) => handleUpload(w._id, e)}
+                        disabled={w.status === "REPORTED"}
+                      />
+                      <span className={`inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-xs font-medium transition-colors border border-border ${w.status === "REPORTED" ? "opacity-50 cursor-not-allowed" : "hover:bg-accent hover:text-accent-foreground"}`}>
+                        <UploadCloud className="size-3.5" /> Upload
+                      </span>
+                    </label>
                   </Td>
                 </tr>
               );

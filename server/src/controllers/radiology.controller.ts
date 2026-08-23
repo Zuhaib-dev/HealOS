@@ -41,7 +41,7 @@ export const upload = multer({
 // ==========================================
 export const getOrders = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const orders = await DiagnosticOrder.find()
+    const orders = await DiagnosticOrder.find({ testType: "RADIOLOGY" })
       .populate("patient", "firstName lastName dateOfBirth gender phone")
       .populate("doctor", "firstName lastName")
       .sort({ createdAt: -1 });

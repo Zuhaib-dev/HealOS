@@ -167,7 +167,7 @@ export function ShiftPanel() {
             <motion.div
               key={i}
               whileHover={{ y: -2 }}
-              className={`border border-border/60 rounded-2xl flex flex-col justify-between p-5 min-h-[120px] transition-all shadow-sm ${
+              className={`border border-border/60 rounded-2xl flex flex-col justify-between p-5 min-h-30 transition-all shadow-sm ${
                 s.highlight ? "bg-primary/5 border-primary/20" : "bg-card hover:bg-muted/30"
               }`}
             >
@@ -228,12 +228,12 @@ export function ShiftPanel() {
               <PenLine className="size-4" /> Pending Actions
             </p>
           </div>
-          <div className="p-12 flex flex-col items-center justify-center text-center h-[300px]">
+          <div className="p-12 flex flex-col items-center justify-center text-center h-75">
             <div className="size-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">
               <Check className="size-8" strokeWidth={3} />
             </div>
             <h3 className="font-display font-bold text-lg mb-1">You're all caught up!</h3>
-            <p className="text-sm text-muted-foreground max-w-[200px]">No pending labs to review or documents to sign.</p>
+            <p className="text-sm text-muted-foreground max-w-50">No pending labs to review or documents to sign.</p>
           </div>
         </div>
       </div>
@@ -254,7 +254,7 @@ export function ShiftPanel() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-full sm:w-[500px] lg:w-[600px] bg-background border-l border-border/60 shadow-2xl z-50 flex flex-col"
+              className="fixed top-0 right-0 h-full w-full sm:w-125 lg:w-150 bg-background border-l border-border/60 shadow-2xl z-50 flex flex-col"
             >
                <div className="p-6 border-b border-border/40 flex items-center justify-between bg-card">
                  <div>

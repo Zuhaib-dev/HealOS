@@ -118,7 +118,8 @@ export function ReportsPanel() {
       }
 
       const token = useAuthStore.getState().token;
-      const res = await fetch("http://localhost:5001/api/v1/patient/upload", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+      const res = await fetch(`${apiUrl}/patient/upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

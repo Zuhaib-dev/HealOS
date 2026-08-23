@@ -149,7 +149,7 @@ export function DoctorShell({
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                   }`}
                 >
-                  <Icon className={`size-4 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5 ${isActive ? "text-primary-foreground" : "text-primary/70 group-hover:text-primary"}`} />
+                  <Icon className={`size-4 ${isActive ? "text-primary-foreground" : "text-primary/70 group-hover:text-primary"}`} />
                   <span>{s.label}</span>
                 </Link>
               );
@@ -284,7 +284,7 @@ export function DoctorShell({
                               : "bg-muted/50 text-muted-foreground border border-transparent group-hover:bg-muted group-hover:text-foreground"
                           }`}
                         >
-                          <Icon className="size-5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
+                          <Icon className="size-5" />
                         </div>
                         <span
                           className={`text-xs text-center leading-tight ${

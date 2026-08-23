@@ -154,7 +154,7 @@ export function RadiologyShell({
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                   }`}
                 >
-                  <Icon className={`size-4 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5 ${isActive ? "text-primary-foreground" : "text-primary/70 group-hover:text-primary"}`} />
+                  <Icon className={`size-4 ${isActive ? "text-primary-foreground" : "text-primary/70 group-hover:text-primary"}`} />
                   <span>{s.label}</span>
                 </Link>
               );
@@ -259,7 +259,7 @@ export function RadiologyShell({
                             : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
                         }`}
                       >
-                        <Icon className="size-6 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" strokeWidth={isActive ? 2.5 : 2} />
+                        <Icon className="size-6" strokeWidth={isActive ? 2.5 : 2} />
                         <span className="text-[10px] font-semibold tracking-wide text-center leading-tight">{s.label}</span>
                       </Link>
                     );

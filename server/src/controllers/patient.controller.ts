@@ -193,15 +193,19 @@ export const uploadPatientDocument = async (req: Request, res: Response) => {
 
     let fileUrl = "";
     if (req.file) {
-      const fileBuffer = fs.readFileSync(req.file.path);
-      const uploadResponse = await imagekit.upload({
-        file: fileBuffer,
-        fileName: `patient_report_${patientId}_${Date.now()}`,
-        folder: "/hms/reports",
-      });
-      fileUrl = uploadResponse.url;
-      // clean up temp file
-      fs.unlinkSync(req.file.path);
+      try {
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const uploadResponse = await imagekit.upload({
+          file: fileBuffer,
+          fileName: `patient_report_${patientId}_${Date.now()}`,
+          folder: "/hms/reports",
+        });
+        fileUrl = uploadResponse.url;
+        fs.unlinkSync(req.file.path);
+      } catch (err) {
+        console.warn("ImageKit upload failed, falling back to local storage:", err);
+        fileUrl = `/uploads/reports/${req.file.filename}`;
+      }
     }
 
     const { title } = req.body;

@@ -152,7 +152,7 @@ export function ReportsPanel() {
       name: o.testName,
       kind: o.testType,
       dept: o.doctor?.name ? `Dr. ${o.doctor.name}` : "Doctor",
-      date: new Date(o.createdAt).toLocaleDateString(),
+      date: o.createdAt ? new Date(o.createdAt).toISOString().split("T")[0] : "N/A",
       status: o.status === "REPORTED" ? "ready" : "pending",
       flagged: false,
       pages: 0,
@@ -164,7 +164,7 @@ export function ReportsPanel() {
       name: r.title || "Uploaded Report",
       kind: "REPORT",
       dept: r.uploadedBy?.name ? r.uploadedBy.name : "Lab",
-      date: new Date(r.createdAt).toLocaleDateString(),
+      date: r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "N/A",
       status: "ready",
       flagged: false, // We could add logic for flags later
       pages: 1,

@@ -154,23 +154,23 @@ export function ReportsPanel() {
   };
 
   const allRecords = [
-    ...orders.map(o => ({
+    ...orders.filter((o: any) => o.status !== "REPORTED").map((o: any) => ({
       id: o._id,
       name: o.testName,
       kind: o.testType,
       dept: o.doctor?.name ? `Dr. ${o.doctor.name}` : "Doctor",
       date: o.createdAt ? new Date(o.createdAt).toISOString().split("T")[0] : "N/A",
-      status: o.status === "REPORTED" ? "ready" : "pending",
+      status: "pending",
       flagged: false,
       pages: 0,
       size: "",
       fileUrl: getFullFileUrl(o.fileUrl)
     })),
-    ...reports.map(r => ({
+    ...reports.map((r: any) => ({
       id: r._id,
-      name: r.title || "Uploaded Report",
-      kind: "REPORT",
-      dept: r.uploadedBy?.name ? r.uploadedBy.name : "Lab",
+      name: r.order?.testName || r.title || "Uploaded Report",
+      kind: r.order?.testType || "REPORT",
+      dept: r.uploadedBy?.name ? r.uploadedBy.name : "Lab / Radiology",
       date: r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "N/A",
       status: "ready",
       flagged: false, // We could add logic for flags later

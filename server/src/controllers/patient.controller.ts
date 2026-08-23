@@ -52,6 +52,7 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
     // 4. Get Diagnostic Reports
     const diagnosticReports = await DiagnosticReport.find({ patient: patientId })
       .populate("uploadedBy", "name")
+      .populate("order", "testName testType")
       .sort({ createdAt: -1 });
 
     // 5. Get Vitals

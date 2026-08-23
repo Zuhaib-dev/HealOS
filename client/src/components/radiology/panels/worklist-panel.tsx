@@ -128,7 +128,11 @@ export function WorklistPanel() {
 
     setIsProcessing(true);
     try {
-      await updateOrderStatusApi(selectedOrder._id, "IN_PROGRESS", paymentMode, Number(price));
+      if (paymentMode === "ONLINE" && paymentStatus === "PAID") {
+        await updateOrderStatusApi(selectedOrder._id, "IN_PROGRESS");
+      } else {
+        await updateOrderStatusApi(selectedOrder._id, "IN_PROGRESS", paymentMode === "ONLINE" ? "UPI" : paymentMode, Number(price));
+      }
       toast.success(`Payment processed and scan started!`);
       setIsPaid(true);
       

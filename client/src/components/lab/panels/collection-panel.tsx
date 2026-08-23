@@ -119,8 +119,12 @@ export function CollectionPanel() {
 
     setIsProcessing(true);
     try {
-      await markLabCollectedApi(selectedOrder._id, paymentMode, Number(price));
-      toast.success(`Payment processed and sample marked as collected!`);
+      if (paymentMode === "ONLINE" && paymentStatus === "PAID") {
+        await markLabCollectedApi(selectedOrder._id);
+      } else {
+        await markLabCollectedApi(selectedOrder._id, paymentMode === "ONLINE" ? "UPI" : paymentMode, Number(price));
+      }
+      toast.success(`Payment processed and sample collected!`);
       setIsPaid(true);
       
       setTimeout(() => {

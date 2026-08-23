@@ -109,8 +109,8 @@ export const getQueue = async (_req: Request, res: Response): Promise<void> => {
     const appointments = await Appointment.find({
       date: { $gte: today },
     })
-      .populate("patient", "firstName lastName phone")
-      .populate("doctor", "firstName lastName department")
+      .populate("patient", "name phone")
+      .populate("doctor", "name department")
       .sort({ createdAt: 1 });
 
     res.status(200).json({
@@ -131,7 +131,7 @@ export const getQueue = async (_req: Request, res: Response): Promise<void> => {
 export const getPendingBills = async (_req: Request, res: Response): Promise<void> => {
   try {
     const invoices = await Invoice.find({ status: InvoiceStatus.PENDING })
-      .populate("patient", "firstName lastName phone")
+      .populate("patient", "name phone")
       .sort({ createdAt: 1 });
 
     res.status(200).json({

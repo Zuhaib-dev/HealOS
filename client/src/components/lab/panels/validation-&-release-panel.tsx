@@ -8,6 +8,8 @@ import { Card, LiveDot, Pill, StatGrid, Td, Th, type Tone } from "@/components/w
 import { fetchLabValidationApi, validateLabReportApi } from "@/lib/api/lab";
 import { getSocket } from "@/lib/socket";
 import { toast } from "sonner";
+import { getFileUrl } from "@/lib/utils";
+import { Eye } from "lucide-react";
 
 
 
@@ -150,6 +152,11 @@ export function ValidationPanel() {
                 <ActionButton tone="solid" onClick={() => handleValidate(p._id)}>
                   Validate & release
                 </ActionButton>
+                {p.fileUrl && (
+                  <ActionButton onClick={() => window.open(getFileUrl(p.fileUrl), "_blank")}>
+                    <Eye className="mr-2 inline size-4" /> View PDF
+                  </ActionButton>
+                )}
                 <ActionButton>Repeat on analyser</ActionButton>
                 <ActionButton>Add interpretive comment</ActionButton>
               </div>

@@ -22,7 +22,7 @@ import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { useAuthStore } from "@/store/use-auth-store";
-import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle, DrawerHeader, DrawerClose } from "@/components/ui/drawer";
 import { UserCircle, MoreHorizontal } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 
@@ -255,8 +255,14 @@ export function DoctorShell({
                 </span>
               </button>
             </DrawerTrigger>
-            <DrawerContent className="pb-6">
-              <DrawerTitle className="sr-only">More Options</DrawerTitle>
+            <DrawerContent className="pb-6 bg-background/95 backdrop-blur-xl border-t border-border/60">
+              <DrawerHeader className="border-b border-border/40 pb-4 flex justify-between items-center px-6">
+                <DrawerTitle className="text-lg font-semibold flex items-center gap-2">
+                  <MoreHorizontal className="size-5 text-primary" />
+                  Menu
+                </DrawerTitle>
+                <UserProfileMenu />
+              </DrawerHeader>
               <div className="grid grid-cols-4 gap-y-6 gap-x-2 p-6 pt-8">
                 {doctorSections
                   .filter((s) => !mainMobileTabs.includes(s.id))

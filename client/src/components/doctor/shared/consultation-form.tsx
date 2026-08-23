@@ -199,7 +199,7 @@ export function ConsultationForm({
             {/* Add New Medicine */}
             <div className="border border-border/60 p-5 rounded-2xl bg-card shadow-sm">
               <p className="text-xs uppercase tracking-wider font-bold text-primary mb-4">Add Medicine (Free Text / Search)</p>
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <input
                   type="text"
                   placeholder="Drug Name (e.g. Paracetamol)"

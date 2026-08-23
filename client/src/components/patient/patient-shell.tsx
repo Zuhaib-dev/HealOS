@@ -260,11 +260,12 @@ export function PatientShell({
               </button>
             </DrawerTrigger>
             <DrawerContent className="bg-background/95 backdrop-blur-xl border-t border-border/60">
-              <DrawerHeader className="border-b border-border/40 pb-4 text-left">
+              <DrawerHeader className="border-b border-border/40 pb-4 text-left flex justify-between items-center px-6">
                 <DrawerTitle className="text-lg font-semibold flex items-center gap-2">
                   <Menu className="size-5 text-primary" />
                   Menu
                 </DrawerTitle>
+                <UserProfileMenu />
               </DrawerHeader>
               <div className="p-4 grid grid-cols-4 gap-4">
                 {patientSections

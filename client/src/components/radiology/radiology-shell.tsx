@@ -17,11 +17,20 @@ import {
   Bell,
   ShieldCheck,
   Sparkles,
+  Menu,
 } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { useAuthStore } from "@/store/use-auth-store";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerClose,
+} from "@/components/ui/drawer";
 
 export const radiologySections = [
   { id: "worklist", label: "Study Worklist", icon: ListChecks },
@@ -41,8 +50,12 @@ export function RadiologyShell({
   children: ReactNode;
 }) {
   const [query, setQuery] = useState("");
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const { user } = useAuthStore();
   const pathname = usePathname();
+
+  const mainMobileTabs = radiologySections.slice(0, 4);
+  const moreMobileTabs = radiologySections.slice(4);
 
   const currentSection = radiologySections.find((s) =>
     s.id === "worklist" ? pathname === "/radiology" : pathname.startsWith(`/radiology/${s.id}`)
@@ -163,30 +176,116 @@ export function RadiologyShell({
         </aside>
 
         {/* Main Content Area */}
-        <main className="min-w-0 flex-1">
-          {/* Mobile Header Tabs */}
-          <div className="border-b border-border/60 flex gap-1.5 overflow-x-auto p-2 bg-card/40 md:hidden">
-            {radiologySections.map((s) => {
-              const isActive = isSectionActive(s.id);
-              const href = s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
-              return (
-                <Link
-                  key={s.id}
-                  href={href}
-                  className={`mono-label text-xs shrink-0 px-3 py-1.5 rounded-md transition-colors ${
-                    isActive
-                      ? "bg-primary text-primary-foreground font-semibold"
-                      : "text-muted-foreground bg-muted/30"
-                  }`}
-                >
-                  {s.label}
-                </Link>
-              );
-            })}
-          </div>
+        <main className="min-w-0 flex-1 pb-24 md:pb-0">
           {children}
         </main>
       </div>
+
+      {/* Persistent Bottom Navigation Bar - Mobile Only */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+        <nav className="flex justify-around items-center px-2 py-1.5">
+          {mainMobileTabs.map((s) => {
+            const Icon = s.icon;
+            const isActive = isSectionActive(s.id);
+            const href = s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
+            return (
+              <Link
+                key={s.id}
+                href={href}
+                onClick={() => setIsMoreOpen(false)}
+                className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none group tap-highlight-transparent"
+              >
+                <motion.div 
+                  animate={isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                  }`}
+                >
+                  <Icon className={`size-5 ${isActive ? "fill-primary/20" : ""}`} strokeWidth={isActive ? 2.5 : 2} />
+                </motion.div>
+                <span 
+                  className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                    isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                  }`}
+                >
+                  {s.label}
+                </span>
+              </Link>
+            );
+          })}
+
+          {/* More / Menu Tab (Drawer) */}
+          {moreMobileTabs.length > 0 && (
+            <Drawer open={isMoreOpen} onOpenChange={setIsMoreOpen}>
+              <DrawerTrigger asChild>
+                <button
+                  type="button"
+                  className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none group tap-highlight-transparent"
+                >
+                  <div className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                    moreMobileTabs.some(s => isSectionActive(s.id)) ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                  }`}>
+                    <Menu className={`size-5 ${moreMobileTabs.some(s => isSectionActive(s.id)) ? "fill-primary/20" : ""}`} strokeWidth={moreMobileTabs.some(s => isSectionActive(s.id)) ? 2.5 : 2} />
+                  </div>
+                  <span className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                    moreMobileTabs.some(s => isSectionActive(s.id)) ? "text-primary font-semibold" : "text-muted-foreground"
+                  }`}>
+                    More
+                  </span>
+                </button>
+              </DrawerTrigger>
+              <DrawerContent className="bg-background/95 backdrop-blur-xl border-t border-border/60 h-[85vh]">
+                <DrawerHeader className="border-b border-border/40 pb-4 text-left flex justify-between items-center px-6">
+                  <DrawerTitle className="text-lg font-semibold flex items-center gap-2">
+                    <Menu className="size-5 text-primary" />
+                    Menu
+                  </DrawerTitle>
+                  <UserProfileMenu />
+                </DrawerHeader>
+                <div className="p-4 grid grid-cols-3 sm:grid-cols-4 gap-4 overflow-y-auto">
+                  {moreMobileTabs.map((s) => {
+                    const Icon = s.icon;
+                    const isActive = isSectionActive(s.id);
+                    const href = s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
+                    return (
+                      <Link
+                        key={s.id}
+                        href={href}
+                        onClick={() => setIsMoreOpen(false)}
+                        className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-primary/10 text-primary border border-primary/20"
+                            : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
+                        }`}
+                      >
+                        <Icon className="size-6" strokeWidth={isActive ? 2.5 : 2} />
+                        <span className="text-[10px] font-semibold tracking-wide text-center leading-tight">{s.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+                <div className="p-4 pt-2 mt-auto border-t border-border/40">
+                  <DrawerClose asChild>
+                    <button className="w-full bg-muted/50 text-foreground py-3.5 rounded-xl text-sm font-semibold border border-border/50 active:bg-muted/80 transition-colors">
+                      Close Menu
+                    </button>
+                  </DrawerClose>
+                </div>
+              </DrawerContent>
+            </Drawer>
+          )}
+        </nav>
+      </div>
+
+      <style jsx global>{`
+        .pb-safe {
+          padding-bottom: env(safe-area-inset-bottom, 16px);
+        }
+        .tap-highlight-transparent {
+          -webkit-tap-highlight-color: transparent;
+        }
+      `}</style>
     </div>
   );
 }

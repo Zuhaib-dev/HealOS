@@ -8,6 +8,7 @@ import { User, UserRole, OTP } from "../models";
 import { envConfig } from "../config/env";
 import { sendOtpEmail } from "../utils/mailer";
 import { z } from "zod";
+import { logAudit } from "../utils/audit.js";
 
 const isDbConnected = (res: Response): boolean => {
   if (mongoose.connection.readyState !== 1) {
@@ -183,6 +184,8 @@ export const syncGoogleUser = async (req: Request, res: Response): Promise<void>
 
     const normalizedRole = normalizeUserRole(user.role);
     const token = generateToken(user._id.toString(), normalizedRole);
+
+    await logAudit(`user:${user._id.toString().slice(-6)}`, "Successful SSO login via Google", `email:${user.email}`, "info");
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -534,6 +537,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const normalizedRole = normalizeUserRole(user.role);
     const token = generateToken(user._id.toString(), normalizedRole);
+
+    await logAudit(`user:${user._id.toString().slice(-6)}`, "Successful password login", `email:${user.email}`, "info");
 
     res.status(StatusCodes.OK).json({
       success: true,

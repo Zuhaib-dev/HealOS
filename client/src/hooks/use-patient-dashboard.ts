@@ -34,11 +34,13 @@ export const usePatientDashboard = () => {
 
     socket.on("appointment_updated", onAppointmentUpdated);
     socket.on("invoice_updated", onInvoiceUpdated);
+    socket.on("invoice_paid", onInvoiceUpdated);
     socket.on("report_ready", onReportReady);
 
     return () => {
       socket.off("appointment_updated", onAppointmentUpdated);
       socket.off("invoice_updated", onInvoiceUpdated);
+      socket.off("invoice_paid", onInvoiceUpdated);
       socket.off("report_ready", onReportReady);
     };
   }, [queryClient]);

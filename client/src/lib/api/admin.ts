@@ -132,11 +132,39 @@ export interface AdminAppointmentData {
   type: string;
 }
 
-export async function fetchAdminScheduleApi() {
+export interface AdminScheduleData {
+  _id: string;
+  user: { _id: string; name: string; email: string; phone?: string; avatarUrl?: string; role: string };
+  date: string;
+  startTime: string;
+  endTime: string;
+  shiftType: "REGULAR" | "ON_CALL" | "LEAVE";
+  department?: string;
+  notes?: string;
+}
+
+export async function fetchAdminScheduleApi(date?: string) {
+  const url = date ? `/admin/schedule?date=${date}` : "/admin/schedule";
   const response = await apiClient.get<{
     success: boolean;
     appointments: AdminAppointmentData[];
-  }>("/admin/schedule");
+    schedules: AdminScheduleData[];
+  }>(url);
+  return response.data;
+}
+
+export async function createScheduleApi(data: any) {
+  const response = await apiClient.post<{ success: boolean; schedule: AdminScheduleData }>("/admin/schedule", data);
+  return response.data;
+}
+
+export async function updateScheduleApi(id: string, data: any) {
+  const response = await apiClient.put<{ success: boolean; schedule: AdminScheduleData }>(`/admin/schedule/${id}`, data);
+  return response.data;
+}
+
+export async function deleteScheduleApi(id: string) {
+  const response = await apiClient.delete<{ success: boolean }>(`/admin/schedule/${id}`);
   return response.data;
 }
 
@@ -242,5 +270,35 @@ export async function fetchAdminRolesApi() {
     permissionScopes: string[];
     roles: AdminRoleData[];
   }>("/admin/roles");
+  return response.data;
+}
+
+export async function createWardApi(data: Partial<AdminWardData>) {
+  const response = await apiClient.post<{ success: boolean; ward: AdminWardData }>("/admin/wards", data);
+  return response.data;
+}
+
+export async function updateWardApi(id: string, data: Partial<AdminWardData>) {
+  const response = await apiClient.put<{ success: boolean; ward: AdminWardData }>(`/admin/wards/${id}`, data);
+  return response.data;
+}
+
+export async function deleteWardApi(id: string) {
+  const response = await apiClient.delete<{ success: boolean }>(`/admin/wards/${id}`);
+  return response.data;
+}
+
+export async function createInventoryItemApi(data: Partial<AdminInventoryData>) {
+  const response = await apiClient.post<{ success: boolean; item: AdminInventoryData }>("/admin/inventory", data);
+  return response.data;
+}
+
+export async function updateInventoryItemApi(id: string, data: Partial<AdminInventoryData>) {
+  const response = await apiClient.put<{ success: boolean; item: AdminInventoryData }>(`/admin/inventory/${id}`, data);
+  return response.data;
+}
+
+export async function deleteInventoryItemApi(id: string) {
+  const response = await apiClient.delete<{ success: boolean }>(`/admin/inventory/${id}`);
   return response.data;
 }

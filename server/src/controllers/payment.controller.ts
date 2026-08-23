@@ -95,6 +95,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
         const io = getIO();
         if (io) {
           io.emit("invoice_paid", { invoiceId: invoice._id });
+          io.emit("admin:data_changed", { types: ["invoices", "billing"] });
         }
       }
     }

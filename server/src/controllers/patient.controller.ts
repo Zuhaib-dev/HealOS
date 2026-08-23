@@ -165,6 +165,7 @@ export const payInvoice = async (req: Request, res: Response) => {
     const io = getIO();
     if (io) {
       io.emit("invoice_paid", { invoiceId: invoice._id });
+      io.emit("admin:data_changed", { types: ["invoices", "billing"] });
     }
 
     res.status(200).json({ success: true, message: "Invoice paid successfully", invoice });

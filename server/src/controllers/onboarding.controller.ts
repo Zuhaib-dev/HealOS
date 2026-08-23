@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { ProfessionalProfile, ProfileStatus, PatientProfile, User, UserRole } from "../models";
 import { z } from "zod";
+import { emitAdminDataChanged, emitUserRoleUpdated, emitNewOnboardingRequest } from "../socket.js";
+import { logAudit } from "../utils/audit.js";
 
 const applyOnboardingSchema = z.object({
   requestedRole: z.enum([UserRole.DOCTOR, UserRole.RADIOLOGIST]),
@@ -30,7 +32,6 @@ const updatePatientProfileSchema = z.object({
   weight: z.number().optional(),
 });
 
-import { emitAdminDataChanged, emitUserRoleUpdated, emitNewOnboardingRequest } from "../socket.js";
 
 // ==========================================
 // 1. Patient Profile Onboarding
@@ -234,6 +235,9 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
 
     emitAdminDataChanged(["approvals", "staff", "users", "roles"], "onboarding_approved");
 
+    const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
+    await logAudit(actor, `Approved professional profile`, `user:${profile.user.toString().slice(-6)}`, "info");
+
     res.status(StatusCodes.OK).json({
       success: true,
       message: `Profile approved. User role upgraded to ${profile.requestedRole}`,
@@ -278,6 +282,9 @@ export const rejectRequest = async (req: Request, res: Response): Promise<void> 
     await profile.save();
 
     emitAdminDataChanged(["approvals", "staff"], "onboarding_rejected");
+
+    const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
+    await logAudit(actor, `Rejected professional profile`, `user:${profile.user.toString().slice(-6)}`, "warn");
 
     res.status(StatusCodes.OK).json({
       success: true,

@@ -343,9 +343,9 @@ export function ShiftPanel() {
                                  <p className="font-bold text-sm">{r.title || r.fileName || r.testName || "Diagnostic Report"}</p>
                                  <p className="text-xs text-muted-foreground">Uploaded: {new Date(r.createdAt).toLocaleDateString()}</p>
                                </div>
-                               {r.fileUrl && (
+                               {(r.fileUrl || r.reportUrl) && (
                                  <a 
-                                   href={r.fileUrl} 
+                                   href={r.fileUrl || r.reportUrl} 
                                    target="_blank" 
                                    rel="noopener noreferrer" 
                                    className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"

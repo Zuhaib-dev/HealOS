@@ -98,7 +98,7 @@ export function CollectionPanel() {
     try {
       toast.info("Uploading result...");
       const res = await uploadLabReportApi(id, formData);
-      if (res.success) {
+      if (res.status === "success" || res.success) {
         toast.success("Result uploaded successfully");
         loadCollections();
       }

@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { getDiagnosticResultsApi } from "@/lib/api/doctor";
 import { getSocket } from "@/lib/socket";
+import { getFileUrl } from "@/lib/utils";
 
 /* ---------- primitives ---------- */
 
@@ -209,7 +210,7 @@ export function ResultsPanel() {
                       <div className="flex items-center gap-2">
                             {r.fileUrl && (
                               <a 
-                                href={r.fileUrl} 
+                                href={getFileUrl(r.fileUrl)} 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
                                 className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"

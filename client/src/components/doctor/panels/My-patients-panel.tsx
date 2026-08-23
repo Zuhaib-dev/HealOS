@@ -12,6 +12,7 @@ import { AnimatePresence } from "motion/react";
 import { Loader2, Activity, FileText, Pill as PillIcon, FileDigit, ChevronRight, User as UserIcon, Clock, Eye } from "lucide-react";
 import { ConsultationForm } from "@/components/doctor/shared/consultation-form";
 import { getSocket } from "@/lib/socket";
+import { getFileUrl } from "@/lib/utils";
 
 /* ---------- primitives ---------- */
 
@@ -315,7 +316,7 @@ export function RoundsPanel() {
                                </div>
                                {(r.fileUrl || r.reportUrl) && (
                                  <a 
-                                   href={r.fileUrl || r.reportUrl} 
+                                   href={getFileUrl(r.fileUrl || r.reportUrl)} 
                                    target="_blank" 
                                    rel="noopener noreferrer" 
                                    className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"

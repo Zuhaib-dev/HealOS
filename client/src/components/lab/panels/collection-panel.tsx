@@ -143,7 +143,7 @@ export function CollectionPanel() {
             <p className="mt-3 text-sm">{c.testName}</p>
 
             <div className="mt-3">
-              <RackGlyph tubes={[{ colour: "var(--color-accent)", count: c.items.length }]} />
+              <RackGlyph tubes={[{ colour: "var(--color-accent)", count: 1 }]} />
               <div className="mono-label text-muted-foreground flex flex-wrap gap-3">
                 <span>1 × Standard Tube</span>
               </div>

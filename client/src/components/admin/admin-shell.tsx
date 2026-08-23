@@ -39,8 +39,8 @@ import {
 
 export const sections = [
   { id: "overview", label: "Overview", icon: Activity },
-  { id: "approvals", label: "Clinician Approvals", icon: ClipboardCheck },
-  { id: "users", label: "Users & Sessions", icon: UserCog },
+  { id: "approvals", label: "Clinicians", icon: ClipboardCheck },
+  { id: "users", label: "Users", icon: UserCog },
   { id: "patients", label: "Patient Registry", icon: HeartPulse },
   { id: "schedule", label: "Theatre Schedule", icon: CalendarClock },
   { id: "staff", label: "Staff & Access", icon: Users },

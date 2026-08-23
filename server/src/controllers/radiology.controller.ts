@@ -42,8 +42,8 @@ export const upload = multer({
 export const getOrders = async (_req: Request, res: Response): Promise<void> => {
   try {
     const orders = await DiagnosticOrder.find({ testType: "RADIOLOGY" })
-      .populate("patient", "firstName lastName dateOfBirth gender phone")
-      .populate("doctor", "firstName lastName")
+      .populate("patient", "name phone")
+      .populate("doctor", "name")
       .sort({ createdAt: -1 })
       .limit(200)
       .lean();
@@ -160,8 +160,8 @@ export const uploadReport = async (req: Request, res: Response) => {
 export const getDocuments = async (_req: Request, res: Response): Promise<void> => {
   try {
     const documents = await DiagnosticReport.find()
-      .populate("patient", "firstName lastName")
-      .populate("radiologist", "firstName lastName")
+      .populate("patient", "name")
+      .populate("radiologist", "name")
       .populate("order", "accessionNumber testName")
       .sort({ createdAt: -1 })
       .limit(200)

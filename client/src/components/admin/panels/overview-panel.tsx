@@ -26,26 +26,33 @@ function Metric({
   value,
   delta,
   suffix,
+  delay = 0,
 }: {
   label: string;
   value: string;
   delta?: string;
   suffix?: string;
+  delay?: number;
 }) {
   return (
-    <div className="hairline-l px-5 py-5">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay, ease: "easeOut" }}
+      className="bg-card/40 border border-border/60 rounded-2xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm group"
+    >
       <p className="mono-label text-muted-foreground">{label}</p>
-      <p className="mt-3 font-mono text-3xl font-bold tracking-tight">
+      <p className="mt-3 font-mono text-3xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
         {value}
-        {suffix ? <span className="text-muted-foreground text-base"> {suffix}</span> : null}
+        {suffix ? <span className="text-muted-foreground text-base font-normal"> {suffix}</span> : null}
       </p>
       {delta ? (
-        <p className="mono-label text-brass mt-2 flex items-center gap-1">
-          <ArrowUpRight className="size-3" />
+        <p className="mono-label text-brass mt-4 flex items-center gap-1.5 bg-accent/10 w-fit px-2.5 py-1 rounded-md">
+          <ArrowUpRight className="size-3.5" />
           {delta}
         </p>
       ) : null}
-    </div>
+    </motion.div>
   );
 }
 
@@ -209,11 +216,11 @@ export function OverviewPanel() {
         actions={<ActionButton onClick={loadOverview}>Refresh live data</ActionButton>}
       />
 
-      <div className="hairline-b grid grid-cols-2 lg:grid-cols-4">
-        <Metric label="Registered users" value={stats ? String(stats.totalUsers) : "..."} delta="MongoDB Atlas live" />
-        <Metric label="Active patients" value={stats ? String(stats.totalPatients) : "..."} delta="Health profiles complete" />
-        <Metric label="Approved clinicians" value={stats ? String(stats.totalClinicians) : "..."} delta="Doctors & Radiologists" />
-        <Metric label="Total appointments" value={stats ? String(stats.totalAppointments) : "..."} delta="Booked consultations" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-5 py-6 sm:px-8">
+        <Metric label="Registered users" value={stats ? String(stats.totalUsers) : "..."} delta="MongoDB Atlas live" delay={0.1} />
+        <Metric label="Active patients" value={stats ? String(stats.totalPatients) : "..."} delta="Health profiles complete" delay={0.2} />
+        <Metric label="Approved clinicians" value={stats ? String(stats.totalClinicians) : "..."} delta="Doctors & Radiologists" delay={0.3} />
+        <Metric label="Total appointments" value={stats ? String(stats.totalAppointments) : "..."} delta="Booked consultations" delay={0.4} />
       </div>
 
       <div className="hairline-b grid lg:grid-cols-[1.6fr_1fr]">

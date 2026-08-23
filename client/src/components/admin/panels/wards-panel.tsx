@@ -3,7 +3,7 @@
 import { useCallback, useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, BedDouble } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 
 /* ---------- shared primitives ---------- */
@@ -110,7 +110,7 @@ export function WardsPanel() {
       />
       
       {isFormOpen && (
-        <div className="hairline-b bg-muted/30 p-5 sm:px-8">
+        <div className="mx-5 sm:mx-8 mb-8 p-6 bg-card/40 rounded-2xl border border-border/60 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="mono-label font-bold text-foreground">{editingId ? "Edit Ward" : "Add New Ward"}</h3>
             <button type="button" onClick={() => setIsFormOpen(false)} className="text-muted-foreground hover:text-foreground">
@@ -120,27 +120,27 @@ export function WardsPanel() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <label className="block">
               <span className="mono-label text-xs text-muted-foreground block mb-1">Ward Name</span>
-              <input required value={formData.name} onChange={e => setFormData(d => ({ ...d, name: e.target.value }))} className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent" placeholder="e.g. ICU" />
+              <input required value={formData.name} onChange={e => setFormData(d => ({ ...d, name: e.target.value }))} className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="e.g. ICU" />
             </label>
             <label className="block">
               <span className="mono-label text-xs text-muted-foreground block mb-1">Ward Code</span>
-              <input required value={formData.code} onChange={e => setFormData(d => ({ ...d, code: e.target.value }))} className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent" placeholder="e.g. ICU-1" />
+              <input required value={formData.code} onChange={e => setFormData(d => ({ ...d, code: e.target.value }))} className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="e.g. ICU-1" />
             </label>
             <label className="block">
               <span className="mono-label text-xs text-muted-foreground block mb-1">Department</span>
-              <input required value={formData.department} onChange={e => setFormData(d => ({ ...d, department: e.target.value }))} className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent" placeholder="e.g. Intensive Care" />
+              <input required value={formData.department} onChange={e => setFormData(d => ({ ...d, department: e.target.value }))} className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="e.g. Intensive Care" />
             </label>
             <label className="block">
               <span className="mono-label text-xs text-muted-foreground block mb-1">Capacity</span>
-              <input type="number" min={1} required value={formData.capacity} onChange={e => setFormData(d => ({ ...d, capacity: parseInt(e.target.value) || 0 }))} className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent" />
+              <input type="number" min={1} required value={formData.capacity} onChange={e => setFormData(d => ({ ...d, capacity: parseInt(e.target.value) || 0 }))} className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
             </label>
             <label className="block">
               <span className="mono-label text-xs text-muted-foreground block mb-1">Current Occupancy</span>
-              <input type="number" min={0} required value={formData.currentOccupancy} onChange={e => setFormData(d => ({ ...d, currentOccupancy: parseInt(e.target.value) || 0 }))} className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent" />
+              <input type="number" min={0} required value={formData.currentOccupancy} onChange={e => setFormData(d => ({ ...d, currentOccupancy: parseInt(e.target.value) || 0 }))} className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
             </label>
             <div className="sm:col-span-2 lg:col-span-5 flex justify-end gap-3 mt-2">
-              <button type="button" onClick={() => setIsFormOpen(false)} className="mono-label text-muted-foreground px-4 py-2 hover:text-foreground transition-colors">Cancel</button>
-              <button type="submit" className="bg-foreground text-background mono-label px-4 py-2 font-bold hover:bg-foreground/90 transition-colors">
+              <button type="button" onClick={() => setIsFormOpen(false)} className="mono-label text-muted-foreground px-4 py-2 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors">Cancel</button>
+              <button type="submit" className="bg-primary text-primary-foreground mono-label rounded-lg px-4 py-2 font-bold hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-sm transition-all">
                 {editingId ? "Save Changes" : "Create Ward"}
               </button>
             </div>
@@ -148,26 +148,26 @@ export function WardsPanel() {
         </div>
       )}
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 p-5 sm:p-8">
         {loading ? (
-          <div className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse col-span-full">
-            Loading wards data from database...
+          <div className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse col-span-full">
+            Loading wards data...
           </div>
         ) : dbWards.length > 0 ? (
           dbWards.map((w) => {
             const pct = Math.round(((w.currentOccupancy || 0) / (w.capacity || 1)) * 100);
             const tight = pct >= 85;
             return (
-              <div key={w._id} className="hairline-b hairline-l px-5 py-6 relative group">
+              <div key={w._id} className="bg-card/40 border border-border/60 rounded-2xl p-6 relative group hover:-translate-y-1 hover:shadow-lg transition-all duration-300 backdrop-blur-sm overflow-hidden">
                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
-                  <button type="button" onClick={() => handleEdit(w)} className="bg-background/80 backdrop-blur border border-border p-1.5 rounded text-muted-foreground hover:text-foreground">
-                    <Pencil className="size-3.5" />
+                  <button type="button" onClick={() => handleEdit(w)} className="bg-background/80 backdrop-blur border border-border/60 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm">
+                    <Pencil className="size-4" />
                   </button>
-                  <button type="button" onClick={() => handleDelete(w._id)} className="bg-background/80 backdrop-blur border border-border p-1.5 rounded text-muted-foreground hover:text-destructive">
-                    <Trash2 className="size-3.5" />
+                  <button type="button" onClick={() => handleDelete(w._id)} className="bg-background/80 backdrop-blur border border-border/60 p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shadow-sm">
+                    <Trash2 className="size-4" />
                   </button>
                 </div>
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between relative z-0">
                   <div>
                     <p className="font-mono text-lg font-bold pr-16">{w.name}</p>
                     <p className="mono-label text-muted-foreground mt-1">{w.code} · {w.department}</p>
@@ -192,8 +192,13 @@ export function WardsPanel() {
             );
           })
         ) : (
-          <div className="p-8 text-center mono-label text-xs text-muted-foreground col-span-full">
-            No wards registered in system.
+          <div className="p-16 text-center mono-label text-xs text-muted-foreground col-span-full">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
+                <BedDouble className="size-6 text-muted-foreground/60" />
+              </div>
+              <p className="mono-label text-muted-foreground">No wards registered in system.</p>
+            </div>
           </div>
         )}
       </div>

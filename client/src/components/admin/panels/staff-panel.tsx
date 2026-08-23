@@ -2,32 +2,35 @@
 
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { motion } from "motion/react";
+import { Users } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 
 /* ---------- shared primitives ---------- */
 
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>;
+  return <th className="mono-label text-muted-foreground bg-muted/40 px-5 py-4 text-left font-semibold border-b border-border/60 backdrop-blur-md sticky top-0">{children}</th>;
 }
 
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
+function Td({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <td className={`px-5 py-4 align-middle text-sm ${className}`}>{children}</td>;
 }
 
 function Pill({ children, tone }: { children: React.ReactNode; tone: "ok" | "warn" | "bad" | "mute" }) {
   const map = {
-    ok: "bg-accent/12 text-brass",
+    ok: "bg-accent/15 text-brass shadow-[0_0_8px_color-mix(in_oklab,var(--color-accent)_15%,transparent)]",
     warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
+    bad: "bg-destructive/15 text-destructive shadow-[0_0_8px_color-mix(in_oklab,var(--color-destructive)_15%,transparent)]",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return <span className={`mono-label px-2.5 py-1 rounded-md ${map[tone]}`}>{children}</span>;
 }
 
 function TablePanel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="hairline-b overflow-x-auto">
-      <table className="w-full min-w-[800px] border-collapse">{children}</table>
+    <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[800px] border-collapse">{children}</table>
+      </div>
     </div>
   );
 }
@@ -101,18 +104,18 @@ export function StaffPanel() {
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={5} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
+              <td colSpan={5} className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse">
                 Loading staff from MongoDB Atlas...
               </td>
             </tr>
           ) : rows.length > 0 ? (
             rows.map((s) => (
-              <tr key={s._id} className="hairline-b">
+              <tr key={s._id} className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
                 <Td>
-                  <span className="mono-label text-muted-foreground">{s._id.slice(-6).toUpperCase()}</span>
+                  <span className="font-mono text-muted-foreground">{s._id.slice(-6).toUpperCase()}</span>
                 </Td>
                 <Td>
-                  <p className="font-medium">{s.user?.name || "Unknown"}</p>
+                  <p className="font-medium group-hover:text-primary transition-colors">{s.user?.name || "Unknown"}</p>
                   <p className="mono-label text-muted-foreground mt-1 text-xs">
                     {s.department || "General"}
                   </p>
@@ -132,7 +135,7 @@ export function StaffPanel() {
                         import("sonner").then(m => m.toast.error("Failed to update role"));
                       }
                     }}
-                    className="bg-transparent border border-(--hairline) px-2 py-1 text-xs mono-label outline-none focus:border-accent"
+                    className="bg-background/50 border border-border/60 rounded-md px-2 py-1.5 text-xs mono-label outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   >
                     <option value="USER">USER</option>
                     <option value="PATIENT">PATIENT</option>
@@ -152,7 +155,7 @@ export function StaffPanel() {
                 </Td>
                 <Td>
                   <div className="flex items-center gap-2">
-                    <div className="bg-foreground/[0.07] h-1.5 w-24">
+                    <div className="bg-foreground/[0.07] h-1.5 w-24 rounded-full overflow-hidden">
                       <motion.div
                         className="bg-accent h-full"
                         initial={{ width: 0 }}
@@ -167,8 +170,13 @@ export function StaffPanel() {
             ))
           ) : (
             <tr>
-              <td colSpan={5} className="p-8 text-center mono-label text-xs text-muted-foreground">
-                No staff profiles found.
+              <td colSpan={5} className="p-16 text-center">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
+                    <Users className="size-6 text-muted-foreground/60" />
+                  </div>
+                  <p className="mono-label text-muted-foreground">No staff profiles found.</p>
+                </div>
               </td>
             </tr>
           )}

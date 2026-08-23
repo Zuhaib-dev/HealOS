@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { DiagnosticOrder, DiagnosticReport, LabAnalyser } from "../models/index.js";
+import { DiagnosticOrder, DiagnosticReport, LabAnalyser, Invoice, InvoiceStatus, InvoicePaymentMethod } from "../models/index.js";
 import { getIO } from "../socket.js";
 import { AppError } from "../middleware/error-handler.js";
 import fs from "fs";
@@ -82,10 +82,53 @@ export const getCollections = async (_req: Request, res: Response) => {
   }
 };
 
+export const createLabBill = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { price } = req.body;
+    const order = await DiagnosticOrder.findById(id);
+    if (!order) throw new AppError("Order not found", 404);
+
+    const invoice = await Invoice.create({
+      patient: order.patient,
+      issuedBy: req.user?.id,
+      items: [{ description: order.testName, amount: price }],
+      totalAmount: price,
+      status: InvoiceStatus.PENDING,
+      payer: "self",
+      insuranceCoverage: 0,
+    });
+    
+    const io = getIO();
+    if (io) io.emit("invoice_created", { invoice });
+
+    res.status(201).json({ success: true, invoice });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || "Failed to create bill" });
+  }
+};
+
 export const markCollected = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { paymentMethod, price } = req.body;
+    
     const order = await DiagnosticOrder.findByIdAndUpdate(id, { status: "IN_PROGRESS" }, { new: true });
+    
+    if (paymentMethod && price) {
+       await Invoice.create({
+          patient: order?.patient,
+          issuedBy: req.user?.id,
+          items: [{ description: order?.testName || "Lab Test", amount: price }],
+          totalAmount: price,
+          status: InvoiceStatus.PAID,
+          paymentMethod: paymentMethod as InvoicePaymentMethod,
+          payer: "self",
+          insuranceCoverage: 0,
+          paidAt: new Date(),
+       });
+       // Optional: emit invoice_created if we want to sync
+    }
     
     const io = getIO();
     if (io) io.emit("lab_collection_updated", { order });

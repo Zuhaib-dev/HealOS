@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken, requireRole } from "../middleware/auth.middleware.js";
-import { getCollections, markCollected, getSamples, getPendingValidation, validateReport, getAnalysers, getCriticalValues, getLabStats } from "../controllers/lab.controller.js";
+import { getCollections, markCollected, getSamples, getPendingValidation, validateReport, getAnalysers, getCriticalValues, getLabStats, createLabBill } from "../controllers/lab.controller.js";
 import { UserRole } from "../models/user.model.js";
 
 const router = Router();
@@ -11,6 +11,7 @@ router.use(requireRole([UserRole.LAB_TECHNICIAN, UserRole.ADMIN, UserRole.DOCTOR
 
 router.get("/collections", getCollections);
 router.patch("/collections/:id/collect", markCollected);
+router.post("/collections/:id/bill", createLabBill);
 
 router.get("/samples", getSamples);
 router.get("/validation", getPendingValidation);

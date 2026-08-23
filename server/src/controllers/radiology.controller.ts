@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { DiagnosticOrder, DiagnosticReport } from "../models/index.js";
+import { DiagnosticOrder, DiagnosticReport, Invoice, InvoiceStatus, InvoicePaymentMethod } from "../models/index.js";
 import { AppError } from "../middleware/error-handler.js";
 import ImageKit from "imagekit";
 
@@ -61,15 +61,59 @@ export const getOrders = async (_req: Request, res: Response): Promise<void> => 
 };
 
 // ==========================================
+// 1.5 Create Radiology Bill
+// ==========================================
+export const createRadiologyBill = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { price } = req.body;
+    const order = await DiagnosticOrder.findById(id);
+    if (!order) throw new AppError("Order not found", 404);
+
+    const invoice = await Invoice.create({
+      patient: order.patient,
+      issuedBy: req.user?.id,
+      items: [{ description: order.testName, amount: price }],
+      totalAmount: price,
+      status: InvoiceStatus.PENDING,
+      payer: "self",
+      insuranceCoverage: 0,
+    });
+    
+    const { getIO } = await import("../socket.js");
+    const io = getIO();
+    if (io) io.emit("invoice_created", { invoice });
+
+    res.status(201).json({ success: true, invoice });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || "Failed to create bill" });
+  }
+};
+
+// ==========================================
 // 2. Update Order Status
 // ==========================================
 export const updateOrderStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, paymentMethod, price } = req.body;
 
     if (!status) {
       throw new AppError("Status is required", 400);
+    }
+    
+    if (paymentMethod && price) {
+       await Invoice.create({
+          patient: (await DiagnosticOrder.findById(id))?.patient,
+          issuedBy: req.user?.id,
+          items: [{ description: (await DiagnosticOrder.findById(id))?.testName || "Radiology Scan", amount: price }],
+          totalAmount: price,
+          status: InvoiceStatus.PAID,
+          paymentMethod: paymentMethod as InvoicePaymentMethod,
+          payer: "self",
+          insuranceCoverage: 0,
+          paidAt: new Date(),
+       });
     }
 
     const order = await DiagnosticOrder.findByIdAndUpdate(

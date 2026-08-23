@@ -5,8 +5,13 @@ export const fetchLabCollectionsApi = async () => {
   return response.data;
 };
 
-export const markLabCollectedApi = async (id: string) => {
-  const response = await apiClient.patch(`/lab/collections/${id}/collect`);
+export const markLabCollectedApi = async (id: string, paymentMethod?: string, price?: number) => {
+  const response = await apiClient.patch(`/lab/collections/${id}/collect`, { paymentMethod, price });
+  return response.data;
+};
+
+export const createLabBillApi = async (id: string, price: number) => {
+  const response = await apiClient.post(`/lab/collections/${id}/bill`, { price });
   return response.data;
 };
 

@@ -114,7 +114,7 @@ export function WorkspaceShell({
                     />
                   )}
                   <span className="text-accent/60">{String(i + 1).padStart(2, "0")}</span>
-                  <Icon className="size-3.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
+                  <Icon className="size-3.5" />
                   {s.label}
                 </Link>
               );
@@ -214,7 +214,7 @@ export function WorkspaceShell({
                             : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
                         }`}
                       >
-                        <Icon className="size-6 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" strokeWidth={isActive ? 2.5 : 2} />
+                        <Icon className="size-6" strokeWidth={isActive ? 2.5 : 2} />
                         <span className="text-[11px] font-semibold tracking-wide">{s.label}</span>
                       </Link>
                     );

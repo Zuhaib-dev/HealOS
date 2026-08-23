@@ -114,7 +114,7 @@ export function WorkspaceShell({
                     />
                   )}
                   <span className="text-accent/60">{String(i + 1).padStart(2, "0")}</span>
-                  <Icon className="size-3.5" />
+                  <Icon className="size-3.5 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
                   {s.label}
                 </Link>
               );
@@ -148,7 +148,7 @@ export function WorkspaceShell({
                 key={s.id}
                 href={href}
                 onClick={() => setIsMoreOpen(false)}
-                className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none group tap-highlight-transparent"
+                className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none group tap-highlight-transparent"
               >
                 <motion.div 
                   animate={isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }}
@@ -176,7 +176,7 @@ export function WorkspaceShell({
               <DrawerTrigger asChild>
                 <button
                   type="button"
-                  className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none group tap-highlight-transparent"
+                  className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none group tap-highlight-transparent"
                 >
                   <div className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
                     moreMobileTabs.some(s => isSectionActive(s.id)) ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
@@ -214,7 +214,7 @@ export function WorkspaceShell({
                             : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
                         }`}
                       >
-                        <Icon className="size-6" strokeWidth={isActive ? 2.5 : 2} />
+                        <Icon className="size-6 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" strokeWidth={isActive ? 2.5 : 2} />
                         <span className="text-[11px] font-semibold tracking-wide">{s.label}</span>
                       </Link>
                     );

@@ -119,11 +119,13 @@ export function CounterPanel() {
                           </div>
                           
                           <div>
-                            <p className="font-semibold text-foreground">{b.patient?.name || "Unknown Patient"}</p>
+                            <p className="font-semibold text-foreground">
+                              {b.patient?.name || (b.patient?.firstName ? `${b.patient.firstName} ${b.patient.lastName || ''}`.trim() : "Unknown Patient")}
+                            </p>
                             <div className="flex items-center gap-2 mt-1">
                                <p className="mono-label text-[10px] text-muted-foreground">{b.patient?.phone || "No phone"}</p>
                                <span className="text-muted-foreground/30">•</span>
-                               <span className="mono-label text-[10px] text-muted-foreground truncate max-w-[120px] sm:max-w-[200px]">
+                               <span className="mono-label text-[10px] text-muted-foreground truncate max-w-30 sm:max-w-50">
                                  {b.items.map(i => i.description).join(", ")}
                                </span>
                             </div>

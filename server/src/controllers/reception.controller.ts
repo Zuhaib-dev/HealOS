@@ -131,7 +131,7 @@ export const getQueue = async (_req: Request, res: Response): Promise<void> => {
 export const getPendingBills = async (_req: Request, res: Response): Promise<void> => {
   try {
     const invoices = await Invoice.find({ status: InvoiceStatus.PENDING })
-      .populate("patient", "name phone")
+      .populate("patient", "name firstName lastName phone")
       .sort({ createdAt: 1 });
 
     res.status(200).json({

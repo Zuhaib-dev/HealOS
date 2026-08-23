@@ -28,7 +28,9 @@ export interface InvoiceRecord {
   _id: string;
   patient: {
     _id: string;
-    name: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
     phone: string;
   };
   issuedBy: string;

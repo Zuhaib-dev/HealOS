@@ -25,7 +25,7 @@ function Td({ children }: { children: React.ReactNode }) {
 function TablePanel({ children }: { children: React.ReactNode }) {
   return (
     <div className="hairline-b overflow-x-auto">
-      <table className="w-full min-w-180 border-collapse">{children}</table>
+      <table className="w-full min-w-[800px] border-collapse">{children}</table>
     </div>
   );
 }

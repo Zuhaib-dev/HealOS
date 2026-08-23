@@ -641,7 +641,7 @@ export function SchedulePanel() {
         {loading ? (
           <p className="mono-label text-muted-foreground animate-pulse text-center p-8">Loading schedule from database...</p>
         ) : (
-          <div className="min-w-205">
+          <div className="min-w-[800px]">
             <div className="mono-label text-muted-foreground flex pl-28">
               {hours.map((h) => (
                 <span key={h} className="flex-1">

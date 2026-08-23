@@ -246,7 +246,7 @@ export function UsersPanel() {
 
       <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px] border-collapse">
+          <table className="w-full min-w-[800px] border-collapse">
             <thead>
               <tr>
               <Th>User</Th>
@@ -423,7 +423,7 @@ export function PatientsPanel() {
       </div>
       <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[850px] border-collapse">
+          <table className="w-full min-w-212.5 border-collapse">
             <thead>
               <tr>
               <Th>Patient ID</Th>
@@ -774,7 +774,7 @@ export function RolesPanel() {
       />
       <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] border-collapse">
+          <table className="w-full min-w-190 border-collapse">
             <thead>
               <tr>
               <Th>Role</Th>

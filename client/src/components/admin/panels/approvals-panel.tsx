@@ -26,7 +26,7 @@ function TablePanel({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px] border-collapse">{children}</table>
+        <table className="w-full min-w-200 border-collapse">{children}</table>
       </div>
     </div>
   );

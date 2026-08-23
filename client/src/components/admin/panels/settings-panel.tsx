@@ -71,7 +71,7 @@ export function SettingsPanel() {
               <input
                 value={profile.facilityName}
                 onChange={(e) => setProfile((current) => ({ ...current, facilityName: e.target.value }))}
-                className="hairline mt-2 w-full bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-(--hairline-strong)"
+                className="border border-border/60 rounded-lg mt-2 w-full bg-background/50 px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </label>
             <label className="block">
@@ -80,7 +80,7 @@ export function SettingsPanel() {
                 value={profile.licenseNumber}
                 onChange={(e) => setProfile((current) => ({ ...current, licenseNumber: e.target.value }))}
                 placeholder="Enter facility licence"
-                className="hairline mt-2 w-full bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-(--hairline-strong)"
+                className="border border-border/60 rounded-lg mt-2 w-full bg-background/50 px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </label>
             <label className="block">
@@ -88,7 +88,7 @@ export function SettingsPanel() {
               <input
                 value={profile.timezone}
                 onChange={(e) => setProfile((current) => ({ ...current, timezone: e.target.value }))}
-                className="hairline mt-2 w-full bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-(--hairline-strong)"
+                className="border border-border/60 rounded-lg mt-2 w-full bg-background/50 px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </label>
             <label className="block">
@@ -97,7 +97,7 @@ export function SettingsPanel() {
                 value={profile.escalationContact}
                 onChange={(e) => setProfile((current) => ({ ...current, escalationContact: e.target.value }))}
                 placeholder="ops@example.com"
-                className="hairline mt-2 w-full bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-(--hairline-strong)"
+                className="border border-border/60 rounded-lg mt-2 w-full bg-background/50 px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </label>
           </div>

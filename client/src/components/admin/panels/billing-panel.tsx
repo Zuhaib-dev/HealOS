@@ -35,27 +35,29 @@ function Metric({
 }
 
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>;
+  return <th className="mono-label text-muted-foreground bg-muted/40 px-5 py-4 text-left font-semibold border-b border-border/60 backdrop-blur-md sticky top-0">{children}</th>;
 }
 
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
+function Td({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <td className={`px-5 py-4 align-middle text-sm ${className}`}>{children}</td>;
 }
 
 function Pill({ children, tone }: { children: React.ReactNode; tone: "ok" | "warn" | "bad" | "mute" }) {
   const map = {
-    ok: "bg-accent/12 text-brass",
+    ok: "bg-accent/15 text-brass shadow-[0_0_8px_color-mix(in_oklab,var(--color-accent)_15%,transparent)]",
     warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
+    bad: "bg-destructive/15 text-destructive shadow-[0_0_8px_color-mix(in_oklab,var(--color-destructive)_15%,transparent)]",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return <span className={`mono-label px-2.5 py-1 rounded-md ${map[tone]}`}>{children}</span>;
 }
 
 function TablePanel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="hairline-b overflow-x-auto">
-      <table className="w-full min-w-[800px] border-collapse">{children}</table>
+    <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[800px] border-collapse">{children}</table>
+      </div>
     </div>
   );
 }
@@ -125,41 +127,58 @@ export function BillingPanel() {
             <Th>Date</Th>
             <Th>Amount</Th>
             <Th>State</Th>
+            <Th>{" "}</Th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={5} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
-                Loading invoices from database...
+              <td colSpan={6} className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse">
+                Loading ledgers...
               </td>
             </tr>
           ) : invoicesData.length > 0 ? (
-            invoicesData.map((i) => (
-              <tr key={i._id} className="hairline-b">
+            invoicesData.map((inv) => (
+              <tr key={inv._id} className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
                 <Td>
-                  <span className="mono-label">{i._id.slice(-8).toUpperCase()}</span>
+                  <span className="font-mono text-muted-foreground">{inv._id.slice(-8).toUpperCase()}</span>
                 </Td>
                 <Td>
-                  <span className="mono-label text-muted-foreground">{i.patient?.user?.name || "Unknown Patient"}</span>
+                  <span className="font-medium group-hover:text-primary transition-colors">{inv.patient?.user?.name || "Unknown Patient"}</span>
+                  <span className="text-muted-foreground text-xs block mt-0.5">
+                    {inv.patient?.user?.email}
+                  </span>
                 </Td>
                 <Td>
-                  <span className="mono-label text-muted-foreground">{new Date(i.createdAt).toLocaleDateString()}</span>
+                  <span className="mono-label text-muted-foreground">
+                    {new Date(inv.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
                 </Td>
                 <Td>
-                  <span className="font-mono font-bold">${(i.amount || 0).toLocaleString()}</span>
+                  <span className="font-mono font-bold">${(inv.amount || 0).toLocaleString()}</span>
                 </Td>
                 <Td>
-                  <Pill tone={i.status === "PAID" ? "ok" : i.status === "FAILED" || i.status === "OVERDUE" ? "bad" : "warn"}>
-                    {i.status || "PENDING"}
+                  <Pill tone={inv.status === "PAID" ? "ok" : inv.status === "FAILED" || inv.status === "OVERDUE" ? "bad" : "warn"}>
+                    {inv.status || "PENDING"}
                   </Pill>
+                </Td>
+                <Td className="text-right">
+                  <button className="text-muted-foreground hover:text-foreground hover:bg-muted/50 p-1.5 rounded-lg transition-colors">
+                    <span className="sr-only">Options</span>
+                    <ArrowUpRight className="size-4" />
+                  </button>
                 </Td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan={5} className="p-8 text-center mono-label text-xs text-muted-foreground">
-                No invoices found in ledger.
+              <td colSpan={6} className="p-16 text-center">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
+                    <ArrowUpRight className="size-6 text-muted-foreground/60" />
+                  </div>
+                  <p className="mono-label text-muted-foreground">No invoices recorded yet.</p>
+                </div>
               </td>
             </tr>
           )}

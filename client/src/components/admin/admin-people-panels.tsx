@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { LogOut, KeyRound, ShieldCheck, ShieldOff, Copy, Plus } from "lucide-react";
+import { LogOut, KeyRound, ShieldCheck, ShieldOff, Copy, Plus, UserCog, HeartPulse } from "lucide-react";
 import { ActionButton, PanelHeader } from "./admin-shell";
 import {
   fetchAdminUsersApi,
@@ -34,12 +34,12 @@ function getApiErrorMessage(error: unknown, fallback: string) {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground bg-muted/40 px-5 py-4 text-left font-semibold border-b border-border/60 backdrop-blur-md sticky top-0">{children}</th>
   );
 }
 
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
+function Td({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <td className={`px-5 py-4 align-middle text-sm ${className}`}>{children}</td>;
 }
 
 function Pill({
@@ -50,12 +50,12 @@ function Pill({
   tone: "ok" | "warn" | "bad" | "mute";
 }) {
   const map = {
-    ok: "bg-accent/12 text-brass",
+    ok: "bg-accent/15 text-brass shadow-[0_0_8px_color-mix(in_oklab,var(--color-accent)_15%,transparent)]",
     warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
+    bad: "bg-destructive/15 text-destructive shadow-[0_0_8px_color-mix(in_oklab,var(--color-destructive)_15%,transparent)]",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return <span className={`mono-label px-2.5 py-1 rounded-md ${map[tone]}`}>{children}</span>;
 }
 
 function PaginationControls({
@@ -244,10 +244,11 @@ export function UsersPanel() {
         ))}
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-250">
-          <thead className="hairline-b">
-            <tr>
+      <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1000px] border-collapse">
+            <thead>
+              <tr>
               <Th>User</Th>
               <Th>Email</Th>
               <Th>Role / dept</Th>
@@ -269,24 +270,24 @@ export function UsersPanel() {
               visibleUsers.map((u) => {
                 const isRevoked = revoked.includes(u._id);
                 return (
-                  <tr key={u._id} className="hairline-b">
+                  <tr key={u._id} className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
                     <Td>
-                      <span className="flex items-center gap-3">
-                        <Avatar name={u.name} online={!isRevoked} />
-                        <span>
-                          <span className="block font-medium">{u.name}</span>
-                          <span className="mono-label text-muted-foreground">{u._id.slice(-8).toUpperCase()}</span>
-                        </span>
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <Avatar name={u.name || u.email} online={!isRevoked} />
+                        <div>
+                          <p className="font-medium group-hover:text-primary transition-colors">{u.name}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{u._id.slice(-6).toUpperCase()}</p>
+                        </div>
+                      </div>
                     </Td>
                     <Td>
                       <span className="mono-label text-muted-foreground">{u.email}</span>
                     </Td>
                     <Td>
                       <select
-                        value={u.role}
+                        value={u.role || "USER"}
                         onChange={(e) => handleRoleChange(u._id, e.target.value)}
-                        className="mono-label bg-background border border-border/70 text-xs rounded px-2 py-1 font-semibold text-primary focus:outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer"
+                        className="bg-background/50 border border-border/60 rounded-md px-2 py-1.5 text-xs mono-label outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
                       >
                         <option value="USER">USER</option>
                         <option value="PATIENT">PATIENT</option>
@@ -335,7 +336,7 @@ export function UsersPanel() {
                           <button
                             type="button"
                             onClick={() => setRevoked((r) => [...r, u._id])}
-                            className="mono-label text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
+                            className="mono-label text-muted-foreground hover:text-destructive flex items-center gap-1 hover:bg-destructive/10 px-2 py-1.5 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                           >
                             <LogOut className="size-3" /> sign out
                           </button>
@@ -347,13 +348,19 @@ export function UsersPanel() {
               })
             ) : (
               <tr>
-                <td colSpan={8} className="p-8 text-center mono-label text-xs text-muted-foreground">
-                  No user accounts registered.
+                <td colSpan={8} className="p-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
+                      <UserCog className="size-6 text-muted-foreground/60" />
+                    </div>
+                    <p className="mono-label text-muted-foreground">No user accounts found.</p>
+                  </div>
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
       </div>
       <PaginationControls pagination={pagination} onPageChange={setPage} />
     </div>
@@ -414,10 +421,11 @@ export function PatientsPanel() {
           className="mono-label hairline placeholder:text-muted-foreground w-full max-w-xs bg-transparent px-3 py-2 outline-none"
         />
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-215">
-          <thead className="hairline-b">
-            <tr>
+      <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[850px] border-collapse">
+            <thead>
+              <tr>
               <Th>Patient ID</Th>
               <Th>Patient Name</Th>
               <Th>Gender / Blood</Th>
@@ -430,21 +438,21 @@ export function PatientsPanel() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
-                  Loading patient registry from MongoDB Atlas...
+                <td colSpan={7} className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse">
+                  Loading patient registry...
                 </td>
               </tr>
             ) : dbPatients.length > 0 ? (
               dbPatients.map((p) => (
-                <tr key={p._id} className="hairline-b">
+                <tr key={p._id} className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
                   <Td>
-                    <span className="mono-label text-muted-foreground">{p._id.slice(-8).toUpperCase()}</span>
+                    <span className="font-mono text-muted-foreground">{p._id.slice(-8).toUpperCase()}</span>
                   </Td>
                   <Td>
                     <span className="flex items-center gap-3">
                       <Avatar name={p.user?.name || "Patient"} online={true} />
                       <div>
-                        <p className="font-medium text-foreground">{p.user?.name || "Anonymous Patient"}</p>
+                        <p className="font-medium group-hover:text-primary transition-colors">{p.user?.name || "Anonymous Patient"}</p>
                         <p className="mono-label text-[11px] text-muted-foreground">{p.user?.email}</p>
                       </div>
                     </span>
@@ -472,13 +480,19 @@ export function PatientsPanel() {
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="p-8 text-center mono-label text-xs text-muted-foreground">
-                  No registered patient profiles found.
+                <td colSpan={7} className="p-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
+                      <HeartPulse className="size-6 text-muted-foreground/60" />
+                    </div>
+                    <p className="mono-label text-muted-foreground">No patient profiles found.</p>
+                  </div>
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
       </div>
       <PaginationControls pagination={pagination} onPageChange={setPage} />
     </div>
@@ -758,10 +772,11 @@ export function RolesPanel() {
         note="Every scope each role carries. Change it here and it propagates to all seats on the next token refresh."
         actions={<ActionButton tone="solid">New role</ActionButton>}
       />
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-190">
-          <thead className="hairline-b">
-            <tr>
+      <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] border-collapse">
+            <thead>
+              <tr>
               <Th>Role</Th>
               <Th>Seats</Th>
               {permissionScopes.map((s) => (
@@ -772,15 +787,15 @@ export function RolesPanel() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={permissionScopes.length + 2} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
-                  Loading role seats from database...
+                <td colSpan={permissionScopes.length + 2} className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse">
+                  Loading role seats...
                 </td>
               </tr>
             ) : roles.length > 0 ? (
               roles.map((r) => (
-              <tr key={r.role} className="hairline-b">
+              <tr key={r.role} className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
                 <Td>
-                  <span className="font-medium">{r.role}</span>
+                  <span className="font-medium group-hover:text-primary transition-colors">{r.role}</span>
                 </Td>
                 <Td>
                   <span className="mono-label text-muted-foreground">{r.seats}</span>
@@ -803,13 +818,19 @@ export function RolesPanel() {
               ))
             ) : (
               <tr>
-                <td colSpan={permissionScopes.length + 2} className="p-8 text-center mono-label text-xs text-muted-foreground">
-                  No roles found.
+                <td colSpan={permissionScopes.length + 2} className="p-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
+                      <ShieldCheck className="size-6 text-muted-foreground/60" />
+                    </div>
+                    <p className="mono-label text-muted-foreground">No roles found.</p>
+                  </div>
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   );

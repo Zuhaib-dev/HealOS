@@ -146,6 +146,13 @@ export function ReportsPanel() {
   const orders = data?.diagnosticOrders || [];
   const reports = data?.diagnosticReports || [];
 
+  const getFullFileUrl = (url: string | null | undefined) => {
+    if (!url) return null;
+    if (url.startsWith("http")) return url;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:5001";
+    return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
   const allRecords = [
     ...orders.map(o => ({
       id: o._id,
@@ -157,7 +164,7 @@ export function ReportsPanel() {
       flagged: false,
       pages: 0,
       size: "",
-      fileUrl: null
+      fileUrl: getFullFileUrl(o.fileUrl)
     })),
     ...reports.map(r => ({
       id: r._id,
@@ -169,7 +176,7 @@ export function ReportsPanel() {
       flagged: false, // We could add logic for flags later
       pages: 1,
       size: "PDF",
-      fileUrl: r.fileUrl || null
+      fileUrl: getFullFileUrl(r.fileUrl)
     }))
   ];
 

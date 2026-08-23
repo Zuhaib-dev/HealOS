@@ -22,6 +22,7 @@ export interface IUser extends Document {
   role: UserRole;
   isEmailVerified: boolean;
   avatarUrl?: string;
+  tokenVersion?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +41,7 @@ const userSchema = new Schema<IUser>(
     },
     isEmailVerified: { type: Boolean, default: false },
     avatarUrl: { type: String },
+    tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

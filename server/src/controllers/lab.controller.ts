@@ -3,6 +3,14 @@ import { DiagnosticOrder, DiagnosticReport, LabAnalyser } from "../models/index.
 import { getIO } from "../socket.js";
 import { AppError } from "../middleware/error-handler.js";
 import fs from "fs";
+import ImageKit from "imagekit";
+
+// Initialize ImageKit
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY || "public_key",
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY || "private_key",
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/your_endpoint"
+});
 
 
 export const uploadLabReport = async (req: Request, res: Response) => {
@@ -21,7 +29,17 @@ export const uploadLabReport = async (req: Request, res: Response) => {
       throw new AppError("Diagnostic order not found", 404);
     }
 
-    const fileUrl = `/uploads/reports/${file.filename}`;
+    let fileUrl = "";
+    if (file) {
+      const fileBuffer = await fs.promises.readFile(file.path);
+      const uploadResponse = await imagekit.upload({
+        file: fileBuffer,
+        fileName: `lab_report_${order._id}_${Date.now()}`,
+        folder: "/hms/reports",
+      });
+      fileUrl = uploadResponse.url;
+      fs.unlinkSync(file.path);
+    }
 
     const report = await DiagnosticReport.create({
       patient: order.patient,
@@ -55,7 +73,8 @@ export const getCollections = async (_req: Request, res: Response) => {
   try {
     const orders = await DiagnosticOrder.find({ testType: "PATHOLOGY", status: { $in: ["PENDING", "IN_PROGRESS"] } })
       .populate("patient", "name mrn phone")
-      .sort({ priority: -1, createdAt: 1 });
+      .sort({ priority: -1, createdAt: 1 })
+      .lean();
       
     res.status(200).json({ success: true, collections: orders });
   } catch (error) {
@@ -81,7 +100,8 @@ export const getSamples = async (_req: Request, res: Response) => {
   try {
     const samples = await DiagnosticOrder.find({ testType: "PATHOLOGY", status: { $in: ["IN_PROGRESS", "REPORTED"] } })
       .populate("patient", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
       
     res.status(200).json({ success: true, samples });
   } catch (error) {
@@ -94,7 +114,8 @@ export const getPendingValidation = async (_req: Request, res: Response) => {
     const reports = await DiagnosticReport.find({ state: "pending sign" })
       .populate({ path: "order", match: { testType: "PATHOLOGY" } })
       .populate("patient", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
       
     // Filter out reports where order wasn't pathology
     const validReports = reports.filter(r => r.order !== null);
@@ -121,7 +142,7 @@ export const validateReport = async (req: Request, res: Response) => {
 
 export const getAnalysers = async (_req: Request, res: Response) => {
   try {
-    const analysers = await LabAnalyser.find().sort({ name: 1 });
+    const analysers = await LabAnalyser.find().sort({ name: 1 }).lean();
     res.status(200).json({ success: true, analysers });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error" });
@@ -133,7 +154,8 @@ export const getCriticalValues = async (_req: Request, res: Response) => {
     const criticals = await DiagnosticReport.find({ isCritical: true, state: "pending sign" })
       .populate({ path: "order", match: { testType: "PATHOLOGY" } })
       .populate("patient", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
       
     res.status(200).json({ success: true, criticalValues: criticals.filter(c => c.order !== null) });
   } catch (error) {

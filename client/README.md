@@ -84,3 +84,21 @@ client/
 
 The client is optimized for deployment on **Vercel**.
 Simply connect your repository to Vercel, set the Root Directory to `client`, and configure your Environment Variables (`NEXT_PUBLIC_API_URL`). Vercel will automatically detect Next.js and build the project using `next build`.
+
+---
+
+## Author
+
+<div align="center">
+
+**Zuhaib Rashid**  
+Full-stack engineer · UI/UX obsessive · Real-time systems nerd
+
+[![Portfolio](https://img.shields.io/badge/Portfolio-zuhaibrashid.com-0078D4?style=for-the-badge&logo=microsoft-edge)](https://zuhaibrashid.com)
+[![GitHub](https://img.shields.io/badge/GitHub-Zuhaib--dev-181717?style=for-the-badge&logo=github)](https://github.com/Zuhaib-dev)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Zuhaib_Rashid-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/zuhaib-rashid-661345318/)
+[![Twitter](https://img.shields.io/badge/Twitter-@xuhaib__x9-1DA1F2?style=for-the-badge&logo=twitter)](https://x.com/xuhaib_x9)
+
+*Built with obsessive attention to detail, real-world production patterns, and way too much coffee.*
+
+</div>

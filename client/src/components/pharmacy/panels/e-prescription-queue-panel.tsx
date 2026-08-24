@@ -393,7 +393,7 @@ export function RxQueuePanel() {
                               )}
                               
                               {item.instructions && (
-                                <p className="text-xs text-muted-foreground mt-2 italic flex items-center gap-1.5 bg-background/50 p-2 rounded-lg border border-border/40 inline-flex">
+                                <p className="text-xs text-muted-foreground mt-2 italic flex items-center gap-1.5 bg-background/50 p-2 rounded-lg border border-border/40">
                                   <ActivitySquare className="size-3 text-primary/70" /> Dr. Note: {item.instructions}
                                 </p>
                               )}

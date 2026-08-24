@@ -342,7 +342,7 @@ export function RegistrationPanel() {
             <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border/60 rounded-3xl p-8 text-center bg-background/50">
               <UserPlus className="size-10 text-muted-foreground/30 mb-4" />
               <p className="font-medium text-foreground">Waiting for registration...</p>
-              <p className="text-sm text-muted-foreground mt-2 max-w-[250px]">
+              <p className="text-sm text-muted-foreground mt-2 max-w-62.5">
                 Complete the form on the left. The patient slip will print here automatically.
               </p>
             </div>

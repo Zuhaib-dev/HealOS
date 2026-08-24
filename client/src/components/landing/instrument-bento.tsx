@@ -466,8 +466,8 @@ function OfflineCell() {
           <motion.span
             layout
             transition={{ type: "spring", stiffness: 500, damping: 32 }}
-            className={`absolute top-[3px] size-4 ${
-              online ? "bg-accent right-[3px]" : "bg-destructive left-[3px]"
+            className={`absolute top-0.75 size-4 ${
+              online ? "bg-accent right-0.75" : "bg-destructive left-0.75"
             }`}
           />
         </button>
@@ -482,7 +482,7 @@ function OfflineCell() {
         </span>
       </div>
 
-      <div className="mt-3 flex h-6 items-end gap-[3px]">
+      <div className="mt-3 flex h-6 items-end gap-0.75">
         {Array.from({ length: 24 }).map((_, i) => (
           <motion.span
             key={i}
@@ -679,7 +679,7 @@ function LatencyCell() {
                 {pings[i]}ms
               </span>
             </div>
-            <div className="hairline relative h-[3px] w-full">
+            <div className="hairline relative h-0.75 w-full">
               <motion.div
                 className={`absolute inset-y-0 left-0 ${
                   pinned === i ? "bg-brass" : "bg-accent/70"
@@ -704,7 +704,7 @@ function LatencyCell() {
 export function InstrumentBento() {
   return (
     <section id="instrument" className="relative">
-      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+      <div className="mx-auto max-w-350 px-5 sm:px-8">
         <div className="hairline-t grid grid-cols-1 gap-8 py-14 lg:grid-cols-12 lg:py-20">
           <div className="lg:col-span-4">
             <p className="mono-label text-brass">005 / Inside the instrument</p>

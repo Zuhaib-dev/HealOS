@@ -114,3 +114,21 @@ The `package.json` includes `build` (`tsc`) and `start` (`node dist/app.js`) scr
 ### Production email delivery
 
 Render free web services block outbound SMTP ports `25`, `465`, and `587`. For OTP emails on Render free without buying a domain, configure Gmail API credentials: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `GMAIL_USER`, and `GMAIL_FROM`. This sends through Google's HTTPS API instead of SMTP. If you have a verified sending domain, you can use `RESEND_API_KEY` instead. SMTP is kept for local development or hosts that allow SMTP egress.
+
+---
+
+## Author
+
+<div align="center">
+
+**Zuhaib Rashid**  
+Full-stack engineer · UI/UX obsessive · Real-time systems nerd
+
+[![Portfolio](https://img.shields.io/badge/Portfolio-zuhaibrashid.com-0078D4?style=for-the-badge&logo=microsoft-edge)](https://zuhaibrashid.com)
+[![GitHub](https://img.shields.io/badge/GitHub-Zuhaib--dev-181717?style=for-the-badge&logo=github)](https://github.com/Zuhaib-dev)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Zuhaib_Rashid-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/zuhaib-rashid-661345318/)
+[![Twitter](https://img.shields.io/badge/Twitter-@xuhaib__x9-1DA1F2?style=for-the-badge&logo=twitter)](https://x.com/xuhaib_x9)
+
+*Built with obsessive attention to detail, real-world production patterns, and way too much coffee.*
+
+</div>

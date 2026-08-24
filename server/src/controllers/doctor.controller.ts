@@ -183,7 +183,14 @@ export const orderDiagnostic = async (req: Request, res: Response) => {
 // ==========================================
 export const getPatientHistory = async (req: Request, res: Response) => {
   try {
+    const doctorId = req.user?._id;
     const { id: patientId } = req.params;
+
+    // Authorization check: ensure the doctor has or had an appointment with this patient
+    const hasAccess = await Appointment.exists({ doctor: doctorId, patient: patientId });
+    if (!hasAccess && req.user?.role !== "ADMIN") {
+      throw new AppError("You are not authorized to view this patient's history", 403);
+    }
 
     const consultations = await Consultation.find({ patient: patientId })
       .populate("doctor", "firstName lastName")

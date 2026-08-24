@@ -46,27 +46,32 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Check if slot is already booked for this doctor
-    const existingBooking = await Appointment.findOne({
-      doctor: doctorId,
-      date,
-      timeSlot,
-      status: { $ne: AppointmentStatus.CANCELLED },
-    });
-
-    if (existingBooking) {
-      res.status(StatusCodes.CONFLICT).json({
-        success: false,
-        message: "This doctor is already booked for the selected time slot. Please select another slot.",
-      });
-      return;
-    }
-
-    const paymentStatus = paymentMethod === ApptPaymentMethod.ONLINE ? ApptPaymentStatus.PENDING_ONLINE : ApptPaymentStatus.PENDING_CASH;
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
     let appointment;
     try {
-      appointment = await Appointment.create({
+      // Check if slot is already booked for this doctor within the transaction
+      const existingBooking = await Appointment.findOne({
+        doctor: doctorId,
+        date,
+        timeSlot,
+        status: { $ne: AppointmentStatus.CANCELLED },
+      }).session(session);
+
+      if (existingBooking) {
+        await session.abortTransaction();
+        session.endSession();
+        res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          message: "This doctor is already booked for the selected time slot. Please select another slot.",
+        });
+        return;
+      }
+
+      const paymentStatus = paymentMethod === ApptPaymentMethod.ONLINE ? ApptPaymentStatus.PENDING_ONLINE : ApptPaymentStatus.PENDING_CASH;
+
+      const apptArray = await Appointment.create([{
         patient: patientId,
         doctor: doctorId,
         department,
@@ -78,30 +83,36 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
         paymentMethod,
         paymentStatus,
         amount: 400,
-      });
-    } catch (createError: any) {
-      if (createError.code === 11000) {
+      }], { session });
+      appointment = apptArray[0];
+
+      // Generate Invoice
+      await Invoice.create([{
+        patient: patientId,
+        issuedBy: patientId, // Self-booked
+        appointment: appointment._id,
+        items: [{ description: "OPD Consultation Fee", amount: 400 }],
+        totalAmount: 400,
+        status: InvoiceStatus.PENDING,
+        paymentMethod: paymentMethod === ApptPaymentMethod.ONLINE ? InvoicePaymentMethod.CARD : undefined,
+        payer: "self",
+        paidAt: undefined,
+      }], { session });
+
+      await session.commitTransaction();
+    } catch (error: any) {
+      await session.abortTransaction();
+      if (error.code === 11000) {
         res.status(StatusCodes.CONFLICT).json({
           success: false,
           message: "This doctor is already booked for the selected time slot. Please select another slot.",
         });
         return;
       }
-      throw createError;
+      throw error;
+    } finally {
+      session.endSession();
     }
-
-    // Generate Invoice
-    await Invoice.create({
-      patient: patientId,
-      issuedBy: patientId, // Self-booked
-      appointment: appointment._id,
-      items: [{ description: "OPD Consultation Fee", amount: 400 }],
-      totalAmount: 400,
-      status: InvoiceStatus.PENDING,
-      paymentMethod: paymentMethod === ApptPaymentMethod.ONLINE ? InvoicePaymentMethod.CARD : undefined,
-      payer: "self",
-      paidAt: undefined,
-    });
 
     const populated = await Appointment.findById(appointment._id)
       .populate("doctor", "name email avatarUrl phone")

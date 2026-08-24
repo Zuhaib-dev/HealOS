@@ -65,44 +65,7 @@ const updatePhoneSchema = z.object({
   phone: z.string().trim().min(7, "Invalid phone number"),
 });
 
-// Helper to generate 6-digit OTP
-const generate6DigitOtp = (): string => {
-  return randomInt(100000, 1000000).toString();
-};
-
-const sendOtpOrRespond = async (
-  res: Response,
-  email: string,
-  otp: string,
-  purpose: "email_verification" | "password_reset" = "email_verification"
-): Promise<boolean> => {
-  const emailSent = await sendOtpEmail(email, otp, purpose);
-  if (emailSent) return true;
-
-  await OTP.deleteMany({ email, otp, purpose });
-  res.status(StatusCodes.BAD_GATEWAY).json({
-    success: false,
-    message: `We couldn't send the ${purpose === "password_reset" ? "password reset" : "verification"} email right now. Please try again in a moment.`,
-  });
-  return false;
-};
-
-// Helper to generate JWT Token
-const generateToken = (userId: string, role: UserRole, tokenVersion: number = 0): string => {
-  return jwt.sign({ userId, role: normalizeUserRole(role), tokenVersion }, envConfig.JWT_SECRET, {
-    expiresIn: envConfig.JWT_EXPIRES_IN as any,
-  });
-};
-
-const normalizeUserRole = (role: string): UserRole => {
-  if (!role) return UserRole.USER;
-  const upperRole = role.toUpperCase();
-  if (upperRole === "PATIENT" || role === "patient") return UserRole.PATIENT;
-  if (Object.values(UserRole).includes(upperRole as UserRole)) {
-    return upperRole as UserRole;
-  }
-  return UserRole.USER;
-};
+import { generateToken, generate6DigitOtp, sendOtpOrRespond, normalizeUserRole } from "../services/auth.service.js";
 
 const serializeAuthUser = (user: {
   _id: unknown;
@@ -253,7 +216,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     await OTP.create({ email, otp: otpCode, purpose: "email_verification" });
 
     // Send OTP email via Nodemailer
-    if (!(await sendOtpOrRespond(res, email, otpCode))) return;
+    const otpRes = await sendOtpOrRespond(email, otpCode);
+    if (!otpRes.success) {
+      res.status(StatusCodes.BAD_GATEWAY).json(otpRes);
+      return;
+    }
 
     res.status(StatusCodes.CREATED).json({
       success: true,
@@ -370,7 +337,11 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
     await OTP.deleteMany({ email, purpose: "email_verification" });
     await OTP.create({ email, otp: otpCode, purpose: "email_verification" });
 
-    if (!(await sendOtpOrRespond(res, email, otpCode))) return;
+    const otpRes = await sendOtpOrRespond(email, otpCode);
+    if (!otpRes.success) {
+      res.status(StatusCodes.BAD_GATEWAY).json(otpRes);
+      return;
+    }
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -415,7 +386,11 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     await OTP.deleteMany({ email, purpose: "password_reset" });
     await OTP.create({ email, otp: otpCode, purpose: "password_reset" });
 
-    if (!(await sendOtpOrRespond(res, email, otpCode, "password_reset"))) return;
+    const otpRes = await sendOtpOrRespond(email, otpCode, "password_reset");
+    if (!otpRes.success) {
+      res.status(StatusCodes.BAD_GATEWAY).json(otpRes);
+      return;
+    }
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -525,7 +500,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       const otpCode = generate6DigitOtp();
       await OTP.deleteMany({ email, purpose: "email_verification" });
       await OTP.create({ email, otp: otpCode, purpose: "email_verification" });
-      if (!(await sendOtpOrRespond(res, email, otpCode))) return;
+      const otpRes = await sendOtpOrRespond(email, otpCode);
+      if (!otpRes.success) {
+        res.status(StatusCodes.BAD_GATEWAY).json(otpRes);
+        return;
+      }
 
       res.status(StatusCodes.FORBIDDEN).json({
         success: false,

@@ -47,22 +47,17 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     let appointment: any;
     try {
-      // Check if slot is already booked for this doctor within the transaction
+      // Check if slot is already booked
       const existingBooking = await Appointment.findOne({
         doctor: doctorId,
         date,
         timeSlot,
         status: { $ne: AppointmentStatus.CANCELLED },
-      }).session(session);
+      });
 
       if (existingBooking) {
-        await session.abortTransaction();
-        session.endSession();
         res.status(StatusCodes.CONFLICT).json({
           success: false,
           message: "This doctor is already booked for the selected time slot. Please select another slot.",
@@ -72,7 +67,7 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
 
       const paymentStatus = paymentMethod === ApptPaymentMethod.ONLINE ? ApptPaymentStatus.PENDING_ONLINE : ApptPaymentStatus.PENDING_CASH;
 
-      const apptArray = await Appointment.create([{
+      const apptCreated = await Appointment.create({
         patient: patientId,
         doctor: doctorId,
         department,
@@ -84,11 +79,11 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
         paymentMethod,
         paymentStatus,
         amount: 400,
-      }], { session });
-      appointment = apptArray[0];
+      });
+      appointment = apptCreated;
 
       // Generate Invoice
-      await Invoice.create([{
+      await Invoice.create({
         patient: patientId,
         issuedBy: patientId, // Self-booked
         appointment: appointment._id,
@@ -98,11 +93,9 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
         paymentMethod: paymentMethod === ApptPaymentMethod.ONLINE ? InvoicePaymentMethod.CARD : undefined,
         payer: "self",
         paidAt: undefined,
-      }], { session });
+      });
 
-      await session.commitTransaction();
     } catch (error: any) {
-      await session.abortTransaction();
       if (error.code === 11000) {
         res.status(StatusCodes.CONFLICT).json({
           success: false,
@@ -111,8 +104,6 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
         return;
       }
       throw error;
-    } finally {
-      session.endSession();
     }
 
     const populated = await Appointment.findById(appointment._id)

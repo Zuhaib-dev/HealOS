@@ -327,10 +327,25 @@ export const getSchedule = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+const scheduleSchema = z.object({
+  user: z.string().min(1),
+  date: z.string().min(1),
+  startTime: z.string().min(1),
+  endTime: z.string().min(1),
+  shiftType: z.enum(["REGULAR", "ON_CALL", "LEAVE"]).optional(),
+  department: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 export const createSchedule = async (req: Request, res: Response): Promise<void> => {
   try {
+    const parsed = scheduleSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(StatusCodes.BAD_REQUEST).json({ success: false, errors: parsed.error.format() });
+      return;
+    }
     const { Schedule } = await import("../models/schedule.model.js");
-    const schedule = await Schedule.create(req.body);
+    const schedule = await Schedule.create(parsed.data);
     emitAdminDataChanged(["schedule"], "schedule_created");
     res.status(StatusCodes.CREATED).json({ success: true, schedule });
   } catch (error) {
@@ -341,8 +356,13 @@ export const createSchedule = async (req: Request, res: Response): Promise<void>
 
 export const updateSchedule = async (req: Request, res: Response): Promise<void> => {
   try {
+    const parsed = scheduleSchema.partial().safeParse(req.body);
+    if (!parsed.success) {
+      res.status(StatusCodes.BAD_REQUEST).json({ success: false, errors: parsed.error.format() });
+      return;
+    }
     const { Schedule } = await import("../models/schedule.model.js");
-    const schedule = await Schedule.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const schedule = await Schedule.findByIdAndUpdate(req.params.id, parsed.data, { new: true });
     if (!schedule) { res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Schedule not found" }); return; }
     emitAdminDataChanged(["schedule"], "schedule_updated");
     res.status(StatusCodes.OK).json({ success: true, schedule });

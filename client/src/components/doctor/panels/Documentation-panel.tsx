@@ -146,7 +146,7 @@ export function NotesPanel() {
             ) : (
               <div className="space-y-4">
                 {notes.map((n, i) => (
-                  <div key={i} className="p-4 border border-(--hairline) rounded bg-foreground/[0.02]">
+                  <div key={i} className="p-4 border border-(--hairline) rounded bg-foreground/2">
                     <div className="flex justify-between items-center mb-2">
                       <span className="mono-label font-bold text-brass">{n.category}</span>
                       <span className="text-xs text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</span>

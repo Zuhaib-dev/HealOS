@@ -53,7 +53,7 @@ function MetricCard({
 
 export default function ReceptionOverview() {
   return (
-    <section className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto min-h-[calc(100vh-4rem)] flex flex-col">
+    <section className="p-4 sm:p-6 lg:p-8 max-w-350 mx-auto min-h-[calc(100vh-4rem)] flex flex-col">
       <motion.div 
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}

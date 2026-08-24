@@ -1,12 +1,10 @@
 import mongoose from "mongoose";
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { randomInt } from "crypto";
 import { StatusCodes } from "http-status-codes";
 import { User, UserRole, OTP } from "../models";
 import { envConfig } from "../config/env";
-import { sendOtpEmail } from "../utils/mailer";
+
 import { z } from "zod";
 import { logAudit } from "../utils/audit.js";
 

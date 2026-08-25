@@ -174,6 +174,9 @@ export interface AdminInvoiceData {
   totalAmount: number;
   status: string;
   type: string;
+  paymentMethod?: string;
+  payer?: string;
+  items?: { description: string; amount: number }[];
   createdAt: string;
 }
 

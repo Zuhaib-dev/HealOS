@@ -177,57 +177,92 @@ export function BillingPanel() {
                         <ArrowUpRight className="size-4" />
                       </button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md border-border/60 bg-card/95 backdrop-blur-xl">
-                      <DialogHeader className="pb-4 border-b border-border/40">
-                        <DialogTitle className="font-mono text-lg flex items-center justify-between">
-                          <span>INV-{inv._id.slice(-8).toUpperCase()}</span>
-                          <Pill tone={inv.status === "PAID" ? "ok" : inv.status === "FAILED" || inv.status === "OVERDUE" ? "bad" : "warn"}>
-                            {inv.status || "PENDING"}
-                          </Pill>
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-5 py-4">
-                        <div className="flex justify-between items-center">
-                          <span className="mono-label text-muted-foreground">Date Issued</span>
-                          <span className="font-medium text-sm">
-                            {new Date(inv.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                          </span>
+                    <DialogContent className="sm:max-w-md border-0 bg-transparent shadow-none p-0">
+                      {/* Receipt paper container */}
+                      <div className="relative bg-card text-card-foreground p-6 pt-10 font-mono shadow-2xl rounded-sm overflow-hidden" 
+                           style={{
+                             backgroundImage: "radial-gradient(circle at top, transparent 4px, var(--card) 5px)",
+                             backgroundSize: "12px 10px",
+                             backgroundPosition: "top center",
+                             backgroundRepeat: "repeat-x"
+                           }}>
+                        {/* Zigzag/perforated bottom edge */}
+                        <div className="absolute bottom-0 left-0 right-0 h-3 w-full"
+                             style={{
+                               backgroundImage: "radial-gradient(circle at bottom, transparent 4px, var(--card) 5px)",
+                               backgroundSize: "12px 10px",
+                               backgroundPosition: "bottom center",
+                               backgroundRepeat: "repeat-x"
+                             }}
+                        />
+                        
+                        <div className="text-center mb-6 space-y-1">
+                          <h2 className="text-xl font-bold tracking-widest uppercase">HealOS Hospital</h2>
+                          <p className="text-xs text-muted-foreground uppercase tracking-widest">Official Receipt</p>
+                          <div className="text-xs pt-2">
+                            INV-{inv._id.slice(-8).toUpperCase()}
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="mono-label text-muted-foreground">Patient Details</span>
-                          <span className="text-sm font-medium text-right">
-                            {inv.patient?.name || "Unknown Patient"}
-                            {inv.patient?.email && (
-                              <span className="text-muted-foreground text-xs block mt-0.5 font-normal">
-                                {inv.patient.email}
-                              </span>
-                            )}
-                          </span>
+
+                        <div className="space-y-4 text-sm relative z-10 mb-4">
+                          <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                            <span className="text-muted-foreground uppercase text-xs">Date</span>
+                            <span>{new Date(inv.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                          </div>
+                          
+                          <div className="flex justify-between items-start border-b border-dashed border-border/60 pb-3">
+                            <span className="text-muted-foreground uppercase text-xs">Patient</span>
+                            <div className="text-right">
+                              <span className="font-bold">{inv.patient?.name || "Unknown Patient"}</span>
+                              {inv.patient?.phone && (
+                                <span className="block mt-0.5">{inv.patient.phone}</span>
+                              )}
+                              {inv.patient?.email && (
+                                <span className="block text-xs mt-0.5">{inv.patient.email}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                            <span className="text-muted-foreground uppercase text-xs">Status</span>
+                            <span className="font-bold uppercase tracking-wider">{inv.status || "PENDING"}</span>
+                          </div>
+
+                          <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                            <span className="text-muted-foreground uppercase text-xs">Method</span>
+                            <span className="uppercase">{inv.paymentMethod || inv.type || "Online"}</span>
+                          </div>
+                          
+                          {inv.items && inv.items.length > 0 && (
+                            <div className="py-2">
+                              <span className="text-muted-foreground uppercase text-xs mb-3 block">Items</span>
+                              <div className="space-y-2">
+                                {inv.items.map((item, idx) => (
+                                  <div key={idx} className="flex justify-between items-start gap-4">
+                                    <span className="leading-tight">{item.description}</span>
+                                    <span>₹{item.amount.toLocaleString()}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="mono-label text-muted-foreground">Payment Method</span>
-                          <span className="text-sm font-medium">
-                            {inv.paymentMethod || inv.type || "Online"}
-                          </span>
+
+                        <div className="border-t-2 border-dashed border-border pt-4 mt-2 pb-6 relative z-10">
+                          <div className="flex justify-between items-center">
+                            <span className="uppercase font-bold tracking-widest text-lg">Total</span>
+                            <span className="text-2xl font-bold tracking-tight">₹{(inv.totalAmount || 0).toLocaleString()}</span>
+                          </div>
                         </div>
                         
-                        {inv.items && inv.items.length > 0 && (
-                          <div className="border-t border-border/40 pt-5 mt-5 space-y-3">
-                            <span className="mono-label text-muted-foreground mb-3 block">Line Items</span>
-                            {inv.items.map((item, idx) => (
-                              <div key={idx} className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">{item.description}</span>
-                                <span className="font-mono font-medium">₹{item.amount.toLocaleString()}</span>
-                              </div>
+                        <div className="text-center mt-2 mb-2 pb-4 opacity-50 relative z-10">
+                          {/* Fake barcode */}
+                          <div className="h-8 w-full flex items-center justify-center gap-0.5">
+                            {Array.from({ length: 30 }).map((_, i) => (
+                              <div key={i} className="h-full bg-foreground" style={{ width: `${Math.random() * 4 + 1}px`, opacity: Math.random() > 0.3 ? 1 : 0 }} />
                             ))}
                           </div>
-                        )}
-
-                        <div className="border-t border-border/40 pt-5 mt-5">
-                          <div className="flex justify-between items-center">
-                            <span className="mono-label text-foreground font-semibold">Total Amount</span>
-                            <span className="font-mono text-2xl font-bold tracking-tight">₹{(inv.totalAmount || 0).toLocaleString()}</span>
-                          </div>
+                          <p className="text-[10px] mt-2 uppercase tracking-widest">Thank you</p>
                         </div>
                       </div>
                     </DialogContent>

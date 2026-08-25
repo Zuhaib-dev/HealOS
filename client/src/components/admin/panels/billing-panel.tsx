@@ -94,11 +94,11 @@ export function BillingPanel() {
 
   const totalCollected = invoicesData
     .filter((i) => i.status === "PAID")
-    .reduce((a, i) => a + (i.amount || 0), 0);
+    .reduce((a, i) => a + (i.totalAmount || 0), 0);
 
   const outstanding = invoicesData
     .filter((i) => i.status !== "PAID" && i.status !== "CANCELLED")
-    .reduce((a, i) => a + (i.amount || 0), 0);
+    .reduce((a, i) => a + (i.totalAmount || 0), 0);
 
   return (
     <section>
@@ -114,8 +114,8 @@ export function BillingPanel() {
         }
       />
       <div className="hairline-b grid grid-cols-2 lg:grid-cols-4">
-        <Metric label="Collected MTD" value={`$${(totalCollected / 1000).toFixed(1)}k`} delta="+Live" />
-        <Metric label="Outstanding" value={`$${(outstanding / 1000).toFixed(1)}k`} />
+        <Metric label="Collected MTD" value={`₹${(totalCollected / 1000).toFixed(1)}k`} delta="+Live" />
+        <Metric label="Outstanding" value={`₹${(outstanding / 1000).toFixed(1)}k`} />
         <Metric label="Total Invoices" value={String(invoicesData.length)} />
         <Metric label="Days in A/R" value="31" suffix="days" />
       </div>
@@ -144,9 +144,9 @@ export function BillingPanel() {
                   <span className="font-mono text-muted-foreground">{inv._id.slice(-8).toUpperCase()}</span>
                 </Td>
                 <Td>
-                  <span className="font-medium group-hover:text-primary transition-colors">{inv.patient?.user?.name || "Unknown Patient"}</span>
+                  <span className="font-medium group-hover:text-primary transition-colors">{inv.patient?.name || "Unknown Patient"}</span>
                   <span className="text-muted-foreground text-xs block mt-0.5">
-                    {inv.patient?.user?.email}
+                    {inv.patient?.email}
                   </span>
                 </Td>
                 <Td>
@@ -155,7 +155,7 @@ export function BillingPanel() {
                   </span>
                 </Td>
                 <Td>
-                  <span className="font-mono font-bold">${(inv.amount || 0).toLocaleString()}</span>
+                  <span className="font-mono font-bold">₹{(inv.totalAmount || 0).toLocaleString()}</span>
                 </Td>
                 <Td>
                   <Pill tone={inv.status === "PAID" ? "ok" : inv.status === "FAILED" || inv.status === "OVERDUE" ? "bad" : "warn"}>

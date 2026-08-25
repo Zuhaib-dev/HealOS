@@ -170,8 +170,8 @@ export async function deleteScheduleApi(id: string) {
 
 export interface AdminInvoiceData {
   _id: string;
-  patient: { user: { name: string; email?: string } };
-  amount: number;
+  patient: { name: string; email?: string };
+  totalAmount: number;
   status: string;
   type: string;
   createdAt: string;

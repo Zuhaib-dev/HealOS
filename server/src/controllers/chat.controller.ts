@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { AppError } from "../middleware/error-handler.js";
 import { StatusCodes } from "http-status-codes";
 
-const PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 
 const SYSTEM_PROMPT = `You are the official HealOS AI Assistant. 
 HealOS is a comprehensive Hospital Management System.
@@ -18,46 +18,72 @@ export const processChatMessage = async (req: Request, res: Response) => {
       throw new AppError("Messages array is required", StatusCodes.BAD_REQUEST);
     }
 
-    const apiKey = process.env.PERPLEXITY_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.error("Perplexity API key is missing");
+      console.error("Gemini API key is missing");
       throw new AppError("Chat service is currently unavailable", StatusCodes.SERVICE_UNAVAILABLE);
     }
 
-    // Prepend system prompt to the messages
-    const apiMessages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...messages.map((m: any) => ({
-        role: m.role === "user" ? "user" : "assistant",
-        content: m.content
-      }))
-    ];
+    // Convert messages to Gemini format enforcing strict alternation ending with user
+    const geminiContents: any[] = [];
+    let expectedRole = "user"; // The last message must be from the user
 
-    const response = await fetch(PERPLEXITY_API_URL, {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      const role = m.role === "user" ? "user" : "model";
+      
+      if (role === expectedRole) {
+        geminiContents.unshift({
+          role,
+          parts: [{ text: m.content }]
+        });
+        expectedRole = expectedRole === "user" ? "model" : "user";
+      }
+    }
+
+    // Gemini requires the conversation to start with a 'user' role
+    if (geminiContents.length > 0 && geminiContents[0].role === "model") {
+      geminiContents.shift();
+    }
+
+    if (geminiContents.length === 0) {
+      throw new AppError("No valid user messages to send", StatusCodes.BAD_REQUEST);
+    }
+
+    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.1-sonar-small-128k-chat",
-        messages: apiMessages,
-        temperature: 0.2, // Keep it deterministic and professional
-        max_tokens: 1000,
+        systemInstruction: {
+          parts: [{ text: SYSTEM_PROMPT }]
+        },
+        contents: geminiContents,
+        generationConfig: {
+          temperature: 0.2, // Keep it deterministic and professional
+          maxOutputTokens: 1000,
+        }
       })
     });
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error("Perplexity API error:", errorData);
+      console.error("Gemini API error:", errorData);
       throw new AppError("Failed to fetch response from AI service", StatusCodes.BAD_GATEWAY);
     }
 
     const data = await response.json() as any;
     
+    // Extract the text response from Gemini
+    const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't generate a response.";
+    
     return res.status(StatusCodes.OK).json({
       success: true,
-      message: data.choices[0].message
+      message: {
+        role: "assistant",
+        content: textResponse
+      }
     });
     
   } catch (error: any) {

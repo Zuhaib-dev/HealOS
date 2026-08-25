@@ -17,6 +17,26 @@ interface Message {
   content: string;
 }
 
+const TypingIndicator = () => (
+  <div className="flex space-x-1.5 items-center h-6 px-1">
+    <motion.div
+      className="w-1.5 h-1.5 bg-primary/60 rounded-full"
+      animate={{ y: [0, -4, 0] }}
+      transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0 }}
+    />
+    <motion.div
+      className="w-1.5 h-1.5 bg-primary/60 rounded-full"
+      animate={{ y: [0, -4, 0] }}
+      transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+    />
+    <motion.div
+      className="w-1.5 h-1.5 bg-primary/60 rounded-full"
+      animate={{ y: [0, -4, 0] }}
+      transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+    />
+  </div>
+);
+
 export function Chatbot() {
   const { isAuthenticated, user, _hasHydrated } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
@@ -107,13 +127,15 @@ export function Chatbot() {
             exit={{ scale: 0, opacity: 0 }}
             className="fixed bottom-6 right-6 z-50"
           >
-            <Button
-              size="icon"
-              className="h-14 w-14 rounded-full shadow-lg"
-              onClick={() => setIsOpen(true)}
-            >
-              <MessageCircle className="h-6 w-6" />
-            </Button>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                size="icon"
+                className="h-14 w-14 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] transition-shadow"
+                onClick={() => setIsOpen(true)}
+              >
+                <MessageCircle className="h-6 w-6" />
+              </Button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -147,48 +169,56 @@ export function Chatbot() {
               <CardContent className="flex-1 p-0 overflow-hidden">
                 <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
                   <div className="flex flex-col gap-4">
-                    {messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex gap-3 ${
-                          msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                        }`}
-                      >
-                        <Avatar className="h-8 w-8 shrink-0">
-                          {msg.role === "assistant" ? (
+                    <AnimatePresence initial={false}>
+                      {messages.map((msg) => (
+                        <motion.div
+                          key={msg.id}
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          transition={{ duration: 0.3, type: "spring", bounce: 0.3 }}
+                          className={`flex gap-3 ${
+                            msg.role === "user" ? "flex-row-reverse" : "flex-row"
+                          }`}
+                        >
+                          <Avatar className="h-8 w-8 shrink-0 shadow-sm">
+                            {msg.role === "assistant" ? (
+                              <AvatarFallback className="bg-primary/10 text-primary">
+                                <Bot className="h-4 w-4" />
+                              </AvatarFallback>
+                            ) : (
+                              <AvatarFallback className="bg-muted">
+                                <User className="h-4 w-4" />
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          <div
+                            className={`rounded-2xl px-4 py-2.5 text-sm max-w-[80%] shadow-sm ${
+                              msg.role === "user"
+                                ? "bg-primary text-primary-foreground rounded-tr-sm"
+                                : "bg-card border border-border/40 text-foreground rounded-tl-sm"
+                            }`}
+                          >
+                            {msg.content}
+                          </div>
+                        </motion.div>
+                      ))}
+                      {isLoading && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          className="flex gap-3 flex-row"
+                        >
+                          <Avatar className="h-8 w-8 shrink-0 shadow-sm">
                             <AvatarFallback className="bg-primary/10 text-primary">
                               <Bot className="h-4 w-4" />
                             </AvatarFallback>
-                          ) : (
-                            <AvatarFallback className="bg-muted">
-                              <User className="h-4 w-4" />
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <div
-                          className={`rounded-lg px-3 py-2 text-sm max-w-[80%] ${
-                            msg.role === "user"
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-foreground"
-                          }`}
-                        >
-                          {msg.content}
-                        </div>
-                      </div>
-                    ))}
-                    {isLoading && (
-                      <div className="flex gap-3 flex-row">
-                        <Avatar className="h-8 w-8 shrink-0">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            <Bot className="h-4 w-4" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="rounded-lg px-3 py-2 bg-muted text-muted-foreground text-sm flex items-center">
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Thinking...
-                        </div>
-                      </div>
-                    )}
+                          </Avatar>
+                          <div className="rounded-2xl rounded-tl-sm px-4 py-2.5 bg-card border border-border/40 text-foreground text-sm flex items-center shadow-sm">
+                            <TypingIndicator />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -201,15 +231,18 @@ export function Chatbot() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     disabled={isLoading}
-                    className="flex-1"
+                    className="flex-1 rounded-full border-border/60 bg-muted/30 focus-visible:ring-primary/20 transition-all"
                   />
-                  <Button
-                    size="icon"
-                    disabled={!input.trim() || isLoading}
-                    onClick={handleSend}
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
+                  <motion.div whileHover={!input.trim() || isLoading ? {} : { scale: 1.05 }} whileTap={!input.trim() || isLoading ? {} : { scale: 0.95 }}>
+                    <Button
+                      size="icon"
+                      disabled={!input.trim() || isLoading}
+                      onClick={handleSend}
+                      className="rounded-full shadow-sm"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
                 </div>
               </CardFooter>
             </Card>

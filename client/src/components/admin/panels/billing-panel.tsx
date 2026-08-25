@@ -3,6 +3,13 @@
 import { useCallback, useState, useEffect } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 /* ---------- shared primitives ---------- */
 
@@ -163,10 +170,68 @@ export function BillingPanel() {
                   </Pill>
                 </Td>
                 <Td className="text-right">
-                  <button className="text-muted-foreground hover:text-foreground hover:bg-muted/50 p-1.5 rounded-lg transition-colors">
-                    <span className="sr-only">Options</span>
-                    <ArrowUpRight className="size-4" />
-                  </button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="text-muted-foreground hover:text-foreground hover:bg-muted/50 p-1.5 rounded-lg transition-colors">
+                        <span className="sr-only">Options</span>
+                        <ArrowUpRight className="size-4" />
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md border-border/60 bg-card/95 backdrop-blur-xl">
+                      <DialogHeader className="pb-4 border-b border-border/40">
+                        <DialogTitle className="font-mono text-lg flex items-center justify-between">
+                          <span>INV-{inv._id.slice(-8).toUpperCase()}</span>
+                          <Pill tone={inv.status === "PAID" ? "ok" : inv.status === "FAILED" || inv.status === "OVERDUE" ? "bad" : "warn"}>
+                            {inv.status || "PENDING"}
+                          </Pill>
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-5 py-4">
+                        <div className="flex justify-between items-center">
+                          <span className="mono-label text-muted-foreground">Date Issued</span>
+                          <span className="font-medium text-sm">
+                            {new Date(inv.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="mono-label text-muted-foreground">Patient Details</span>
+                          <span className="text-sm font-medium text-right">
+                            {inv.patient?.name || "Unknown Patient"}
+                            {inv.patient?.email && (
+                              <span className="text-muted-foreground text-xs block mt-0.5 font-normal">
+                                {inv.patient.email}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="mono-label text-muted-foreground">Payment Method</span>
+                          <span className="text-sm font-medium">
+                            {inv.paymentMethod || inv.type || "Online"}
+                          </span>
+                        </div>
+                        
+                        {inv.items && inv.items.length > 0 && (
+                          <div className="border-t border-border/40 pt-5 mt-5 space-y-3">
+                            <span className="mono-label text-muted-foreground mb-3 block">Line Items</span>
+                            {inv.items.map((item, idx) => (
+                              <div key={idx} className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">{item.description}</span>
+                                <span className="font-mono font-medium">₹{item.amount.toLocaleString()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="border-t border-border/40 pt-5 mt-5">
+                          <div className="flex justify-between items-center">
+                            <span className="mono-label text-foreground font-semibold">Total Amount</span>
+                            <span className="font-mono text-2xl font-bold tracking-tight">₹{(inv.totalAmount || 0).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </Td>
               </tr>
             ))

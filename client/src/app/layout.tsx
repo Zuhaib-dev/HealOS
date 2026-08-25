@@ -67,6 +67,7 @@ export const metadata: Metadata = {
 };
 
 import { RealtimeSocketProvider } from "@/components/providers/socket-provider";
+import { Chatbot } from "@/components/chat/Chatbot";
 
 export default function RootLayout({
   children,
@@ -163,6 +164,7 @@ export default function RootLayout({
             <RealtimeSocketProvider>
               {children}
             </RealtimeSocketProvider>
+            <Chatbot />
             <Toaster position="top-right" />
           </QueryProvider>
         </ThemeProvider>

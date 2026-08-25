@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, Loader2, Pill, Search, ShieldCheck } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { fetchPendingPrescriptionsApi, PendingPrescriptionRecord } from "@/lib/api/pharmacy";
 import { toast } from "sonner";
 
@@ -113,9 +114,94 @@ export function PastOrdersPanel() {
                             </div>
                           </div>
                           
-                          <div className="text-right">
-                             <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Total Billed</p>
-                             <p className="font-mono text-2xl font-bold">₹{mockTotal}</p>
+                          <div className="text-right flex items-center gap-4">
+                             <Dialog>
+                               <DialogTrigger asChild>
+                                 <ActionButton>Receipt</ActionButton>
+                               </DialogTrigger>
+                               <DialogContent className="sm:max-w-md border-0 bg-transparent shadow-none p-0">
+                                 <div className="relative bg-card text-card-foreground p-6 pt-10 font-mono shadow-2xl rounded-sm overflow-hidden" 
+                                      style={{
+                                        backgroundImage: "radial-gradient(circle at top, transparent 4px, var(--card) 5px)",
+                                        backgroundSize: "12px 10px",
+                                        backgroundPosition: "top center",
+                                        backgroundRepeat: "repeat-x"
+                                      }}>
+                                   <div className="absolute bottom-0 left-0 right-0 h-3 w-full"
+                                        style={{
+                                          backgroundImage: "radial-gradient(circle at bottom, transparent 4px, var(--card) 5px)",
+                                          backgroundSize: "12px 10px",
+                                          backgroundPosition: "bottom center",
+                                          backgroundRepeat: "repeat-x"
+                                        }}
+                                   />
+                                   
+                                   <div className="text-center mb-6 space-y-1">
+                                     <h2 className="text-xl font-bold tracking-widest uppercase">HealOS Pharmacy</h2>
+                                     <p className="text-xs text-muted-foreground uppercase tracking-widest">Pharmacy Receipt</p>
+                                     <div className="text-xs pt-2">
+                                       RX-{rx._id.slice(-8).toUpperCase()}
+                                     </div>
+                                   </div>
+
+                                   <div className="space-y-4 text-sm relative z-10 mb-4">
+                                     <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                                       <span className="text-muted-foreground uppercase text-xs">Date</span>
+                                       <span>{new Date(rx.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                                     </div>
+                                     
+                                     <div className="flex justify-between items-start border-b border-dashed border-border/60 pb-3">
+                                       <span className="text-muted-foreground uppercase text-xs">Patient</span>
+                                       <div className="text-right">
+                                         <span className="font-bold">{rx.patient?.name || "Unknown Patient"}</span>
+                                       </div>
+                                     </div>
+
+                                     <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                                       <span className="text-muted-foreground uppercase text-xs">Status</span>
+                                       <span className="font-bold uppercase tracking-wider text-emerald-500">DISPENSED</span>
+                                     </div>
+                                     
+                                     {dispensedMeds.length > 0 && (
+                                       <div className="py-2">
+                                         <span className="text-muted-foreground uppercase text-xs mb-3 block">Dispensed Items</span>
+                                         <div className="space-y-2">
+                                           {dispensedMeds.map((item: any, idx: number) => (
+                                             <div key={idx} className="flex justify-between items-start gap-4">
+                                               <div>
+                                                 <span className="leading-tight block font-bold">{item.name}</span>
+                                                 <span className="text-[10px] text-muted-foreground">{item.dosage}</span>
+                                               </div>
+                                               <span>₹120</span>
+                                             </div>
+                                           ))}
+                                         </div>
+                                       </div>
+                                     )}
+                                   </div>
+
+                                   <div className="border-t-2 border-dashed border-border pt-4 mt-2 pb-6 relative z-10">
+                                     <div className="flex justify-between items-center">
+                                       <span className="uppercase font-bold tracking-widest text-lg">Total</span>
+                                       <span className="text-2xl font-bold tracking-tight">₹{mockTotal.toLocaleString()}</span>
+                                     </div>
+                                   </div>
+                                   
+                                   <div className="text-center mt-2 mb-2 pb-4 opacity-50 relative z-10">
+                                     <div className="h-8 w-full flex items-center justify-center gap-0.5">
+                                       {Array.from({ length: 30 }).map((_, i) => (
+                                         <div key={i} className="h-full bg-foreground" style={{ width: `${Math.random() * 4 + 1}px`, opacity: Math.random() > 0.3 ? 1 : 0 }} />
+                                       ))}
+                                     </div>
+                                     <p className="text-[10px] mt-2 uppercase tracking-widest">Thank you</p>
+                                   </div>
+                                 </div>
+                               </DialogContent>
+                             </Dialog>
+                             <div className="text-right">
+                               <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Total Billed</p>
+                               <p className="font-mono text-2xl font-bold">₹{mockTotal}</p>
+                             </div>
                           </div>
                         </div>
 

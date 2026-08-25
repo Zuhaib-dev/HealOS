@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import {
   fetchAvailableDoctorsApi,
   bookAppointmentApi,
@@ -244,7 +245,97 @@ export function BillingPanel() {
                 </Td>
                 <Td>
                   <div className="flex gap-2">
-                    <ActionButton>Receipt</ActionButton>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <ActionButton>Receipt</ActionButton>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md border-0 bg-transparent shadow-none p-0">
+                        <div className="relative bg-card text-card-foreground p-6 pt-10 font-mono shadow-2xl rounded-sm overflow-hidden" 
+                             style={{
+                               backgroundImage: "radial-gradient(circle at top, transparent 4px, var(--card) 5px)",
+                               backgroundSize: "12px 10px",
+                               backgroundPosition: "top center",
+                               backgroundRepeat: "repeat-x"
+                             }}>
+                          <div className="absolute bottom-0 left-0 right-0 h-3 w-full"
+                               style={{
+                                 backgroundImage: "radial-gradient(circle at bottom, transparent 4px, var(--card) 5px)",
+                                 backgroundSize: "12px 10px",
+                                 backgroundPosition: "bottom center",
+                                 backgroundRepeat: "repeat-x"
+                               }}
+                          />
+                          
+                          <div className="text-center mb-6 space-y-1">
+                            <h2 className="text-xl font-bold tracking-widest uppercase">HealOS Hospital</h2>
+                            <p className="text-xs text-muted-foreground uppercase tracking-widest">Official Receipt</p>
+                            <div className="text-xs pt-2">
+                              INV-{b._id.slice(-8).toUpperCase()}
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 text-sm relative z-10 mb-4">
+                            <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                              <span className="text-muted-foreground uppercase text-xs">Date</span>
+                              <span>{new Date(b.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                            </div>
+                            
+                            <div className="flex justify-between items-start border-b border-dashed border-border/60 pb-3">
+                              <span className="text-muted-foreground uppercase text-xs">Patient</span>
+                              <div className="text-right">
+                                <span className="font-bold">{user?.name || "Patient"}</span>
+                                {user?.phone && (
+                                  <span className="block mt-0.5">{user.phone}</span>
+                                )}
+                                {user?.email && (
+                                  <span className="block text-xs mt-0.5">{user.email}</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                              <span className="text-muted-foreground uppercase text-xs">Status</span>
+                              <span className="font-bold uppercase tracking-wider">{b.status || "PENDING"}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                              <span className="text-muted-foreground uppercase text-xs">Method</span>
+                              <span className="uppercase">{(b as any).paymentMethod || (b as any).type || "Online"}</span>
+                            </div>
+                            
+                            {b.items && b.items.length > 0 && (
+                              <div className="py-2">
+                                <span className="text-muted-foreground uppercase text-xs mb-3 block">Items</span>
+                                <div className="space-y-2">
+                                  {b.items.map((item: any, idx: number) => (
+                                    <div key={idx} className="flex justify-between items-start gap-4">
+                                      <span className="leading-tight">{item.description}</span>
+                                      <span>₹{item.amount.toLocaleString()}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="border-t-2 border-dashed border-border pt-4 mt-2 pb-6 relative z-10">
+                            <div className="flex justify-between items-center">
+                              <span className="uppercase font-bold tracking-widest text-lg">Total</span>
+                              <span className="text-2xl font-bold tracking-tight">₹{(b.totalAmount || 0).toLocaleString()}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="text-center mt-2 mb-2 pb-4 opacity-50 relative z-10">
+                            <div className="h-8 w-full flex items-center justify-center gap-0.5">
+                              {Array.from({ length: 30 }).map((_, i) => (
+                                <div key={i} className="h-full bg-foreground" style={{ width: `${Math.random() * 4 + 1}px`, opacity: Math.random() > 0.3 ? 1 : 0 }} />
+                              ))}
+                            </div>
+                            <p className="text-[10px] mt-2 uppercase tracking-widest">Thank you</p>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                     {b.status !== "PAID" && b.status !== "CANCELLED" && (
                       <>
                         <ActionButton 

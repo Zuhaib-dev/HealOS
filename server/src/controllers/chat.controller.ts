@@ -71,7 +71,21 @@ export const processChatMessage = async (req: Request, res: Response) => {
       const errorData = await response.text();
       console.error("Gemini API error:", errorData);
       require('fs').writeFileSync('/tmp/gemini_error.txt', errorData + '\n' + JSON.stringify(geminiContents));
-      throw new AppError("Failed to fetch response from AI service", StatusCodes.BAD_GATEWAY);
+      
+      let errorMessage = "Failed to fetch response from AI service";
+      let statusCode = StatusCodes.BAD_GATEWAY;
+      
+      try {
+        const jsonError = JSON.parse(errorData);
+        if (jsonError.error?.code === 429) {
+          errorMessage = "I am currently receiving too many requests. Please wait about a minute and try again.";
+          statusCode = StatusCodes.TOO_MANY_REQUESTS;
+        }
+      } catch (e) {
+        // Ignore JSON parse errors
+      }
+      
+      throw new AppError(errorMessage, statusCode);
     }
 
     const data = await response.json() as any;

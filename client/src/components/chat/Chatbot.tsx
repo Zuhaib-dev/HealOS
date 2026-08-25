@@ -96,12 +96,13 @@ export function Chatbot() {
         ]);
       }
     } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "Sorry, I am currently unavailable. Please try again later.";
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           role: "assistant",
-          content: "Sorry, I am currently unavailable. Please try again later.",
+          content: errorMessage,
         },
       ]);
     } finally {

@@ -70,6 +70,7 @@ export const processChatMessage = async (req: Request, res: Response) => {
     if (!response.ok) {
       const errorData = await response.text();
       console.error("Gemini API error:", errorData);
+      require('fs').writeFileSync('/tmp/gemini_error.txt', errorData + '\n' + JSON.stringify(geminiContents));
       throw new AppError("Failed to fetch response from AI service", StatusCodes.BAD_GATEWAY);
     }
 

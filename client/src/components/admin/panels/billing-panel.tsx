@@ -10,6 +10,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 /* ---------- shared primitives ---------- */
 
@@ -78,6 +80,12 @@ import { useAdminRealtime } from "../use-admin-realtime";
 export function BillingPanel() {
   const [loading, setLoading] = useState(true);
   const [invoicesData, setInvoicesData] = useState<AdminInvoiceData[]>([]);
+  
+  // Export Modal State
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportStartDate, setExportStartDate] = useState<string>("");
+  const [exportEndDate, setExportEndDate] = useState<string>("");
+  const [isExporting, setIsExporting] = useState(false);
 
   const loadInvoices = useCallback(async () => {
     try {
@@ -99,6 +107,75 @@ export function BillingPanel() {
 
   useAdminRealtime(["billing", "invoices", "patients"], loadInvoices);
 
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      const jsPDF = (await import("jspdf")).default;
+      const autoTable = (await import("jspdf-autotable")).default;
+
+      let filteredData = invoicesData;
+      if (exportStartDate) {
+        filteredData = filteredData.filter(i => new Date(i.createdAt) >= new Date(exportStartDate));
+      }
+      if (exportEndDate) {
+        const end = new Date(exportEndDate);
+        end.setHours(23, 59, 59, 999);
+        filteredData = filteredData.filter(i => new Date(i.createdAt) <= end);
+      }
+
+      const doc = new jsPDF();
+      
+      doc.setFontSize(20);
+      doc.setTextColor(40, 40, 40);
+      doc.text("HealOS Hospital Management", 14, 22);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text("Revenue Ledger Report", 14, 30);
+      
+      doc.setFontSize(10);
+      const dateText = exportStartDate && exportEndDate 
+        ? `Period: ${exportStartDate} to ${exportEndDate}`
+        : exportStartDate ? `Period: From ${exportStartDate}`
+        : exportEndDate ? `Period: Until ${exportEndDate}`
+        : "Period: All Time";
+      doc.text(dateText, 14, 36);
+
+      const totalCol = filteredData.filter(i => i.status === "PAID").reduce((a, i) => a + (i.totalAmount || 0), 0);
+      const totalOut = filteredData.filter(i => i.status !== "PAID" && i.status !== "CANCELLED").reduce((a, i) => a + (i.totalAmount || 0), 0);
+      
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Total Collected: INR ${totalCol.toLocaleString()}`, 14, 46);
+      doc.text(`Total Outstanding: INR ${totalOut.toLocaleString()}`, 14, 52);
+      doc.text(`Total Invoices: ${filteredData.length}`, 14, 58);
+
+      const tableColumn = ["Invoice ID", "Date", "Patient Name", "Status", "Amount (INR)"];
+      const tableRows = filteredData.map(inv => [
+        inv._id.slice(-8).toUpperCase(),
+        new Date(inv.createdAt).toLocaleDateString(),
+        inv.patient?.name || "Unknown",
+        inv.status || "PENDING",
+        inv.totalAmount?.toLocaleString() || "0"
+      ]);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 65,
+        theme: 'grid',
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [41, 128, 185] },
+      });
+
+      doc.save(`HealOS_Revenue_Ledger_${new Date().toISOString().split('T')[0]}.pdf`);
+      setExportModalOpen(false);
+    } catch (error) {
+      console.error("Failed to generate PDF", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const totalCollected = invoicesData
     .filter((i) => i.status === "PAID")
     .reduce((a, i) => a + (i.totalAmount || 0), 0);
@@ -115,11 +192,48 @@ export function BillingPanel() {
         note="Claims, payer mix and disputes with the exposure each one carries."
         actions={
           <>
-            <ActionButton>Export ledger</ActionButton>
+            <ActionButton onClick={() => setExportModalOpen(true)}>Export ledger</ActionButton>
             <ActionButton tone="solid">Raise invoice</ActionButton>
           </>
         }
       />
+
+      {/* Export Modal */}
+      <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Export Revenue Ledger</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>From Date (Optional)</Label>
+              <Input 
+                type="date" 
+                value={exportStartDate} 
+                onChange={(e) => setExportStartDate(e.target.value)} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>To Date (Optional)</Label>
+              <Input 
+                type="date" 
+                value={exportEndDate} 
+                onChange={(e) => setExportEndDate(e.target.value)} 
+              />
+            </div>
+            <div className="pt-4 flex justify-end">
+              <button 
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-medium text-sm transition-colors disabled:opacity-50"
+              >
+                {isExporting ? "Generating PDF..." : "Download PDF"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="hairline-b grid grid-cols-2 lg:grid-cols-4">
         <Metric label="Collected MTD" value={`₹${(totalCollected / 1000).toFixed(1)}k`} delta="+Live" />
         <Metric label="Outstanding" value={`₹${(outstanding / 1000).toFixed(1)}k`} />

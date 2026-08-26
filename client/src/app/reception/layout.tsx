@@ -1,5 +1,3 @@
-"use client";
-
 import { UserPlus, Users, Monitor, LayoutDashboard } from "lucide-react";
 
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";

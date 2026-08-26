@@ -1,5 +1,3 @@
-import { Metadata } from "next";
-import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ArrowLeft } from "lucide-react";

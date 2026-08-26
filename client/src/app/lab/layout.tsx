@@ -1,5 +1,3 @@
-"use client";
-
 import { TestTube, ListChecks, Activity, CheckCircle, Siren } from "lucide-react";
 
 import { RoleGuard } from "@/components/auth/role-guard";

@@ -1,5 +1,3 @@
-"use client";
-
 import { ClipboardList, Pill, Bandage, Droplet, Bell, MessagesSquare } from "lucide-react";
 
 import { RoleGuard } from "@/components/auth/role-guard";

@@ -1,5 +1,3 @@
-"use client";
-
 import { RoleGuard } from "@/components/auth/role-guard";
 import { DoctorShell } from "@/components/doctor/doctor-shell";
 

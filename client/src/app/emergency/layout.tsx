@@ -1,5 +1,3 @@
-"use client";
-
 import { LayoutDashboard, Users, Activity, Siren, Ambulance } from "lucide-react";
 
 import { RoleGuard } from "@/components/auth/role-guard";

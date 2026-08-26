@@ -1,6 +1,4 @@
 // ============================================
-// HealOS — Dashboard Layout
-// ============================================
 // This layout wraps ALL dashboard pages across all roles.
 // It will include the sidebar navigation and top bar.
 // Role-based content is handled by nested route groups:

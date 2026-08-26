@@ -1,6 +1,4 @@
 // ============================================
-// HealOS — Public Pages Layout
-// ============================================
 // This layout wraps all public-facing pages
 // (landing, about, doctors, services, etc.)
 // Will include the public Navbar and Footer

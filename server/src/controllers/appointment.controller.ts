@@ -3,6 +3,9 @@ import { StatusCodes } from "http-status-codes";
 import { Appointment, AppointmentStatus, AppointmentType, PaymentMethod as ApptPaymentMethod, PaymentStatus as ApptPaymentStatus, User, UserRole, ProfessionalProfile, Invoice, InvoiceStatus, InvoicePaymentMethod } from "../models/index.js";
 import { z } from "zod";
 import { getIO } from "../socket.js";
+import NodeCache from "node-cache";
+
+const doctorCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
 const bookAppointmentSchema = z.object({
   doctorId: z.string().min(1, "Doctor selection is required"),
@@ -252,6 +255,15 @@ export const updateAppointmentStatus = async (req: Request, res: Response): Prom
 // 5. Get List of Available Doctors for Booking
 export const getAvailableDoctors = async (_req: Request, res: Response): Promise<void> => {
   try {
+    const cachedDoctors = doctorCache.get("available_doctors");
+    if (cachedDoctors) {
+      res.status(StatusCodes.OK).json({
+        success: true,
+        doctors: cachedDoctors,
+      });
+      return;
+    }
+
     const doctors = await User.find({
       role: { $in: [UserRole.DOCTOR, UserRole.RADIOLOGIST, UserRole.ADMIN] },
     }).select("name email phone avatarUrl role");
@@ -277,6 +289,8 @@ export const getAvailableDoctors = async (_req: Request, res: Response): Promise
         degree: prof?.degree || "MD / MBBS",
       };
     });
+
+    doctorCache.set("available_doctors", result);
 
     res.status(StatusCodes.OK).json({
       success: true,

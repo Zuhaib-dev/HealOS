@@ -298,7 +298,7 @@ export function BookPanel() {
                   >
                     <div className="size-14 rounded-full bg-muted border border-border/50 shrink-0 overflow-hidden relative">
                       {doc.avatarUrl ? (
-                        <Image src={doc.avatarUrl} alt={doc.name} fill className="object-cover" />
+                        <Image src={doc.avatarUrl} alt={doc.name} fill sizes="56px" className="object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary font-bold">
                           {doc.name.charAt(0)}

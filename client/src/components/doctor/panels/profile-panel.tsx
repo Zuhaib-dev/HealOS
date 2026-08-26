@@ -116,9 +116,9 @@ export function ProfilePanel() {
                 <div className="flex items-center gap-6">
                   <div className="relative size-24 shrink-0 rounded-full bg-muted border border-border/40 overflow-hidden flex items-center justify-center text-muted-foreground/50">
                     {avatarPreview ? (
-                      <Image src={avatarPreview} alt="Preview" fill className="object-cover" />
+                      <Image src={avatarPreview} alt="Preview" fill sizes="96px" className="object-cover" />
                     ) : user?.avatarUrl ? (
-                      <Image src={user.avatarUrl} alt="Avatar" fill className="object-cover" />
+                      <Image src={user.avatarUrl} alt="Avatar" fill sizes="96px" className="object-cover" />
                     ) : (
                       <UserCheck className="size-10" />
                     )}

@@ -33,7 +33,8 @@ export const getAppointments = async (req: Request, res: Response) => {
       doctor: doctorId,
     })
       .populate("patient", "firstName lastName email avatar role")
-      .sort({ date: 1, timeSlot: 1 });
+      .sort({ date: 1, timeSlot: 1 })
+      .lean();
 
     res.status(200).json({
       status: "success",
@@ -194,15 +195,18 @@ export const getPatientHistory = async (req: Request, res: Response) => {
 
     const consultations = await Consultation.find({ patient: patientId })
       .populate("doctor", "firstName lastName")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     const diagnosticOrders = await DiagnosticOrder.find({ patient: patientId })
       .populate("doctor", "firstName lastName")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     const diagnosticReports = await DiagnosticReport.find({ patient: patientId })
       .populate("radiologist", "firstName lastName")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.status(200).json({
       status: "success",
@@ -346,7 +350,7 @@ export const getAssignedPatients = async (req: Request, res: Response) => {
   try {
     const doctorId = req.user?._id;
     const patientIds = await Appointment.distinct("patient", { doctor: doctorId });
-    const patients = await User.find({ _id: { $in: patientIds } }).select("name email phone avatarUrl");
+    const patients = await User.find({ _id: { $in: patientIds } }).select("name email phone avatarUrl").lean();
     
     res.status(200).json({
       status: "success",
@@ -368,7 +372,8 @@ export const getDiagnosticResults = async (req: Request, res: Response) => {
     const results = await DiagnosticReport.find({ patient: { $in: patientIds } })
       .populate("patient", "name")
       .populate("order")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.status(200).json({
       status: "success",
@@ -387,11 +392,13 @@ export const getOrdersAndMeds = async (req: Request, res: Response) => {
     const doctorId = req.user?._id;
     const orders = await DiagnosticOrder.find({ doctor: doctorId })
       .populate("patient", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
       
     const consultations = await Consultation.find({ doctor: doctorId, medicines: { $exists: true, $not: {$size: 0} } })
       .populate("patient", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.status(200).json({
       status: "success",
@@ -410,7 +417,8 @@ export const getClinicalNotes = async (req: Request, res: Response) => {
     const doctorId = req.user?._id;
     const notes = await ClinicalNote.find({ doctor: doctorId })
       .populate("patient", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     res.status(200).json({ status: "success", data: { notes } });
   } catch (error) {
     res.status(500).json({ status: "error", message: "Failed to fetch notes" });
@@ -451,7 +459,8 @@ export const getHandovers = async (req: Request, res: Response) => {
       .populate("patient", "name")
       .populate("fromDoctor", "name")
       .populate("toDoctor", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
       
     res.status(200).json({ status: "success", data: { handovers } });
   } catch (error) {
@@ -488,7 +497,7 @@ export const createHandover = async (req: Request, res: Response) => {
 export const getSchedule = async (req: Request, res: Response) => {
   try {
     const doctorId = req.user?._id;
-    const schedule = await Schedule.find({ user: doctorId }).sort({ date: 1, startTime: 1 });
+    const schedule = await Schedule.find({ user: doctorId }).sort({ date: 1, startTime: 1 }).lean();
     res.status(200).json({ status: "success", data: { schedule } });
   } catch (error) {
     res.status(500).json({ status: "error", message: "Failed to fetch schedule" });

@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
         hostname: "lh3.googleusercontent.com",
       },
     ],
+    formats: ['image/avif', 'image/webp'],
   },
   output: "standalone",
 };

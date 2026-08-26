@@ -32,6 +32,7 @@ export const getAppointments = async (req: Request, res: Response) => {
     const appointments = await Appointment.find({
       doctor: doctorId,
     })
+      .select("patient date timeSlot status type paymentStatus reason")
       .populate("patient", "firstName lastName email avatar role")
       .sort({ date: 1, timeSlot: 1 })
       .lean();
@@ -194,16 +195,19 @@ export const getPatientHistory = async (req: Request, res: Response) => {
     }
 
     const consultations = await Consultation.find({ patient: patientId })
+      .select("doctor diagnosis status createdAt appointment")
       .populate("doctor", "firstName lastName")
       .sort({ createdAt: -1 })
       .lean();
 
     const diagnosticOrders = await DiagnosticOrder.find({ patient: patientId })
+      .select("doctor testType testName status priority createdAt")
       .populate("doctor", "firstName lastName")
       .sort({ createdAt: -1 })
       .lean();
 
     const diagnosticReports = await DiagnosticReport.find({ patient: patientId })
+      .select("radiologist state isCritical createdAt")
       .populate("radiologist", "firstName lastName")
       .sort({ createdAt: -1 })
       .lean();
@@ -370,8 +374,9 @@ export const getDiagnosticResults = async (req: Request, res: Response) => {
     const patientIds = await Appointment.distinct("patient", { doctor: doctorId });
     
     const results = await DiagnosticReport.find({ patient: { $in: patientIds } })
+      .select("patient order state isCritical createdAt")
       .populate("patient", "name")
-      .populate("order")
+      .populate("order", "testName testType status")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -391,11 +396,13 @@ export const getOrdersAndMeds = async (req: Request, res: Response) => {
   try {
     const doctorId = req.user?._id;
     const orders = await DiagnosticOrder.find({ doctor: doctorId })
+      .select("patient testName testType status priority createdAt")
       .populate("patient", "name")
       .sort({ createdAt: -1 })
       .lean();
       
     const consultations = await Consultation.find({ doctor: doctorId, medicines: { $exists: true, $not: {$size: 0} } })
+      .select("patient status createdAt medicines")
       .populate("patient", "name")
       .sort({ createdAt: -1 })
       .lean();

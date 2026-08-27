@@ -30,7 +30,7 @@ export function AnatomySelector({ onSelect }: { onSelect: (part: string) => void
 
       <svg 
         viewBox="0 0 200 400" 
-        className="w-full max-w-[180px] h-auto drop-shadow-[0_0_15px_rgba(16,185,129,0.2)] mt-6"
+        className="w-full max-w-45 h-auto drop-shadow-[0_0_15px_rgba(16,185,129,0.2)] mt-6"
       >
         <defs>
           <filter id="glow">

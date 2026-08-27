@@ -146,7 +146,7 @@ export function ConsultationForm({
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
               <label className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Chief Complaint</label>
               <div className="flex flex-col xl:flex-row gap-4">
-                <div className="w-full xl:w-2/5 min-w-[180px] flex items-center justify-center">
+                <div className="w-full xl:w-2/5 min-w-45 flex items-center justify-center">
                   <AnatomySelector onSelect={(part) => setChiefComplaint(prev => prev ? `${prev}, [${part}]` : `[${part}]`)} />
                 </div>
                 <textarea

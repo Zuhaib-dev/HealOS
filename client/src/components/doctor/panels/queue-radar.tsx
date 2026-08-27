@@ -54,7 +54,7 @@ export function QueueRadar({ appointments }: { appointments: AppointmentRecord[]
           background: "conic-gradient(from 0deg, transparent 70%, rgba(34, 197, 94, 0.4) 100%)",
         }}
       >
-        <div className="absolute right-0 top-0 bottom-1/2 left-1/2 border-r-[2px] border-primary" />
+        <div className="absolute right-0 top-0 bottom-1/2 left-1/2 border-r-2 border-primary" />
       </motion.div>
 
       {/* Blips */}

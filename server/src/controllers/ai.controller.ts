@@ -14,11 +14,11 @@ export const generateBio = async (req: Request, res: Response) => {
 
     const prompt = `You are an expert profile writer for a high-end medical portal.
 The user is a ${role || "User"}.
-Write a short, engaging, and professional bio (max 3 sentences) based on the following keywords: ${keywords}.
-Do not use any formatting like bolding or bullet points. Just output the plain text bio.`;
+Write a very brief, engaging, and professional bio (maximum 2 short sentences) based on the following keywords: ${keywords}.
+Keep it extremely concise. Do not use any formatting like bolding or bullet points. Just output the plain text bio.`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         contents: prompt,
     });
 

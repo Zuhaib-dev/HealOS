@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2, Calendar } from "lucide-react";
+import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2, Calendar, FileText, ChevronRight, User as UserIcon, Activity, Pill as PillIcon, FileDigit, Eye, FileCheck, Loader2 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
 import { updateAppointmentStatusApi, AppointmentRecord } from "@/lib/api/appointment";
 import { toast } from "sonner";
 import { getDashboardStatsApi, getPatientHistoryApi } from "@/lib/api/doctor";
 import { AnimatePresence } from "motion/react";
-import { Loader2, Activity, FileText, Pill as PillIcon, FileDigit, ChevronRight, User as UserIcon, Eye } from "lucide-react";
 import { ConsultationForm } from "@/components/doctor/shared/consultation-form";
+import { OpdReceiptModal } from "@/components/doctor/shared/opd-receipt-modal";
 import { getSocket } from "@/lib/socket";
 import { getFileUrl } from "@/lib/utils";
 
@@ -128,6 +128,7 @@ export function ShiftPanel() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyData, setHistoryData] = useState<any>(null);
   const [showConsultation, setShowConsultation] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
 
   const handleViewPatient = async (patient: any) => {
     setSelectedPatient(patient);
@@ -334,10 +335,19 @@ export function ShiftPanel() {
                        <div className="space-y-3">
                          {historyData.consultations?.length > 0 ? (
                            historyData.consultations.map((c: any) => (
-                             <div key={c._id} className="bg-card border border-border/60 rounded-xl p-4 shadow-sm">
+                             <div key={c._id} className="bg-card border border-border/60 rounded-xl p-4 shadow-sm group hover:border-primary/50 transition-colors">
                                <div className="flex justify-between items-start mb-2">
                                  <span className="mono-label text-xs font-bold">{new Date(c.createdAt).toLocaleDateString()}</span>
-                                 <span className="text-[10px] uppercase font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">{c.status}</span>
+                                 <div className="flex items-center gap-2">
+                                    <span className="text-[10px] uppercase font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">{c.status}</span>
+                                    <button 
+                                      onClick={() => setSelectedReceipt(c)}
+                                      className="size-6 bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground rounded flex items-center justify-center transition-colors"
+                                      title="View Ticket"
+                                    >
+                                      <FileCheck className="size-3.5" />
+                                    </button>
+                                  </div>
                                </div>
                                <p className="text-sm font-semibold mb-1">Dx: {c.diagnosis || "N/A"}</p>
                                <p className="text-xs text-muted-foreground line-clamp-2">{c.chiefComplaint}</p>
@@ -387,17 +397,20 @@ export function ShiftPanel() {
                                  <p className="font-bold text-sm">{r.title || r.fileName || r.testName || "Diagnostic Report"}</p>
                                  <p className="text-xs text-muted-foreground">Uploaded: {new Date(r.createdAt).toLocaleDateString()}</p>
                                </div>
-                               {(r.fileUrl || r.reportUrl) && (
-                                 <a 
-                                   href={getFileUrl(r.fileUrl || r.reportUrl)} 
-                                   target="_blank" 
-                                   rel="noopener noreferrer" 
-                                   className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"
-                                   title="View Document"
-                                 >
-                                   <Eye className="size-4" />
-                                 </a>
-                               )}
+                               <button
+                                  onClick={() => {
+                                    const url = r.fileUrl || r.reportUrl;
+                                    if (url) {
+                                      window.open(getFileUrl(url), "_blank");
+                                    } else {
+                                      toast.error("Document file not available");
+                                    }
+                                  }}
+                                  className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"
+                                  title="View Document"
+                                >
+                                  <Eye className="size-4" />
+                                </button>
                              </div>
                            ))
                          ) : (
@@ -424,6 +437,16 @@ export function ShiftPanel() {
             setShowConsultation(false);
             handleViewPatient(selectedPatient); // refresh history
           }}
+        />
+      )}
+
+      {/* OPD Receipt Modal */}
+      {selectedReceipt && selectedPatient && (
+        <OpdReceiptModal 
+          consultation={selectedReceipt}
+          patient={selectedPatient}
+          doctor={user}
+          onClose={() => setSelectedReceipt(null)}
         />
       )}
     </div>

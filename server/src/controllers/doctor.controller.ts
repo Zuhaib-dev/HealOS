@@ -58,6 +58,7 @@ export const saveConsultation = async (req: Request, res: Response) => {
       chiefComplaint,
       diagnosis,
       advice,
+      followUpDate,
       medicines,
       diagnosticOrders, // array of { testType, testName, clinicalNotes }
       status, // DRAFT or COMPLETED
@@ -79,6 +80,7 @@ export const saveConsultation = async (req: Request, res: Response) => {
       consultation.diagnosis = diagnosis;
       consultation.advice = advice;
       consultation.medicines = medicines;
+      consultation.followUpDate = followUpDate;
       consultation.status = status;
       await consultation.save();
     } else {
@@ -90,6 +92,7 @@ export const saveConsultation = async (req: Request, res: Response) => {
         chiefComplaint,
         diagnosis,
         advice,
+        followUpDate,
         medicines,
         status,
       });
@@ -147,6 +150,8 @@ export const orderDiagnostic = async (req: Request, res: Response) => {
       testName,
       priority,
       clinicalNotes,
+      medicines,
+      followUpDate,
     } = req.body;
 
     if (!patientId || !testType || !testName) {

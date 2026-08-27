@@ -317,6 +317,20 @@ export function OverviewPanel() {
                   </div>
                 </div>
               </div>
+            ) : nextFollowUp ? (
+              <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-4">
+                <p className="text-[10px] mono-label text-indigo-500 uppercase tracking-wider mb-2">Walk-in Follow-up</p>
+                <div className="flex justify-between items-start gap-4">
+                  <div>
+                    <p className="font-semibold text-foreground">Dr. {nextFollowUp.doctor.name}</p>
+                    <p className="text-sm text-muted-foreground">{nextFollowUp.diagnosis || "Consultation"}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono text-foreground font-bold">Any time</p>
+                    <p className="text-xs text-muted-foreground">{new Date(nextFollowUp.followUpDate!).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="text-center p-4">
                 <CalendarClock className="size-8 mx-auto text-muted-foreground/30 mb-3" />

@@ -49,7 +49,23 @@ export function AppointmentsPanel() {
   const liveAppointments = data?.appointments || [];
   const consultations = data?.consultations || [];
 
-  const filteredLive = liveAppointments.filter((a) =>
+  const futureFollowUps = consultations
+    .filter(c => c.followUpDate && new Date(c.followUpDate) >= new Date())
+    .map(c => ({
+      _id: "followup-" + c._id,
+      status: "CONFIRMED",
+      type: "IN_PERSON",
+      reason: "Follow-Up: " + (c.diagnosis || "Consultation"),
+      doctor: c.doctor,
+      date: c.followUpDate,
+      timeSlot: "Walk-in",
+      department: "General/Walk-in",
+      isFollowUp: true
+    }));
+
+  const combinedAppointments = [...liveAppointments, ...futureFollowUps].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const filteredLive = combinedAppointments.filter((a: any) =>
     tab === "upcoming"
       ? a.status !== "COMPLETED" && a.status !== "CANCELLED"
       : a.status === "COMPLETED" || a.status === "CANCELLED"
@@ -171,7 +187,11 @@ export function AppointmentsPanel() {
 
                   {/* Actions footer anchored to bottom */}
                   <div className="mt-auto pt-2">
-                    {a.status === "PENDING" || a.status === "CONFIRMED" ? (
+                    {(a as any).isFollowUp ? (
+                      <div className="w-full text-center text-xs font-semibold text-indigo-500 bg-indigo-500/10 py-2 rounded-md">
+                        Walk-in Follow-Up Required
+                      </div>
+                    ) : a.status === "PENDING" || a.status === "CONFIRMED" ? (
                       <button
                         type="button"
                         onClick={() => handleCancel(a._id)}

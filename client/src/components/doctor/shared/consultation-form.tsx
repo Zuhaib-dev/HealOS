@@ -23,6 +23,7 @@ export function ConsultationForm({
   const [chiefComplaint, setChiefComplaint] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
   const [advice, setAdvice] = useState("");
+  const [followUpDate, setFollowUpDate] = useState("");
   const [medicines, setMedicines] = useState<IMedicine[]>([]);
   const [diagnosticOrders, setDiagnosticOrders] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
@@ -87,6 +88,7 @@ export function ConsultationForm({
         chiefComplaint,
         diagnosis,
         advice,
+        followUpDate,
         medicines,
         diagnosticOrders,
         status: "COMPLETED",
@@ -174,6 +176,16 @@ export function ConsultationForm({
                 onChange={(e) => setAdvice(e.target.value)}
                 className="w-full bg-background border border-border/60 rounded-xl p-3 min-h-25 outline-none focus:border-primary/50 transition-colors"
                 placeholder="Dietary changes, rest..."
+              />
+            </div>
+            <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
+              <label className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Next Follow-Up Date</label>
+              <input
+                type="date"
+                value={followUpDate}
+                onChange={(e) => setFollowUpDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full bg-background border border-border/60 rounded-xl p-3 outline-none focus:border-primary/50 transition-colors cursor-text"
               />
             </div>
           </div>

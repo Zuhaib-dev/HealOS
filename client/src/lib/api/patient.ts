@@ -39,6 +39,7 @@ export interface DashboardConsultation {
     instructions?: string;
     isDispensed: boolean;
   }[];
+  followUpDate?: string;
   createdAt: string;
 }
 

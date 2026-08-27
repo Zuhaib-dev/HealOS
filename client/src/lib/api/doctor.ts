@@ -21,6 +21,7 @@ export interface ConsultationPayload {
     clinicalNotes?: string;
   }[];
   status: "DRAFT" | "COMPLETED";
+  followUpDate?: string;
 }
 
 export interface DiagnosticOrderPayload {

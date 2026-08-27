@@ -18,6 +18,7 @@ import {
   Stethoscope,
   ShieldCheck,
   Loader2,
+  Calendar,
   ChevronRight,
   CalendarClock,
   Pill
@@ -140,6 +141,10 @@ export function OverviewPanel() {
     ?.flatMap(c => c.medicines || [])
     .filter(m => !m.isDispensed) || [];
 
+  const nextFollowUp = data.consultations
+    ?.filter(c => c.followUpDate && new Date(c.followUpDate) >= new Date())
+    .sort((a, b) => new Date(a.followUpDate!).getTime() - new Date(b.followUpDate!).getTime())[0];
+
   return (
     <section className="pb-12 max-w-350 mx-auto pt-6 px-4 sm:px-6">
       
@@ -169,6 +174,30 @@ export function OverviewPanel() {
           </Link>
         </div>
       </motion.div>
+
+      {/* Follow-up Banner */}
+      {nextFollowUp && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-full bg-indigo-500/20 flex items-center justify-center">
+              <Calendar className="size-5" />
+            </div>
+            <div>
+              <p className="font-bold text-sm uppercase tracking-wider">Scheduled Follow-Up</p>
+              <p className="text-sm opacity-80 mt-0.5">
+                Your doctor requested a follow-up on <span className="font-bold">{new Date(nextFollowUp.followUpDate!).toLocaleDateString()}</span> for {nextFollowUp.diagnosis || "your previous consultation"}.
+              </p>
+            </div>
+          </div>
+          <button className="bg-indigo-500 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors shadow-lg">
+            Book Now
+          </button>
+        </motion.div>
+      )}
 
       {/* Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-[minmax(180px,auto)]">

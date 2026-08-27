@@ -11,6 +11,8 @@ import { ConsultationForm } from "@/components/doctor/shared/consultation-form";
 // imports removed
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { getSocket } from "@/lib/socket";
+import { QueueRadar } from "./queue-radar";
+import { NeonTimeline } from "./neon-timeline";
 
 /* ---------- primitives ---------- */
 
@@ -164,7 +166,22 @@ export function ClinicPanel() {
         note="Live patient consultation queue assigned to your clinical schedule."
         actions={<ActionButton tone="solid" onClick={() => loadAppointments()}>Refresh schedule</ActionButton>}
       />
-      <div className="overflow-x-auto">
+      
+      {/* Dashboard Visualizations */}
+      {!loading && appointments.length > 0 && (
+        <div className="px-4 sm:px-6 lg:px-8 pb-8 pt-4">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="xl:col-span-1">
+              <QueueRadar appointments={appointments} />
+            </div>
+            <div className="xl:col-span-2 flex items-center">
+              <NeonTimeline appointments={appointments} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-x-auto border-t border-border/50">
         <table className="w-full min-w-180">
           <thead className="hairline-b">
             <tr>

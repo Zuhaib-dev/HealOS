@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
 import apiClient from "@/lib/api-client";
 import Image from "next/image";
+import { DoctorIDCard } from "./doctor-id-card";
 
 export function ProfilePanel() {
   const { user, updateUser } = useAuthStore();
@@ -101,9 +102,11 @@ export function ProfilePanel() {
         note="Manage your public avatar, clinical details, and department association."
       />
       <div className="p-4 sm:p-6 lg:p-8">
-        <form onSubmit={handleSave} className="max-w-4xl mx-auto space-y-6 lg:space-y-8">
-          
-          <Card className="border-border/60 shadow-sm bg-card/60 backdrop-blur-sm overflow-hidden">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-8">
+          <div className="xl:col-span-2">
+            <form onSubmit={handleSave} className="space-y-6 lg:space-y-8">
+              
+              <Card className="border-border/60 shadow-sm bg-card/60 backdrop-blur-sm overflow-hidden">
             <div className="h-1.5 w-full bg-primary" />
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2">
@@ -250,7 +253,22 @@ export function ProfilePanel() {
               )}
             </button>
           </div>
-        </form>
+            </form>
+          </div>
+
+          {/* Holographic ID Card Preview */}
+          <div className="hidden xl:block relative">
+            <div className="sticky top-24 pt-4">
+              <DoctorIDCard
+                name={name}
+                department={department}
+                specialization={specialization}
+                licenseNumber={licenseNumber}
+                avatarUrl={avatarPreview || user?.avatarUrl || null}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

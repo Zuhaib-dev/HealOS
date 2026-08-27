@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2 } from "lucide-react";
+import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2, Calendar } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
 import { updateAppointmentStatusApi, AppointmentRecord } from "@/lib/api/appointment";
@@ -121,6 +121,7 @@ export function ShiftPanel() {
     { label: "Time on shift", value: stats?.timeOnShift || "0h 0m", note: "Started recently" },
   ];
   const [patients, setPatients] = useState<any[]>([]);
+  const [todayFollowUps, setTodayFollowUps] = useState<any[]>([]);
 
   // Drawer State
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
@@ -145,7 +146,10 @@ export function ShiftPanel() {
 
   useEffect(() => {
     import("@/lib/api/doctor").then(({ getAssignedPatientsApi }) => {
-      getAssignedPatientsApi().then(res => setPatients(res.data.patients || []));
+      getAssignedPatientsApi().then(res => {
+        setPatients(res.data.patients || []);
+        setTodayFollowUps(res.data.todayFollowUps || []);
+      });
     });
   }, []);
 
@@ -183,7 +187,7 @@ export function ShiftPanel() {
           ))}
         </div>
 
-      <div className="grid lg:grid-cols-2 gap-6 pb-12">
+      <div className="grid lg:grid-cols-3 gap-6 pb-12">
         <div className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-sm">
           <div className="px-6 py-4 border-b border-border/40 bg-muted/30 flex items-center justify-between">
             <p className="font-bold text-sm uppercase tracking-wider flex items-center gap-2">
@@ -218,6 +222,45 @@ export function ShiftPanel() {
               <div className="p-8 text-center text-sm text-muted-foreground flex flex-col items-center justify-center">
                 <UserIcon className="size-8 opacity-20 mb-3" />
                 No active patients found.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-sm">
+          <div className="px-6 py-4 border-b border-border/40 bg-muted/30 flex items-center justify-between">
+            <p className="font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+              <Calendar className="size-4 text-indigo-500" /> Today's Follow-Ups
+            </p>
+          </div>
+          <div className="p-2 space-y-1">
+            {todayFollowUps.length > 0 ? todayFollowUps.map((p, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                onClick={() => handleViewPatient(p)}
+                className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors group border-l-2 border-transparent hover:border-indigo-500"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="size-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold">
+                    {p.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-foreground">{p.name}</p>
+                    <p className="mono-label text-muted-foreground text-[10px]">
+                      Walk-in Expected
+                    </p>
+                  </div>
+                </div>
+                <div className="size-8 rounded-full bg-background border border-border/60 flex items-center justify-center text-muted-foreground group-hover:border-indigo-500 group-hover:text-indigo-500 transition-colors">
+                  <ChevronRight className="size-4" />
+                </div>
+              </motion.div>
+            )) : (
+              <div className="p-8 text-center text-sm text-muted-foreground flex flex-col items-center justify-center">
+                <Calendar className="size-8 opacity-20 mb-3" />
+                No follow-ups scheduled for today.
               </div>
             )}
           </div>

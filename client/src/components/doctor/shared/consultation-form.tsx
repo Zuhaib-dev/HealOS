@@ -7,6 +7,7 @@ import { ActionButton } from "@/components/admin/admin-shell";
 import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { AppointmentRecord } from "@/lib/api/appointment";
+import { AnatomySelector } from "./anatomy-selector";
 
 export function ConsultationForm({
   appointment,
@@ -144,12 +145,17 @@ export function ConsultationForm({
           <div className="space-y-4">
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
               <label className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Chief Complaint</label>
-              <textarea
-                value={chiefComplaint}
-                onChange={(e) => setChiefComplaint(e.target.value)}
-                className="w-full bg-background border border-border/60 rounded-xl p-3 min-h-25 outline-none focus:border-primary/50 transition-colors"
-                placeholder="Patient presents with..."
-              />
+              <div className="flex flex-col xl:flex-row gap-4">
+                <div className="w-full xl:w-2/5 min-w-[180px] flex items-center justify-center">
+                  <AnatomySelector onSelect={(part) => setChiefComplaint(prev => prev ? `${prev}, [${part}]` : `[${part}]`)} />
+                </div>
+                <textarea
+                  value={chiefComplaint}
+                  onChange={(e) => setChiefComplaint(e.target.value)}
+                  className="w-full xl:w-3/5 bg-background border border-border/60 rounded-xl p-3 min-h-32 outline-none focus:border-primary/50 transition-colors resize-none"
+                  placeholder="Patient presents with... (Select anatomy areas to auto-tag)"
+                />
+              </div>
             </div>
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
               <label className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Diagnosis</label>

@@ -17,7 +17,7 @@ export function NeonTimeline({ appointments }: { appointments: AppointmentRecord
 
   if (sorted.length === 0) {
     return (
-      <div className="w-full h-full min-h-[160px] flex items-center justify-center rounded-2xl border border-border/50 bg-card/30">
+      <div className="w-full h-full min-h-40 flex items-center justify-center rounded-2xl border border-border/50 bg-card/30">
         <p className="text-muted-foreground mono-label uppercase text-sm">No timeline events</p>
       </div>
     );
@@ -28,14 +28,14 @@ export function NeonTimeline({ appointments }: { appointments: AppointmentRecord
       <div className="flex items-center justify-between min-w-full relative">
         
         {/* The Base Line Background */}
-        <div className="absolute left-4 right-4 h-[2px] top-1/2 -translate-y-1/2 bg-primary/20 rounded-full" />
+        <div className="absolute left-4 right-4 h-0.5 top-1/2 -translate-y-1/2 bg-primary/20 rounded-full" />
         
         {/* The Glowing Neon Progress Line */}
         <motion.div 
           initial={{ width: 0 }}
           animate={{ width: "100%" }}
           transition={{ duration: 1.5, ease: "easeOut" }}
-          className="absolute left-4 h-[2px] top-1/2 -translate-y-1/2 bg-primary shadow-[0_0_12px_rgba(16,185,129,0.8)] rounded-full z-0" 
+          className="absolute left-4 h-0.5 top-1/2 -translate-y-1/2 bg-primary shadow-[0_0_12px_rgba(16,185,129,0.8)] rounded-full z-0" 
         />
 
         {/* Nodes */}

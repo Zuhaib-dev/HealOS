@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserCheck, FileText, Activity, Save } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
+import { AIWriterButton } from "@/components/shared/ai-writer-button";
 import apiClient from "@/lib/api-client";
 import Image from "next/image";
 import { DoctorIDCard } from "./doctor-id-card";
@@ -226,7 +227,10 @@ export function ProfilePanel() {
                 />
               </div>
               <div className="sm:col-span-2 space-y-2">
-                <label className="text-sm font-medium">Professional Bio</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Professional Bio</label>
+                  <AIWriterButton role={user?.role || "Doctor"} onBioGenerated={(b) => setBio(b)} />
+                </div>
                 <textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}

@@ -9,6 +9,7 @@ export interface IPatientProfile extends Document {
   emergencyContactName?: string;
   allergies?: string[];
   medicalHistory?: string;
+  bio?: string;
   address?: string;
   height?: number;
   heightUnit?: "cm" | "ft";
@@ -28,6 +29,7 @@ const patientProfileSchema = new Schema<IPatientProfile>(
     emergencyContactName: { type: String },
     allergies: [{ type: String }],
     medicalHistory: { type: String },
+    bio: { type: String },
     address: { type: String },
     height: { type: Number },
     heightUnit: { type: String, enum: ["cm", "ft"], default: "cm" },

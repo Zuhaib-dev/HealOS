@@ -7,6 +7,7 @@ import { ShieldCheck, UserCheck, BellRing, Lock, AlertTriangle, FileText } from 
 import { fetchPatientProfileApi, updatePatientProfileApi } from "@/lib/api/onboarding";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
+import { AIWriterButton } from "@/components/shared/ai-writer-button";
 
 export function ProfilePanel() {
   const { user, updateUser } = useAuthStore();
@@ -18,6 +19,7 @@ export function ProfilePanel() {
   const [emergencyContactName, setEmergencyContactName] = useState("");
   const [allergies, setAllergies] = useState("");
   const [address, setAddress] = useState("");
+  const [bio, setBio] = useState("");
   const [height, setHeight] = useState<number | "">("");
   const [heightUnit, setHeightUnit] = useState<"cm" | "ft">("cm");
   const [weight, setWeight] = useState<number | "">("");
@@ -33,6 +35,7 @@ export function ProfilePanel() {
           if (res.profile.emergencyContactName) setEmergencyContactName(res.profile.emergencyContactName);
           if (res.profile.allergies) setAllergies(res.profile.allergies.join(", "));
           if (res.profile.address) setAddress(res.profile.address);
+          if (res.profile.bio) setBio(res.profile.bio);
           if (res.profile.height) setHeight(res.profile.height);
           if (res.profile.heightUnit) setHeightUnit(res.profile.heightUnit);
           if (res.profile.weight) setWeight(res.profile.weight);
@@ -57,6 +60,7 @@ export function ProfilePanel() {
         emergencyContactName,
         allergies: allergyArr,
         address,
+        bio,
         height: height === "" ? undefined : height,
         heightUnit,
         weight: weight === "" ? undefined : weight,
@@ -253,6 +257,22 @@ export function ProfilePanel() {
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                       placeholder="Enter full residential address"
+                      className="w-full resize-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 space-y-2 mb-2 mt-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                        Personal Bio
+                      </label>
+                      <AIWriterButton role={user?.role || "Patient"} onBioGenerated={(b) => setBio(b)} />
+                    </div>
+                    <textarea
+                      rows={4}
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      placeholder="Share a short bio about yourself..."
                       className="w-full resize-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
                   </div>

@@ -127,7 +127,7 @@ export function DoctorShell({
       <div className="flex">
         {/* Sidebar Navigation */}
         <aside 
-          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? "w-[72px] items-center px-2" : "w-64"}`}
+          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? "w-18 items-center px-2" : "w-64"}`}
         >
           {isCollapsed ? (
             <div className="mb-4 mt-2 flex justify-center">

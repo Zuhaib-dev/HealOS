@@ -95,7 +95,7 @@ export function WorkspaceShell({
 
       <div className="flex">
         <aside 
-          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-(--hairline) p-3 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? "w-[72px] items-center px-2" : "w-60"}`}
+          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-(--hairline) p-3 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? "w-18 items-center px-2" : "w-60"}`}
         >
           <nav className="flex flex-col gap-0.5 w-full">
             {sections.map((s, i) => {

@@ -187,15 +187,12 @@ export function OverviewPanel() {
               <Calendar className="size-5" />
             </div>
             <div>
-              <p className="font-bold text-sm uppercase tracking-wider">Scheduled Follow-Up</p>
+              <p className="font-bold text-sm uppercase tracking-wider">Confirmed Follow-Up</p>
               <p className="text-sm opacity-80 mt-0.5">
-                Your doctor requested a follow-up on <span className="font-bold">{new Date(nextFollowUp.followUpDate!).toLocaleDateString()}</span> for {nextFollowUp.diagnosis || "your previous consultation"}.
+                Your doctor requested a follow-up on <span className="font-bold">{new Date(nextFollowUp.followUpDate!).toLocaleDateString()}</span> for {nextFollowUp.diagnosis || "your previous consultation"}. <span className="font-semibold italic">Walk-in on this date, no new booking required.</span>
               </p>
             </div>
           </div>
-          <button className="bg-indigo-500 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors shadow-lg">
-            Book Now
-          </button>
         </motion.div>
       )}
 

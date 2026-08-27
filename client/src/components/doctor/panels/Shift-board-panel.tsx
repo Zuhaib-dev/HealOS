@@ -117,7 +117,7 @@ export function ShiftPanel() {
   const statCards = [
     { label: "Patients under you", value: stats?.activePatientsCount || 0, note: "Active patients" },
     { label: "Clinic slots today", value: stats?.appointmentsToday || 0, note: "Scheduled for today" },
-    { label: "Results awaiting sign", value: stats?.resultsAwaiting || 0, note: "0 flagged abnormal", highlight: true },
+    { label: "Pending Follow-ups", value: stats?.followUpsCount || 0, note: "Scheduled target dates", highlight: true },
     { label: "Time on shift", value: stats?.timeOnShift || "0h 0m", note: "Started recently" },
   ];
   const [patients, setPatients] = useState<any[]>([]);

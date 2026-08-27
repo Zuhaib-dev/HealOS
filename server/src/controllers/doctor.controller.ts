@@ -150,8 +150,6 @@ export const orderDiagnostic = async (req: Request, res: Response) => {
       testName,
       priority,
       clinicalNotes,
-      medicines,
-      followUpDate,
     } = req.body;
 
     if (!patientId || !testType || !testName) {
@@ -338,6 +336,13 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       doctor: doctorId,
     });
 
+    const todayDate = new Date();
+    todayDate.setHours(0,0,0,0);
+    const followUpsCount = await Consultation.countDocuments({
+      doctor: doctorId,
+      followUpDate: { $gte: todayDate }
+    });
+
     res.status(200).json({
       status: "success",
       data: {
@@ -345,6 +350,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         activePatientsCount: activePatients.length,
         resultsAwaiting: 0, // Mock for now
         timeOnShift: "4h 12m", // Mock for now
+        followUpsCount,
       },
     });
   } catch (error: any) {

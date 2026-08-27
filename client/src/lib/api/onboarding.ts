@@ -31,6 +31,7 @@ export interface PatientProfileData {
   emergencyContactName?: string;
   allergies?: string[];
   medicalHistory?: string;
+  bio?: string;
   address?: string;
   height?: number;
   heightUnit?: "cm" | "ft";

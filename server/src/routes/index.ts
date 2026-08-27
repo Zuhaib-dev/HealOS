@@ -15,6 +15,7 @@ import pharmacyRouter from "./pharmacy.routes.js";
 import nurseRouter from "./nurse.routes.js";
 import paymentRouter from "./payment.routes.js";
 import labRouter from "./lab.routes.js";
+import aiRouter from "./ai.routes.js";
 
 
 export const apiRouter = Router();
@@ -54,4 +55,4 @@ apiRouter.use("/pharmacy", pharmacyRouter);
 apiRouter.use("/nurse", nurseRouter);
 apiRouter.use("/payment", paymentRouter);
 apiRouter.use("/lab", labRouter);
-
+apiRouter.use("/ai", aiRouter);

@@ -26,6 +26,7 @@ const updatePatientProfileSchema = z.object({
   emergencyContactName: z.string().optional(),
   allergies: z.array(z.string()).optional(),
   medicalHistory: z.string().optional(),
+  bio: z.string().optional(),
   address: z.string().optional(),
   height: z.number().optional(),
   heightUnit: z.enum(["cm", "ft"]).optional(),

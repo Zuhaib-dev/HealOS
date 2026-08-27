@@ -4,7 +4,7 @@ import { useState, type ComponentType, type ReactNode } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Bell, Menu } from "lucide-react";
+import { Search, Bell, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
@@ -46,6 +46,7 @@ export function WorkspaceShell({
 }) {
   const [query, setQuery] = useState("");
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
   const defaultSectionId = sections[0]?.id;
@@ -93,8 +94,10 @@ export function WorkspaceShell({
       </header>
 
       <div className="flex">
-        <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 flex-col border-r border-(--hairline) p-3 md:flex">
-          <nav className="flex flex-col gap-0.5">
+        <aside 
+          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-(--hairline) p-3 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? "w-[72px] items-center px-2" : "w-60"}`}
+        >
+          <nav className="flex flex-col gap-0.5 w-full">
             {sections.map((s, i) => {
               const Icon = s.icon;
               const isActive = isSectionActive(s.id);
@@ -103,34 +106,49 @@ export function WorkspaceShell({
                 <Link
                   key={s.id}
                   href={href}
-                  className={`mono-label group relative flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+                  title={isCollapsed ? s.label : undefined}
+                  className={`mono-label group relative flex items-center ${isCollapsed ? "justify-center px-0 py-3" : "gap-3 px-3 py-2.5"} text-left transition-colors ${
                     isActive
                       ? "bg-accent/10 text-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-foreground/3"
                   }`}
                 >
-                  {isActive && (
+                  {isActive && !isCollapsed && (
                     <motion.span
                       layoutId={`${navId}-nav-marker`}
                       className="bg-accent absolute top-0 left-0 h-full w-0.5"
                     />
                   )}
-                  <span className="text-accent/60">{String(i + 1).padStart(2, "0")}</span>
+                  {!isCollapsed && <span className="text-accent/60">{String(i + 1).padStart(2, "0")}</span>}
                   <Icon className="size-3.5" />
-                  {s.label}
+                  {!isCollapsed && s.label}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="hairline mt-auto p-3">
-            <p className="mono-label text-muted-foreground">{statusTitle}</p>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="bg-accent size-1.5 animate-pulse rounded-full" />
-              <span className="mono-label">{statusLine}</span>
-            </div>
-            <p className="mono-label text-muted-foreground mt-2">{statusNote}</p>
+          <div className={`hairline mt-auto transition-all overflow-hidden ${isCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3"}`}>
+            {isCollapsed ? (
+              <span className="bg-accent size-1.5 animate-pulse rounded-full" title={statusLine} />
+            ) : (
+              <>
+                <p className="mono-label text-muted-foreground">{statusTitle}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="bg-accent size-1.5 animate-pulse rounded-full" />
+                  <span className="mono-label">{statusLine}</span>
+                </div>
+                <p className="mono-label text-muted-foreground mt-2">{statusNote}</p>
+              </>
+            )}
           </div>
+          
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors hairline ${isCollapsed ? "" : "w-full"}`}
+            aria-label="Toggle sidebar"
+          >
+            {isCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
+          </button>
         </aside>
 
         <main className="min-w-0 flex-1 relative pb-24 md:pb-0">

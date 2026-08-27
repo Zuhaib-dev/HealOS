@@ -17,6 +17,10 @@ import {
   Bell,
   ShieldCheck,
   Sparkles,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -50,6 +54,7 @@ export function DoctorShell({
   const [query, setQuery] = useState("");
   const { user } = useAuthStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
   const currentSection = doctorSections.find((s) =>
@@ -121,20 +126,30 @@ export function DoctorShell({
       {/* Main Layout Container */}
       <div className="flex">
         {/* Sidebar Navigation */}
-        <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto">
-          <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5">
-            <Sparkles className="size-4 text-emerald-500 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-foreground truncate">
-                Dr. {user?.name || "Clinician"}
-              </p>
-              <p className="mono-label text-[10px] text-emerald-600 dark:text-emerald-400 font-mono uppercase">
-                {user?.role || "DOCTOR"} · Active Duty
-              </p>
+        <aside 
+          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? "w-[72px] items-center px-2" : "w-64"}`}
+        >
+          {isCollapsed ? (
+            <div className="mb-4 mt-2 flex justify-center">
+              <div className="size-8 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-xs">
+                {user?.name?.charAt(0) || "D"}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5">
+              <Sparkles className="size-4 text-emerald-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground truncate">
+                  Dr. {user?.name || "Clinician"}
+                </p>
+                <p className="mono-label text-[10px] text-emerald-600 dark:text-emerald-400 font-mono uppercase">
+                  {user?.role || "DOCTOR"} · Active Duty
+                </p>
+              </div>
+            </div>
+          )}
 
-          <nav className="flex flex-col gap-1">
+          <nav className="flex flex-col gap-1 w-full">
             {doctorSections.map((s) => {
               const Icon = s.icon;
               const isActive = isSectionActive(s.id);
@@ -143,31 +158,46 @@ export function DoctorShell({
                 <Link
                   key={s.id}
                   href={href}
-                  className={`mono-label group relative flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-left transition-all cursor-pointer text-xs ${
+                  title={isCollapsed ? s.label : undefined}
+                  className={`mono-label group relative flex items-center ${isCollapsed ? "justify-center px-0 py-3" : "gap-3 px-3.5 py-2.5"} rounded-lg text-left transition-all cursor-pointer text-xs ${
                     isActive
                       ? "bg-primary text-primary-foreground font-semibold shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                   }`}
                 >
                   <Icon className={`size-4 ${isActive ? "text-primary-foreground" : "text-primary/70 group-hover:text-primary"}`} />
-                  <span>{s.label}</span>
+                  {!isCollapsed && <span>{s.label}</span>}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="mt-auto rounded-xl border border-border/70 bg-card/60 p-3.5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-mono">
-                Duty Status
-              </span>
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-            </div>
-            <p className="font-semibold text-xs mt-1.5 text-foreground">On Shift &amp; Available</p>
-            <p className="mono-label text-[10px] text-muted-foreground mt-0.5 font-mono">
-              MongoDB Atlas Sync Active
-            </p>
+          <div className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3.5"}`}>
+            {isCollapsed ? (
+              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" title="On Shift & Available" />
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-mono">
+                    Duty Status
+                  </span>
+                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                </div>
+                <p className="font-semibold text-xs mt-1.5 text-foreground">On Shift &amp; Available</p>
+                <p className="mono-label text-[10px] text-muted-foreground mt-0.5 font-mono">
+                  MongoDB Atlas Sync Active
+                </p>
+              </>
+            )}
           </div>
+          
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 ${isCollapsed ? "" : "w-full"}`}
+            aria-label="Toggle sidebar"
+          >
+            {isCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
+          </button>
         </aside>
 
         {/* Main Content Area */}

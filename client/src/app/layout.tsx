@@ -67,6 +67,7 @@ export const metadata: Metadata = {
 };
 
 import { RealtimeSocketProvider } from "@/components/providers/socket-provider";
+import { SoundProvider } from "@/components/sound-provider";
 
 export default function RootLayout({
   children,
@@ -164,6 +165,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             <AuthSessionBridge />
+            <SoundProvider />
             <RealtimeSocketProvider>
               {children}
             </RealtimeSocketProvider>

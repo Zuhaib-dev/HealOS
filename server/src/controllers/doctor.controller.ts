@@ -367,9 +367,21 @@ export const getAssignedPatients = async (req: Request, res: Response) => {
     const patientIds = await Appointment.distinct("patient", { doctor: doctorId });
     const patients = await User.find({ _id: { $in: patientIds } }).select("name email phone avatarUrl").lean();
     
+    const todayDate = new Date();
+    todayDate.setHours(0,0,0,0);
+    const tomorrowDate = new Date(todayDate);
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+
+    const followUpConsults = await Consultation.find({
+      doctor: doctorId,
+      followUpDate: { $gte: todayDate, $lt: tomorrowDate }
+    }).populate("patient", "name email phone avatarUrl").lean();
+
+    const todayFollowUps = followUpConsults.map(c => c.patient);
+
     res.status(200).json({
       status: "success",
-      data: { patients },
+      data: { patients, todayFollowUps },
     });
   } catch (error: any) {
     res.status(500).json({ status: "error", message: "Failed to fetch patients" });

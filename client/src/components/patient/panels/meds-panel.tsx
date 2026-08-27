@@ -95,54 +95,158 @@ function Trend({ series }: { series: number[] }) {
 /* ---------- 05 meds ---------- */
 
 export function MedsPanel() {
-  const [requested, setRequested] = useState<Record<string, boolean>>({});
   const { data, isLoading } = usePatientDashboard();
 
-  const activeMeds = (data?.consultations || []).flatMap(c => 
-    (c.medicines || []).map((m: any) => ({
-      name: m.name,
-      dose: m.dosage,
-      freq: m.frequency,
-      started: new Date(c.createdAt).toLocaleDateString(),
-      prescriber: c.doctor?.name ? `Dr. ${c.doctor.name}` : "Doctor",
-      state: "active",
-      refillsLeft: 0,
-      instructions: m.instructions
-    }))
+  // Helper to parse duration string (e.g. "5 days", "1 week", "10") into number of days
+  const parseDurationDays = (dur: string) => {
+    if (!dur) return 30; // default
+    const num = parseInt(dur.replace(/[^0-9]/g, ''));
+    if (isNaN(num)) return 30;
+    if (dur.toLowerCase().includes("week")) return num * 7;
+    if (dur.toLowerCase().includes("month")) return num * 30;
+    return num;
+  };
+
+  // Keep a unique ID for each medicine for the checklist.
+  const allMeds = (data?.consultations || []).flatMap(c => 
+    (c.medicines || []).map((m: any, idx: number) => {
+      const createdAt = new Date(c.createdAt);
+      const durationDays = parseDurationDays(m.duration);
+      
+      const expiryDate = new Date(createdAt);
+      expiryDate.setDate(createdAt.getDate() + durationDays);
+      
+      // If end of day of expiry is still in the future, it's active
+      const isActive = new Date() <= expiryDate;
+
+      return {
+        id: `${c._id}-${idx}`,
+        name: m.name,
+        dose: m.dosage,
+        freq: m.frequency,
+        duration: m.duration,
+        started: createdAt.toLocaleDateString(),
+        prescriber: c.doctor?.name ? `Dr. ${c.doctor.name}` : "Doctor",
+        state: isActive ? "active" : "inactive",
+        instructions: m.instructions
+      };
+    })
   );
 
+  const activeMeds = allMeds.filter(m => m.state === "active");
+
+  // Local storage for daily adherence
+  const [takenMeds, setTakenMeds] = useState<Record<string, boolean>>({});
+  const todayKey = new Date().toLocaleDateString();
+
+  useEffect(() => {
+    const saved = localStorage.getItem(`meds_taken_${todayKey}`);
+    if (saved) {
+      try {
+        setTakenMeds(JSON.parse(saved));
+      } catch (e) {}
+    }
+  }, [todayKey]);
+
+  const toggleTaken = (id: string) => {
+    const next = { ...takenMeds, [id]: !takenMeds[id] };
+    setTakenMeds(next);
+    localStorage.setItem(`meds_taken_${todayKey}`, JSON.stringify(next));
+    if (next[id]) {
+      toast.success("Medication marked as taken!");
+    }
+  };
+
   return (
-    <section>
+    <section className="space-y-8 pb-12">
       <PanelHeader
         index="05 / medications"
         title="My medications"
-        note="What you are taking, who prescribed it, and how many repeats are left. Request a refill and the pharmacy will confirm."
+        note="Track your daily schedule and view past prescriptions."
       />
 
-      <div className="flex flex-col gap-px" style={{ background: "var(--hairline)" }}>
-        {activeMeds.length === 0 && (
-          <div className="bg-background p-8 text-center mono-label text-xs text-muted-foreground">
-            No active medications found.
+      {/* TODAY'S SCHEDULE CHECKLIST */}
+      <div className="px-4 sm:px-6 lg:px-8">
+        <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+          <Check className="size-5 text-emerald-500" />
+          Today's Schedule
+        </h3>
+        
+        {activeMeds.length === 0 ? (
+          <div className="bg-card/40 border border-border/50 rounded-2xl p-8 text-center">
+            <p className="text-muted-foreground mono-label uppercase text-sm">No active medications scheduled for today.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeMeds.map((m) => {
+              const isTaken = !!takenMeds[m.id];
+              return (
+                <div 
+                  key={m.id}
+                  className={`relative p-5 rounded-2xl border transition-all duration-300 ${
+                    isTaken 
+                    ? "bg-emerald-500/10 border-emerald-500/30" 
+                    : "bg-card border-border/60 shadow-sm hover:border-primary/50"
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className={`font-bold text-lg ${isTaken ? "text-emerald-700 dark:text-emerald-400 line-through opacity-70" : "text-foreground"}`}>
+                        {m.name}
+                      </h4>
+                      <p className="text-sm font-medium text-muted-foreground">{m.dose} • {m.freq}</p>
+                    </div>
+                    <button
+                      onClick={() => toggleTaken(m.id)}
+                      className={`shrink-0 flex items-center justify-center size-8 rounded-full border-2 transition-colors ${
+                        isTaken 
+                        ? "bg-emerald-500 border-emerald-500 text-white"
+                        : "border-muted-foreground/30 hover:border-primary text-transparent hover:text-primary/20"
+                      }`}
+                    >
+                      <Check className={`size-5 ${isTaken ? "opacity-100" : "opacity-0"}`} />
+                    </button>
+                  </div>
+                  {m.instructions && (
+                    <div className="mt-4 p-2.5 bg-background/50 rounded-lg border border-border/40">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        <span className="font-semibold text-foreground">Instructions:</span> {m.instructions}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
-        {activeMeds.map((m, i) => (
-          <div
-            key={i}
-            className="bg-background flex flex-wrap items-center gap-4 px-5 py-4 sm:px-8"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{m.name}</p>
-              <p className="mono-label text-muted-foreground mt-1">
-                {m.dose} · {m.freq} · since {m.started} · {m.prescriber}
-              </p>
-              {m.instructions && (
-                <p className="text-xs text-emerald-500 font-mono mt-1">Instructions: {m.instructions}</p>
-              )}
+      </div>
+
+      {/* ALL MEDICATIONS LIST */}
+      <div className="mt-12 px-4 sm:px-6 lg:px-8">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Prescription History</h3>
+        <div className="flex flex-col gap-px overflow-hidden rounded-2xl border border-border/60" style={{ background: "var(--hairline)" }}>
+          {allMeds.length === 0 && (
+            <div className="bg-background p-8 text-center mono-label text-xs text-muted-foreground">
+              No medications found.
             </div>
-            <Pill tone={m.state === "active" ? "ok" : "mute"}>{m.state}</Pill>
-            <Pill tone="warn">Contact doctor for refills</Pill>
-          </div>
-        ))}
+          )}
+          {allMeds.map((m) => (
+            <div
+              key={m.id}
+              className={`bg-background flex flex-wrap items-center gap-4 px-5 py-4 sm:px-8 transition-colors ${
+                m.state === "inactive" ? "opacity-60 grayscale-[0.5]" : ""
+              }`}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-foreground">{m.name}</p>
+                <p className="mono-label text-muted-foreground mt-1 text-[11px]">
+                  {m.dose} · {m.freq} · prescribed {m.started} · {m.prescriber}
+                </p>
+              </div>
+              <Pill tone={m.state === "active" ? "ok" : "mute"}>{m.state.toUpperCase()}</Pill>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

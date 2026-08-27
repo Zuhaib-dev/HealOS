@@ -8,6 +8,7 @@ import { Search, Bell, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
+import { useUIStore } from "@/store/use-ui-store";
 import {
   Drawer,
   DrawerContent,
@@ -45,8 +46,8 @@ export function WorkspaceShell({
   children: ReactNode;
 }) {
   const [query, setQuery] = useState("");
+  const { isSidebarCollapsed, toggleSidebar } = useUIStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
   const defaultSectionId = sections[0]?.id;
@@ -95,7 +96,7 @@ export function WorkspaceShell({
 
       <div className="flex">
         <aside 
-          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-(--hairline) p-3 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? "w-18 items-center px-2" : "w-60"}`}
+          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-(--hairline) p-3 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? "w-18 items-center px-2" : "w-60"}`}
         >
           <nav className="flex flex-col gap-0.5 w-full">
             {sections.map((s, i) => {
@@ -106,29 +107,29 @@ export function WorkspaceShell({
                 <Link
                   key={s.id}
                   href={href}
-                  title={isCollapsed ? s.label : undefined}
-                  className={`mono-label group relative flex items-center ${isCollapsed ? "justify-center px-0 py-3" : "gap-3 px-3 py-2.5"} text-left transition-colors ${
+                  title={isSidebarCollapsed ? s.label : undefined}
+                  className={`mono-label group relative flex items-center ${isSidebarCollapsed ? "justify-center px-0 py-3" : "gap-3 px-3 py-2.5"} text-left transition-colors ${
                     isActive
                       ? "bg-accent/10 text-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-foreground/3"
                   }`}
                 >
-                  {isActive && !isCollapsed && (
+                  {isActive && !isSidebarCollapsed && (
                     <motion.span
                       layoutId={`${navId}-nav-marker`}
                       className="bg-accent absolute top-0 left-0 h-full w-0.5"
                     />
                   )}
-                  {!isCollapsed && <span className="text-accent/60">{String(i + 1).padStart(2, "0")}</span>}
+                  {!isSidebarCollapsed && <span className="text-accent/60">{String(i + 1).padStart(2, "0")}</span>}
                   <Icon className="size-3.5" />
-                  {!isCollapsed && s.label}
+                  {!isSidebarCollapsed && s.label}
                 </Link>
               );
             })}
           </nav>
 
-          <div className={`hairline mt-auto transition-all overflow-hidden ${isCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3"}`}>
-            {isCollapsed ? (
+          <div className={`hairline mt-auto transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3"}`}>
+            {isSidebarCollapsed ? (
               <span className="bg-accent size-1.5 animate-pulse rounded-full" title={statusLine} />
             ) : (
               <>
@@ -143,11 +144,11 @@ export function WorkspaceShell({
           </div>
           
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors hairline ${isCollapsed ? "" : "w-full"}`}
+            onClick={toggleSidebar}
+            className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors hairline ${isSidebarCollapsed ? "" : "w-full"}`}
             aria-label="Toggle sidebar"
           >
-            {isCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
+            {isSidebarCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
           </button>
         </aside>
 

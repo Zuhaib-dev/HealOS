@@ -25,6 +25,7 @@ import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { useAuthStore } from "@/store/use-auth-store";
+import { useUIStore } from "@/store/use-ui-store";
 import {
   Drawer,
   DrawerContent,
@@ -57,9 +58,9 @@ export function PatientShell({
   children: ReactNode;
 }) {
   const [query, setQuery] = useState("");
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const { user } = useAuthStore();
+  const { isSidebarCollapsed, toggleSidebar } = useUIStore();
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const pathname = usePathname();
 
   const currentSection = patientSections.find((s) =>
@@ -132,9 +133,9 @@ export function PatientShell({
       <div className="flex">
         {/* Sidebar Navigation - Desktop Only */}
         <aside 
-          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? "w-18 items-center px-2" : "w-64"}`}
+          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? "w-18 items-center px-2" : "w-64"}`}
         >
-          {isCollapsed ? (
+          {isSidebarCollapsed ? (
             <div className="mb-4 mt-2 flex justify-center">
               <div className="size-8 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-xs uppercase">
                 {user?.name?.charAt(0) || "P"}
@@ -163,22 +164,22 @@ export function PatientShell({
                 <Link
                   key={s.id}
                   href={href}
-                  title={isCollapsed ? s.label : undefined}
-                  className={`mono-label group relative flex items-center ${isCollapsed ? "justify-center px-0 py-3" : "gap-3 px-3.5 py-2.5"} rounded-lg text-left transition-all cursor-pointer text-xs ${
+                  title={isSidebarCollapsed ? s.label : undefined}
+                  className={`mono-label group relative flex items-center ${isSidebarCollapsed ? "justify-center px-0 py-3" : "gap-3 px-3.5 py-2.5"} rounded-lg text-left transition-all cursor-pointer text-xs ${
                     isActive
                       ? "bg-primary text-primary-foreground font-semibold shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                   }`}
                 >
                   <Icon className={`size-4 ${isActive ? "text-primary-foreground" : "text-primary/70 group-hover:text-primary"}`} />
-                  {!isCollapsed && <span>{s.label}</span>}
+                  {!isSidebarCollapsed && <span>{s.label}</span>}
                 </Link>
               );
             })}
           </nav>
 
-          <div className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-4"}`}>
-            {isCollapsed ? (
+          <div className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-4"}`}>
+            {isSidebarCollapsed ? (
               <span className="size-2 rounded-full bg-emerald-500 animate-pulse" title="Next Appointment Available" />
             ) : (
               <>
@@ -197,11 +198,11 @@ export function PatientShell({
           </div>
           
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 ${isCollapsed ? "" : "w-full"}`}
+            onClick={toggleSidebar}
+            className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 ${isSidebarCollapsed ? "" : "w-full"}`}
             aria-label="Toggle sidebar"
           >
-            {isCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
+            {isSidebarCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
           </button>
         </aside>
 

@@ -198,19 +198,16 @@ export const getPatientHistory = async (req: Request, res: Response) => {
     }
 
     const consultations = await Consultation.find({ patient: patientId })
-      .select("doctor diagnosis status createdAt appointment")
       .populate("doctor", "firstName lastName")
       .sort({ createdAt: -1 })
       .lean();
 
     const diagnosticOrders = await DiagnosticOrder.find({ patient: patientId })
-      .select("doctor testType testName status priority createdAt")
       .populate("doctor", "firstName lastName")
       .sort({ createdAt: -1 })
       .lean();
 
     const diagnosticReports = await DiagnosticReport.find({ patient: patientId })
-      .select("radiologist state isCritical createdAt")
       .populate("radiologist", "firstName lastName")
       .sort({ createdAt: -1 })
       .lean();

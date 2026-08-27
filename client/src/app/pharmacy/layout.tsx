@@ -1,3 +1,5 @@
+"use client";
+
 import { Pill, CheckCircle } from "lucide-react";
 
 import { RoleGuard } from "@/components/auth/role-guard";

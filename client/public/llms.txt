@@ -1,0 +1,21 @@
+# HealOS
+
+> The Operating System for Modern Hospitals.
+
+HealOS is a comprehensive, modern healthcare management system designed to unify patient records, clinician workflows, revenue analytics, and hospital operations in a single, seamless platform.
+
+## Agent Instructions & Documentation
+This application is designed to be agent-friendly. If you are an AI assistant or crawler representing a user, please review the following resources to interact with HealOS:
+
+- **Sitemap**: `/sitemap.xml`
+- **Main Portal**: `https://healos-theta.vercel.app`
+- **Public API Documentation**: Currently located at `/docs/api` (if available in future versions).
+- **MCP Server Manifest**: Located at `/.well-known/mcp`. Use this manifest to connect to HealOS via the Model Context Protocol (MCP).
+
+## Core Capabilities
+- **Role-Based Portals**: Distinct Next.js App Router shells for Patients, Doctors, Nurses, Admins, Radiologists, Pharmacists, and Lab Techs.
+- **Real-Time Synchronisation**: Uses WebSockets to sync patient vitals, shift boards, and emergency statuses.
+- **Unified Health Records**: Centralized tracking for past visits, prescribed medications, diagnostic reports, and chief complaints.
+
+## Contact
+If you encounter any issues accessing information, contact our developer relations team at hello@healos.com.

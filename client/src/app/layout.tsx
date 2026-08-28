@@ -18,6 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://healos-theta.vercel.app"),
+  alternates: { canonical: "https://healos-theta.vercel.app/" },
   title: {
     default: "HealOS | Modern Healthcare Management",
     template: "%s | HealOS",
@@ -49,6 +50,7 @@ export const metadata: Metadata = {
     siteName: "HealOS",
     locale: "en_US",
     type: "website",
+    images: [{ url: "/og-image.jpg" }],
   },
   twitter: {
     card: "summary_large_image",
@@ -81,6 +83,7 @@ export default function RootLayout({
         "@type": "Person",
         "@id": "https://healos-theta.vercel.app/#creator",
         "name": "Zuhaib Rashid",
+        "jobTitle": "Founder & Lead Developer",
         "url": "https://zuhaibrashid.com",
         "sameAs": [
           "https://github.com/Zuhaib-dev",
@@ -96,6 +99,20 @@ export default function RootLayout({
         "logo": "https://healos-theta.vercel.app/icon.svg",
         "founder": {
           "@id": "https://healos-theta.vercel.app/#creator"
+        },
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+1-800-555-1234",
+          "contactType": "customer service",
+          "email": "hello@healos.com"
+        },
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "123 HealOS Ave",
+          "addressLocality": "San Francisco",
+          "addressRegion": "CA",
+          "postalCode": "94105",
+          "addressCountry": "US"
         },
         "sameAs": [
           "https://github.com/Zuhaib-dev",

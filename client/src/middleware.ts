@@ -19,10 +19,14 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/dashboard");
 
   if (!isProtectedPath) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set("Vary", "Accept, Accept-Encoding");
+    return response;
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  response.headers.set("Vary", "Accept, Accept-Encoding");
+  return response;
 }
 
 export const config = {

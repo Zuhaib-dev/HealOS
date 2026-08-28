@@ -24,7 +24,7 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 sm:p-6"
+        className="fixed inset-0 z-100 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 sm:p-6"
       >
         <div className="absolute inset-0" onClick={onClose} />
         
@@ -158,7 +158,7 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
             <div className="flex items-end justify-between mt-12 pt-8 border-t border-black/10">
               <div>
                 {consultation.followUpDate && (
-                  <div className="flex items-center gap-2 text-sm text-black bg-emerald-500/10 text-emerald-700 px-3 py-2 rounded-lg font-semibold">
+                  <div className="flex items-center gap-2 text-sm bg-emerald-500/10 text-emerald-700 px-3 py-2 rounded-lg font-semibold">
                     <Calendar className="size-4" />
                     Follow-up: {new Date(consultation.followUpDate).toLocaleDateString()}
                   </div>

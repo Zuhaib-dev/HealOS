@@ -5,6 +5,11 @@ export const fetchLabCollectionsApi = async () => {
   return response.data;
 };
 
+export const fetchLabHistoryApi = async (page = 1, limit = 10, search = "") => {
+  const response = await apiClient.get(`/lab/reports/history?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
+  return response.data;
+};
+
 export const markLabCollectedApi = async (id: string, paymentMethod?: string, price?: number) => {
   const response = await apiClient.patch(`/lab/collections/${id}/collect`, { paymentMethod, price });
   return response.data;

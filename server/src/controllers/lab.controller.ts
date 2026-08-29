@@ -69,6 +69,47 @@ export const uploadLabReport = async (req: Request, res: Response) => {
   }
 };
 
+export const getLabHistory = async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = (req.query.search as string) || "";
+    const skip = (page - 1) * limit;
+
+    // Optional: Filter by 'state: "released"' if you only want fully verified reports, 
+    // or just fetch all diagnostic reports.
+    let filter = {};
+    
+    // We cannot easily text search across populated fields in a single basic find, 
+    // but we can search by title or fileName. In a real app, you'd aggregate.
+    if (search) {
+      filter = { title: { $regex: search, $options: "i" } };
+    }
+
+    const totalCount = await DiagnosticReport.countDocuments(filter);
+    const reports = await DiagnosticReport.find(filter)
+      .populate("patient", "name mrn")
+      .populate("order", "testName accessionNumber status")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      reports,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        pages: Math.ceil(totalCount / limit)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error fetching lab history" });
+  }
+};
+
 export const getCollections = async (_req: Request, res: Response) => {
   try {
     const orders = await DiagnosticOrder.find({ testType: "PATHOLOGY", status: { $in: ["PENDING", "IN_PROGRESS"] } })

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken, requireRole } from "../middleware/auth.middleware.js";
-import { getCollections, markCollected, getSamples, getPendingValidation, validateReport, getAnalysers, getCriticalValues, getLabStats, createLabBill } from "../controllers/lab.controller.js";
+import { getCollections, markCollected, getSamples, getPendingValidation, validateReport, getAnalysers, getCriticalValues, getLabStats, createLabBill, getLabHistory } from "../controllers/lab.controller.js";
 import { UserRole } from "../models/user.model.js";
 
 const router = Router();
@@ -18,6 +18,7 @@ router.get("/validation", getPendingValidation);
 router.patch("/validation/:id", validateReport);
 import { upload } from "../controllers/radiology.controller.js";
 import { uploadLabReport } from "../controllers/lab.controller.js";
+router.get("/reports/history", getLabHistory);
 router.post("/reports/:id/upload", upload.single("file"), uploadLabReport);
 
 router.get("/analysers", getAnalysers);

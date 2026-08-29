@@ -9,9 +9,10 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, X, ShieldCheck, CreditCard, Banknote, QrCode, Smartphone, Loader2, ArrowRight, AlertCircle, Search, UploadCloud, TestTube, Barcode, Send } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { fetchLabCollectionsApi, markLabCollectedApi, uploadLabReportApi, createLabBillApi } from "@/lib/api/lab";
+import { fetchLabCollectionsApi, markLabCollectedApi, uploadLabReportApi, createLabBillApi, fetchLabHistoryApi } from "@/lib/api/lab";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
+import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 
 function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
   const flat = tubes.flatMap((t) => Array.from({ length: t.count }, () => t.colour)).slice(0, 8);
@@ -40,9 +41,15 @@ export function CollectionPanel() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
-  const [tab, setTab] = useState<"COLLECTION" | "UPLOAD">("COLLECTION");
+  const [tab, setTab] = useState<"COLLECTION" | "UPLOAD" | "HISTORY">("COLLECTION");
   const [isUploading, setIsUploading] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
+  
+  // History State
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyData, setHistoryData] = useState<{reports: any[], pagination: any}>({ reports: [], pagination: { pages: 1 } });
+  const [historyLoading, setHistoryLoading] = useState(false);
   
   // POS State
   const [price, setPrice] = useState<string>("500");
@@ -90,6 +97,29 @@ export function CollectionPanel() {
       };
     }
   }, []);
+
+  const loadHistory = async () => {
+    try {
+      setHistoryLoading(true);
+      const res = await fetchLabHistoryApi(historyPage, 10, historySearch);
+      if (res.success) {
+        setHistoryData({ reports: res.reports, pagination: res.pagination });
+      }
+    } catch (e) {
+      toast.error("Failed to load history");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === "HISTORY") {
+      const timer = setTimeout(() => {
+        loadHistory();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [tab, historyPage, historySearch]);
 
   const handleSelectOrder = (order: any) => {
     setSelectedOrder(order);
@@ -189,33 +219,131 @@ export function CollectionPanel() {
         index="01 / phlebotomy"
         title="Sample Collection & POS"
         note="Manage sample collections and process test billing."
-        actions={<ActionButton tone="solid">Print round labels</ActionButton>}
+        actions={
+          <div className="flex bg-muted/50 p-1 rounded-md border border-border/40">
+            <button
+              onClick={() => { setTab("COLLECTION"); setSelectedOrder(null); }}
+              className={`text-xs px-3 py-1.5 rounded transition-all ${
+                tab === "COLLECTION" ? "bg-background shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Awaiting Collection
+            </button>
+            <button
+              onClick={() => { setTab("UPLOAD"); setSelectedOrder(null); }}
+              className={`text-xs px-3 py-1.5 rounded transition-all ${
+                tab === "UPLOAD" ? "bg-background shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Pending Upload
+            </button>
+            <button
+              onClick={() => { setTab("HISTORY"); setSelectedOrder(null); }}
+              className={`text-xs px-3 py-1.5 rounded transition-all ${
+                tab === "HISTORY" ? "bg-background shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              History
+            </button>
+          </div>
+        }
       />
 
       <div className="flex-1 flex flex-col lg:flex-row bg-background overflow-hidden border-t border-border/60">
         
+        {tab === "HISTORY" ? (
+          <div className="flex-1 flex flex-col bg-background overflow-hidden relative">
+            <div className="p-4 sm:p-6 border-b border-border/40 flex justify-between items-center bg-card/20">
+              <div>
+                <h2 className="font-display text-xl font-bold">Diagnostic Reports Archive</h2>
+                <p className="text-sm text-muted-foreground mt-1">View finalized reports across all patients.</p>
+              </div>
+              <div className="relative w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <input 
+                  placeholder="Search by test name or title..." 
+                  value={historySearch}
+                  onChange={(e) => {
+                    setHistorySearch(e.target.value);
+                    setHistoryPage(1);
+                  }}
+                  className="w-full bg-background border border-border/60 rounded-xl pl-9 pr-4 py-2 text-sm outline-none focus:border-primary/50 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-card/20">
+              {historyLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <Loader2 className="size-6 animate-spin text-primary" />
+                </div>
+              ) : historyData.reports.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
+                  <ShieldCheck className="size-10 mb-3 opacity-30" />
+                  <p>No historical reports found.</p>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {historyData.reports.map((report: any) => (
+                    <div key={report._id} className="bg-background border border-border/60 p-4 rounded-xl flex items-center justify-between shadow-sm hover:border-primary/40 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="size-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                          <Check className="size-5" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-foreground">{report.patient?.name || "Unknown Patient"} <span className="text-muted-foreground font-normal ml-2 text-xs">MRN: {report.patient?.mrn || "N/A"}</span></p>
+                          <div className="flex gap-3 text-xs text-muted-foreground mt-1 font-mono">
+                            <span>{report.title || report.order?.testName}</span>
+                            <span>•</span>
+                            <span>{new Date(report.createdAt).toLocaleDateString()}</span>
+                            <span>•</span>
+                            <span>{report.order?.accessionNumber || "N/A"}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <a 
+                        href={report.fileUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="flex items-center gap-2 text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <Eye className="size-3.5" /> View PDF
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {historyData.pagination.pages > 1 && (
+              <div className="p-4 border-t border-border/40 bg-background flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Page {historyPage} of {historyData.pagination.pages}
+                </span>
+                <div className="flex gap-2">
+                  <button 
+                    disabled={historyPage === 1}
+                    onClick={() => setHistoryPage(p => p - 1)}
+                    className="p-2 border rounded hover:bg-muted disabled:opacity-50 transition-colors"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </button>
+                  <button 
+                    disabled={historyPage === historyData.pagination.pages}
+                    onClick={() => setHistoryPage(p => p + 1)}
+                    className="p-2 border rounded hover:bg-muted disabled:opacity-50 transition-colors"
+                  >
+                    <ChevronRight className="size-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
         {/* Left Pane: Queue */}
         <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col border-r border-border/60 bg-background/50">
           <div className="p-4 sm:p-6 border-b border-border/40 space-y-4">
-            <div className="flex bg-muted/50 p-1 rounded-md border border-border/40">
-              <button
-                onClick={() => { setTab("COLLECTION"); setSelectedOrder(null); }}
-                className={`flex-1 text-xs px-3 py-1.5 rounded transition-all ${
-                  tab === "COLLECTION" ? "bg-background shadow-sm font-semibold" : "text-muted-foreground"
-                }`}
-              >
-                Awaiting Collection
-              </button>
-              <button
-                onClick={() => { setTab("UPLOAD"); setSelectedOrder(null); }}
-                className={`flex-1 text-xs px-3 py-1.5 rounded transition-all ${
-                  tab === "UPLOAD" ? "bg-background shadow-sm font-semibold" : "text-muted-foreground"
-                }`}
-              >
-                Pending Upload
-              </button>
-            </div>
-            
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input 
@@ -539,7 +667,8 @@ export function CollectionPanel() {
             </div>
           )}
         </div>
-
+          </>
+        )}
       </div>
     </section>
   );

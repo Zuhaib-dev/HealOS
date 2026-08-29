@@ -241,7 +241,7 @@ export function RxQueuePanel() {
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 custom-scrollbar">
-            {rows.length === 0 ? (
+            {rows.filter((rx) => rx.patient?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || rx._id.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                  <Pill className="size-10 text-muted-foreground/30 mb-3" />
                  <p className="font-medium text-foreground">No Pending Rx</p>

@@ -33,6 +33,14 @@ export const fetchPendingPrescriptionsApi = async () => {
   return response.data;
 };
 
+export const fetchPharmacyHistoryApi = async () => {
+  const response = await apiClient.get<{
+    success: boolean;
+    prescriptions: PendingPrescriptionRecord[];
+  }>("/pharmacy/prescriptions/history");
+  return response.data;
+};
+
 export const dispenseMedicineApi = async (consultationId: string, medicineId: string) => {
   const response = await apiClient.patch<{
     success: boolean;

@@ -5,6 +5,7 @@ import {
   getPendingPrescriptions,
   dispenseMedicine,
   createPharmacyBill,
+  getPrescriptionHistory,
 } from "../controllers/pharmacy.controller.js";
 
 const router = express.Router();
@@ -13,6 +14,7 @@ router.use(verifyToken);
 router.use(requireRole([UserRole.PHARMACIST, UserRole.ADMIN]));
 
 router.get("/prescriptions/pending", getPendingPrescriptions);
+router.get("/prescriptions/history", getPrescriptionHistory);
 router.patch("/prescriptions/:consultationId/dispense", dispenseMedicine);
 router.post("/prescriptions/:consultationId/bill", createPharmacyBill);
 

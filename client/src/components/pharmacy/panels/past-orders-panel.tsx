@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Check, Loader2, Pill, Search, ShieldCheck } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { fetchPendingPrescriptionsApi, PendingPrescriptionRecord } from "@/lib/api/pharmacy";
+import { fetchPharmacyHistoryApi, PendingPrescriptionRecord } from "@/lib/api/pharmacy";
 import { toast } from "sonner";
 
 export function PastOrdersPanel() {
@@ -15,17 +15,9 @@ export function PastOrdersPanel() {
 
   const loadHistory = async () => {
     try {
-      // In a real app, there would be a dedicated `/pharmacy/orders/history` API.
-      // Since we only have the pending API, we will fetch it and filter for items that have been fully dispensed.
-      // For demonstration, we will assume prescriptions with all `isDispensed: true` are historical orders.
-      const res = await fetchPendingPrescriptionsApi();
+      const res = await fetchPharmacyHistoryApi();
       if (res.success) {
-        // Filter: Keep prescriptions where AT LEAST ONE medicine has been dispensed.
-        // This simulates a "Past Order" log where partial or full orders are tracked.
-        const historical = res.prescriptions.filter(rx => 
-          rx.medicines.some(m => m.isDispensed)
-        );
-        setRows(historical);
+        setRows(res.prescriptions);
       }
     } catch (e) {
       toast.error("Failed to load past orders");

@@ -64,13 +64,34 @@ export function AppointmentsPanel() {
       isFollowUp: true
     }));
 
-  const combinedAppointments = [...liveAppointments, ...futureFollowUps].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const pastWalkIns = consultations
+    .filter(c => !(c as any).appointment)
+    .map(c => ({
+      _id: "walkin-" + c._id,
+      status: "COMPLETED",
+      type: "IN_PERSON",
+      reason: (c as any).chiefComplaint || c.diagnosis || "Direct Consultation",
+      doctor: c.doctor,
+      date: c.createdAt,
+      timeSlot: new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      department: "Walk-in",
+      isWalkIn: true,
+      originalConsultation: c
+    }));
 
-  const filteredLive = combinedAppointments.filter((a: any) =>
-    tab === "upcoming"
-      ? a.status !== "COMPLETED" && a.status !== "CANCELLED"
-      : a.status === "COMPLETED" || a.status === "CANCELLED"
-  );
+  const combinedAppointments = [...liveAppointments, ...futureFollowUps, ...pastWalkIns];
+
+  const filteredLive = combinedAppointments
+    .filter((a: any) =>
+      tab === "upcoming"
+        ? a.status !== "COMPLETED" && a.status !== "CANCELLED"
+        : a.status === "COMPLETED" || a.status === "CANCELLED"
+    )
+    .sort((a: any, b: any) => 
+      tab === "upcoming" 
+        ? new Date(a.date).getTime() - new Date(b.date).getTime()
+        : new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
   const paginatedAppointments = filteredLive.slice((page - 1) * limit, page * limit);
   const totalPages = Math.ceil(filteredLive.length / limit);
@@ -204,7 +225,7 @@ export function AppointmentsPanel() {
                       <button
                         type="button"
                         onClick={() => {
-                          const note = consultations.find(c => (c as any).appointment === a._id || (c as any).appointment?._id === a._id);
+                          const note = (a as any).isWalkIn ? (a as any).originalConsultation : consultations.find(c => (c as any).appointment === a._id || (c as any).appointment?._id === a._id);
                           if (note) {
                             // Attach the doctor info from the appointment so the receipt can display it
                             setSelectedConsultation({ ...note, doctor: a.doctor } as any);

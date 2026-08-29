@@ -40,6 +40,8 @@ export function CollectionPanel() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [tab, setTab] = useState<"COLLECTION" | "UPLOAD">("COLLECTION");
+  const [isUploading, setIsUploading] = useState<Record<string, boolean>>({});
   
   // POS State
   const [price, setPrice] = useState<string>("500");
@@ -153,14 +155,18 @@ export function CollectionPanel() {
     formData.append("file", file);
     
     try {
+      setIsUploading(prev => ({ ...prev, [id]: true }));
       toast.info("Uploading result...");
       const res = await uploadLabReportApi(id, formData);
       if (res.status === "success" || res.success) {
-        toast.success("Result uploaded successfully");
+        toast.success("Result uploaded successfully! Sent to Validation queue.");
+        setSelectedOrder(null);
         loadCollections();
       }
     } catch (error) {
       toast.error("Failed to upload result");
+    } finally {
+      setIsUploading(prev => ({ ...prev, [id]: false }));
     }
   };
 
@@ -189,7 +195,26 @@ export function CollectionPanel() {
         
         {/* Left Pane: Queue */}
         <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col border-r border-border/60 bg-background/50">
-          <div className="p-4 sm:p-6 border-b border-border/40">
+          <div className="p-4 sm:p-6 border-b border-border/40 space-y-4">
+            <div className="flex bg-muted/50 p-1 rounded-md border border-border/40">
+              <button
+                onClick={() => { setTab("COLLECTION"); setSelectedOrder(null); }}
+                className={`flex-1 text-xs px-3 py-1.5 rounded transition-all ${
+                  tab === "COLLECTION" ? "bg-background shadow-sm font-semibold" : "text-muted-foreground"
+                }`}
+              >
+                Awaiting Collection
+              </button>
+              <button
+                onClick={() => { setTab("UPLOAD"); setSelectedOrder(null); }}
+                className={`flex-1 text-xs px-3 py-1.5 rounded transition-all ${
+                  tab === "UPLOAD" ? "bg-background shadow-sm font-semibold" : "text-muted-foreground"
+                }`}
+              >
+                Pending Upload
+              </button>
+            </div>
+            
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input 
@@ -200,14 +225,14 @@ export function CollectionPanel() {
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 custom-scrollbar">
-            {rows.length === 0 ? (
+            {rows.filter(r => tab === "COLLECTION" ? r.status === "PENDING" : r.status === "IN_PROGRESS").length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                  <TestTube className="size-10 text-muted-foreground/30 mb-3" />
                  <p className="font-medium text-foreground">Queue is empty</p>
               </div>
             ) : (
               <AnimatePresence>
-                {rows.map((order) => {
+                {rows.filter(r => tab === "COLLECTION" ? r.status === "PENDING" : r.status === "IN_PROGRESS").map((order) => {
                   const isSelected = selectedOrder?._id === order._id;
                   const patientName = order.patient?.name || "Unknown Patient";
                   
@@ -321,25 +346,50 @@ export function CollectionPanel() {
                       animate={{ opacity: 1, scale: 1 }}
                       className="flex-1 flex flex-col items-center justify-center text-center bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8"
                     >
-                      <div className="size-16 rounded-full bg-emerald-500 flex items-center justify-center text-white mb-6 shadow-xl shadow-emerald-500/20">
-                        <Check className="size-8" strokeWidth={3} />
+                      {/* Accession Ticket UI */}
+                      <div className="mb-6 p-6 bg-white rounded-xl shadow-sm border border-emerald-500/30 w-full max-w-sm mx-auto relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-3">Accession ID / Barcode</p>
+                        
+                        <div className="flex justify-center items-center h-16 w-full opacity-60 mb-3 grayscale flex-col space-y-[1px]">
+                           {/* Decorative fake barcode lines */}
+                           <div className="flex h-10 w-full justify-center">
+                              {Array.from({ length: 30 }).map((_, i) => (
+                                <div key={i} className="h-full bg-slate-800" style={{ width: `${Math.random() * 4 + 1}px`, margin: '0 1px' }} />
+                              ))}
+                           </div>
+                           <p className="font-mono text-xl font-bold tracking-widest text-slate-800">{selectedOrder.accessionNumber || selectedOrder._id.slice(-8)}</p>
+                        </div>
+                        
+                        <div className="text-left border-t border-slate-100 pt-3 flex justify-between items-end">
+                           <div>
+                             <p className="font-bold text-sm text-slate-800">{selectedOrder.patient?.name}</p>
+                             <p className="text-[10px] text-slate-500 font-mono mt-0.5">{selectedOrder.testName}</p>
+                           </div>
+                           <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">PAID</span>
+                        </div>
                       </div>
-                      <h2 className="font-display text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">Sample Collected</h2>
-                      <p className="text-muted-foreground">The test has been billed and sample marked as collected.</p>
+
+                      <h2 className="font-display text-xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">Sample Labeled & Collected</h2>
+                      <p className="text-muted-foreground text-sm max-w-md">Please upload the finalized diagnostic PDF report below once the analysis is complete. <br/> <strong className="text-foreground">Uploaded reports will be sent to the Validation panel.</strong></p>
                       
                       <div className="mt-8 flex gap-3">
-                         <label className="cursor-pointer relative">
+                         <label className={`cursor-pointer relative transition-all ${isUploading[selectedOrder._id] ? 'opacity-70 pointer-events-none' : ''}`}>
                            <input
                              type="file"
                              className="absolute hidden"
                              accept=".pdf,image/*,.doc,.docx"
                              onChange={(e) => handleUpload(selectedOrder._id, e)}
+                             disabled={isUploading[selectedOrder._id]}
                            />
-                           <span className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90">
-                             <UploadCloud className="size-3.5" /> Upload PDF Result
+                           <span className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md px-5 text-sm font-bold bg-primary text-primary-foreground shadow-sm hover:bg-primary/90">
+                             {isUploading[selectedOrder._id] ? (
+                               <><Loader2 className="size-4 animate-spin" /> Uploading...</>
+                             ) : (
+                               <><UploadCloud className="size-4" /> Upload Result PDF</>
+                             )}
                            </span>
                          </label>
-                         <ActionButton className="bg-background" onClick={() => setSelectedOrder(null)}>Next Patient</ActionButton>
                       </div>
                     </motion.div>
                   ) : (

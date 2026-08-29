@@ -29,6 +29,28 @@ export const getPendingPrescriptions = async (_req: Request, res: Response): Pro
   }
 };
 
+export const getPrescriptionHistory = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const consultations = await Consultation.find({
+      "medicines.isDispensed": true,
+    })
+      .populate("patient", "name phone")
+      .populate("doctor", "name")
+      .sort({ updatedAt: -1 });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      prescriptions: consultations,
+    });
+  } catch (error) {
+    console.error("Error in getPrescriptionHistory:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error fetching prescription history",
+    });
+  }
+};
+
 /**
  * PATCH /api/v1/pharmacy/prescriptions/:consultationId/dispense
  * Mark a specific medicine as dispensed in a consultation

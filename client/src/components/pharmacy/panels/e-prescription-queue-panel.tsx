@@ -8,10 +8,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, X, Pill, ShieldCheck, CreditCard, Banknote, QrCode, Smartphone, Loader2, ArrowRight, ActivitySquare, AlertCircle, Search, Plus, Minus, Send } from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { fetchPendingPrescriptionsApi, dispenseMedicineApi, createPharmacyBillApi, PendingPrescriptionRecord } from "@/lib/api/pharmacy";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
+import { OpdReceiptModal } from "@/components/doctor/shared/opd-receipt-modal";
+import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 
 // Local types for POS cart state
 type CartItem = {
@@ -42,6 +43,7 @@ export function RxQueuePanel() {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState("");
+  const [showReceipt, setShowReceipt] = useState(false);
 
   const loadPrescriptions = async () => {
     try {
@@ -305,9 +307,18 @@ export function RxQueuePanel() {
                         <ShieldCheck className="size-5 text-emerald-500" />
                         <h2 className="font-display text-2xl font-bold">Checkout Cart</h2>
                       </div>
-                      <p className="text-muted-foreground text-sm max-w-lg">
-                        Manage items for <span className="font-semibold text-foreground">{selectedRx.patient?.name}</span>. Set prices and adjust quantities.
-                      </p>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <p className="text-muted-foreground text-sm max-w-lg">
+                          Manage items for <span className="font-semibold text-foreground">{selectedRx.patient?.name}</span>. Set prices and adjust quantities.
+                        </p>
+                        <button 
+                          onClick={() => setShowReceipt(true)}
+                          className="text-xs px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-md transition-colors border border-emerald-200 flex items-center gap-1 font-semibold shadow-sm whitespace-nowrap"
+                        >
+                          <ActivitySquare className="size-3.5" />
+                          View Full Receipt
+                        </button>
+                      </div>
                     </div>
                     
                     {!isPaid && (
@@ -601,17 +612,25 @@ export function RxQueuePanel() {
               </motion.div>
             </AnimatePresence>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center p-8">
-              <div className="size-24 rounded-full bg-muted/50 flex items-center justify-center mb-6 shadow-inner">
-                 <ShieldCheck className="size-10 text-muted-foreground/30" />
-              </div>
-              <h2 className="font-display text-2xl font-bold text-foreground mb-2">Pharmacy POS</h2>
-              <p className="text-muted-foreground max-w-sm leading-relaxed">Select a prescription from the queue on the left to set prices, manage quantities, and collect payment.</p>
+            <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-card/30">
+              <Banknote className="size-16 text-muted-foreground/20 mb-4" />
+              <h3 className="font-display text-2xl font-bold text-foreground mb-2">No Rx Selected</h3>
+              <p className="text-muted-foreground max-w-sm">
+                Select a pending prescription from the queue to view its contents, add items, and process the checkout.
+              </p>
             </div>
           )}
         </div>
-
       </div>
+      
+      {showReceipt && selectedRx && (
+        <OpdReceiptModal
+          consultation={selectedRx}
+          patient={selectedRx.patient}
+          doctor={selectedRx.doctor}
+          onClose={() => setShowReceipt(false)}
+        />
+      )}
     </section>
   );
 }

@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { OpdReceiptModal } from "@/components/doctor/shared/opd-receipt-modal";
 
 export function AppointmentsPanel() {
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
@@ -203,16 +204,17 @@ export function AppointmentsPanel() {
                       <button
                         type="button"
                         onClick={() => {
-                          const note = consultations.find(c => (c as any).appointment === a._id);
+                          const note = consultations.find(c => (c as any).appointment === a._id || (c as any).appointment?._id === a._id);
                           if (note) {
-                            setSelectedConsultation(note);
+                            // Attach the doctor info from the appointment so the receipt can display it
+                            setSelectedConsultation({ ...note, doctor: a.doctor } as any);
                           } else {
                             toast.info("Clinical note not available yet for this appointment.");
                           }
                         }}
                         className="w-full flex items-center justify-center gap-2 text-xs font-medium text-cyan-600 dark:text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 py-2 rounded-md transition-all"
                       >
-                        <FileText className="size-3.5" /> View Clinical Note
+                        <FileText className="size-3.5" /> View Receipt
                       </button>
                     ) : null}
                   </div>
@@ -256,33 +258,14 @@ export function AppointmentsPanel() {
         )}
       </div>
 
-      <Dialog open={!!selectedConsultation} onOpenChange={(open: boolean) => !open && setSelectedConsultation(null)}>
-        <DialogContent className="sm:max-w-125">
-          <DialogHeader>
-            <DialogTitle>Clinical Note</DialogTitle>
-          </DialogHeader>
-          {selectedConsultation && (
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-semibold mb-1">Diagnosis</h4>
-                <p className="text-sm text-muted-foreground">{selectedConsultation.diagnosis || "No diagnosis provided."}</p>
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold mb-1">Prescribed Medicines</h4>
-                {selectedConsultation.medicines?.length > 0 ? (
-                  <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                    {selectedConsultation.medicines.map((m: any, i: number) => (
-                      <li key={i}>{m.name} - {m.dosage} ({m.frequency})</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No medicines prescribed.</p>
-                )}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {selectedConsultation && (
+        <OpdReceiptModal
+          consultation={selectedConsultation}
+          patient={data?.profile}
+          doctor={(selectedConsultation as any).doctor}
+          onClose={() => setSelectedConsultation(null)}
+        />
+      )}
     </section>
   );
 }

@@ -80,6 +80,7 @@ export const saveConsultation = async (req: Request, res: Response) => {
       consultation.diagnosis = diagnosis;
       consultation.advice = advice;
       consultation.medicines = medicines;
+      if (diagnosticOrders) consultation.diagnosticOrders = diagnosticOrders;
       consultation.followUpDate = followUpDate;
       consultation.status = status;
       await consultation.save();
@@ -94,6 +95,7 @@ export const saveConsultation = async (req: Request, res: Response) => {
         advice,
         followUpDate,
         medicines,
+        diagnosticOrders,
         status,
       });
     }

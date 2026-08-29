@@ -22,6 +22,11 @@ export interface IConsultation extends Document {
   diagnosis?: string;
   advice?: string; // diet, lifestyle, etc.
   medicines: IMedicine[];
+  diagnosticOrders?: {
+    testType: string;
+    testName: string;
+    clinicalNotes?: string;
+  }[];
   followUpDate?: Date;
   status: ConsultationStatus;
   createdAt: Date;
@@ -47,6 +52,14 @@ const consultationSchema = new Schema<IConsultation>(
     advice: { type: String },
     followUpDate: { type: Date },
     medicines: { type: [medicineSchema], default: [] },
+    diagnosticOrders: { 
+      type: [{
+        testType: { type: String },
+        testName: { type: String },
+        clinicalNotes: { type: String }
+      }], 
+      default: [] 
+    },
     status: {
       type: String,
       enum: Object.values(ConsultationStatus),

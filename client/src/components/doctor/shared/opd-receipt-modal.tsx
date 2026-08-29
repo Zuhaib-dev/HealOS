@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Printer, Phone, MapPin, Pill, Syringe, ClipboardList, Calendar, Download, Loader2 } from "lucide-react";
+import { X, Printer, Phone, MapPin, Pill, Syringe, ClipboardList, Calendar, Download, Loader2, Microscope } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { toast } from "sonner";
 
@@ -168,6 +168,28 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
                 </div>
               )}
             </div>
+
+            {/* Lab / Diagnostic Orders */}
+            {consultation.diagnosticOrders && consultation.diagnosticOrders.length > 0 && (
+              <div className="mb-10 relative z-10">
+                <p className="text-[10px] sm:text-xs uppercase font-bold text-emerald-600 tracking-wider mb-4 flex items-center gap-2 border-b-2 border-emerald-100 pb-3">
+                  <span className="p-1.5 bg-emerald-100 rounded-md text-emerald-700"><Microscope className="size-3.5 sm:size-4" /></span> Diagnostic Tests Ordered
+                </p>
+                <div className="space-y-3">
+                  {consultation.diagnosticOrders.map((order: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <div>
+                        <p className="font-bold text-sm text-slate-900">{order.testName}</p>
+                        {order.clinicalNotes && <p className="text-xs text-slate-500 italic mt-0.5">{order.clinicalNotes}</p>}
+                      </div>
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-white border border-slate-200 rounded text-slate-600">
+                        {order.testType}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Prescription */}
             <div className="mb-10 relative z-10">

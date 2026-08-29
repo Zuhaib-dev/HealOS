@@ -515,7 +515,7 @@ export function CollectionPanel() {
                            <input
                              type="file"
                              className="absolute hidden"
-                             accept=".pdf,image/*,.doc,.docx"
+                             accept=".pdf,image/*"
                              onChange={(e) => handleUpload(selectedOrder._id, e)}
                              disabled={isUploading[selectedOrder._id]}
                            />

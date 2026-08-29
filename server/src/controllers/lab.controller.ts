@@ -4,6 +4,7 @@ import { getIO } from "../socket.js";
 import { AppError } from "../middleware/error-handler.js";
 import fs from "fs";
 import ImageKit from "imagekit";
+import { envConfig } from "../config/env.js";
 
 // Initialize ImageKit
 const imagekit = new ImageKit({
@@ -31,14 +32,24 @@ export const uploadLabReport = async (req: Request, res: Response) => {
 
     let fileUrl = "";
     if (file) {
-      const fileBuffer = await fs.promises.readFile(file.path);
-      const uploadResponse = await imagekit.upload({
-        file: fileBuffer,
-        fileName: `lab_report_${order._id}_${Date.now()}`,
-        folder: "/hms/reports",
-      });
-      fileUrl = uploadResponse.url;
-      fs.unlinkSync(file.path);
+      try {
+        if (process.env.IMAGEKIT_PUBLIC_KEY && process.env.IMAGEKIT_PUBLIC_KEY !== "public_key") {
+          const fileBuffer = await fs.promises.readFile(file.path);
+          const uploadResponse = await imagekit.upload({
+            file: fileBuffer,
+            fileName: `lab_report_${order._id}_${Date.now()}`,
+            folder: "/hms/reports",
+          });
+          fileUrl = uploadResponse.url;
+          fs.unlinkSync(file.path); // clean up local after cloud upload
+        } else {
+          // No ImageKit keys -> Fallback to serving the local file that Multer saved
+          fileUrl = `http://localhost:${envConfig.PORT || 5000}/uploads/reports/${file.filename}`;
+        }
+      } catch (err) {
+        console.warn("Cloud upload failed, falling back to local file...", err);
+        fileUrl = `http://localhost:${envConfig.PORT || 5000}/uploads/reports/${file.filename}`;
+      }
     }
 
     const report = await DiagnosticReport.create({

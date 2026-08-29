@@ -44,6 +44,7 @@ export function RxQueuePanel() {
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState("");
   const [showReceipt, setShowReceipt] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadPrescriptions = async () => {
     try {
@@ -231,6 +232,8 @@ export function RxQueuePanel() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search MRN, Patient Name..." 
                 className="w-full bg-card/60 border border-border/60 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-primary/50 transition-colors"
               />
@@ -245,7 +248,9 @@ export function RxQueuePanel() {
               </div>
             ) : (
               <AnimatePresence>
-                {rows.map((rx) => {
+                {rows
+                  .filter((rx) => rx.patient?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || rx._id.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map((rx) => {
                   const isSelected = selectedRx?._id === rx._id;
                   const undispensedCount = rx.medicines.filter(m => !m.isDispensed).length;
                   
@@ -353,6 +358,9 @@ export function RxQueuePanel() {
                               type="number"
                               value={customPrice}
                               onChange={(e) => setCustomPrice(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") addCustomItem();
+                              }}
                               placeholder="Price"
                               className="w-24 bg-card border border-border/60 rounded-lg pl-7 pr-3 py-2 text-sm outline-none focus:border-primary/50 font-mono"
                             />

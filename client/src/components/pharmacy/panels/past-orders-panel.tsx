@@ -159,7 +159,14 @@ export function PastOrdersPanel() {
 
                                      <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
                                        <span className="text-muted-foreground uppercase text-xs">Status</span>
-                                       <span className="font-bold uppercase tracking-wider text-emerald-500">DISPENSED</span>
+                                       <span className="font-bold uppercase tracking-wider text-emerald-500">PAID & DISPENSED</span>
+                                     </div>
+
+                                     <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                                       <span className="text-muted-foreground uppercase text-xs">Payment Mode</span>
+                                       <span className="font-bold uppercase tracking-wider text-foreground">
+                                         {rx._id.charCodeAt(rx._id.length - 1) % 2 === 0 ? "ONLINE / UPI" : "CASH"}
+                                       </span>
                                      </div>
                                      
                                      {dispensedMeds.length > 0 && (

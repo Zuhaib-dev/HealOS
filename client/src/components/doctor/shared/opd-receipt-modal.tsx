@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Printer, Phone, MapPin, Pill, Syringe, ClipboardList, Calendar, Download, Loader2, Microscope } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
@@ -15,6 +15,14 @@ interface OpdReceiptModalProps {
 
 export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdReceiptModalProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   if (!consultation) return null;
 

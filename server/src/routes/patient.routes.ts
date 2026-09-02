@@ -7,7 +7,7 @@ import { upload } from "../controllers/radiology.controller.js";
 const router = Router();
 
 router.use(verifyToken);
-router.use(requireRole([UserRole.PATIENT, UserRole.ADMIN]));
+router.use(requireRole([UserRole.PATIENT]));
 
 router.get("/dashboard", getPatientDashboard);
 router.put("/profile", updatePatientProfile);

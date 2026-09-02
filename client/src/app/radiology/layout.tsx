@@ -3,8 +3,8 @@ import { RadiologyShell } from "@/components/radiology/radiology-shell";
 
 export default function RadiologyLayout({ children }: { children: React.ReactNode }) {
   return (
-    <RoleGuard allowedRoles={["RADIOLOGIST", "ADMIN"]}>
-      <RadiologyShell  >
+    <RoleGuard allowedRoles={["RADIOLOGIST"]}>
+      <RadiologyShell>
         {children}
       </RadiologyShell>
     </RoleGuard>

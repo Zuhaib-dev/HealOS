@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getSafeRedirectPath } from "@/lib/auth-navigation";
+import { getSafeRedirectPath, getRoleDashboardPath, isPathAllowedForRole } from "@/lib/auth-navigation";
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -48,6 +48,15 @@ export function middleware(request: NextRequest) {
     const response = NextResponse.next();
     response.headers.set("Vary", "Accept, Accept-Encoding");
     return response;
+  }
+
+  // Enforce role workspace boundaries (e.g. ADMIN cannot view /doctor or /patient)
+  const roleCookie = request.cookies.get("healos_role")?.value;
+  if (roleCookie) {
+    if (!isPathAllowedForRole(pathname, roleCookie)) {
+      const correctPath = getRoleDashboardPath(roleCookie);
+      return NextResponse.redirect(new URL(correctPath, request.url));
+    }
   }
 
   const response = NextResponse.next();

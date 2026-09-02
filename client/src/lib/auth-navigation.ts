@@ -102,3 +102,34 @@ export function getSafeRedirectPath(
   }
   return getRoleDashboardPath(role);
 }
+
+/**
+ * Checks whether an authenticated role is permitted to access a given workspace path.
+ * Enforces strict role boundaries (e.g. ADMIN can only access /admin and public paths).
+ */
+export function isPathAllowedForRole(pathname: string, role?: string | null): boolean {
+  if (!role) return false;
+  const normalized = role.toUpperCase();
+
+  // Admin cannot enter clinical operational panels
+  if (normalized === "ADMIN") {
+    const isClinicalWorkspace =
+      pathname.startsWith("/doctor") ||
+      pathname.startsWith("/patient") ||
+      pathname.startsWith("/nurse") ||
+      pathname.startsWith("/pharmacy") ||
+      pathname.startsWith("/radiology") ||
+      pathname.startsWith("/emergency") ||
+      pathname.startsWith("/lab") ||
+      pathname.startsWith("/reception");
+    return !isClinicalWorkspace;
+  }
+
+  // Non-admins cannot enter /admin
+  if (pathname.startsWith("/admin")) {
+    return false;
+  }
+
+  return true;
+}
+

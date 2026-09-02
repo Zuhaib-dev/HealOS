@@ -24,9 +24,9 @@ const upload = multer({ dest: "uploads/" });
 
 const router = Router();
 
-// Only DOCTOR and ADMIN can access these routes
+// Only DOCTOR can access these routes
 router.use(verifyToken);
-router.use(requireRole([UserRole.DOCTOR, UserRole.ADMIN]));
+router.use(requireRole([UserRole.DOCTOR]));
 
 router.get("/appointments", getAppointments);
 router.post("/consultations", saveConsultation);

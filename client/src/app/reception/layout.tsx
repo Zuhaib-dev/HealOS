@@ -2,6 +2,7 @@
 
 import { UserPlus, Users, Monitor, LayoutDashboard } from "lucide-react";
 
+import { RoleGuard } from "@/components/auth/role-guard";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 
 const sections = [
@@ -13,7 +14,8 @@ const sections = [
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   return (
-    <WorkspaceShell
+    <RoleGuard allowedRoles={["RECEPTIONIST"]}>
+      <WorkspaceShell
       navId="reception"
       breadcrumb="Access & flow / Front desk (OPD)"
       searchPlaceholder="Search MRN, mobile, ABHA"
@@ -27,5 +29,6 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
     >
       {children}
     </WorkspaceShell>
+    </RoleGuard>
   );
 }

@@ -1,140 +1,204 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
-import { Ambulance, Siren, AlertTriangle, Check } from "lucide-react";
+import { Siren, AlertTriangle, Check, RefreshCw, Printer } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Card, LiveDot, Pill, StatGrid, Td, Th, Toggle, type Tone } from "@/components/workspace/ui";
-
-type Esi = 1 | 2 | 3 | 4 | 5;
-
-const triage: {
-  id: string;
-  patient: string;
-  age: number;
-  sex: "M" | "F";
-  complaint: string;
-  esi: Esi;
-  arrived: string;
-  waitMin: number;
-  area: string;
-  obs: string;
-  disposition: "awaiting triage" | "in bay" | "awaiting bed" | "for discharge";
-}[] = [
-  { id: "ED-4412", patient: "Unknown male", age: 55, sex: "M", complaint: "Cardiac arrest · ROSC en route", esi: 1, arrived: "13:58", waitMin: 0, area: "Resus 1", obs: "HR 118 · BP 84/50 · SpO2 91%", disposition: "in bay" },
-  { id: "ED-4411", patient: "Sana Qureshi", age: 34, sex: "F", complaint: "Severe asthma, silent chest", esi: 2, arrived: "13:44", waitMin: 3, area: "Resus 2", obs: "RR 32 · SpO2 88% · PEF 30%", disposition: "in bay" },
-  { id: "ED-4409", patient: "Tom Whelan", age: 68, sex: "M", complaint: "Central chest pain, ST changes", esi: 2, arrived: "13:31", waitMin: 6, area: "Acute 4", obs: "HR 96 · BP 148/88 · Trop pending", disposition: "awaiting bed" },
-  { id: "ED-4408", patient: "Meera Joshi", age: 41, sex: "F", complaint: "RIF pain, vomiting", esi: 3, arrived: "13:10", waitMin: 32, area: "Majors 7", obs: "HR 102 · T 38.1", disposition: "in bay" },
-  { id: "ED-4405", patient: "Kofi Mensah", age: 23, sex: "M", complaint: "Ankle injury, weight-bearing", esi: 4, arrived: "12:41", waitMin: 61, area: "Minors", obs: "obs normal", disposition: "in bay" },
-  { id: "ED-4402", patient: "Elsie Barnes", age: 79, sex: "F", complaint: "Mechanical fall, no LOC", esi: 3, arrived: "12:12", waitMin: 88, area: "Waiting", obs: "HR 84 · BP 132/70", disposition: "awaiting triage" },
-];
-
-const esiTone = (e: Esi): Tone => (e <= 2 ? "bad" : e === 3 ? "warn" : "mute");
-
-const edStats = [
-  { label: "In department", value: "34", note: "6 majors · 2 resus" },
-  { label: "Awaiting triage", value: "2", note: "longest 88 min" },
-  { label: "Time to clinician", value: "18 min", note: "median, target 30" },
-  { label: "4-hour breaches", value: "3", note: "2 awaiting bed" },
-];
-
-
-/* ---------- 04 major incident ---------- */
-
-const cascade = [
-  "Declare major incident to switchboard (dial 2222)",
-  "Open casualty clearing area and label triage sieve packs",
-  "Stand up second theatre and recall on-call surgical team",
-  "Discharge-to-assess sweep on wards 2, 3 and 5",
-  "Open blood bank major haemorrhage protocol",
-  "Notify regional control and press office",
-];
+import { Card, Pill, Toggle } from "@/components/workspace/ui";
+import { getSocket } from "@/lib/socket";
+import {
+  fetchMajorIncidentApi,
+  toggleMajorIncidentApi,
+  toggleCascadeStepApi,
+  type MajorIncidentData,
+} from "@/lib/api/emergency";
 
 export function MajorIncidentPanel() {
-  const [armed, setArmed] = useState(false);
-  const [steps, setSteps] = useState<boolean[]>(cascade.map(() => false));
-  const doneCount = steps.filter(Boolean).length;
+  const [incident, setIncident] = useState<MajorIncidentData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isToggling, setIsToggling] = useState(false);
+
+  const loadIncident = useCallback(async () => {
+    try {
+      const res = await fetchMajorIncidentApi();
+      if (res.success && res.incident) {
+        setIncident(res.incident);
+      }
+    } catch (err) {
+      console.error("Failed to load major incident protocol:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadIncident();
+
+    const socket = getSocket();
+    const handleIncidentUpdate = () => {
+      loadIncident();
+    };
+
+    socket.on("emergency:incident_updated", handleIncidentUpdate);
+    return () => {
+      socket.off("emergency:incident_updated", handleIncidentUpdate);
+    };
+  }, [loadIncident]);
+
+  const handleToggleArmed = async (targetArmed: boolean) => {
+    setIsToggling(true);
+    try {
+      const res = await toggleMajorIncidentApi(targetArmed);
+      if (res.success && res.incident) {
+        setIncident(res.incident);
+      }
+    } catch (err) {
+      console.error("Failed to toggle major incident:", err);
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
+  const handleToggleStep = async (stepIdx: number, currentCompleted: boolean) => {
+    try {
+      // Optimistic update
+      if (incident) {
+        const updatedSteps = [...incident.steps];
+        if (updatedSteps[stepIdx]) {
+          updatedSteps[stepIdx].completed = !currentCompleted;
+          setIncident({ ...incident, steps: updatedSteps });
+        }
+      }
+
+      await toggleCascadeStepApi(stepIdx, !currentCompleted);
+      await loadIncident();
+    } catch (err) {
+      console.error("Failed to toggle cascade step:", err);
+      await loadIncident();
+    }
+  };
+
+  const isArmed = Boolean(incident?.isArmed);
+  const steps = incident?.steps || [];
+  const doneCount = steps.filter((s) => s.completed).length;
 
   return (
-    <section>
+    <section className="relative">
       <PanelHeader
         index="04 / escalation"
         title="Disaster / mass-casualty mode"
         note="Arming this mode switches the department to triage-sieve capture, releases surge capacity and drives the action cascade."
-        actions={<ActionButton tone="solid">Print cascade card</ActionButton>}
+        actions={
+          <div className="flex items-center gap-2">
+            <ActionButton onClick={loadIncident}>
+              <RefreshCw className="mr-1 inline size-3" />
+              Refresh
+            </ActionButton>
+            <ActionButton tone="solid" onClick={() => window.print()}>
+              <Printer className="mr-1 inline size-3.5" />
+              Print cascade card
+            </ActionButton>
+          </div>
+        }
       />
 
-      <div className="grid gap-px lg:grid-cols-[1fr_1.2fr]" style={{ background: "var(--hairline)" }}>
-        <div className="bg-background p-5 sm:p-8">
-          <div className="hairline flex items-center justify-between gap-4 p-5">
-            <div>
-              <p className="mono-label text-muted-foreground">Major incident mode</p>
-              <p className={`mt-1 font-mono text-2xl font-bold ${armed ? "text-destructive" : ""}`}>
-                {armed ? "ARMED" : "STANDBY"}
-              </p>
-            </div>
-            <Toggle on={armed} onChange={setArmed} />
-          </div>
-
-          {armed && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-5">
-              <Card>
-                <p className="mono-label text-destructive">
-                  <Siren className="mr-1 inline size-3 animate-pulse" />
-                  Surge capacity released
+      {isLoading ? (
+        <div className="p-12 text-center mono-label text-muted-foreground animate-pulse">
+          Loading major incident protocols...
+        </div>
+      ) : (
+        <div className="grid gap-px lg:grid-cols-[1fr_1.2fr]" style={{ background: "var(--hairline)" }}>
+          <div className="bg-background p-5 sm:p-8">
+            <div className={`hairline flex items-center justify-between gap-4 p-5 transition-colors ${
+              isArmed ? "border-destructive/60 bg-destructive/5" : ""
+            }`}>
+              <div>
+                <p className="mono-label text-muted-foreground text-xs">Major incident protocol</p>
+                <p className={`mt-1 font-mono text-2xl font-bold ${isArmed ? "text-destructive" : ""}`}>
+                  {isArmed ? "ARMED — MASS CASUALTY" : "STANDBY"}
                 </p>
-                <div className="mt-3 grid gap-4 sm:grid-cols-3">
-                  {[
-                    ["Surge beds", "+42"],
-                    ["Theatres armed", "3"],
-                    ["Staff recalled", "68"],
-                  ].map(([k, v]) => (
-                    <div key={k}>
-                      <p className="font-mono text-2xl font-bold">{v}</p>
-                      <p className="mono-label text-muted-foreground">{k}</p>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </motion.div>
-          )}
+                {incident?.armedAt && (
+                  <p className="mono-label text-muted-foreground mt-1 text-xs">
+                    Activated: {new Date(incident.armedAt).toLocaleTimeString()} by {incident.armedBy}
+                  </p>
+                )}
+              </div>
+              <Toggle on={isArmed} onChange={(val) => !isToggling && handleToggleArmed(val)} />
+            </div>
 
-          <div className="mono-label text-muted-foreground mt-5 space-y-2">
-            <p>
-              <AlertTriangle className="mr-1 inline size-3" />
-              Triage sieve: P1 immediate · P2 urgent · P3 delayed · P4 expectant
-            </p>
-            <p>Commander: ED consultant · Loggist: assigned at activation</p>
-          </div>
-        </div>
+            {isArmed && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-5">
+                <Card>
+                  <p className="mono-label text-destructive font-bold text-xs">
+                    <Siren className="mr-1 inline size-3.5 animate-pulse" />
+                    Surge capacity released
+                  </p>
+                  <div className="mt-3 grid gap-4 sm:grid-cols-3">
+                    {[
+                      ["Surge beds", `+${incident?.surgeBeds || 42}`],
+                      ["Theatres armed", String(incident?.theatresArmed || 3)],
+                      ["Staff recalled", String(incident?.staffRecalled || 68)],
+                    ].map(([k, v]) => (
+                      <div key={k}>
+                        <p className="font-mono text-2xl font-bold">{v}</p>
+                        <p className="mono-label text-muted-foreground text-xs">{k}</p>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </motion.div>
+            )}
 
-        <div className="bg-background p-5 sm:p-8">
-          <div className="flex items-center justify-between">
-            <p className="mono-label text-muted-foreground">Action cascade</p>
-            <Pill tone={doneCount === cascade.length ? "ok" : "warn"}>
-              {doneCount} / {cascade.length}
-            </Pill>
+            <div className="mono-label text-muted-foreground mt-5 space-y-2 text-xs">
+              <p>
+                <AlertTriangle className="mr-1 inline size-3 text-amber-500" />
+                Triage sieve: P1 immediate · P2 urgent · P3 delayed · P4 expectant
+              </p>
+              <p>Commander: ED consultant · Loggist: assigned at activation</p>
+            </div>
           </div>
-          <ul className="mt-4 space-y-2">
-            {cascade.map((c, i) => (
-              <li key={c}>
-                <button
-                  type="button"
-                  onClick={() => setSteps((s) => s.map((x, j) => (j === i ? !x : x)))}
-                  className="hairline flex w-full items-center gap-3 p-3 text-left"
-                >
-                  <span
-                    className={`grid size-4 shrink-0 place-items-center ${steps[i] ? "bg-accent text-background" : "hairline"}`}
+
+          <div className="bg-background p-5 sm:p-8">
+            <div className="flex items-center justify-between">
+              <p className="mono-label text-muted-foreground text-xs">Action cascade checklist</p>
+              <Pill tone={doneCount === steps.length && steps.length > 0 ? "ok" : "warn"}>
+                {doneCount} / {steps.length} completed
+              </Pill>
+            </div>
+            <ul className="mt-4 space-y-2">
+              {steps.map((step, i) => (
+                <li key={step.text}>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleStep(i, step.completed)}
+                    className={`hairline flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-foreground/3 ${
+                      step.completed ? "bg-accent/5 border-accent/40" : ""
+                    }`}
                   >
-                    {steps[i] && <Check className="size-3" />}
-                  </span>
-                  <span className="text-sm">{c}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+                    <span
+                      className={`grid size-4 shrink-0 place-items-center rounded-xs ${
+                        step.completed ? "bg-accent text-background" : "hairline"
+                      }`}
+                    >
+                      {step.completed && <Check className="size-3" />}
+                    </span>
+                    <div className="flex-1">
+                      <span className={`text-sm ${step.completed ? "line-through text-muted-foreground" : ""}`}>
+                        {step.text}
+                      </span>
+                      {step.completed && step.completedBy && (
+                        <p className="mono-label text-accent text-xs mt-0.5">
+                          ✓ Signed off by {step.completedBy}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

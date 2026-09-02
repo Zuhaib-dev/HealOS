@@ -52,7 +52,9 @@ export function WorkspaceShell({
 
   const defaultSectionId = sections[0]?.id;
   const isSectionActive = (id: string) => {
-    return id === defaultSectionId ? pathname === `/${navId}` : pathname.startsWith(`/${navId}/${id}`);
+    return id === defaultSectionId
+      ? pathname === `/${navId}` || pathname === `/${navId}/${id}`
+      : pathname.startsWith(`/${navId}/${id}`);
   };
 
   const mainMobileTabs = sections.slice(0, 4);

@@ -28,6 +28,7 @@ emergencyRouter.use(verifyToken);
 emergencyRouter.use(
   requireRole([
     UserRole.EMERGENCY_DOCTOR,
+    UserRole.ADMIN,
     UserRole.DOCTOR,
     UserRole.NURSE,
   ])

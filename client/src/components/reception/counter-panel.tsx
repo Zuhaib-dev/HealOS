@@ -126,7 +126,7 @@ export function CounterPanel() {
                                <p className="mono-label text-[10px] text-muted-foreground">{b.patient?.phone || "No phone"}</p>
                                <span className="text-muted-foreground/30">•</span>
                                <span className="mono-label text-[10px] text-muted-foreground truncate max-w-30 sm:max-w-50">
-                                 {b.items.map(i => i.description).join(", ")}
+                                 {b.items?.map((i: any) => i.description).join(", ") || "Consultation"}
                                </span>
                             </div>
                           </div>

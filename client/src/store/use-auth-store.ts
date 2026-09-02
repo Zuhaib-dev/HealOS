@@ -39,6 +39,21 @@ interface AuthState {
   setHasHydrated: (state: boolean) => void;
 }
 
+const syncAuthCookies = (role?: string | null, hasToken: boolean = false) => {
+  if (typeof document === "undefined") return;
+  try {
+    if (role && hasToken) {
+      document.cookie = `healos_role=${encodeURIComponent(role)}; path=/; max-age=604800; SameSite=Lax`;
+      document.cookie = `healos_token=1; path=/; max-age=604800; SameSite=Lax`;
+    } else {
+      document.cookie = "healos_role=; path=/; max-age=0; SameSite=Lax";
+      document.cookie = "healos_token=; path=/; max-age=0; SameSite=Lax";
+    }
+  } catch {
+    // Ignore cookie write errors
+  }
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -47,23 +62,35 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       _hasHydrated: false,
 
-      setAuth: (user, token) =>
+      setAuth: (user, token) => {
+        syncAuthCookies(user.role, Boolean(token));
         set({
           user,
           token,
           isAuthenticated: true,
-        }),
+        });
+      },
 
-      setUser: (user) => set({ user }),
+      setUser: (user) => {
+        set((state) => {
+          syncAuthCookies(user.role, Boolean(state.token));
+          return { user };
+        });
+      },
 
       updateUser: (partialUser) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, ...partialUser } : null,
-        })),
+        set((state) => {
+          const updatedUser = state.user ? { ...state.user, ...partialUser } : null;
+          if (updatedUser) {
+            syncAuthCookies(updatedUser.role, Boolean(state.token));
+          }
+          return { user: updatedUser };
+        }),
 
       setToken: (token) => set({ token }),
 
       logout: () => {
+        syncAuthCookies(null, false);
         if (typeof window !== "undefined") {
           try {
             localStorage.removeItem("healos-auth-storage");
@@ -89,7 +116,13 @@ export const useAuthStore = create<AuthState>()(
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
+        if (state?.isAuthenticated && state?.user?.role && state?.token) {
+          syncAuthCookies(state.user.role, true);
+        } else if (!state?.isAuthenticated) {
+          syncAuthCookies(null, false);
+        }
       },
     }
   )
 );
+

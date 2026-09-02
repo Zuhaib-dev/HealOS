@@ -11,6 +11,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useAuthStore } from "@/store/use-auth-store";
 import { forgotPasswordApi, loginUserApi, resendOtpApi, resetPasswordApi, verifyOtpApi } from "@/lib/api/auth";
+import { getSafeRedirectPath } from "@/lib/auth-navigation";
 import { toast } from "sonner";
 import { Lock, Mail, ArrowRight, ShieldCheck, KeyRound } from "lucide-react";
 import { signIn as nextAuthSignIn } from "next-auth/react";
@@ -51,24 +52,10 @@ export default function LoginClient() {
   }, [step, resendTimer]);
 
   const handleRoleRedirect = (role: string) => {
-    if (callbackUrl) {
-      router.push(callbackUrl);
-      return;
-    }
-    
-    switch (role?.toUpperCase()) {
-      case "ADMIN": router.push("/admin"); break;
-      case "DOCTOR": router.push("/doctor"); break;
-      case "RADIOLOGIST": router.push("/radiology"); break;
-      case "RECEPTIONIST": router.push("/reception"); break;
-      case "PHARMACIST": router.push("/pharmacy"); break;
-      case "NURSE": router.push("/nurse"); break;
-      case "EMERGENCY_DOCTOR": router.push("/emergency"); break;
-      case "LAB_TECHNICIAN": router.push("/lab"); break;
-      case "PATIENT": router.push("/patient"); break;
-      case "USER": default: router.push("/"); break;
-    }
+    const destination = getSafeRedirectPath(role, callbackUrl);
+    router.push(destination);
   };
+
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -11,6 +11,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useAuthStore } from "@/store/use-auth-store";
 import { registerUserApi, verifyOtpApi, resendOtpApi, updatePhoneApi } from "@/lib/api/auth";
+import { getSafeRedirectPath } from "@/lib/auth-navigation";
 import { toast } from "sonner";
 import { Lock, Mail, User, ArrowRight, ShieldCheck, KeyRound, Phone, CheckCircle2 } from "lucide-react";
 
@@ -48,19 +49,10 @@ export default function RegisterClient() {
   }, [step, resendTimer]);
 
   const handleRoleRedirect = (role: string) => {
-    switch (role?.toUpperCase()) {
-      case "ADMIN": router.push("/admin"); break;
-      case "DOCTOR": router.push("/doctor"); break;
-      case "RADIOLOGIST": router.push("/radiology"); break;
-      case "RECEPTIONIST": router.push("/reception"); break;
-      case "PHARMACIST": router.push("/pharmacy"); break;
-      case "NURSE": router.push("/nurse"); break;
-      case "EMERGENCY_DOCTOR": router.push("/emergency"); break;
-      case "LAB_TECHNICIAN": router.push("/lab"); break;
-      case "PATIENT": router.push("/patient"); break;
-      case "USER": default: router.push("/"); break;
-    }
+    const destination = getSafeRedirectPath(role);
+    router.push(destination);
   };
+
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();

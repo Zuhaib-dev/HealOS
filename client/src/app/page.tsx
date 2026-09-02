@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/use-auth-store";
+import { getRoleDashboardPath } from "@/lib/auth-navigation";
 import { SiteHeader } from "@/components/landing/site-header";
 import { Hero } from "@/components/landing/hero";
 import { Features } from "@/components/landing/features";
@@ -21,27 +22,12 @@ export default function LandingPage() {
   useEffect(() => {
     if (!_hasHydrated || !isAuthenticated || !user) return;
 
-    const role = user.role.toUpperCase();
-    if (role === "PATIENT" || role === "LEGACY_PATIENT") {
-      router.replace("/patient");
-    } else if (role === "ADMIN") {
-      router.replace("/admin");
-    } else if (role === "DOCTOR") {
-      router.replace("/doctor");
-    } else if (role === "RADIOLOGIST") {
-      router.replace("/radiology");
-    } else if (role === "RECEPTIONIST") {
-      router.replace("/reception");
-    } else if (role === "PHARMACIST") {
-      router.replace("/pharmacy");
-    } else if (role === "NURSE") {
-      router.replace("/nurse");
-    } else if (role === "EMERGENCY_DOCTOR") {
-      router.replace("/emergency");
-    } else if (role === "LAB_TECHNICIAN") {
-      router.replace("/lab");
+    const destination = getRoleDashboardPath(user.role);
+    if (destination && destination !== "/") {
+      router.replace(destination);
     }
   }, [_hasHydrated, isAuthenticated, user, router]);
+
 
   return (
     <div className="bg-background min-h-screen overflow-x-hidden">

@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ArrowLeft } from "lucide-react";
+import { GuestGuard } from "@/components/auth/guest-guard";
 
 export const metadata: Metadata = {
   title: "Authenticate | HealOS",
@@ -69,9 +71,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <div className="mx-auto w-full max-w-sm">
-          {children}
+          <Suspense
+            fallback={
+              <div className="w-full flex flex-col items-center justify-center py-12 space-y-4 text-xs mono-label text-muted-foreground animate-pulse">
+                Validating workspace credentials...
+              </div>
+            }
+          >
+            <GuestGuard>{children}</GuestGuard>
+          </Suspense>
         </div>
       </div>
     </div>
   );
 }
+

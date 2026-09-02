@@ -113,7 +113,7 @@ export function UsersPanel() {
             setQuery(e.target.value);
             setPage(1);
           }}
-          placeholder="Search name, email or phone"
+          placeholder="Search name, email, phone, or role (e.g. Doctor, Admin)"
           className="mono-label hairline placeholder:text-muted-foreground mr-3 w-full max-w-xs bg-transparent px-3 py-2 outline-none"
         />
         {(

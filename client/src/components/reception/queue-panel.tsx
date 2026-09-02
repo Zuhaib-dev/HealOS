@@ -13,8 +13,8 @@ export function QueuePanel() {
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
 
   const loadQueue = () => {
-    fetchQueueApi().then(res => {
-      if (res.status === "success") {
+    fetchQueueApi().then((res: any) => {
+      if (res.status === "success" && res.data?.appointments) {
         setAppointments(res.data.appointments);
       }
     }).catch(console.error);

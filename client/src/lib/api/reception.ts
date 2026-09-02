@@ -1,92 +1,148 @@
-import apiClient from "../api-client";
+import { apiClient } from "../api-client";
+
+export interface ReceptionOverviewData {
+  registrations: {
+    total: number;
+    newToday: number;
+    repeatToday: number;
+    note: string;
+  };
+  tokens: {
+    waiting: number;
+    avgWaitMinutes: number;
+    note: string;
+  };
+  collections: {
+    total: number;
+    value: string;
+    subValue: string;
+    breakdown: string;
+    note: string;
+  };
+  insurance: {
+    value: string;
+    subValue: string;
+    capturedCount: number;
+    totalChecked: number;
+    note: string;
+  };
+  recentQueue: Array<{
+    id: string;
+    tokenNumber: string;
+    patientName: string;
+    department: string;
+    doctorName: string;
+    timeSlot: string;
+    status: string;
+    waitMinutes: number;
+  }>;
+}
 
 export interface AppointmentRecord {
   _id: string;
-  patient: {
+  token?: string;
+  patient?: {
     _id: string;
-    name: string;
-    phone: string;
+    name?: string;
+    phone?: string;
+    email?: string;
   };
-  doctor: {
+  doctor?: {
     _id: string;
-    name: string;
-    department: string;
+    name?: string;
+    department?: string;
   };
   department: string;
   date: string;
   timeSlot: string;
-  status: string;
+  reason: string;
+  status: "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "IN_CONSULTATION" | "COMPLETED" | "CANCELLED" | string;
+  createdAt: string;
 }
 
 export interface InvoiceItem {
   description: string;
   amount: number;
-  _id?: string;
 }
 
 export interface InvoiceRecord {
   _id: string;
-  patient: {
+  invoiceNumber?: string;
+  patient?: {
     _id: string;
     name?: string;
     firstName?: string;
     lastName?: string;
-    phone: string;
+    phone?: string;
   };
-  issuedBy: string;
-  appointment?: string;
   items: InvoiceItem[];
   totalAmount: number;
-  status: "PENDING" | "PAID" | "CANCELLED";
-  paymentMethod?: "CASH" | "CARD" | "UPI" | "INSURANCE";
-  payer: string;
-  insuranceCoverage: number;
+  status: "PENDING" | "PAID" | "CANCELLED" | string;
+  paymentMethod?: "CASH" | "CARD" | "UPI" | "INSURANCE" | string;
+  payer?: string;
+  insuranceCoverage?: number;
   createdAt: string;
 }
 
-export const registerPatientApi = async (data: {
+export interface RegisterPatientPayload {
   firstName: string;
-  lastName: string;
+  lastName?: string;
   phone: string;
   dateOfBirth?: string;
   gender?: string;
-  abhaNumber?: string;
-  payer: string;
-  policyNumber?: string;
+  address?: string;
   department: string;
-}) => {
-  const response = await apiClient.post<{
-    status: string;
-    data: {
-      patient: any;
-      appointment: AppointmentRecord;
-      token: string;
-      invoice: InvoiceRecord;
-    };
-  }>("/reception/register", data);
-  return response.data;
+  payer?: string;
+}
+
+export const fetchReceptionOverviewApi = async (): Promise<{
+  success: boolean;
+  data: ReceptionOverviewData;
+}> => {
+  const res = await apiClient.get("/reception/overview");
+  return res.data;
 };
 
-export const fetchQueueApi = async () => {
-  const response = await apiClient.get<{
-    status: string;
-    data: { appointments: AppointmentRecord[] };
-  }>("/reception/queue");
-  return response.data;
+export const fetchQueueApi = async (): Promise<{
+  status: string;
+  data: { appointments: AppointmentRecord[] };
+}> => {
+  const res = await apiClient.get("/reception/queue");
+  return res.data;
 };
 
-export const fetchPendingBillsApi = async () => {
-  const response = await apiClient.get<{
-    status: string;
-    data: { invoices: InvoiceRecord[] };
-  }>("/reception/bills/pending");
-  return response.data;
+export const fetchPendingBillsApi = async (): Promise<{
+  status: string;
+  data: { invoices: InvoiceRecord[] };
+}> => {
+  const res = await apiClient.get("/reception/bills/pending");
+  return res.data;
 };
 
-export const payBillApi = async (id: string, paymentMethod: string) => {
-  const response = await apiClient.put<{
-    status: string;
-    data: { invoice: InvoiceRecord };
-  }>(`/reception/bills/${id}/pay`, { paymentMethod });
-  return response.data;
+export const payBillApi = async (
+  invoiceId: string,
+  paymentMethod: string
+): Promise<{
+  status: string;
+  data: { invoice: InvoiceRecord };
+}> => {
+  const res = await apiClient.put(`/reception/bills/${invoiceId}/pay`, {
+    paymentMethod,
+  });
+  return res.data;
+};
+
+export const registerPatientApi = async (
+  payload: RegisterPatientPayload
+): Promise<{
+  status: string;
+  data: {
+    patient: any;
+    appointment: any;
+    token: string;
+    invoice: any;
+  };
+}> => {
+  const res = await apiClient.post("/reception/register", payload);
+  return res.data;
 };

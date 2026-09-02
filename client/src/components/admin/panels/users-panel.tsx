@@ -138,7 +138,7 @@ export function UsersPanel() {
 
       <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] border-collapse">
+          <table className="w-full min-w-200 border-collapse">
             <thead>
               <tr>
               <Th>User</Th>

@@ -488,7 +488,7 @@ export function CollectionPanel() {
                         <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-3">Accession ID / Barcode</p>
                         
-                        <div className="flex justify-center items-center h-16 w-full opacity-60 mb-3 grayscale flex-col space-y-[1px]">
+                        <div className="flex justify-center items-center h-16 w-full opacity-60 mb-3 grayscale flex-col space-y-px">
                            {/* Decorative fake barcode lines */}
                            <div className="flex h-10 w-full justify-center">
                               {Array.from({ length: 30 }).map((_, i) => (

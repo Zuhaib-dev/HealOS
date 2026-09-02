@@ -102,12 +102,12 @@ export function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) =
       role="switch"
       aria-checked={on}
       onClick={() => onChange(!on)}
-      className={`hairline relative h-6 w-11 shrink-0 transition-colors ${on ? "bg-accent/25" : "bg-foreground/[0.04]"}`}
+      className={`hairline relative h-6 w-11 shrink-0 transition-colors ${on ? "bg-accent/25" : "bg-foreground/4"}`}
     >
       <motion.span
         layout
         transition={{ type: "spring", stiffness: 500, damping: 32 }}
-        className={`absolute top-[3px] size-4 ${on ? "bg-accent right-[3px]" : "bg-muted-foreground left-[3px]"}`}
+        className={`absolute top-0.75 size-4 ${on ? "bg-accent right-0.75" : "bg-muted-foreground left-0.75"}`}
       />
     </button>
   );

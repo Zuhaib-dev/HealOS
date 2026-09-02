@@ -111,18 +111,17 @@ export function isPathAllowedForRole(pathname: string, role?: string | null): bo
   if (!role) return false;
   const normalized = role.toUpperCase();
 
-  // Admin cannot enter clinical operational panels
+  // Admin cannot enter individual clinical / patient operational panels
   if (normalized === "ADMIN") {
-    const isClinicalWorkspace =
+    const isRestrictedWorkspace =
       pathname.startsWith("/doctor") ||
       pathname.startsWith("/patient") ||
       pathname.startsWith("/nurse") ||
       pathname.startsWith("/pharmacy") ||
       pathname.startsWith("/radiology") ||
-      pathname.startsWith("/emergency") ||
       pathname.startsWith("/lab") ||
       pathname.startsWith("/reception");
-    return !isClinicalWorkspace;
+    return !isRestrictedWorkspace;
   }
 
   // Non-admins cannot enter /admin

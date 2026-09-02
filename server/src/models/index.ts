@@ -30,3 +30,9 @@ export * from "./critical-finding.model.js";
 export * from "./radiology-booking.model.js";
 export * from "./report-template.model.js";
 export * from "./lab-analyser.model.js";
+
+// Emergency Department models
+export * from "./emergency-case.model.js";
+export * from "./resus-bay.model.js";
+export * from "./inbound-ambulance.model.js";
+export * from "./major-incident.model.js";

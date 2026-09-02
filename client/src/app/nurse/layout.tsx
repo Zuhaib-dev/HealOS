@@ -16,7 +16,7 @@ const sections = [
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   return (
-    <RoleGuard allowedRoles={["NURSE", "ADMIN"]}>
+    <RoleGuard allowedRoles={["NURSE"]}>
       <WorkspaceShell
         navId="nurse"
         breadcrumb="Ward operations / Nursing station"

@@ -14,7 +14,7 @@ const sections = [
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   return (
-    <RoleGuard allowedRoles={["LAB_TECHNICIAN", "ADMIN"]}>
+    <RoleGuard allowedRoles={["LAB_TECHNICIAN"]}>
       <WorkspaceShell
         navId="lab"
         breadcrumb="Diagnostics / Laboratory (LIS)"

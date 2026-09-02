@@ -7,7 +7,7 @@ const router = Router();
 
 router.use(verifyToken);
 // Assuming LAB_TECH acts as the general lab worker role
-router.use(requireRole([UserRole.LAB_TECHNICIAN, UserRole.ADMIN, UserRole.DOCTOR, UserRole.NURSE])); // Doctors and nurses might need to view collections/stats
+router.use(requireRole([UserRole.LAB_TECHNICIAN, UserRole.DOCTOR, UserRole.NURSE]));
 
 router.get("/collections", getCollections);
 router.patch("/collections/:id/collect", markCollected);

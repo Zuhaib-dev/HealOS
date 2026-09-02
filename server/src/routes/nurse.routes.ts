@@ -18,7 +18,7 @@ import {
 const router = express.Router();
 
 router.use(verifyToken);
-router.use(requireRole([UserRole.NURSE, UserRole.ADMIN, UserRole.DOCTOR]));
+router.use(requireRole([UserRole.NURSE, UserRole.DOCTOR]));
 
 router.get("/queue", getVitalsQueue);
 router.post("/vitals", recordVitals);

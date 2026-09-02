@@ -15,14 +15,14 @@ export function Pill({ children, tone = "mute" }: { children: ReactNode; tone?: 
   return <span className={`mono-label px-2 py-1 ${toneMap[tone]}`}>{children}</span>;
 }
 
-export function Th({ children }: { children: ReactNode }) {
+export function Th({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className={`mono-label text-muted-foreground px-4 py-3 text-left font-normal ${className}`}>{children}</th>
   );
 }
 
-export function Td({ children }: { children: ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
+export function Td({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <td className={`px-4 py-3.5 align-middle text-sm ${className}`}>{children}</td>;
 }
 
 export function StatGrid({

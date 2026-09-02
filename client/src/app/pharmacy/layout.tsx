@@ -12,7 +12,7 @@ const sections = [
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   return (
-    <RoleGuard allowedRoles={["PHARMACIST", "ADMIN"]}>
+    <RoleGuard allowedRoles={["PHARMACIST"]}>
       <WorkspaceShell
         navId="pharmacy"
         breadcrumb="Medicines management / Pharmacy"

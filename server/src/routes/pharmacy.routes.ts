@@ -11,7 +11,7 @@ import {
 const router = express.Router();
 
 router.use(verifyToken);
-router.use(requireRole([UserRole.PHARMACIST, UserRole.ADMIN]));
+router.use(requireRole([UserRole.PHARMACIST]));
 
 router.get("/prescriptions/pending", getPendingPrescriptions);
 router.get("/prescriptions/history", getPrescriptionHistory);

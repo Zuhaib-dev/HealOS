@@ -51,10 +51,13 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
     const query: Record<string, any> = {};
 
     if (queryText) {
+      const sanitizedRegex = queryText.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&");
+      const flexibleRolePattern = sanitizedRegex.replace(/\s+/g, "[_\\s]?");
       query.$or = [
-        { name: { $regex: queryText, $options: "i" } },
-        { email: { $regex: queryText, $options: "i" } },
-        { phone: { $regex: queryText, $options: "i" } },
+        { name: { $regex: sanitizedRegex, $options: "i" } },
+        { email: { $regex: sanitizedRegex, $options: "i" } },
+        { phone: { $regex: sanitizedRegex, $options: "i" } },
+        { role: { $regex: flexibleRolePattern, $options: "i" } },
       ];
     }
 

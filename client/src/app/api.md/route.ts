@@ -3,7 +3,14 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-static";
 
 export async function GET() {
-  const content = `# HealOS API Reference
+  const content = `---
+title: HealOS API Reference
+description: Quick reference guide for HealOS REST endpoints, OpenAPI, and Model Context Protocol
+canonical: https://healos-theta.vercel.app/api.md
+last-updated: 2026-09-04
+---
+
+# HealOS API Reference
 
 Base URL: \`https://healos-theta.vercel.app/api/v1\`
 

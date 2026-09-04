@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getStandardApiHeaders } from "@/lib/api-headers";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +17,14 @@ export async function GET() {
     },
     {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "no-store",
-      },
+      headers: getStandardApiHeaders(),
     }
   );
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: getStandardApiHeaders(),
+  });
 }

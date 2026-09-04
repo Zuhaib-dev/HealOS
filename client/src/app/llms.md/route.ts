@@ -8,7 +8,15 @@ export async function GET() {
   try {
     const filePath = path.join(process.cwd(), "public", "llms.txt");
     const content = await fs.readFile(filePath, "utf-8");
-    return new NextResponse(content, {
+    const frontmatter = `---
+title: HealOS Machine-Readable System Directory
+description: Index of clinical APIs, MCP tools, and agent instructions for HealOS
+canonical: https://healos-theta.vercel.app/llms.md
+last-updated: 2026-09-04
+---
+
+`;
+    return new NextResponse(frontmatter + content, {
       status: 200,
       headers: {
         "Content-Type": "text/markdown; charset=utf-8",

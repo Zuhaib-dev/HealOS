@@ -3,7 +3,14 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-static";
 
 export async function GET() {
-  const markdownBody = `# HealOS — The Operating System for Modern Hospitals
+  const markdownBody = `---
+title: HealOS — The Operating System for Modern Hospitals
+description: Autonomous and clinician-facing hospital management platform and API
+canonical: https://healos-theta.vercel.app/index.md
+last-updated: 2026-09-04
+---
+
+# HealOS — The Operating System for Modern Hospitals
 
 > Unified patient records, clinician workflows, revenue analytics, and autonomous hospital operations.
 

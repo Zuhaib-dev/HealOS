@@ -86,6 +86,11 @@ Allow: /llms.txt
 Allow: /agents.md
 Allow: /auth.md
 Allow: /api/v1/
+User-agent: CCBot
+Disallow: /
+
+User-agent: ByteSpider
+Disallow: /
 
 User-agent: *
 Allow: /

@@ -71,6 +71,7 @@ export const metadata: Metadata = {
 
 import { RealtimeSocketProvider } from "@/components/providers/socket-provider";
 import { SoundProvider } from "@/components/sound-provider";
+import { WebMcpProvider } from "@/components/providers/webmcp-provider";
 
 export default function RootLayout({
   children,
@@ -84,6 +85,7 @@ export default function RootLayout({
         "@type": "Person",
         "@id": "https://healos-theta.vercel.app/#creator",
         "name": "Zuhaib Rashid",
+        "description": "Founder & Lead Healthcare Systems Architect of HealOS",
         "jobTitle": "Founder & Lead Developer",
         "url": "https://zuhaibrashid.com",
         "sameAs": [
@@ -137,17 +139,31 @@ export default function RootLayout({
       {
         "@type": "SoftwareApplication",
         "@id": "https://healos-theta.vercel.app/#softwareapplication",
-        "name": "HealOS App",
+        "name": "HealOS Healthcare Platform",
         "operatingSystem": "All",
         "applicationCategory": "HealthApplication",
+        "url": "https://healos-theta.vercel.app",
+        "description": "Hospital operating system unifying clinical scheduling, EHR records, emergency triage, radiology PACS, and pharmacy dispensing.",
         "author": {
           "@id": "https://healos-theta.vercel.app/#creator"
+        },
+        "publisher": {
+          "@id": "https://healos-theta.vercel.app/#organization"
         },
         "offers": {
           "@type": "Offer",
           "price": "0",
-          "priceCurrency": "USD"
-        }
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
+        },
+        "featureList": [
+          "Real-time Emergency Department Triage",
+          "Physiological Bedside Vitals Telemetry",
+          "Longitudinal Patient EHR Records",
+          "Radiology PACS Modality Worklists",
+          "Model Context Protocol (MCP) Agent Interface",
+          "REST API 3.1 & OAuth 2.0 Security"
+        ]
       }
     ]
   };
@@ -159,6 +175,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href="https://healos-theta.vercel.app/index.md"
+          title="Markdown representation"
+        />
         <link rel="preconnect" href="https://ik.imagekit.io" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://ik.imagekit.io" />
         <link rel="preconnect" href="https://lh3.googleusercontent.com" crossOrigin="anonymous" />
@@ -184,6 +206,7 @@ export default function RootLayout({
           <QueryProvider>
             <AuthSessionBridge />
             <SoundProvider />
+            <WebMcpProvider />
             <RealtimeSocketProvider>
               {children}
             </RealtimeSocketProvider>

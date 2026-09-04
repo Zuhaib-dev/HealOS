@@ -117,6 +117,7 @@ function CommandPaletteCell() {
           </svg>
           <input
             ref={inputRef}
+            data-tool="search_clinical_records"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);

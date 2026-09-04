@@ -42,6 +42,9 @@ export function SiteHeader() {
             <Link href="/features" className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors">
               Features
             </Link>
+            <Link href="/developers" className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors">
+              Developers
+            </Link>
             <Link href="/testimonials" className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors">
               Testimonials
             </Link>
@@ -130,6 +133,7 @@ export function SiteHeader() {
             <nav aria-label="Mobile site navigation" className="flex flex-col gap-4">
               <Link href="/about" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">About</Link>
               <Link href="/features" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Features</Link>
+              <Link href="/developers" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Developers</Link>
               <Link href="/testimonials" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Testimonials</Link>
               <Link href="/contact" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Contact</Link>
               <Link href="/patient" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Patient</Link>

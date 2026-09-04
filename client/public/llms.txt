@@ -29,12 +29,26 @@ All HealOS machine-readable interfaces and developer resources are linked below:
 - [Public Appointments API](https://healos-theta.vercel.app/api/v1/appointments): Publicly reachable clinical booking endpoint.
 - [Natural Language Inquiry](https://healos-theta.vercel.app/ask): Natural language question-answering endpoint with SSE streaming support.
 - [Canonical Markdown Twin](https://healos-theta.vercel.app/index.md): Markdown mirror of the platform homepage.
-- [Sitemap](https://healos-theta.vercel.app/sitemap.xml): XML sitemap indexing all public routes.
+- [Instant Sandbox Evaluation](https://healos-theta.vercel.app/api/v1/sandbox): Zero-friction sandbox token for agent automated testing.
+- [Agent Plugin Manifest](https://healos-theta.vercel.app/.well-known/ai-plugin.json): OpenAI / ChatGPT agent plugin manifest.
+- [HTTP Signatures Directory](https://healos-theta.vercel.app/.well-known/http-message-signatures-directory): Ed25519 JWK bot authentication directory.
+
+## Section Directories
+- [Developers Guide](https://healos-theta.vercel.app/developers/llms.txt)
+- [About HealOS](https://healos-theta.vercel.app/about/llms.txt)
+- [Clinical Features](https://healos-theta.vercel.app/features/llms.txt)
+- [Contact Directory](https://healos-theta.vercel.app/contact/llms.txt)
+
+## Coding Agent Configs
+- Cursor Rules: [https://github.com/Zuhaib-dev/HealOS/blob/main/.cursorrules](https://github.com/Zuhaib-dev/HealOS/blob/main/.cursorrules)
+- Windsurf Rules: [https://github.com/Zuhaib-dev/HealOS/blob/main/.windsurfrules](https://github.com/Zuhaib-dev/HealOS/blob/main/.windsurfrules)
+- Claude Rules: [https://github.com/Zuhaib-dev/HealOS/blob/main/.claude/CLAUDE.md](https://github.com/Zuhaib-dev/HealOS/blob/main/.claude/CLAUDE.md)
 
 ## Agent Access & Onboarding
 
 - **Zero-Auth Testing**: The health probe at `https://healos-theta.vercel.app/api/v1/health` and the endpoint catalog at `https://healos-theta.vercel.app/api/v1/catalog` require no authentication headers.
-- **Sandbox Environment**: A simulated hospital environment is available for testing multi-agent clinical coordination without live PHI exposure.
+- **Instant Sandbox Token**: Call `POST https://healos-theta.vercel.app/api/v1/sandbox` or `GET https://healos-theta.vercel.app/api/v1/sandbox` to obtain an immediate, free test Bearer token with full clinical mock capabilities.
+- **Free Tier Available**: HealOS provides 1,000 free sandbox calls per day for evaluating clinical agents.
 - **Self-Serve API Keys**: Developers can generate test bearer tokens in the developer console at `https://healos-theta.vercel.app/developers`.
 - **Content Negotiation**: All pages support `Accept: text/markdown` or the `?mode=agent` query parameter for high-density markdown representation.
 

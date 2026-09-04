@@ -34,6 +34,28 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
+  const KNOWN_MD_ROUTES = new Set([
+    "/index.md",
+    "/auth.md",
+    "/agents.md",
+    "/developers.md",
+    "/developer.md",
+    "/api.md",
+    "/llms.md",
+    "/skill.md",
+    "/agent.md",
+  ]);
+
+  // Universal markdown fallback for *.md requests (e.g. /.well-known/api-catalog.md, /api/v1/appointments.md)
+  if (pathname.endsWith(".md") && !KNOWN_MD_ROUTES.has(pathname)) {
+    const fallbackUrl = new URL(`/api/markdown-fallback?path=${encodeURIComponent(pathname)}`, request.url);
+    const response = NextResponse.rewrite(fallbackUrl);
+    response.headers.set("Content-Type", "text/markdown; charset=utf-8");
+    response.headers.set("Vary", "Accept, User-Agent, Accept-Encoding");
+    response.headers.set("Link", RFC8288_LINK_HEADER);
+    return response;
+  }
+
   const isAuthPage = pathname === "/login" || pathname === "/register";
 
   // If visiting login or register while already authenticated

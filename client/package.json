@@ -2,6 +2,11 @@
   "name": "@healos/client",
   "version": "1.0.0",
   "private": true,
+  "author": {
+    "name": "Zuhaib Rashid",
+    "email": "zuhaibrashid01@gmail.com",
+    "url": "https://zuhaibrashid.com"
+  },
   "scripts": {
     "dev": "NODE_OPTIONS='--dns-result-order=ipv4first' next dev --turbopack",
     "build": "next build",

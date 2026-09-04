@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "HealOS — An Operating System for Healthcare. Full-stack Hospital Management System.",
+  "author": {
+    "name": "Zuhaib Rashid",
+    "email": "zuhaibrashid01@gmail.com",
+    "url": "https://zuhaibrashid.com"
+  },
   "workspaces": [
     "client",
     "server",

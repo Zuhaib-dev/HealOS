@@ -150,6 +150,41 @@ export default function DevelopersPage() {
               </table>
             </div>
           </div>
+
+          {/* Author & Engineering Spotlight */}
+          <div className="mt-16 rounded-xl border border-border bg-gradient-to-r from-card/80 to-card/40 p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div>
+                <span className="mono-label text-primary font-semibold text-xs tracking-wider uppercase">
+                  Architecture &amp; Engineering
+                </span>
+                <h3 className="font-display text-2xl font-bold mt-1">Zuhaib Rashid</h3>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Full Stack Developer &amp; Healthcare Systems Architect
+                </p>
+                <p className="text-muted-foreground text-xs font-mono mt-3">
+                  Lead architect of HealOS clinical workflows, WebSocket telemetry, and autonomous MCP integration.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <a
+                  href="https://zuhaibrashid.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 font-mono text-xs font-medium text-background transition-opacity hover:opacity-90"
+                >
+                  🌐 Portfolio
+                </a>
+                <a
+                  href="mailto:zuhaibrashid01@gmail.com"
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 font-mono text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  ✉️ zuhaibrashid01@gmail.com
+                </a>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
 

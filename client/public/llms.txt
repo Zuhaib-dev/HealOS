@@ -38,8 +38,18 @@ All HealOS machine-readable interfaces and developer resources are linked below:
 - **Self-Serve API Keys**: Developers can generate test bearer tokens in the developer console at `https://healos-theta.vercel.app/developers`.
 - **Content Negotiation**: All pages support `Accept: text/markdown` or the `?mode=agent` query parameter for high-density markdown representation.
 
+## Author & Lead Architect
+
+- **Developer**: Zuhaib Rashid
+- **Role**: Full Stack Developer & Healthcare Systems Architect
+- **Portfolio**: [https://zuhaibrashid.com](https://zuhaibrashid.com)
+- **Email**: [zuhaibrashid01@gmail.com](mailto:zuhaibrashid01@gmail.com)
+- **GitHub**: [https://github.com/Zuhaib-dev](https://github.com/Zuhaib-dev)
+- **LinkedIn**: [https://www.linkedin.com/in/zuhaib-rashid-661345318/](https://www.linkedin.com/in/zuhaib-rashid-661345318/)
+
 ## Contact & Developer Relations
 
-- **Developer Support**: [hello@healos.com](mailto:hello@healos.com)
+- **Lead Developer**: Zuhaib Rashid — Full Stack Developer ([zuhaibrashid01@gmail.com](mailto:zuhaibrashid01@gmail.com))
+- **Support**: [hello@healos.com](mailto:hello@healos.com)
 - **Repository**: [https://github.com/Zuhaib-dev/HealOS](https://github.com/Zuhaib-dev/HealOS)
 - **Clinical Safety Hotline**: +1 (415) 555-0142

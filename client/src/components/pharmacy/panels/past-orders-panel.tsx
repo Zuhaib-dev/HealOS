@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, Loader2, Pill, Search, ShieldCheck } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fetchPharmacyHistoryApi, PendingPrescriptionRecord } from "@/lib/api/pharmacy";
 import { toast } from "sonner";
 
@@ -50,12 +50,15 @@ export function PastOrdersPanel() {
           
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
             <div className="relative w-full max-w-md">
+              <label htmlFor="pharmacy-past-orders-search" className="sr-only">Search by Patient Name or Order ID</label>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input 
+                id="pharmacy-past-orders-search"
+                aria-label="Search by Patient Name or Order ID"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by Patient Name or Order ID..." 
-                className="w-full bg-card/60 border border-border/60 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-primary/50 transition-colors"
+                className="w-full bg-card/60 border border-border/60 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50 transition-colors"
               />
             </div>
             
@@ -112,6 +115,9 @@ export function PastOrdersPanel() {
                                  <ActionButton>Receipt</ActionButton>
                                </DialogTrigger>
                                <DialogContent className="sm:max-w-md border-0 bg-transparent shadow-none p-0">
+                                 <DialogHeader className="sr-only">
+                                   <DialogTitle>Pharmacy Receipt RX-{rx._id.slice(-8).toUpperCase()}</DialogTitle>
+                                 </DialogHeader>
                                  <div className="relative bg-card text-card-foreground p-6 pt-10 font-mono shadow-2xl rounded-sm overflow-hidden" 
                                       style={{
                                         backgroundImage: "radial-gradient(circle at top, transparent 4px, var(--card) 5px)",

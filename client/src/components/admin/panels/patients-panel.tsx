@@ -44,7 +44,7 @@ export function PatientsPanel() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const dbPatients = data?.patients || [];
+  const records = data?.patients || [];
   const pagination = data?.pagination || null;
 
   useAdminRealtime(["patients", "users"], () => {
@@ -66,13 +66,14 @@ export function PatientsPanel() {
       />
       <div className="hairline-b px-5 py-3 sm:px-8">
         <input
+          aria-label="Filter patients by name or email"
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
             setPage(1);
           }}
           placeholder="Filter by name or email"
-          className="mono-label hairline placeholder:text-muted-foreground w-full max-w-xs bg-transparent px-3 py-2 outline-none"
+          className="mono-label hairline placeholder:text-muted-foreground w-full max-w-xs bg-transparent px-3 py-2 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
         />
       </div>
       <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
@@ -96,8 +97,34 @@ export function PatientsPanel() {
                   Loading patient registry...
                 </td>
               </tr>
-            ) : dbPatients.length > 0 ? (
-              dbPatients.map((p) => (
+            ) : records.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="p-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3 max-w-sm mx-auto">
+                    <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
+                      <HeartPulse className="size-6 text-muted-foreground/60" />
+                    </div>
+                    <h3 className="font-display font-semibold text-base text-foreground">No records found</h3>
+                    <p className="mono-label text-xs text-muted-foreground">
+                      {q ? `No registered patients matched "${q}".` : "No records available in this registry."}
+                    </p>
+                    {q && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQ("");
+                          setPage(1);
+                        }}
+                        className="mt-2 mono-label text-xs font-semibold px-3 py-1.5 rounded-lg border border-border/80 bg-background hover:bg-muted transition-colors text-foreground"
+                      >
+                        Clear search filter
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              records.map((p) => (
                 <tr key={p._id} className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
                   <Td>
                     <span className="font-mono text-muted-foreground">{p._id.slice(-8).toUpperCase()}</span>
@@ -132,17 +159,6 @@ export function PatientsPanel() {
                   </Td>
                 </tr>
               ))
-            ) : (
-              <tr>
-                <td colSpan={7} className="p-16 text-center">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
-                      <HeartPulse className="size-6 text-muted-foreground/60" />
-                    </div>
-                    <p className="mono-label text-muted-foreground">No patient profiles found.</p>
-                  </div>
-                </td>
-              </tr>
             )}
           </tbody>
         </table>

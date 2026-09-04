@@ -13,7 +13,10 @@ import { DoctorIDCard } from "./doctor-id-card";
 
 export function ProfilePanel() {
   const { user, updateUser } = useAuthStore();
-  const [saving, setSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isPending = isSubmitting;
+  const saving = isSubmitting;
+  const setSaving = setIsSubmitting;
   
   const [department, setDepartment] = useState("");
   const [specialization, setSpecialization] = useState("");
@@ -144,9 +147,11 @@ export function ProfilePanel() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Full Name</label>
+                  <label htmlFor="doc-full-name" className="text-sm font-medium">Full Name</label>
                   <input
+                    id="doc-full-name"
                     type="text"
+                    autoComplete="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -154,9 +159,11 @@ export function ProfilePanel() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone Number</label>
+                  <label htmlFor="doc-phone-number" className="text-sm font-medium">Phone Number</label>
                   <input
-                    type="text"
+                    id="doc-phone-number"
+                    type="tel"
+                    autoComplete="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -176,8 +183,9 @@ export function ProfilePanel() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Department</label>
+                <label htmlFor="doc-department" className="text-sm font-medium">Department</label>
                 <input
+                  id="doc-department"
                   type="text"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
@@ -186,8 +194,9 @@ export function ProfilePanel() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">License Number</label>
+                <label htmlFor="doc-license-number" className="text-sm font-medium">License Number</label>
                 <input
+                  id="doc-license-number"
                   type="text"
                   value={licenseNumber}
                   onChange={(e) => setLicenseNumber(e.target.value)}
@@ -196,8 +205,9 @@ export function ProfilePanel() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Specialization</label>
+                <label htmlFor="doc-specialization" className="text-sm font-medium">Specialization</label>
                 <input
+                  id="doc-specialization"
                   type="text"
                   value={specialization}
                   onChange={(e) => setSpecialization(e.target.value)}
@@ -206,8 +216,9 @@ export function ProfilePanel() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Years of Experience</label>
+                <label htmlFor="doc-experience" className="text-sm font-medium">Years of Experience</label>
                 <input
+                  id="doc-experience"
                   type="number"
                   value={experienceYears}
                   onChange={(e) => setExperienceYears(e.target.value)}
@@ -217,8 +228,9 @@ export function ProfilePanel() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Medical Degree</label>
+                <label htmlFor="doc-degree" className="text-sm font-medium">Medical Degree</label>
                 <input
+                  id="doc-degree"
                   type="text"
                   value={degree}
                   onChange={(e) => setDegree(e.target.value)}
@@ -228,10 +240,11 @@ export function ProfilePanel() {
               </div>
               <div className="sm:col-span-2 space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Professional Bio</label>
+                  <label htmlFor="doc-bio" className="text-sm font-medium">Professional Bio</label>
                   <AIWriterButton role={user?.role || "Doctor"} onBioGenerated={(b) => setBio(b)} />
                 </div>
                 <textarea
+                  id="doc-bio"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   className="w-full flex min-h-25 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -244,10 +257,10 @@ export function ProfilePanel() {
           <div className="flex justify-end pt-4 pb-12">
             <button
               type="submit"
-              disabled={saving}
+              disabled={isSubmitting}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 py-2"
             >
-              {saving ? (
+              {isSubmitting ? (
                 <>Saving...</>
               ) : (
                 <>

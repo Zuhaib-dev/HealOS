@@ -36,6 +36,7 @@ import {
   Calendar,
   MapPin,
   Activity,
+  Loader2,
 } from "lucide-react";
 
 export default function OnboardingPage() {
@@ -46,7 +47,7 @@ export default function OnboardingPage() {
 
   // Loading States
   const [loadingStatus, setLoadingStatus] = useState(true);
-  const [submittingPatient, setSubmittingPatient] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [submittingClinician, setSubmittingClinician] = useState(false);
 
   // Clinician Application State
@@ -116,7 +117,7 @@ export default function OnboardingPage() {
 
   const handlePatientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmittingPatient(true);
+    setIsPending(true);
 
     try {
       const res = await updatePatientProfileApi(patientData);
@@ -131,7 +132,7 @@ export default function OnboardingPage() {
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to update patient profile");
     } finally {
-      setSubmittingPatient(false);
+      setIsPending(false);
     }
   };
 
@@ -256,7 +257,7 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            <form onSubmit={handlePatientSubmit} className="space-y-6">
+            <form onSubmit={handlePatientSubmit} aria-busy={isPending} className="space-y-6">
               {/* DOB & Gender */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -311,6 +312,7 @@ export default function OnboardingPage() {
                     <Input
                       id="pat-ephone"
                       type="tel"
+                      autoComplete="tel"
                       placeholder="+1 (555) 019-2834"
                       value={patientData.emergencyPhone}
                       onChange={(e) => setPatientData((p) => ({ ...p, emergencyPhone: e.target.value }))}
@@ -336,9 +338,10 @@ export default function OnboardingPage() {
 
               {/* Known Allergies */}
               <div className="space-y-2">
-                <Label className="mono-label text-xs">Known Allergies (e.g. Penicillin, Latex, Peanuts)</Label>
+                <Label htmlFor="pat-allergy" className="mono-label text-xs">Known Allergies (e.g. Penicillin, Latex, Peanuts)</Label>
                 <div className="flex gap-2">
                   <Input
+                    id="pat-allergy"
                     type="text"
                     placeholder="Type an allergy and click Add"
                     value={allergyInput}
@@ -417,6 +420,7 @@ export default function OnboardingPage() {
                   <Input
                     id="pat-address"
                     type="text"
+                    autoComplete="street-address"
                     placeholder="124 Healthcare Blvd, Suite 400, New York, NY"
                     value={patientData.address}
                     onChange={(e) => setPatientData((p) => ({ ...p, address: e.target.value }))}
@@ -427,10 +431,18 @@ export default function OnboardingPage() {
 
               <Button
                 type="submit"
-                disabled={submittingPatient}
-                className="bg-primary text-primary-foreground mono-label hover:opacity-90 w-full py-5 text-xs font-semibold"
+                disabled={isPending}
+                aria-disabled={isPending}
+                className="bg-primary text-primary-foreground mono-label hover:opacity-90 w-full py-5 text-xs font-semibold flex items-center justify-center gap-2"
               >
-                {submittingPatient ? "Saving Patient Record..." : "Save Patient Health Profile →"}
+                {isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Saving Patient Record...
+                  </>
+                ) : (
+                  "Save Patient Health Profile →"
+                )}
               </Button>
             </form>
           </motion.div>
@@ -647,9 +659,17 @@ export default function OnboardingPage() {
                   <Button
                     type="submit"
                     disabled={submittingClinician}
-                    className="bg-primary text-primary-foreground mono-label hover:opacity-90 w-full py-5 text-xs font-semibold"
+                    aria-disabled={submittingClinician}
+                    className="bg-primary text-primary-foreground mono-label hover:opacity-90 w-full py-5 text-xs font-semibold flex items-center justify-center gap-2"
                   >
-                    {submittingClinician ? "Submitting Application..." : "Submit Application for Admin Audit →"}
+                    {submittingClinician ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        Submitting Application...
+                      </>
+                    ) : (
+                      "Submit Application for Admin Audit →"
+                    )}
                   </Button>
                 </form>
               </motion.div>

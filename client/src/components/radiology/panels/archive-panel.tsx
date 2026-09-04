@@ -109,11 +109,14 @@ export function ArchivePanel() {
       />
 
       <div className="hairline-b px-5 py-4 sm:px-8">
+        <label htmlFor="radiology-archive-filter" className="sr-only">Filter archive</label>
         <input
+          id="radiology-archive-filter"
+          aria-label="Filter by file, patient or accession"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Filter by file, patient or accession"
-          className="hairline mono-label placeholder:text-muted-foreground w-full max-w-md bg-transparent px-3 py-2.5 outline-none"
+          className="hairline mono-label placeholder:text-muted-foreground w-full max-w-md bg-transparent px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
         />
       </div>
 

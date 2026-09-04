@@ -20,7 +20,10 @@ export function VitalsRoundsPanel() {
   const [draft, setDraft] = useState({
     hr: "", rr: "", spo2: "", temp: "", bp: "", weight: "", height: "", notes: "",
   });
-  const [saving, setSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isPending = isSubmitting;
+  const saving = isSubmitting;
+  const setSaving = setIsSubmitting;
 
   const loadQueue = async () => {
     try {
@@ -69,24 +72,29 @@ export function VitalsRoundsPanel() {
   const recorded = queue.filter(q => q.hasVitals).length;
 
   const FloatingInput = ({ 
-    label, value, onChange, placeholder, type = "number", icon: Icon 
+    label, value, onChange, placeholder, type = "number", icon: Icon, id
   }: { 
-    label: string, value: string, onChange: (val: string) => void, placeholder?: string, type?: string, icon?: any
-  }) => (
-    <div className="relative group flex-1">
-      <label className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1.5 group-focus-within:text-primary transition-colors">
-        {Icon && <Icon className="size-3" />}
-        {label}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-sm text-foreground outline-none transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
-      />
-    </div>
-  );
+    label: string, value: string, onChange: (val: string) => void, placeholder?: string, type?: string, icon?: any, id?: string
+  }) => {
+    const inputId = id || `vitals-${label.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
+    return (
+      <div className="relative group flex-1">
+        <label htmlFor={inputId} className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1.5 group-focus-within:text-primary transition-colors">
+          {Icon && <Icon className="size-3" />}
+          {label}
+        </label>
+        <input
+          id={inputId}
+          aria-label={label}
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-sm text-foreground outline-none transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
+        />
+      </div>
+    );
+  };
 
   return (
     <section className="pb-24 lg:pb-0 min-h-[calc(100vh-4rem)] flex flex-col">
@@ -150,7 +158,7 @@ export function VitalsRoundsPanel() {
                       <button
                         type="button"
                         onClick={() => !isRecorded && setOpenId(isOpen ? null : item.appointment._id)}
-                        className="w-full text-left p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 outline-none"
+                        className="w-full text-left p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset rounded-none"
                       >
                         <div className="flex items-center gap-4">
                           <div className={`size-12 rounded-full flex items-center justify-center shrink-0 ${
@@ -207,22 +215,24 @@ export function VitalsRoundsPanel() {
                               </div>
 
                               <div className="mb-8">
-                                <label className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1.5">
+                                <label htmlFor={`notes-${item.appointment._id}`} className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1.5">
                                   <Edit3 className="size-3" /> Additional Notes
                                 </label>
                                 <textarea
+                                  id={`notes-${item.appointment._id}`}
+                                  aria-label="Additional Notes"
                                   value={draft.notes}
                                   onChange={(e) => setDraft({...draft, notes: e.target.value})}
                                   placeholder="Patient appears stable, no distress..."
                                   rows={2}
-                                  className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/10 resize-none"
+                                  className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 resize-none"
                                 />
                               </div>
 
                               <div className="flex justify-end gap-3 pt-4 border-t border-border/40">
                                 <ActionButton onClick={() => setOpenId(null)}>Cancel</ActionButton>
-                                <ActionButton tone="solid" onClick={() => handleSaveVitals(item)} disabled={saving} className="px-6 relative overflow-hidden">
-                                  {saving ? <Loader2 className="size-4 animate-spin" /> : (
+                                <ActionButton tone="solid" onClick={() => handleSaveVitals(item)} disabled={isSubmitting} className="px-6 relative overflow-hidden">
+                                  {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : (
                                     <>Save & Complete <ArrowRight className="size-4 ml-1.5" /></>
                                   )}
                                 </ActionButton>

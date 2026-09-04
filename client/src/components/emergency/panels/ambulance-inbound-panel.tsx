@@ -20,7 +20,10 @@ export function InboundPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [assigningUnit, setAssigningUnit] = useState<InboundAmbulanceData | null>(null);
   const [selectedBay, setSelectedBay] = useState("Resus 1");
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isPending = isSubmitting;
+  const isSaving = isSubmitting;
+  const setIsSaving = setIsSubmitting;
 
   const loadUnits = useCallback(async () => {
     try {
@@ -97,9 +100,11 @@ export function InboundPanel() {
               <button
                 type="button"
                 onClick={() => setAssigningUnit(null)}
-                className="text-muted-foreground hover:text-foreground p-1"
+                aria-label={`Close assign bay dialog for ${assigningUnit.unit}`}
+                className="text-muted-foreground hover:text-foreground p-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
               >
-                <X className="size-5" />
+                <X className="size-5" aria-hidden="true" />
+                <span className="sr-only">Close assign bay dialog</span>
               </button>
             </div>
 
@@ -110,8 +115,10 @@ export function InboundPanel() {
 
             <form onSubmit={handleConfirmBayAssignment} className="mt-4 space-y-4">
               <div>
-                <label className="mono-label block text-muted-foreground text-xs">Receiving Bay / Area</label>
+                <label htmlFor="receiving-bay-select" className="mono-label block text-muted-foreground text-xs">Receiving Bay / Area</label>
                 <select
+                  id="receiving-bay-select"
+                  required={true}
                   value={selectedBay}
                   onChange={(e) => setSelectedBay(e.target.value)}
                   className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm font-mono focus:outline-hidden"
@@ -130,8 +137,8 @@ export function InboundPanel() {
                 <ActionButton type="button" onClick={() => setAssigningUnit(null)}>
                   Cancel
                 </ActionButton>
-                <ActionButton type="submit" tone="solid" disabled={isSaving}>
-                  {isSaving ? "Assigning..." : "Confirm Bay"}
+                <ActionButton type="submit" tone="solid" disabled={isSubmitting}>
+                  {isSubmitting ? "Assigning..." : "Confirm Bay"}
                 </ActionButton>
               </div>
             </form>
@@ -140,11 +147,11 @@ export function InboundPanel() {
       )}
 
       {isLoading ? (
-        <div className="p-12 text-center mono-label text-muted-foreground animate-pulse">
+        <div role="status" aria-live="polite" className="p-12 text-center mono-label text-muted-foreground animate-pulse">
           Connecting to regional EMS dispatch feed...
         </div>
       ) : units.length === 0 ? (
-        <div className="p-12 text-center mono-label text-muted-foreground">
+        <div role="status" aria-live="polite" className="p-12 text-center mono-label text-muted-foreground">
           No ambulances currently en route.
         </div>
       ) : (

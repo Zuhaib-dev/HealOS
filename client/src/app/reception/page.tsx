@@ -46,7 +46,7 @@ function MetricCard({
         </span>
         <Icon className="size-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />
       </div>
-      <div className="relative z-10 flex flex-col justify-end flex-1">
+      <div className="relative z-10 flex flex-col justify-end flex-1" role="status" aria-live="polite">
         {isLoading ? (
           <div className="h-12 w-28 bg-foreground/10 rounded-lg animate-pulse mb-2" />
         ) : (
@@ -187,7 +187,7 @@ export default function ReceptionOverview() {
             <span className="mono-label text-xs uppercase tracking-wider text-muted-foreground font-semibold">
               Live OPD Queue
             </span>
-            <h3 className="font-mono text-base font-bold mt-1">Recent Waiting Patients</h3>
+            <h2 className="font-mono text-base font-bold mt-1">Recent Waiting Patients</h2>
           </div>
           <Link
             href="/reception/queue"

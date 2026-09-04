@@ -261,13 +261,15 @@ export function CollectionPanel() {
               <div className="relative w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <input 
+                  id="diagnostic-history-search"
+                  aria-label="Search diagnostic reports archive by test name or title"
                   placeholder="Search by test name or title..." 
                   value={historySearch}
                   onChange={(e) => {
                     setHistorySearch(e.target.value);
                     setHistoryPage(1);
                   }}
-                  className="w-full bg-background border border-border/60 rounded-xl pl-9 pr-4 py-2 text-sm outline-none focus:border-primary/50 transition-colors"
+                  className="w-full bg-background border border-border/60 rounded-xl pl-9 pr-4 py-2 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50 transition-colors"
                 />
               </div>
             </div>
@@ -322,18 +324,24 @@ export function CollectionPanel() {
                 </span>
                 <div className="flex gap-2">
                   <button 
+                    type="button"
+                    aria-label="Previous page"
                     disabled={historyPage === 1}
                     onClick={() => setHistoryPage(p => p - 1)}
-                    className="p-2 border rounded hover:bg-muted disabled:opacity-50 transition-colors"
+                    className="p-2 border rounded hover:bg-muted disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                   >
-                    <ChevronLeft className="size-4" />
+                    <ChevronLeft className="size-4" aria-hidden="true" />
+                    <span className="sr-only">Previous page</span>
                   </button>
                   <button 
+                    type="button"
+                    aria-label="Next page"
                     disabled={historyPage === historyData.pagination.pages}
                     onClick={() => setHistoryPage(p => p + 1)}
-                    className="p-2 border rounded hover:bg-muted disabled:opacity-50 transition-colors"
+                    className="p-2 border rounded hover:bg-muted disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                   >
-                    <ChevronRight className="size-4" />
+                    <ChevronRight className="size-4" aria-hidden="true" />
+                    <span className="sr-only">Next page</span>
                   </button>
                 </div>
               </div>
@@ -347,10 +355,12 @@ export function CollectionPanel() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input 
+                id="collection-queue-search"
+                aria-label="Search MRN, Patient Name"
                 placeholder="Search MRN, Patient Name..." 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-card/60 border border-border/60 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-primary/50 transition-colors"
+                className="w-full bg-card/60 border border-border/60 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50 transition-colors"
               />
             </div>
           </div>
@@ -457,15 +467,17 @@ export function CollectionPanel() {
                     {!isPaid && (
                       <div className="mt-2 sm:mt-0 flex items-center justify-between sm:justify-end gap-2 sm:gap-4 pt-3 sm:pt-0 border-t sm:border-0 border-border/30">
                         <div className="flex flex-col items-start sm:items-end">
-                          <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Set Price</span>
+                          <label htmlFor="lab-test-price-input" className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Set Price</label>
                           <div className="relative">
                             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs">₹</span>
                             <input 
+                              id="lab-test-price-input"
+                              aria-label="Set price in rupees"
                               type="number" 
                               disabled={isPaid}
                               value={price} 
                               onChange={(e) => setPrice(e.target.value)}
-                              className="w-20 bg-card border border-border/60 rounded px-2 pl-5 py-1 text-xs font-mono outline-none focus:border-primary/50 text-right"
+                              className="w-20 bg-card border border-border/60 rounded px-2 pl-5 py-1 text-xs font-mono outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50 text-right"
                             />
                           </div>
                         </div>
@@ -511,8 +523,10 @@ export function CollectionPanel() {
                       <p className="text-muted-foreground text-sm max-w-md">Please upload the finalized diagnostic PDF report below once the analysis is complete. <br/> <strong className="text-foreground">Uploaded reports will be sent to the Validation panel.</strong></p>
                       
                       <div className="mt-8 flex gap-3">
-                         <label className={`cursor-pointer relative transition-all ${isUploading[selectedOrder._id] ? 'opacity-70 pointer-events-none' : ''}`}>
+                         <label htmlFor="diagnostic-pdf-upload" className={`cursor-pointer relative transition-all ${isUploading[selectedOrder._id] ? 'opacity-70 pointer-events-none' : ''}`}>
                            <input
+                             id="diagnostic-pdf-upload"
+                             aria-label="Upload finalized diagnostic PDF report"
                              type="file"
                              className="absolute hidden"
                              accept=".pdf,image/*"

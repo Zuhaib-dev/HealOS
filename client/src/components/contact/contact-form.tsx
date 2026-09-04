@@ -69,6 +69,9 @@ export function ContactForm() {
     window.setTimeout(() => setState("sent"), 900);
   };
 
+  const isSubmitting = state === "sending";
+  const isPending = isSubmitting;
+
   const ref = `HL-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
 
   return (
@@ -165,10 +168,10 @@ export function ContactForm() {
             <div className="sm:col-span-2 flex flex-wrap items-center gap-6">
               <button
                 type="submit"
-                disabled={state === "sending"}
+                disabled={isSubmitting}
                 className="bg-foreground text-background mono-label group inline-flex items-center gap-3 px-7 py-4 transition-opacity hover:opacity-85 disabled:opacity-60"
               >
-                {state === "sending" ? "Routing…" : "Open a ticket"}
+                {isSubmitting ? "Routing…" : "Open a ticket"}
                 <span className="transition-transform group-hover:translate-x-1">→</span>
               </button>
               <p className="mono-label text-muted-foreground">

@@ -108,7 +108,18 @@ export function StaffPanel() {
                 Loading staff from MongoDB Atlas...
               </td>
             </tr>
-          ) : rows.length > 0 ? (
+          ) : rows.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="p-16 text-center">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
+                    <Users className="size-6 text-muted-foreground/60" />
+                  </div>
+                  <p className="mono-label text-muted-foreground">No records found.</p>
+                </div>
+              </td>
+            </tr>
+          ) : (
             rows.map((s) => (
               <tr key={s._id} className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
                 <Td>
@@ -122,6 +133,7 @@ export function StaffPanel() {
                 </Td>
                 <Td>
                   <select
+                    aria-label={`Change role for ${s.user?.name || "staff member"}`}
                     value={s.user?.role || "USER"}
                     onChange={async (e) => {
                       const newRole = e.target.value;
@@ -168,17 +180,6 @@ export function StaffPanel() {
                 </Td>
               </tr>
             ))
-          ) : (
-            <tr>
-              <td colSpan={5} className="p-16 text-center">
-                <div className="flex flex-col items-center justify-center gap-4">
-                  <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
-                    <Users className="size-6 text-muted-foreground/60" />
-                  </div>
-                  <p className="mono-label text-muted-foreground">No staff profiles found.</p>
-                </div>
-              </td>
-            </tr>
           )}
         </tbody>
       </TablePanel>

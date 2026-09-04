@@ -205,7 +205,10 @@ export function UploadPanel() {
               dragging ? "border-accent bg-accent/5" : "border-(--hairline)"
             }`}
           >
+            <label htmlFor="radiology-file-upload-input" className="sr-only">Upload diagnostic report files</label>
             <input
+              id="radiology-file-upload-input"
+              aria-label="Upload diagnostic report files"
               ref={inputRef}
               type="file"
               multiple
@@ -302,11 +305,13 @@ export function UploadPanel() {
 
         <div className="bg-background p-5">
           <p className="mono-label text-muted-foreground">Attach to</p>
-          <label className="mono-label text-muted-foreground mt-4 block">Order</label>
+          <label htmlFor="radiology-upload-order" className="mono-label text-muted-foreground mt-4 block">Order</label>
           <select
+            id="radiology-upload-order"
+            aria-label="Order selection"
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
-            className="hairline mono-label mt-2 w-full bg-transparent px-3 py-2.5 outline-none"
+            className="hairline mono-label mt-2 w-full bg-transparent px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
           >
             {orders.map((w) => (
               <option key={w._id} value={w._id}>
@@ -315,13 +320,15 @@ export function UploadPanel() {
             ))}
           </select>
 
-          <label className="mono-label text-muted-foreground mt-4 block">Note for record</label>
+          <label htmlFor="radiology-upload-note" className="mono-label text-muted-foreground mt-4 block">Note for record</label>
           <textarea
+            id="radiology-upload-note"
+            aria-label="Note for record"
             rows={4}
             value={comments}
             onChange={(e) => setComments(e.target.value)}
             placeholder="e.g. sample collected, all clear"
-            className="hairline placeholder:text-muted-foreground mt-2 w-full resize-none bg-transparent p-3 text-sm outline-none"
+            className="hairline placeholder:text-muted-foreground mt-2 w-full resize-none bg-transparent p-3 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
           />
 
           <div className="hairline mt-5 p-3">

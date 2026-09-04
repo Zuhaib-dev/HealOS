@@ -144,7 +144,7 @@ export function UserProfileMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="group flex items-center gap-2.5 rounded-full p-1 pr-3 border border-border/70 hover:border-primary/40 bg-card/60 hover:bg-muted/50 transition-all cursor-pointer outline-none"
+          className="group flex items-center gap-2.5 rounded-full p-1 pr-3 border border-border/70 hover:border-primary/40 bg-card/60 hover:bg-muted/50 transition-all cursor-pointer outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           aria-label="Open user profile menu"
         >
           <Avatar className="size-8 border border-border/60">

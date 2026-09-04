@@ -73,7 +73,12 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-100 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 sm:p-6"
       >
-        <div className="absolute inset-0" onClick={onClose} />
+        <button
+          type="button"
+          aria-label="Close dialog backdrop"
+          onClick={onClose}
+          className="absolute inset-0 bg-transparent border-0 cursor-default p-0 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 w-full h-full"
+        />
         
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -89,6 +94,7 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
             </h2>
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={handleDownloadPDF}
                 disabled={isGenerating}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-semibold disabled:opacity-70"
@@ -97,7 +103,9 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
                 {isGenerating ? "Generating..." : "Download PDF"}
               </button>
               <button
+                type="button"
                 onClick={onClose}
+                aria-label="Close dialog"
                 className="size-9 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground transition-colors"
               >
                 <X className="size-5" />

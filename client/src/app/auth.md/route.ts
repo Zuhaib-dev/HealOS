@@ -2,70 +2,141 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-static";
 
-const AUTH_MD_CONTENT = `# Authentication
+const AUTH_MD_CONTENT = `---
+title: HealOS Authentication & Authorization Walkthrough
+description: Complete 8-step agent authentication guide for OAuth 2.0, PRM RFC 9728, and Bearer credential usage.
+canonical: https://healos-theta.vercel.app/auth.md
+last-updated: 2026-09-04
+---
 
-This document outlines how autonomous AI agents and client applications authenticate with the HealOS Healthcare Platform API.
+# HealOS Authentication & Agent Onboarding
 
-## Overview
+This document provides autonomous agents and developers with the complete walkthrough for obtaining, using, and revoking API credentials for the HealOS Healthcare Platform.
 
-HealOS implements standard **OAuth 2.0 (RFC 6749)** with **PKCE (RFC 7636)**, **OpenID Connect Core 1.0**, and **RFC 9728 (OAuth Protected Resource Metadata)**. All clinical requests must include a valid Bearer token in the HTTP \`Authorization\` header.
+---
 
-## Discovery Metadata
+## Discover
 
-Agents can discover authorization endpoints and supported cryptographic configurations automatically:
+<a id="oauth-protected-resource"></a>
+<a id="oauth-authorization-server"></a>
 
-- **OpenID Discovery**: [https://healos-theta.vercel.app/.well-known/openid-configuration](https://healos-theta.vercel.app/.well-known/openid-configuration)
-- **Protected Resource Metadata (RFC 9728)**: [https://healos-theta.vercel.app/.well-known/oauth-protected-resource](https://healos-theta.vercel.app/.well-known/oauth-protected-resource)
-- **OAuth Authorization Server Metadata**: [https://healos-theta.vercel.app/.well-known/oauth-authorization-server](https://healos-theta.vercel.app/.well-known/oauth-authorization-server)
-- **OpenAPI Specification**: [https://healos-theta.vercel.app/openapi.json](https://healos-theta.vercel.app/openapi.json)
+Agents must discover authorization and resource metadata before making clinical requests:
 
-## Authorization Endpoints
+- **OAuth Protected Resource Metadata (RFC 9728)**: [\`https://healos-theta.vercel.app/.well-known/oauth-protected-resource\`](https://healos-theta.vercel.app/.well-known/oauth-protected-resource)
+- **OAuth Authorization Server Metadata**: [\`https://healos-theta.vercel.app/.well-known/oauth-authorization-server\`](https://healos-theta.vercel.app/.well-known/oauth-authorization-server)
+- **OpenID Configuration**: [\`https://healos-theta.vercel.app/.well-known/openid-configuration\`](https://healos-theta.vercel.app/.well-known/openid-configuration)
+- **OpenAPI 3.1 Specification**: [\`https://healos-theta.vercel.app/openapi.json\`](https://healos-theta.vercel.app/openapi.json)
 
-| Flow | URL |
-|:---|:---|
-| **Authorization Endpoint** | \`https://healos-theta.vercel.app/api/auth/oauth2/authorize\` |
-| **Token Endpoint** | \`https://healos-theta.vercel.app/api/auth/oauth2/token\` |
-| **UserInfo Endpoint** | \`https://healos-theta.vercel.app/api/auth/oauth2/userinfo\` |
+---
 
-## Scopes and Permissions
+## Pick a method
 
-HealOS enforces granular role-based and clinical-scoped permissions:
+HealOS supports three distinct authentication methods tailored for different client types:
 
-| Scope | Description | Allowed Roles |
-|:---|:---|:---|
-| \`read:patients\` | Read patient demographics and medical records | Doctor, Nurse, Admin, Reception |
-| \`write:patients\` | Register and modify patient profiles | Reception, Admin |
-| \`read:appointments\` | Query scheduled consultations | All authenticated roles |
-| \`write:appointments\` | Book, reschedule, or cancel appointments | Patient, Doctor, Reception, Admin |
-| \`read:vitals\` | Access physiological telemetry observations | Doctor, Nurse |
-| \`write:vitals\` | Record new bedside vital signs rounds | Nurse, Doctor |
-| \`read:reports\` | View radiology PACS and laboratory findings | Doctor, Radiologist, Lab Tech, Patient |
-| \`emergency:triage\` | Manage Emergency Department triage priority | Triage Nurse, Emergency Physician |
+1. **Client Credentials Flow (\`client_credentials\`)**: Recommended for backend AI agents, server daemons, and automated microservices requiring machine-to-machine clinical access.
+2. **Instant Sandbox Token (\`sandbox\`)**: Zero-auth test environment for quick agent evaluation. Call \`POST /api/v1/sandbox\` to receive immediate, rate-limited test credentials without registration friction.
+3. **Authorization Code Flow with PKCE (\`authorization_code\`)**: Recommended for browser clients and user-facing clinician / patient applications.
 
-## Using Tokens
+---
 
-Pass the access token as a Bearer credential in the standard \`Authorization\` header:
+## Register
+
+Autonomous agents can dynamically register with the authorization server via RFC 7591 Dynamic Client Registration:
+
+\`\`\`http
+POST /api/auth/register HTTP/1.1
+Host: healos-theta.vercel.app
+Content-Type: application/json
+
+{
+  "client_name": "Autonomous Clinical Agent",
+  "grant_types": ["client_credentials"],
+  "response_types": ["token"],
+  "token_endpoint_auth_method": "client_secret_post",
+  "scope": "read:patients write:appointments read:vitals"
+}
+\`\`\`
+
+The response returns your unique \`client_id\` and \`client_secret\`.
+
+---
+
+## Claim
+
+To claim an agent identity, present your registered credentials or sign an assertion using your agent JWK key:
+
+\`\`\`http
+POST /api/auth/oauth2/token HTTP/1.1
+Host: healos-theta.vercel.app
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&scope=read:patients%20write:appointments
+\`\`\`
+
+---
+
+## Exchange
+
+For federated or external agent tokens, use RFC 8693 OAuth 2.0 Token Exchange to exchange an external identity token for a HealOS clinical access token:
+
+\`\`\`http
+POST /api/auth/oauth2/token HTTP/1.1
+Host: healos-theta.vercel.app
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+&subject_token=EXTERNAL_IDENTITY_TOKEN
+&subject_token_type=urn:ietf:params:oauth:token-type:jwt
+&scope=read:patients
+\`\`\`
+
+---
+
+## Use credential
+
+Include the issued token in the standard HTTP \`Authorization\` header as a Bearer credential:
 
 \`\`\`http
 GET /api/v1/appointments HTTP/1.1
 Host: healos-theta.vercel.app
-Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+Authorization: Bearer healos_live_eyJhbGciOiJSUzI1Ni...
 Accept: application/json
 \`\`\`
 
-## Error Handling & WWW-Authenticate
+---
 
-When an unauthenticated or expired token request arrives, the server returns an HTTP \`401 Unauthorized\` response with a diagnostic \`WWW-Authenticate\` header pointing agents to the resource metadata:
+## Revocation
+
+When an agent session completes or credentials need to be invalidated, invoke the token revocation endpoint (RFC 7009):
+
+\`\`\`http
+POST /api/auth/revoke HTTP/1.1
+Host: healos-theta.vercel.app
+Content-Type: application/x-www-form-urlencoded
+
+token=YOUR_ACCESS_OR_REFRESH_TOKEN&token_type_hint=access_token
+\`\`\`
+
+The server returns HTTP \`200 OK\` confirming the credential is immediately revoked.
+
+---
+
+## Errors
+
+<a id="www-authenticate"></a>
+
+When an unauthenticated, expired, or unauthorized request arrives, HealOS responds with an HTTP \`401 Unauthorized\` or \`403 Forbidden\` status, including a \`WWW-Authenticate\` header pointing directly to the Protected Resource Metadata:
 
 \`\`\`http
 HTTP/1.1 401 Unauthorized
 Content-Type: application/json
-WWW-Authenticate: Bearer realm="HealOS", resource_metadata="https://healos-theta.vercel.app/.well-known/oauth-protected-resource"
+WWW-Authenticate: Bearer realm="healos", resource_metadata="https://healos-theta.vercel.app/.well-known/oauth-protected-resource"
 
 {
-  "error": "Unauthorized",
-  "message": "Valid Bearer token required. Refer to https://healos-theta.vercel.app/auth.md",
-  "statusCode": 401
+  "type": "https://healos-theta.vercel.app/errors/unauthorized",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Bearer token required or invalid. Consult https://healos-theta.vercel.app/auth.md"
 }
 \`\`\`
 `;

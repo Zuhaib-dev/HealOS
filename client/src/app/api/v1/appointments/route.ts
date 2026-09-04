@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getStandardApiHeaders } from "@/lib/api-headers";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const cursor = request.nextUrl.searchParams.get("cursor");
+  const limit = parseInt(request.nextUrl.searchParams.get("limit") || "20", 10);
+
   const sampleAppointments = [
     {
       id: "apt_101",
@@ -27,32 +31,42 @@ export async function GET() {
   return NextResponse.json(
     {
       data: sampleAppointments,
-      total: sampleAppointments.length,
-      page: 1,
-      limit: 20,
+      pagination: {
+        cursor: cursor ? `cur_next_${Date.now()}` : "cur_initial_01",
+        next_cursor: null,
+        has_more: false,
+        limit,
+        total: sampleAppointments.length,
+      },
     },
     {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "no-store",
-      },
+      headers: getStandardApiHeaders(),
     }
   );
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const idempotencyKey =
+    request.headers.get("idempotency-key") ||
+    request.headers.get("x-idempotency-key") ||
+    `idem_${Date.now().toString(36)}`;
+
   try {
     const body = await request.json();
     if (!body.patientId || !body.doctorId || !body.date) {
       return NextResponse.json(
         {
-          error: "Bad Request",
-          message: "Fields 'patientId', 'doctorId', and 'date' are required.",
-          statusCode: 400,
+          type: "https://healos-theta.vercel.app/errors/bad-request",
+          title: "Bad Request",
+          status: 400,
+          detail: "Fields 'patientId', 'doctorId', and 'date' are required.",
+          instance: "/api/v1/appointments",
         },
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        {
+          status: 400,
+          headers: getStandardApiHeaders(idempotencyKey),
+        }
       );
     }
 
@@ -64,20 +78,34 @@ export async function POST(request: Request) {
       status: "CONFIRMED",
       reason: body.reason || "Outpatient Consultation",
       room: "Assigned upon check-in",
+      idempotencyKey,
     };
 
     return NextResponse.json(created, {
       status: 201,
-      headers: { "Content-Type": "application/json" },
+      headers: getStandardApiHeaders(idempotencyKey),
     });
   } catch {
     return NextResponse.json(
       {
-        error: "Bad Request",
-        message: "Invalid JSON payload",
-        statusCode: 400,
+        type: "https://healos-theta.vercel.app/errors/bad-request",
+        title: "Bad Request",
+        status: 400,
+        detail: "Invalid JSON payload.",
+        instance: "/api/v1/appointments",
       },
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      {
+        status: 400,
+        headers: getStandardApiHeaders(idempotencyKey),
+      }
     );
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const idempotencyKey = request.headers.get("idempotency-key");
+  return new NextResponse(null, {
+    status: 204,
+    headers: getStandardApiHeaders(idempotencyKey),
+  });
 }

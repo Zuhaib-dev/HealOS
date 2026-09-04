@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-static";
 
-const AGENTS_MD_CONTENT = `# HealOS Agent Instructions & Operations Manual
+const AGENTS_MD_CONTENT = `---
+title: HealOS Agent Instructions & Operations Manual
+description: Comprehensive operational guidance, guardrails, and when-to-use criteria for autonomous agents.
+canonical: https://healos-theta.vercel.app/agents.md
+last-updated: 2026-09-04
+---
+
+# HealOS Agent Instructions & Operations Manual
 
 > The Operating System for Modern Hospitals.
 

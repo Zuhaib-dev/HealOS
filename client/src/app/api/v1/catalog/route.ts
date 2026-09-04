@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { getStandardApiHeaders } from "@/lib/api-headers";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   return NextResponse.json(
@@ -28,6 +29,18 @@ export async function GET() {
           scope: "write:appointments",
         },
         {
+          path: "/api/v1/jobs",
+          method: "POST",
+          operationId: "createAsyncJob",
+          scope: "write:appointments",
+        },
+        {
+          path: "/api/v1/batch",
+          method: "POST",
+          operationId: "executeBatchOperations",
+          scope: "write:appointments",
+        },
+        {
           path: "/api/v1/patients",
           method: "GET",
           operationId: "listPatients",
@@ -43,11 +56,14 @@ export async function GET() {
     },
     {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=3600",
-      },
+      headers: getStandardApiHeaders(),
     }
   );
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: getStandardApiHeaders(),
+  });
 }

@@ -20,6 +20,11 @@ export async function GET() {
         name: "Proprietary",
         url: "https://healos-theta.vercel.app/about",
       },
+      "x-deprecation-policy": {
+        policy_url: "https://healos-theta.vercel.app/developers#deprecation",
+        guarantee_window_months: 24,
+        sunset_date: "2027-12-31",
+      },
     },
     servers: [
       {
@@ -133,6 +138,13 @@ export async function GET() {
               schema: { type: "string", enum: ["SCHEDULED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] },
             },
             {
+              name: "cursor",
+              in: "query",
+              required: false,
+              description: "Opaque cursor token for cursor-based pagination",
+              schema: { type: "string", example: "cur_next_98124" },
+            },
+            {
               name: "limit",
               in: "query",
               required: false,
@@ -147,13 +159,22 @@ export async function GET() {
                 "application/json": {
                   schema: {
                     type: "object",
-                    required: ["data", "total"],
+                    required: ["data", "pagination"],
                     properties: {
                       data: {
                         type: "array",
                         items: { $ref: "#/components/schemas/Appointment" },
                       },
-                      total: { type: "integer", example: 42 },
+                      pagination: {
+                        type: "object",
+                        required: ["cursor", "has_more", "total"],
+                        properties: {
+                          cursor: { type: "string", example: "cur_next_98124" },
+                          next_cursor: { type: "string", nullable: true, example: null },
+                          has_more: { type: "boolean", example: false },
+                          total: { type: "integer", example: 42 },
+                        },
+                      },
                     },
                   },
                 },
@@ -165,9 +186,18 @@ export async function GET() {
         post: {
           tags: ["Appointments"],
           summary: "Book Appointment",
-          description: "Creates and confirms a new patient appointment with an assigned practitioner.",
+          description: "Creates and confirms a new patient appointment with an assigned practitioner. Supports Idempotency-Key header.",
           operationId: "createAppointment",
           security: [{ OAuth2: ["write:appointments"] }, { BearerAuth: [] }],
+          parameters: [
+            {
+              name: "Idempotency-Key",
+              in: "header",
+              required: false,
+              description: "Unique UUID v4 key guaranteeing idempotent execution",
+              schema: { type: "string", format: "uuid" },
+            },
+          ],
           requestBody: {
             required: true,
             content: {
@@ -189,6 +219,12 @@ export async function GET() {
           responses: {
             "201": {
               description: "Appointment booked successfully",
+              headers: {
+                "Idempotency-Key": {
+                  schema: { type: "string" },
+                  description: "Echoed idempotency key",
+                },
+              },
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/Appointment" },
@@ -197,6 +233,159 @@ export async function GET() {
             },
             "400": { $ref: "#/components/responses/BadRequestError" },
             "401": { $ref: "#/components/responses/UnauthorizedError" },
+          },
+        },
+      },
+      "/jobs": {
+        post: {
+          tags: ["System"],
+          summary: "Submit Asynchronous Clinical Job",
+          description: "Enqueues long-running clinical analytics, DICOM reconstruction, or lab report generation. Returns 202 Accepted with a polling Location header.",
+          operationId: "createAsyncJob",
+          security: [{ OAuth2: ["write:appointments"] }, { BearerAuth: [] }],
+          parameters: [
+            {
+              name: "Idempotency-Key",
+              in: "header",
+              required: false,
+              schema: { type: "string", format: "uuid" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["task"],
+                  properties: {
+                    task: { type: "string", example: "batch_telemetry_analysis" },
+                    payload: { type: "object" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "202": {
+              description: "Job accepted for processing",
+              headers: {
+                Location: {
+                  schema: { type: "string" },
+                  description: "URI to poll for job progress",
+                },
+              },
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["jobId", "status", "statusUrl"],
+                    properties: {
+                      jobId: { type: "string", example: "job_9841a" },
+                      status: { type: "string", enum: ["pending", "processing", "completed", "failed"], example: "processing" },
+                      statusUrl: { type: "string", example: "https://healos-theta.vercel.app/api/v1/jobs/job_9841a" },
+                    },
+                  },
+                },
+              },
+            },
+            "400": { $ref: "#/components/responses/BadRequestError" },
+          },
+        },
+      },
+      "/jobs/{id}": {
+        get: {
+          tags: ["System"],
+          summary: "Check Asynchronous Job Status",
+          description: "Polls completion progress and retrieves output results for an asynchronous workload.",
+          operationId: "getJobStatus",
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Job status returned",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["jobId", "status", "progress"],
+                    properties: {
+                      jobId: { type: "string", example: "job_9841a" },
+                      status: { type: "string", enum: ["pending", "processing", "completed", "failed"] },
+                      progress: { type: "integer", example: 100 },
+                      result: { type: "object" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/batch": {
+        post: {
+          tags: ["System"],
+          summary: "Execute Bulk Operations",
+          description: "Executes multiple atomic clinical read or mutation operations within a single request context.",
+          operationId: "executeBatchOperations",
+          security: [{ OAuth2: ["write:appointments"] }, { BearerAuth: [] }],
+          parameters: [
+            {
+              name: "Idempotency-Key",
+              in: "header",
+              required: false,
+              schema: { type: "string", format: "uuid" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["operations"],
+                  properties: {
+                    operations: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        required: ["method", "path"],
+                        properties: {
+                          method: { type: "string", enum: ["GET", "POST", "PUT", "DELETE"] },
+                          path: { type: "string", example: "/appointments" },
+                          body: { type: "object" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Batch operations executed",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["total", "successful", "results"],
+                    properties: {
+                      total: { type: "integer", example: 3 },
+                      successful: { type: "integer", example: 3 },
+                      results: { type: "array", items: { type: "object" } },
+                    },
+                  },
+                },
+              },
+            },
+            "400": { $ref: "#/components/responses/BadRequestError" },
           },
         },
       },
@@ -430,26 +619,29 @@ export async function GET() {
             recordedAt: { type: "string", format: "date-time", example: "2026-09-04T18:45:00Z" },
           },
         },
+        ErrorModel: {
+          type: "object",
+          required: ["type", "title", "status", "detail"],
+          properties: {
+            type: { type: "string", format: "uri", example: "https://healos-theta.vercel.app/errors/bad-request" },
+            title: { type: "string", example: "Bad Request" },
+            status: { type: "integer", example: 400 },
+            detail: { type: "string", example: "Field 'patientId' is required." },
+            instance: { type: "string", example: "/api/v1/appointments" },
+          },
+        },
       },
       responses: {
         BadRequestError: {
-          description: "Invalid request payload or validation failure",
+          description: "Invalid request payload or validation failure (RFC 7807 Problem Details)",
           content: {
             "application/json": {
-              schema: {
-                type: "object",
-                required: ["error", "message", "statusCode"],
-                properties: {
-                  error: { type: "string", example: "Bad Request" },
-                  message: { type: "string", example: "Missing required field: date" },
-                  statusCode: { type: "integer", example: 400 },
-                },
-              },
+              schema: { $ref: "#/components/schemas/ErrorModel" },
             },
           },
         },
         UnauthorizedError: {
-          description: "Authentication token missing, expired, or lacking required scope",
+          description: "Authentication token missing, expired, or lacking required scope (RFC 7807 Problem Details)",
           headers: {
             "WWW-Authenticate": {
               schema: { type: "string" },
@@ -458,15 +650,7 @@ export async function GET() {
           },
           content: {
             "application/json": {
-              schema: {
-                type: "object",
-                required: ["error", "message", "statusCode"],
-                properties: {
-                  error: { type: "string", example: "Unauthorized" },
-                  message: { type: "string", example: "Valid Bearer token required. Refer to https://healos-theta.vercel.app/auth.md" },
-                  statusCode: { type: "integer", example: 401 },
-                },
-              },
+              schema: { $ref: "#/components/schemas/ErrorModel" },
             },
           },
         },

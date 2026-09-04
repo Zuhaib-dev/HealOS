@@ -165,6 +165,34 @@ export default function RootLayout({
           "Model Context Protocol (MCP) Agent Interface",
           "REST API 3.1 & OAuth 2.0 Security"
         ]
+      },
+      {
+        "@type": ["MedicalOrganization", "Hospital"],
+        "@id": "https://healos-theta.vercel.app/#medicalorganization",
+        "name": "HealOS Clinical Medical Center",
+        "url": "https://healos-theta.vercel.app",
+        "medicalSpecialty": ["Emergency", "Radiology", "Cardiology", "Pathology", "GeneralPractice"],
+        "hasMap": "https://healos-theta.vercel.app",
+        "parentOrganization": {
+          "@id": "https://healos-theta.vercel.app/#organization"
+        },
+        "department": [
+          { "@type": "MedicalClinic", "name": "Emergency Department" },
+          { "@type": "MedicalClinic", "name": "Radiology PACS" },
+          { "@type": "MedicalClinic", "name": "Outpatient Clinic" },
+          { "@type": "MedicalClinic", "name": "Pathology Diagnostics" }
+        ]
+      },
+      {
+        "@type": "WebAPI",
+        "@id": "https://healos-theta.vercel.app/#webapi",
+        "name": "HealOS Clinical API",
+        "description": "HIPAA-compliant RESTful and MCP clinical API for healthcare applications and autonomous agents.",
+        "documentation": "https://healos-theta.vercel.app/developers",
+        "termsOfService": "https://healos-theta.vercel.app/about",
+        "provider": {
+          "@id": "https://healos-theta.vercel.app/#organization"
+        }
       }
     ]
   };
@@ -189,6 +217,12 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          id="webmcp-registration"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if(typeof window!=='undefined'){var mc={version:"1.0",tools:[{name:"search_clinical_records",description:"Search patient directory, clinical records, and bed occupancy",parameters:{type:"object",properties:{query:{type:"string",description:"Search query for patient or record"}},required:["query"]}},{name:"book_appointment",description:"Schedule a patient appointment with a physician",parameters:{type:"object",properties:{department:{type:"string"},dateTime:{type:"string",format:"date-time"}},required:["department","dateTime"]}},{name:"triage_patient",description:"Evaluate incoming emergency patient by Emergency Severity Index (ESI 1-5)",parameters:{type:"object",properties:{chief_complaint:{type:"string"},vital_signs:{type:"object"}},required:["chief_complaint"]}}]};window.modelContext=mc;if(typeof navigator!=='undefined'){try{navigator.modelContext=mc;}catch(e){}}}})();`
+          }}
         />
         <meta name="application-name" content="HealOS" />
         <meta name="mobile-web-app-capable" content="yes" />

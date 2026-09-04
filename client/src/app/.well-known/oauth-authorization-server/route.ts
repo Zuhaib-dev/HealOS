@@ -9,6 +9,8 @@ export async function GET() {
     token_endpoint: "https://healos-theta.vercel.app/api/auth/oauth2/token",
     registration_endpoint: "https://healos-theta.vercel.app/api/auth/register",
     revocation_endpoint: "https://healos-theta.vercel.app/api/auth/revoke",
+    identity_endpoint: "https://healos-theta.vercel.app/agent/identity",
+    claim_endpoint: "https://healos-theta.vercel.app/agent/auth",
     token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post"],
     scopes_supported: [
       "read:patients",
@@ -23,6 +25,8 @@ export async function GET() {
     service_documentation: "https://healos-theta.vercel.app/auth.md",
     agent_auth: {
       supported: true,
+      identity_endpoint: "https://healos-theta.vercel.app/agent/identity",
+      claim_endpoint: "https://healos-theta.vercel.app/agent/auth",
       registration_endpoint: "https://healos-theta.vercel.app/api/auth/register",
       token_endpoint: "https://healos-theta.vercel.app/api/auth/oauth2/token",
       revocation_endpoint: "https://healos-theta.vercel.app/api/auth/revoke",

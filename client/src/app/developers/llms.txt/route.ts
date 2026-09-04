@@ -14,6 +14,14 @@ export async function GET() {
 - **API Catalog (RFC 9727)**: [https://healos-theta.vercel.app/.well-known/api-catalog](https://healos-theta.vercel.app/.well-known/api-catalog)
 - **Authentication Handbook**: [https://healos-theta.vercel.app/auth.md](https://healos-theta.vercel.app/auth.md)
 - **Agent Sandbox Token**: [https://healos-theta.vercel.app/api/v1/sandbox](https://healos-theta.vercel.app/api/v1/sandbox)
+- **Machine-Readable Pricing**: [https://healos-theta.vercel.app/pricing.md](https://healos-theta.vercel.app/pricing.md)
+- **API Deprecation Policy**: [https://healos-theta.vercel.app/developers#deprecation](https://healos-theta.vercel.app/developers#deprecation)
+
+## Architect & Maintainer
+- **Developer**: Zuhaib Rashid (Full Stack Developer)
+- **Portfolio**: [https://zuhaibrashid.com](https://zuhaibrashid.com)
+- **Email**: zuhaibrashid01@gmail.com
+- **GitHub**: [https://github.com/Zuhaib-dev/HealOS](https://github.com/Zuhaib-dev/HealOS)
 `;
 
   return new NextResponse(content, {

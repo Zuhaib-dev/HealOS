@@ -24,6 +24,8 @@ export async function GET() {
       },
       entries: [
         {
+          identifier: "healos-rest-api",
+          displayName: "HealOS Clinical REST API",
           id: "healos-rest-api",
           name: "HealOS Clinical REST API",
           type: "api",
@@ -48,6 +50,8 @@ export async function GET() {
           },
         },
         {
+          identifier: "healos-mcp-server",
+          displayName: "HealOS Model Context Protocol Server",
           id: "healos-mcp-server",
           name: "HealOS Model Context Protocol Server",
           type: "mcp",
@@ -57,6 +61,8 @@ export async function GET() {
           serverCardUrl: "https://healos-theta.vercel.app/.well-known/mcp/server-card.json",
         },
         {
+          identifier: "healos-agent-card",
+          displayName: "HealOS Autonomous Clinical Agent Card",
           id: "healos-agent-card",
           name: "HealOS Autonomous Clinical Agent Card",
           type: "agent",

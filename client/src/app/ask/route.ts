@@ -79,6 +79,8 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.get("query") ||
     request.nextUrl.searchParams.get("question") ||
     request.nextUrl.searchParams.get("prompt") ||
+    request.nextUrl.searchParams.get("input") ||
+    request.nextUrl.searchParams.get("text") ||
     request.nextUrl.searchParams.get("q") ||
     request.nextUrl.searchParams.get("message") ||
     "What is HealOS?";
@@ -93,13 +95,23 @@ export async function GET(request: NextRequest) {
   const { answer, sources, follow_ups } = generateAnswer(query);
   return NextResponse.json(
     {
-      query,
+      "@context": "https://schema.org",
+      "@type": "Answer",
+      text: answer,
       answer,
+      query,
       sources,
       confidence: 0.98,
       model: "healos-clinical-assistant-1.0",
       timestamp: new Date().toISOString(),
       follow_ups,
+      author: {
+        "@type": "Person",
+        name: "Zuhaib Rashid",
+        jobTitle: "Full Stack Developer",
+        url: "https://zuhaibrashid.com",
+        email: "zuhaibrashid01@gmail.com",
+      },
     },
     {
       status: 200,
@@ -118,6 +130,8 @@ export async function POST(request: NextRequest) {
     request.nextUrl.searchParams.get("query") ||
     request.nextUrl.searchParams.get("question") ||
     request.nextUrl.searchParams.get("prompt") ||
+    request.nextUrl.searchParams.get("input") ||
+    request.nextUrl.searchParams.get("text") ||
     request.nextUrl.searchParams.get("q") ||
     "What is HealOS?";
   let wantsStream =
@@ -131,6 +145,8 @@ export async function POST(request: NextRequest) {
       if (body.query) query = body.query;
       else if (body.question) query = body.question;
       else if (body.prompt) query = body.prompt;
+      else if (body.input) query = body.input;
+      else if (body.text) query = body.text;
       else if (body.message) query = body.message;
       else if (Array.isArray(body.messages) && body.messages.length > 0) {
         const last = body.messages[body.messages.length - 1];
@@ -153,13 +169,23 @@ export async function POST(request: NextRequest) {
   const { answer, sources, follow_ups } = generateAnswer(query);
   return NextResponse.json(
     {
-      query,
+      "@context": "https://schema.org",
+      "@type": "Answer",
+      text: answer,
       answer,
+      query,
       sources,
       confidence: 0.98,
       model: "healos-clinical-assistant-1.0",
       timestamp: new Date().toISOString(),
       follow_ups,
+      author: {
+        "@type": "Person",
+        name: "Zuhaib Rashid",
+        jobTitle: "Full Stack Developer",
+        url: "https://zuhaibrashid.com",
+        email: "zuhaibrashid01@gmail.com",
+      },
     },
     {
       status: 200,

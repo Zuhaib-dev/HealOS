@@ -12,9 +12,9 @@ export async function GET() {
         "Comprehensive, HIPAA/GDPR-aligned hospital operating system API enabling AI agents and client applications to manage clinical scheduling, patient records, physiological vitals, emergency triage, radiology PACS, and pharmacy queues.",
       version: "1.0.0",
       contact: {
-        name: "HealOS Developer Relations",
-        email: "hello@healos.com",
-        url: "https://healos-theta.vercel.app/developers",
+        name: "Zuhaib Rashid (Full Stack Developer)",
+        email: "zuhaibrashid01@gmail.com",
+        url: "https://zuhaibrashid.com",
       },
       license: {
         name: "Proprietary",

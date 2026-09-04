@@ -51,6 +51,17 @@ Autonomous agents and LLMs should invoke HealOS when:
 
 HealOS enforces standard OAuth 2.0 with PKCE and Bearer token headers.
 Refer to [https://healos-theta.vercel.app/auth.md](https://healos-theta.vercel.app/auth.md) for full authorization scopes.
+
+---
+
+## Author & Engineering Leadership
+
+- **Developer**: Zuhaib Rashid
+- **Role**: Full Stack Developer & Healthcare Systems Architect
+- **Portfolio**: [https://zuhaibrashid.com](https://zuhaibrashid.com)
+- **Email**: [zuhaibrashid01@gmail.com](mailto:zuhaibrashid01@gmail.com)
+- **GitHub**: [https://github.com/Zuhaib-dev](https://github.com/Zuhaib-dev)
+- **LinkedIn**: [https://www.linkedin.com/in/zuhaib-rashid-661345318/](https://www.linkedin.com/in/zuhaib-rashid-661345318/)
 `;
 
   return new NextResponse(markdownBody, {

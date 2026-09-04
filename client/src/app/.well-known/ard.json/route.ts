@@ -15,6 +15,12 @@ export async function GET() {
       llms_txt_url: "https://healos-theta.vercel.app/llms.txt",
       agent_instructions_url: "https://healos-theta.vercel.app/agents.md",
       agent_skills_url: "https://healos-theta.vercel.app/.well-known/agent-skills",
+      author: {
+        name: "Zuhaib Rashid",
+        role: "Full Stack Developer",
+        email: "zuhaibrashid01@gmail.com",
+        portfolio: "https://zuhaibrashid.com",
+      },
       auth: {
         type: "oauth2",
         authorization_url: "https://healos-theta.vercel.app/api/auth/oauth2/authorize",

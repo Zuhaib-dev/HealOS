@@ -12,6 +12,12 @@ export async function GET() {
       name: "HealOS",
       url: "https://healos-theta.vercel.app",
     },
+    author: {
+      name: "Zuhaib Rashid",
+      role: "Full Stack Developer",
+      email: "zuhaibrashid01@gmail.com",
+      url: "https://zuhaibrashid.com",
+    },
     version: "1.0.0",
     capabilities: {
       natural_language: true,

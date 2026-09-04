@@ -9,6 +9,12 @@ export async function GET() {
     version: "1.0.0",
     serverUrl: "https://healos-theta.vercel.app/.well-known/mcp",
     homepage: "https://healos-theta.vercel.app/developers",
+    author: {
+      name: "Zuhaib Rashid",
+      role: "Full Stack Developer",
+      email: "zuhaibrashid01@gmail.com",
+      url: "https://zuhaibrashid.com",
+    },
     repository: "https://github.com/Zuhaib-dev/HealOS",
     transport: "sse",
     tools: [

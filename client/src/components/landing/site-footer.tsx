@@ -74,7 +74,22 @@ export function SiteFooter() {
         </div>
 
         <div className="hairline-t mono-label text-muted-foreground flex flex-wrap items-center justify-between gap-4 py-6">
-          <span>© {new Date().getFullYear()} HealOS Systems</span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <span>© {new Date().getFullYear()} HealOS Systems</span>
+            <span className="hidden sm:inline">·</span>
+            <span>
+              Crafted by{" "}
+              <a
+                href="https://zuhaibrashid.com"
+                target="_blank"
+                rel="noreferrer"
+                className="text-foreground hover:text-primary transition-colors underline underline-offset-4 font-semibold"
+              >
+                Zuhaib Rashid
+              </a>{" "}
+              (Full Stack Developer)
+            </span>
+          </div>
           <span className="flex flex-wrap gap-6">
             <a href="#top" className="hover:text-foreground transition-colors">
               Privacy

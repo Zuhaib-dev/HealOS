@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     "radiology",
     "HealOS",
   ],
-  authors: [{ name: "Zuhaib Rashid", url: "https://zuhiabrashid.com" }],
+  authors: [{ name: "Zuhaib Rashid", url: "https://zuhaibrashid.com" }],
   creator: "Zuhaib Rashid",
   publisher: "Zuhaib Rashid",
   formatDetection: {
@@ -85,8 +85,9 @@ export default function RootLayout({
         "@type": "Person",
         "@id": "https://healos-theta.vercel.app/#creator",
         "name": "Zuhaib Rashid",
-        "description": "Founder & Lead Healthcare Systems Architect of HealOS",
-        "jobTitle": "Founder & Lead Developer",
+        "description": "Full Stack Developer & Lead Architect of HealOS",
+        "jobTitle": "Full Stack Developer & Founder",
+        "email": "mailto:zuhaibrashid01@gmail.com",
         "url": "https://zuhaibrashid.com",
         "sameAs": [
           "https://github.com/Zuhaib-dev",

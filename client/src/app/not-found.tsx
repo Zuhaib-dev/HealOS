@@ -21,6 +21,16 @@ export default function NotFound() {
               </Link>
             </li>
             <li>
+              <Link href="/developers" className="text-primary hover:underline flex items-center gap-2">
+                💻 Developer Portal &amp; Docs
+              </Link>
+            </li>
+            <li>
+              <Link href="/openapi.json" className="text-primary hover:underline flex items-center gap-2">
+                📑 OpenAPI 3.1 Specification
+              </Link>
+            </li>
+            <li>
               <Link href="/sitemap.xml" className="text-primary hover:underline flex items-center gap-2">
                 🗺️ Sitemap
               </Link>
@@ -31,11 +41,30 @@ export default function NotFound() {
               </Link>
             </li>
             <li>
+              <Link href="/agents.md" className="text-primary hover:underline flex items-center gap-2">
+                📋 Agent Operations Manual (agents.md)
+              </Link>
+            </li>
+            <li>
               <Link href="/.well-known/mcp" className="text-primary hover:underline flex items-center gap-2">
                 🔌 MCP Server Manifest
               </Link>
             </li>
           </ul>
+
+          <div className="mt-4 pt-4 border-t border-border/60">
+            <p className="font-mono text-xs text-muted-foreground">
+              # Agent Recovery Markdown Guide:
+              <br />
+              - [Sitemap](https://healos-theta.vercel.app/sitemap.xml)
+              <br />
+              - [Developer Portal](https://healos-theta.vercel.app/developers)
+              <br />
+              - [OpenAPI Spec](https://healos-theta.vercel.app/openapi.json)
+              <br />
+              - [Agent Handbook](https://healos-theta.vercel.app/agents.md)
+            </p>
+          </div>
         </div>
       </div>
     </div>

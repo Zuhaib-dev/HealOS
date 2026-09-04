@@ -2,8 +2,38 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSafeRedirectPath, getRoleDashboardPath, isPathAllowedForRole } from "@/lib/auth-navigation";
 
+const RFC8288_LINK_HEADER =
+  '<https://healos-theta.vercel.app/index.md>; rel="alternate"; type="text/markdown", ' +
+  '<https://healos-theta.vercel.app/sitemap.xml>; rel="sitemap", ' +
+  '<https://healos-theta.vercel.app/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json", ' +
+  '<https://healos-theta.vercel.app/.well-known/api-catalog>; rel="api-catalog"';
+
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const acceptHeader = request.headers.get("accept") || "";
+  const userAgent = request.headers.get("user-agent") || "";
+  const modeParam = request.nextUrl.searchParams.get("mode");
+
+  const isAiBot =
+    /GPTBot|ClaudeBot|ChatGPT-User|PerplexityBot|Google-Extended|Applebot-Extended|ora-agent|DeepSeekBot/i.test(
+      userAgent
+    );
+
+  const wantsMarkdown =
+    acceptHeader.includes("text/markdown") ||
+    modeParam === "agent" ||
+    isAiBot;
+
+  // Root content negotiation for AI crawlers & markdown probes
+  if (pathname === "/" && wantsMarkdown) {
+    const rewriteUrl = new URL("/index.md", request.url);
+    const response = NextResponse.rewrite(rewriteUrl);
+    response.headers.set("Content-Type", "text/markdown; charset=utf-8");
+    response.headers.set("Vary", "Accept, User-Agent, Accept-Encoding");
+    response.headers.set("Link", RFC8288_LINK_HEADER);
+    return response;
+  }
+
   const isAuthPage = pathname === "/login" || pathname === "/register";
 
   // If visiting login or register while already authenticated
@@ -26,7 +56,8 @@ export function middleware(request: NextRequest) {
     }
 
     const response = NextResponse.next();
-    response.headers.set("Vary", "Accept, Accept-Encoding");
+    response.headers.set("Vary", "Accept, User-Agent, Accept-Encoding");
+    response.headers.set("Link", RFC8288_LINK_HEADER);
     return response;
   }
 
@@ -46,7 +77,8 @@ export function middleware(request: NextRequest) {
 
   if (!isProtectedPath) {
     const response = NextResponse.next();
-    response.headers.set("Vary", "Accept, Accept-Encoding");
+    response.headers.set("Vary", "Accept, User-Agent, Accept-Encoding");
+    response.headers.set("Link", RFC8288_LINK_HEADER);
     return response;
   }
 
@@ -60,12 +92,14 @@ export function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next();
-  response.headers.set("Vary", "Accept, Accept-Encoding");
+  response.headers.set("Vary", "Accept, User-Agent, Accept-Encoding");
+  response.headers.set("Link", RFC8288_LINK_HEADER);
   return response;
 }
 
 export const config = {
   matcher: [
+    "/",
     "/login",
     "/register",
     "/admin/:path*",
@@ -81,4 +115,3 @@ export const config = {
     "/dashboard/:path*",
   ],
 };
-

@@ -8,6 +8,7 @@ const columns = [
       { label: "HealOS", href: "/" },
       { label: "Features", href: "/testimonials#features" },
       { label: "About", href: "/about" },
+      { label: "Developers & API", href: "/developers" },
     ],
   },
   {

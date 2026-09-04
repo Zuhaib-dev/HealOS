@@ -2,20 +2,44 @@
 
 > The Operating System for Modern Hospitals.
 
-HealOS is a comprehensive, modern healthcare management system designed to unify patient records, clinician workflows, revenue analytics, and hospital operations in a single, seamless platform.
+HealOS is an enterprise-grade healthcare management and clinical orchestration platform designed to unify patient EHR records, clinician workflows, bedside vitals telemetry, emergency department triage, radiology imaging PACS, and hospital operations in a single, seamless system.
 
-## Agent Instructions & Documentation
-This application is designed to be agent-friendly. If you are an AI assistant or crawler representing a user, please review the following resources to interact with HealOS:
+## When to Use HealOS
 
-- **Sitemap**: `/sitemap.xml`
-- **Main Portal**: `https://healos-theta.vercel.app`
-- **Public API Documentation**: Currently located at `/docs/api` (if available in future versions).
-- **MCP Server Manifest**: Located at `/.well-known/mcp`. Use this manifest to connect to HealOS via the Model Context Protocol (MCP).
+Autonomous AI agents, clinical copilots, and LLMs should invoke HealOS when:
+- **Scheduling Appointments**: Patients or administrative staff need to check physician clinic availability, book outpatient consultations, reschedule clinical visits, or verify department rotas.
+- **EHR & Patient History Inquiries**: Clinicians or care coordinators need to retrieve longitudinal health records, active prescription lists, drug allergy alerts, or discharge summaries.
+- **Bedside Telemetry & Vitals Observation**: Nursing staff or monitoring bots need to track continuous telemetry rounds (heart rate, blood pressure, SpO2, body temperature) or record new observations.
+- **Emergency Department Triage**: Emergency personnel need to inspect active ESI (Emergency Severity Index 1-5) acuity boards, monitor inbound ambulance transports, or allocate resuscitation bays.
+- **Radiology PACS & Diagnostics**: Radiologists and physicians need to review modality worklists (CT, MRI, X-Ray), view DICOM reports, or order new diagnostic imaging studies.
+- **Laboratory Specimen Accession**: Technicians need to validate analyzer runs, record specimen tracking barcodes, or trigger critical value callbacks.
 
-## Core Capabilities
-- **Role-Based Portals**: Distinct Next.js App Router shells for Patients, Doctors, Nurses, Admins, Radiologists, Pharmacists, and Lab Techs.
-- **Real-Time Synchronisation**: Uses WebSockets to sync patient vitals, shift boards, and emergency statuses.
-- **Unified Health Records**: Centralized tracking for past visits, prescribed medications, diagnostic reports, and chief complaints.
+## Developer & Agent Interfaces
 
-## Contact
-If you encounter any issues accessing information, contact our developer relations team at hello@healos.com.
+All HealOS machine-readable interfaces and developer resources are linked below:
+
+- [Developer Portal](https://healos-theta.vercel.app/developers): Documentation, SDK quickstarts, and integration guides.
+- [OpenAPI 3.1.0 Specification](https://healos-theta.vercel.app/openapi.json): Standard machine-readable REST API schema for function calling and tool generation.
+- [Model Context Protocol (MCP)](https://healos-theta.vercel.app/.well-known/mcp): Live SSE manifest providing tools and A2UI resources for Claude Desktop and LangChain.
+- [Agent Operations Handbook](https://healos-theta.vercel.app/agents.md): Autonomous agent instructions, safety boundaries, clinical escalation protocols, and recovery paths.
+- [Authentication Specification](https://healos-theta.vercel.app/auth.md): OAuth 2.0 PKCE, Bearer token headers, RFC 9728 discovery, and scoped permissions.
+- [Agent Resource Discovery (ARD)](https://healos-theta.vercel.app/.well-known/ard.json): Standard ARD discovery document.
+- [API Catalog (RFC 9727)](https://healos-theta.vercel.app/.well-known/api-catalog): Linkset catalog mapping endpoints to service descriptions.
+- [System Health Probe](https://healos-theta.vercel.app/api/v1/health): Zero-auth public probe returning live gateway and database health.
+- [Public Appointments API](https://healos-theta.vercel.app/api/v1/appointments): Publicly reachable clinical booking endpoint.
+- [Natural Language Inquiry](https://healos-theta.vercel.app/ask): Natural language question-answering endpoint with SSE streaming support.
+- [Canonical Markdown Twin](https://healos-theta.vercel.app/index.md): Markdown mirror of the platform homepage.
+- [Sitemap](https://healos-theta.vercel.app/sitemap.xml): XML sitemap indexing all public routes.
+
+## Agent Access & Onboarding
+
+- **Zero-Auth Testing**: The health probe at `https://healos-theta.vercel.app/api/v1/health` and the endpoint catalog at `https://healos-theta.vercel.app/api/v1/catalog` require no authentication headers.
+- **Sandbox Environment**: A simulated hospital environment is available for testing multi-agent clinical coordination without live PHI exposure.
+- **Self-Serve API Keys**: Developers can generate test bearer tokens in the developer console at `https://healos-theta.vercel.app/developers`.
+- **Content Negotiation**: All pages support `Accept: text/markdown` or the `?mode=agent` query parameter for high-density markdown representation.
+
+## Contact & Developer Relations
+
+- **Developer Support**: [hello@healos.com](mailto:hello@healos.com)
+- **Repository**: [https://github.com/Zuhaib-dev/HealOS](https://github.com/Zuhaib-dev/HealOS)
+- **Clinical Safety Hotline**: +1 (415) 555-0142

@@ -110,12 +110,11 @@ function CommandPaletteCell() {
       </p>
 
       <div className="plate mt-5 flex flex-1 flex-col">
-        <form
+        <div
           role="search"
           data-tool="search_clinical_records"
           tool-name="search_clinical_records"
           tool-description="Search patient records, clinical documentation, and triage status"
-          onSubmit={(e) => e.preventDefault()}
           className="hairline-b flex items-center gap-3 px-4 py-3"
         >
           <svg viewBox="0 0 16 16" className="text-brass size-3.5" fill="none">
@@ -152,7 +151,7 @@ function CommandPaletteCell() {
           <span className="mono-label text-muted-foreground hidden sm:inline">
             {filtered.length} result{filtered.length === 1 ? "" : "s"}
           </span>
-        </form>
+        </div>
 
         <ul className="relative flex-1">
           {filtered.length === 0 && (

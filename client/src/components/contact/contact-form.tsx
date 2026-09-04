@@ -157,7 +157,7 @@ export function ContactForm() {
                 value={values.message}
                 onChange={(e) => set("message", e.target.value)}
                 placeholder="Current systems, timeline, integrations you must keep, anything blocking you."
-                className="hairline-b placeholder:text-muted-foreground/50 mt-4 w-full resize-none bg-transparent pb-3 text-lg outline-none transition-colors focus:border-b-[var(--accent)]"
+                className="hairline-b placeholder:text-muted-foreground/50 mt-4 w-full resize-none bg-transparent pb-3 text-lg outline-none transition-colors focus:border-b-accent"
               />
               <div className="mono-label text-muted-foreground mt-3 flex justify-between">
                 <span>{errors.message ?? "No patient identifiable information, please."}</span>
@@ -214,7 +214,7 @@ function Text({
         maxLength={200}
         placeholder={placeholder}
         onChange={(e) => onChange(field, e.target.value)}
-        className="hairline-b placeholder:text-muted-foreground/50 mt-4 w-full bg-transparent pb-3 text-lg outline-none transition-colors focus:border-b-[var(--accent)]"
+        className="hairline-b placeholder:text-muted-foreground/50 mt-4 w-full bg-transparent pb-3 text-lg outline-none transition-colors focus:border-b-accent"
       />
       {error && <p className="mono-label text-destructive mt-3">{error}</p>}
     </div>
@@ -245,7 +245,7 @@ function Select({
         id={field}
         value={value}
         onChange={(e) => onChange(field, e.target.value)}
-        className="hairline-b text-foreground mt-4 w-full appearance-none bg-transparent pb-3 text-lg outline-none transition-colors focus:border-b-[var(--accent)]"
+        className="hairline-b text-foreground mt-4 w-full appearance-none bg-transparent pb-3 text-lg outline-none transition-colors focus:border-b-accent"
       >
         <option value="" className="bg-background">
           Select…

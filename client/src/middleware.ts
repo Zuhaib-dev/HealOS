@@ -44,6 +44,8 @@ export function middleware(request: NextRequest) {
     "/llms.md",
     "/skill.md",
     "/agent.md",
+    "/pricing.md",
+    "/.well-known/pricing.md",
   ]);
 
   // Universal markdown fallback for *.md requests (e.g. /.well-known/api-catalog.md, /api/v1/appointments.md)
@@ -121,19 +123,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
-    "/login",
-    "/register",
-    "/admin/:path*",
-    "/doctor/:path*",
-    "/radiology/:path*",
-    "/reception/:path*",
-    "/pharmacy/:path*",
-    "/nurse/:path*",
-    "/emergency/:path*",
-    "/lab/:path*",
-    "/patient/:path*",
-    "/onboarding/:path*",
-    "/dashboard/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

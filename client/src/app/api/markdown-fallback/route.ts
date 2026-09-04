@@ -12,14 +12,14 @@ export async function GET(request: NextRequest) {
     ?.replace(/-/g, " ")
     ?.replace(/\b\w/g, (c) => c.toUpperCase()) || "Resource";
 
-  const markdownContent = `---
+  const markdownContent = `# HealOS: ${pageTitle}
+
+---
 title: HealOS — ${pageTitle}
 description: Markdown documentation and resource twin for ${cleanPath}
 canonical: https://healos-theta.vercel.app${reqPath}
 last-updated: 2026-09-04
 ---
-
-# HealOS: ${pageTitle}
 
 This is the canonical markdown twin for \`${cleanPath}\`.
 

@@ -29,6 +29,9 @@ All HealOS machine-readable interfaces and developer resources are linked below:
 - [Public Appointments API](https://healos-theta.vercel.app/api/v1/appointments): Publicly reachable clinical booking endpoint.
 - [Natural Language Inquiry](https://healos-theta.vercel.app/ask): Natural language question-answering endpoint with SSE streaming support.
 - [Canonical Markdown Twin](https://healos-theta.vercel.app/index.md): Markdown mirror of the platform homepage.
+- [Pricing Guide](https://healos-theta.vercel.app/pricing.md): Machine-readable pricing tiers, free tier limits, and enterprise contracts.
+- [Deprecation Policy](https://healos-theta.vercel.app/developers#deprecation): RFC 8594 Sunset commitments and 24-month stability guarantee.
+- [Interactive Sandbox UI](https://healos-theta.vercel.app/sandbox): Live browser testbench for synthetic EHR data and key generation.
 - [Instant Sandbox Evaluation](https://healos-theta.vercel.app/api/v1/sandbox): Zero-friction sandbox token for agent automated testing.
 - [Agent Plugin Manifest](https://healos-theta.vercel.app/.well-known/ai-plugin.json): OpenAI / ChatGPT agent plugin manifest.
 - [HTTP Signatures Directory](https://healos-theta.vercel.app/.well-known/http-message-signatures-directory): Ed25519 JWK bot authentication directory.

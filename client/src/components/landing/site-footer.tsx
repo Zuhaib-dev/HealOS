@@ -9,6 +9,17 @@ const columns = [
       { label: "Features", href: "/testimonials#features" },
       { label: "About", href: "/about" },
       { label: "Developers & API", href: "/developers" },
+      { label: "Pricing & Plans", href: "/pricing.md" },
+    ],
+  },
+  {
+    title: "Developers",
+    links: [
+      { label: "GitHub Repo", href: "https://github.com/Zuhaib-dev/HealOS" },
+      { label: "OpenAPI 3.1", href: "/openapi.json" },
+      { label: "MCP Server", href: "/.well-known/mcp" },
+      { label: "Deprecation Policy", href: "/developers#deprecation" },
+      { label: "Agent Sandbox", href: "/api/v1/sandbox" },
     ],
   },
   {
@@ -91,6 +102,17 @@ export function SiteFooter() {
             </span>
           </div>
           <span className="flex flex-wrap gap-6">
+            <a
+              href="https://github.com/Zuhaib-dev/HealOS"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              GitHub
+            </a>
+            <Link href="/openapi.json" className="hover:text-foreground transition-colors">
+              OpenAPI
+            </Link>
             <a href="#top" className="hover:text-foreground transition-colors">
               Privacy
             </a>
@@ -98,7 +120,7 @@ export function SiteFooter() {
               Terms
             </a>
             <a href="#top" className="hover:text-foreground transition-colors">
-              HIPAA 
+              HIPAA
             </a>
           </span>
         </div>

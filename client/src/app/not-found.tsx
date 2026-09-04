@@ -53,17 +53,27 @@ export default function NotFound() {
           </ul>
 
           <div className="mt-4 pt-4 border-t border-border/60">
-            <p className="font-mono text-xs text-muted-foreground">
-              # Agent Recovery Markdown Guide:
-              <br />
-              - [Sitemap](https://healos-theta.vercel.app/sitemap.xml)
-              <br />
-              - [Developer Portal](https://healos-theta.vercel.app/developers)
-              <br />
-              - [OpenAPI Spec](https://healos-theta.vercel.app/openapi.json)
-              <br />
-              - [Agent Handbook](https://healos-theta.vercel.app/agents.md)
-            </p>
+            <h3 className="text-xs font-mono font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              Agent Recovery Manifest (Markdown)
+            </h3>
+            <pre className="font-mono text-xs text-muted-foreground bg-muted/40 p-3 rounded-md overflow-x-auto whitespace-pre-wrap select-all">
+{`# 404 Not Found - HealOS Hospital Operating System
+
+The requested resource or endpoint was not found on this server.
+
+## Agent Recovery Links (Where to Look Next)
+- [Homepage](https://healos-theta.vercel.app/)
+- [Sitemap](https://healos-theta.vercel.app/sitemap.xml)
+- [Developer Portal](https://healos-theta.vercel.app/developers)
+- [OpenAPI 3.1 Spec](https://healos-theta.vercel.app/openapi.json)
+- [API Catalog](https://healos-theta.vercel.app/.well-known/api-catalog)
+- [Model Context Protocol](https://healos-theta.vercel.app/.well-known/mcp)
+- [Agent Handbook](https://healos-theta.vercel.app/agents.md)
+- [Pricing Guide](https://healos-theta.vercel.app/pricing.md)
+- [LLMs Instructions](https://healos-theta.vercel.app/llms.txt)
+- [Deprecation Policy](https://healos-theta.vercel.app/developers#deprecation)
+- [GitHub Repository](https://github.com/Zuhaib-dev/HealOS)`}
+            </pre>
           </div>
         </div>
       </div>

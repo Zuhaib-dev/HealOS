@@ -3,6 +3,59 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-static";
 
 export async function GET() {
+  const commonErrors = {
+    "400": {
+      description: "Bad Request (RFC 7807 Problem Details)",
+      content: {
+        "application/problem+json": {
+          schema: { $ref: "#/components/schemas/ProblemDetails" },
+        },
+        "application/json": {
+          schema: { $ref: "#/components/schemas/ProblemDetails" },
+        },
+      },
+    },
+    "401": {
+      description: "Unauthorized (RFC 7807 Problem Details)",
+      headers: {
+        "WWW-Authenticate": {
+          schema: { type: "string" },
+          example: 'Bearer realm="HealOS", resource_metadata="https://healos-theta.vercel.app/.well-known/oauth-protected-resource"',
+        },
+      },
+      content: {
+        "application/problem+json": {
+          schema: { $ref: "#/components/schemas/ProblemDetails" },
+        },
+        "application/json": {
+          schema: { $ref: "#/components/schemas/ProblemDetails" },
+        },
+      },
+    },
+    "404": {
+      description: "Resource Not Found (RFC 7807 Problem Details)",
+      content: {
+        "application/problem+json": {
+          schema: { $ref: "#/components/schemas/ProblemDetails" },
+        },
+        "application/json": {
+          schema: { $ref: "#/components/schemas/ProblemDetails" },
+        },
+      },
+    },
+    "500": {
+      description: "Internal Server Error (RFC 7807 Problem Details)",
+      content: {
+        "application/problem+json": {
+          schema: { $ref: "#/components/schemas/ProblemDetails" },
+        },
+        "application/json": {
+          schema: { $ref: "#/components/schemas/ProblemDetails" },
+        },
+      },
+    },
+  };
+
   const openApiSpec = {
     openapi: "3.1.0",
     info: {
@@ -32,12 +85,17 @@ export async function GET() {
         description: "HealOS Production Gateway",
       },
       {
+        url: "https://healos-theta.vercel.app/api/v1/sandbox",
+        description: "HealOS Agent Testing Sandbox Environment",
+      },
+      {
         url: "http://localhost:5000/api/v1",
         description: "Local Development Server",
       },
     ],
     tags: [
       { name: "System", description: "Health probes, metadata, and service discovery" },
+      { name: "Sandbox", description: "Instant zero-friction test environment for agent evaluations" },
       { name: "Appointments", description: "Clinical booking, consultation scheduling, and calendar management" },
       { name: "Patients", description: "Demographic profiles, longitudinal EHR records, and allergy indices" },
       { name: "Vitals", description: "Continuous and episodic physiological vital signs observation" },
@@ -76,6 +134,7 @@ export async function GET() {
                 },
               },
             },
+            ...commonErrors,
           },
         },
       },
@@ -112,6 +171,45 @@ export async function GET() {
                 },
               },
             },
+            ...commonErrors,
+          },
+        },
+      },
+      "/sandbox": {
+        get: {
+          tags: ["Sandbox"],
+          summary: "Instant Agent Sandbox Probe",
+          description: "Returns an instant zero-friction agent test token and synthetic hospital state. Requires no authentication headers or credit card.",
+          operationId: "getSandboxState",
+          security: [],
+          responses: {
+            "200": {
+              description: "Sandbox evaluation environment active",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/SandboxTokenResponse" },
+                },
+              },
+            },
+            ...commonErrors,
+          },
+        },
+        post: {
+          tags: ["Sandbox"],
+          summary: "Issue Immediate Sandbox Token",
+          description: "Issues a rate-limited evaluation token for autonomous AI agents testing clinical toolcalls.",
+          operationId: "createSandboxToken",
+          security: [],
+          responses: {
+            "200": {
+              description: "Sandbox token successfully issued",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/SandboxTokenResponse" },
+                },
+              },
+            },
+            ...commonErrors,
           },
         },
       },
@@ -180,7 +278,7 @@ export async function GET() {
                 },
               },
             },
-            "401": { $ref: "#/components/responses/UnauthorizedError" },
+            ...commonErrors,
           },
         },
         post: {
@@ -231,8 +329,7 @@ export async function GET() {
                 },
               },
             },
-            "400": { $ref: "#/components/responses/BadRequestError" },
-            "401": { $ref: "#/components/responses/UnauthorizedError" },
+            ...commonErrors,
           },
         },
       },
@@ -289,7 +386,7 @@ export async function GET() {
                 },
               },
             },
-            "400": { $ref: "#/components/responses/BadRequestError" },
+            ...commonErrors,
           },
         },
       },
@@ -325,6 +422,7 @@ export async function GET() {
                 },
               },
             },
+            ...commonErrors,
           },
         },
       },
@@ -385,7 +483,7 @@ export async function GET() {
                 },
               },
             },
-            "400": { $ref: "#/components/responses/BadRequestError" },
+            ...commonErrors,
           },
         },
       },
@@ -423,7 +521,7 @@ export async function GET() {
                 },
               },
             },
-            "401": { $ref: "#/components/responses/UnauthorizedError" },
+            ...commonErrors,
           },
         },
       },
@@ -461,7 +559,7 @@ export async function GET() {
                 },
               },
             },
-            "401": { $ref: "#/components/responses/UnauthorizedError" },
+            ...commonErrors,
           },
         },
         post: {
@@ -496,8 +594,7 @@ export async function GET() {
                 },
               },
             },
-            "400": { $ref: "#/components/responses/BadRequestError" },
-            "401": { $ref: "#/components/responses/UnauthorizedError" },
+            ...commonErrors,
           },
         },
       },
@@ -536,7 +633,7 @@ export async function GET() {
                 },
               },
             },
-            "401": { $ref: "#/components/responses/UnauthorizedError" },
+            ...commonErrors,
           },
         },
       },
@@ -619,6 +716,34 @@ export async function GET() {
             recordedAt: { type: "string", format: "date-time", example: "2026-09-04T18:45:00Z" },
           },
         },
+        SandboxTokenResponse: {
+          type: "object",
+          required: ["status", "environment", "sandbox_token", "expires_in", "capabilities", "message"],
+          properties: {
+            status: { type: "string", example: "active" },
+            environment: { type: "string", example: "sandbox" },
+            sandbox_token: { type: "string", example: "healos_test_token_agent_eval_sandbox" },
+            token_type: { type: "string", example: "Bearer" },
+            expires_in: { type: "integer", example: 86400 },
+            capabilities: {
+              type: "array",
+              items: { type: "string" },
+              example: ["search_patients", "get_patient_vitals", "book_appointment", "get_emergency_triage"],
+            },
+            message: { type: "string", example: "Zero-friction agent testing sandbox active. No credit card or registration required." },
+          },
+        },
+        ProblemDetails: {
+          type: "object",
+          required: ["type", "title", "status", "detail"],
+          properties: {
+            type: { type: "string", format: "uri", example: "https://healos-theta.vercel.app/errors/bad-request" },
+            title: { type: "string", example: "Bad Request" },
+            status: { type: "integer", example: 400 },
+            detail: { type: "string", example: "Invalid request payload or parameter." },
+            instance: { type: "string", example: "/api/v1/appointments" },
+          },
+        },
         ErrorModel: {
           type: "object",
           required: ["type", "title", "status", "detail"],
@@ -630,13 +755,25 @@ export async function GET() {
             instance: { type: "string", example: "/api/v1/appointments" },
           },
         },
+        Error: {
+          type: "object",
+          required: ["code", "message"],
+          properties: {
+            code: { type: "string", example: "BAD_REQUEST" },
+            message: { type: "string", example: "Invalid request payload" },
+            details: { type: "object" },
+          },
+        },
       },
       responses: {
         BadRequestError: {
           description: "Invalid request payload or validation failure (RFC 7807 Problem Details)",
           content: {
+            "application/problem+json": {
+              schema: { $ref: "#/components/schemas/ProblemDetails" },
+            },
             "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorModel" },
+              schema: { $ref: "#/components/schemas/ProblemDetails" },
             },
           },
         },
@@ -649,8 +786,11 @@ export async function GET() {
             },
           },
           content: {
+            "application/problem+json": {
+              schema: { $ref: "#/components/schemas/ProblemDetails" },
+            },
             "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorModel" },
+              schema: { $ref: "#/components/schemas/ProblemDetails" },
             },
           },
         },
@@ -664,6 +804,8 @@ export async function GET() {
       "Content-Type": "application/vnd.oai.openapi+json",
       "Access-Control-Allow-Origin": "*",
       "Cache-Control": "public, max-age=3600, s-maxage=86400",
+      Sunset: "Fri, 31 Dec 2027 23:59:59 GMT",
+      Link: '<https://healos-theta.vercel.app/developers#deprecation>; rel="deprecation"',
     },
   });
 }

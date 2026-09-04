@@ -230,12 +230,15 @@ export function RxQueuePanel() {
         <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col border-r border-border/60 bg-background/50">
           <div className="p-4 sm:p-6 border-b border-border/40">
             <div className="relative">
+              <label htmlFor="pharmacy-queue-search" className="sr-only">Search MRN, Patient Name</label>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input 
+                id="pharmacy-queue-search"
+                aria-label="Search MRN, Patient Name"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search MRN, Patient Name..." 
-                className="w-full bg-card/60 border border-border/60 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-primary/50 transition-colors"
+                className="w-full bg-card/60 border border-border/60 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50 transition-colors"
               />
             </div>
           </div>
@@ -346,15 +349,21 @@ export function RxQueuePanel() {
                         className="bg-background border border-border/60 rounded-xl p-4 overflow-hidden"
                       >
                         <div className="flex flex-col sm:flex-row gap-3">
+                          <label htmlFor="pharmacy-custom-name" className="sr-only">Medicine Name</label>
                           <input 
+                            id="pharmacy-custom-name"
+                            aria-label="Medicine Name"
                             value={customName}
                             onChange={(e) => setCustomName(e.target.value)}
                             placeholder="Medicine Name (e.g. Paracetamol)"
-                            className="flex-1 bg-card border border-border/60 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary/50"
+                            className="flex-1 bg-card border border-border/60 rounded-lg px-3 py-2 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50"
                           />
                           <div className="relative">
+                            <label htmlFor="pharmacy-custom-price" className="sr-only">Price</label>
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">₹</span>
                             <input 
+                              id="pharmacy-custom-price"
+                              aria-label="Price in rupees"
                               type="number"
                               value={customPrice}
                               onChange={(e) => setCustomPrice(e.target.value)}
@@ -362,7 +371,7 @@ export function RxQueuePanel() {
                                 if (e.key === "Enter") addCustomItem();
                               }}
                               placeholder="Price"
-                              className="w-24 bg-card border border-border/60 rounded-lg pl-7 pr-3 py-2 text-sm outline-none focus:border-primary/50 font-mono"
+                              className="w-24 bg-card border border-border/60 rounded-lg pl-7 pr-3 py-2 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50 font-mono"
                             />
                           </div>
                           <ActionButton tone="solid" onClick={addCustomItem}>Add</ActionButton>
@@ -387,13 +396,16 @@ export function RxQueuePanel() {
                         >
                           <div className="flex items-start gap-3 sm:gap-4">
                             <button
+                              type="button"
                               disabled={item.isLocked || isPaid}
                               onClick={() => updateCartItem(item.id, { selected: !item.selected })}
-                              className={`size-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                              aria-label={item.selected ? `Deselect ${item.name}` : `Select ${item.name}`}
+                              className={`size-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                                 item.selected ? "border-emerald-500 bg-emerald-500 text-white" : "border-muted-foreground/40 text-transparent hover:border-emerald-500/50"
                               }`}
                             >
-                              <Check className="size-3.5" strokeWidth={3} />
+                              <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
+                              <span className="sr-only">{item.selected ? `Deselect ${item.name}` : `Select ${item.name}`}</span>
                             </button>
                             
                             <div>
@@ -405,7 +417,7 @@ export function RxQueuePanel() {
                                 {item.isLocked && <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded uppercase">Already Billed</span>}
                               </div>
                               
-                              {item.isPrescribed && (
+                              {item.isPrescribed && item.dosage && (
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className="mono-label text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded">{item.dosage}</span>
                                 </div>
@@ -423,15 +435,17 @@ export function RxQueuePanel() {
                           {!item.isLocked && (
                             <div className={`mt-2 sm:mt-0 flex items-center justify-between sm:justify-end gap-2 sm:gap-4 pt-3 sm:pt-0 border-t sm:border-0 border-border/30 ${!item.selected ? "pointer-events-none opacity-50" : ""}`}>
                               <div className="flex flex-col items-start sm:items-end">
-                                <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Price</span>
+                                <label htmlFor={`cart-item-price-${item.id}`} className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Price</label>
                                 <div className="relative">
                                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs">₹</span>
                                   <input 
+                                    id={`cart-item-price-${item.id}`}
+                                    aria-label={`Price for ${item.name}`}
                                     type="number" 
                                     disabled={isPaid}
                                     value={item.price} 
                                     onChange={(e) => updateCartItem(item.id, { price: Number(e.target.value) })}
-                                    className="w-16 sm:w-20 bg-card border border-border/60 rounded px-1 sm:px-2 pl-5 py-1.5 sm:py-1 text-xs font-mono outline-none focus:border-primary/50 text-right"
+                                    className="w-16 sm:w-20 bg-card border border-border/60 rounded px-1 sm:px-2 pl-5 py-1.5 sm:py-1 text-xs font-mono outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50 text-right"
                                   />
                                 </div>
                               </div>
@@ -440,19 +454,25 @@ export function RxQueuePanel() {
                                 <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Qty</span>
                                 <div className="flex items-center gap-1 sm:gap-2 border border-border/60 bg-card rounded p-1 sm:p-0.5">
                                   <button 
+                                    type="button"
+                                    aria-label={`Decrease quantity for ${item.name}`}
                                     disabled={item.quantity <= 1 || isPaid}
                                     onClick={() => updateCartItem(item.id, { quantity: item.quantity - 1 })}
-                                    className="p-1 sm:p-1 rounded bg-background hover:bg-muted text-foreground transition-colors disabled:opacity-50"
+                                    className="p-1 sm:p-1 rounded bg-background hover:bg-muted text-foreground transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                                   >
-                                    <Minus className="size-3" />
+                                    <Minus className="size-3" aria-hidden="true" />
+                                    <span className="sr-only">Decrease quantity</span>
                                   </button>
                                   <span className="font-mono text-xs w-4 sm:w-6 text-center">{item.quantity}</span>
                                   <button 
+                                    type="button"
+                                    aria-label={`Increase quantity for ${item.name}`}
                                     disabled={isPaid}
                                     onClick={() => updateCartItem(item.id, { quantity: item.quantity + 1 })}
-                                    className="p-1 sm:p-1 rounded bg-background hover:bg-muted text-foreground transition-colors disabled:opacity-50"
+                                    className="p-1 sm:p-1 rounded bg-background hover:bg-muted text-foreground transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                                   >
-                                    <Plus className="size-3" />
+                                    <Plus className="size-3" aria-hidden="true" />
+                                    <span className="sr-only">Increase quantity</span>
                                   </button>
                                 </div>
                               </div>

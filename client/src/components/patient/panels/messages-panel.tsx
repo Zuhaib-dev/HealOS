@@ -190,13 +190,15 @@ export function MessagesPanel() {
         </div>
 
         <div className="bg-background p-5">
-          <p className="mono-label text-muted-foreground">New message</p>
+          <label htmlFor="patient-new-message" className="mono-label block text-muted-foreground">New message</label>
           <textarea
+            id="patient-new-message"
+            aria-label="Type your message"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={8}
             placeholder="Type your message..."
-            className="hairline placeholder:text-muted-foreground mt-3 w-full resize-none bg-transparent p-3 text-sm outline-none"
+            className="hairline placeholder:text-muted-foreground mt-3 w-full resize-none bg-transparent p-3 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();

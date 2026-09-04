@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   fetchAvailableDoctorsApi,
   bookAppointmentApi,
@@ -250,6 +250,10 @@ export function BillingPanel() {
                         <ActionButton>Receipt</ActionButton>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-md border-0 bg-transparent shadow-none p-0">
+                        <DialogHeader className="sr-only">
+                          <DialogTitle>Patient Receipt INV-{b._id.slice(-8).toUpperCase()}</DialogTitle>
+                          <DialogDescription>Hospital billing invoice receipt</DialogDescription>
+                        </DialogHeader>
                         <div className="relative bg-card text-card-foreground p-6 pt-10 font-mono shadow-2xl rounded-sm overflow-hidden" 
                              style={{
                                backgroundImage: "radial-gradient(circle at top, transparent 4px, var(--card) 5px)",

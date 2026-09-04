@@ -100,18 +100,20 @@ export function AdminShell({
           </div>
 
           {/* Search bar instrument */}
-          <div className="hidden lg:flex w-80 items-center gap-2.5 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-command-menu"))}
+            aria-label="Search patients, staff, invoices, approvals"
+            className="hidden lg:flex w-80 items-center gap-2.5 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:border-primary/50 transition-all text-left cursor-pointer"
+          >
             <Search className="text-muted-foreground size-3.5 shrink-0" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search patients, staff, invoices, approvals..."
-              className="mono-label placeholder:text-muted-foreground/70 w-full bg-transparent text-xs outline-none"
-            />
+            <span className="mono-label text-muted-foreground/70 flex-1 text-xs truncate">
+              Search patients, staff, invoices...
+            </span>
             <kbd className="mono-label hidden xl:inline-block rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground border border-border">
               ⌘K
             </kbd>
-          </div>
+          </button>
 
           {/* Right Header Actions */}
           <div className="flex items-center gap-3 ml-auto">
@@ -160,7 +162,7 @@ export function AdminShell({
             </div>
           )}
 
-          <nav className="flex flex-col gap-1 w-full">
+          <nav aria-label="Admin sidebar navigation" className="flex flex-col gap-1 w-full">
             {sections.map((s) => {
               const Icon = s.icon;
               const isActive = s.id === "overview" ? pathname === "/admin" : pathname.startsWith(`/admin/${s.id}`);
@@ -219,7 +221,7 @@ export function AdminShell({
 
       {/* Persistent Bottom Navigation Bar - Mobile Only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
-        <nav className="flex justify-around items-center px-2 py-1.5">
+        <nav aria-label="Admin mobile navigation" className="flex justify-around items-center px-2 py-1.5">
           {mainMobileTabs.map((s) => {
             const Icon = s.icon;
             const isActive = s.id === "overview" ? pathname === "/admin" : pathname.startsWith(`/admin/${s.id}`);
@@ -229,7 +231,7 @@ export function AdminShell({
                 key={s.id}
                 href={href}
                 onClick={() => setIsMoreOpen(false)}
-                className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none group tap-highlight-transparent"
+                className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
               >
                 <motion.div 
                   animate={isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }}
@@ -257,7 +259,7 @@ export function AdminShell({
               <DrawerTrigger asChild>
                 <button
                   type="button"
-                  className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none group tap-highlight-transparent"
+                  className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
                 >
                   <div className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
                     moreMobileTabs.some(s => pathname.startsWith(`/admin/${s.id}`)) ? "text-primary" : "text-muted-foreground group-hover:text-foreground"

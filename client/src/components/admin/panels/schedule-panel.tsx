@@ -33,6 +33,8 @@ export function SchedulePanel() {
   const [schedules, setSchedules] = useState<AdminScheduleData[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [staffList, setStaffList] = useState<AdminStaffData[]>([]);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state for creating a new shift
   const [formData, setFormData] = useState({
@@ -64,16 +66,34 @@ export function SchedulePanel() {
 
   useAdminRealtime(["schedule", "appointments", "staff"], loadSchedule);
 
-  const handleCreateShift = async (e: React.FormEvent) => {
+  const handleCreateShift = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData.user) return toast.error("Select a staff member");
+    const errors: Record<string, string> = {};
+    if (!formData.user) errors.user = "Please select a staff member.";
+    if (!formData.date) errors.date = "Shift date is required.";
+    if (!formData.startTime) errors.startTime = "Start time is required.";
+    if (!formData.endTime) errors.endTime = "End time is required.";
+    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
+      errors.endTime = "End time must be after start time.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please resolve validation errors before creating shift.");
+      return;
+    }
+    setFormErrors({});
+
     try {
+      setIsSubmitting(true);
       await createScheduleApi(formData);
       toast.success("Shift added successfully");
       setIsFormOpen(false);
       loadSchedule();
     } catch (err) {
       toast.error("Failed to create shift");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -134,44 +154,149 @@ export function SchedulePanel() {
         <div className="hairline-b bg-muted/30 p-5 sm:px-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="mono-label font-bold text-foreground">Add Staff Shift</h3>
-            <button type="button" onClick={() => setIsFormOpen(false)} className="text-muted-foreground hover:text-foreground">
+            <button
+              type="button"
+              onClick={() => {
+                setIsFormOpen(false);
+                setFormErrors({});
+              }}
+              aria-label="Close add shift form"
+              className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
+            >
               <LogOut className="size-4 rotate-45" />
+              <span className="sr-only">Close add shift form</span>
             </button>
           </div>
           <form onSubmit={handleCreateShift} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-            <label className="block lg:col-span-2">
-              <span className="mono-label text-xs text-muted-foreground block mb-1">Staff Member</span>
-              <select required value={formData.user} onChange={e => {
-                const s = staffList.find(x => x.user._id === e.target.value);
-                setFormData(d => ({ ...d, user: e.target.value, department: s?.department || "General" }));
-              }} className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent">
+            <div className="lg:col-span-2">
+              <label htmlFor="shift-user" className="mono-label text-xs text-muted-foreground block mb-1">
+                Staff Member
+              </label>
+              <select
+                id="shift-user"
+                required={true}
+                aria-invalid={Boolean(formErrors.user)}
+                aria-describedby={formErrors.user ? "shift-user-error" : undefined}
+                value={formData.user}
+                onChange={e => {
+                  const s = staffList.find(x => x.user._id === e.target.value);
+                  setFormData(d => ({ ...d, user: e.target.value, department: s?.department || "General" }));
+                  if (formErrors.user) setFormErrors(prev => ({ ...prev, user: "" }));
+                }}
+                className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.user ? "border-destructive" : ""}`}
+              >
                 <option value="">Select staff...</option>
                 {staffList.map(s => <option key={s._id} value={s.user._id}>{s.user.name} ({s.user.role})</option>)}
               </select>
-            </label>
-            <label className="block">
-              <span className="mono-label text-xs text-muted-foreground block mb-1">Date</span>
-              <input type="date" required value={formData.date} onChange={e => setFormData(d => ({ ...d, date: e.target.value }))} className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent" />
-            </label>
-            <label className="block">
-              <span className="mono-label text-xs text-muted-foreground block mb-1">Start Time</span>
-              <input type="time" required value={formData.startTime} onChange={e => setFormData(d => ({ ...d, startTime: e.target.value }))} className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent" />
-            </label>
-            <label className="block">
-              <span className="mono-label text-xs text-muted-foreground block mb-1">End Time</span>
-              <input type="time" required value={formData.endTime} onChange={e => setFormData(d => ({ ...d, endTime: e.target.value }))} className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent" />
-            </label>
-            <label className="block">
-              <span className="mono-label text-xs text-muted-foreground block mb-1">Shift Type</span>
-              <select required value={formData.shiftType} onChange={e => setFormData(d => ({ ...d, shiftType: e.target.value }))} className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent">
+              {formErrors.user && (
+                <span id="shift-user-error" role="alert" className="mono-label text-[10px] text-destructive block mt-1">
+                  {formErrors.user}
+                </span>
+              )}
+            </div>
+            <div>
+              <label htmlFor="shift-date" className="mono-label text-xs text-muted-foreground block mb-1">
+                Date
+              </label>
+              <input
+                id="shift-date"
+                type="date"
+                required={true}
+                aria-invalid={Boolean(formErrors.date)}
+                aria-describedby={formErrors.date ? "shift-date-error" : undefined}
+                value={formData.date}
+                onChange={e => {
+                  setFormData(d => ({ ...d, date: e.target.value }));
+                  if (formErrors.date) setFormErrors(prev => ({ ...prev, date: "" }));
+                }}
+                className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.date ? "border-destructive" : ""}`}
+              />
+              {formErrors.date && (
+                <span id="shift-date-error" role="alert" className="mono-label text-[10px] text-destructive block mt-1">
+                  {formErrors.date}
+                </span>
+              )}
+            </div>
+            <div>
+              <label htmlFor="shift-start-time" className="mono-label text-xs text-muted-foreground block mb-1">
+                Start Time
+              </label>
+              <input
+                id="shift-start-time"
+                type="time"
+                required={true}
+                aria-invalid={Boolean(formErrors.startTime)}
+                aria-describedby={formErrors.startTime ? "shift-start-time-error" : undefined}
+                value={formData.startTime}
+                onChange={e => {
+                  setFormData(d => ({ ...d, startTime: e.target.value }));
+                  if (formErrors.startTime) setFormErrors(prev => ({ ...prev, startTime: "" }));
+                }}
+                className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.startTime ? "border-destructive" : ""}`}
+              />
+              {formErrors.startTime && (
+                <span id="shift-start-time-error" role="alert" className="mono-label text-[10px] text-destructive block mt-1">
+                  {formErrors.startTime}
+                </span>
+              )}
+            </div>
+            <div>
+              <label htmlFor="shift-end-time" className="mono-label text-xs text-muted-foreground block mb-1">
+                End Time
+              </label>
+              <input
+                id="shift-end-time"
+                type="time"
+                required={true}
+                aria-invalid={Boolean(formErrors.endTime)}
+                aria-describedby={formErrors.endTime ? "shift-end-time-error" : undefined}
+                value={formData.endTime}
+                onChange={e => {
+                  setFormData(d => ({ ...d, endTime: e.target.value }));
+                  if (formErrors.endTime) setFormErrors(prev => ({ ...prev, endTime: "" }));
+                }}
+                className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.endTime ? "border-destructive" : ""}`}
+              />
+              {formErrors.endTime && (
+                <span id="shift-end-time-error" role="alert" className="mono-label text-[10px] text-destructive block mt-1">
+                  {formErrors.endTime}
+                </span>
+              )}
+            </div>
+            <div>
+              <label htmlFor="shift-type" className="mono-label text-xs text-muted-foreground block mb-1">
+                Shift Type
+              </label>
+              <select
+                id="shift-type"
+                required
+                value={formData.shiftType}
+                onChange={e => setFormData(d => ({ ...d, shiftType: e.target.value }))}
+                className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+              >
                 <option value="REGULAR">REGULAR</option>
                 <option value="ON_CALL">ON CALL</option>
                 <option value="LEAVE">LEAVE</option>
               </select>
-            </label>
+            </div>
             <div className="sm:col-span-2 lg:col-span-6 flex justify-end gap-3 mt-2">
-              <button type="button" onClick={() => setIsFormOpen(false)} className="mono-label text-muted-foreground px-4 py-2 hover:text-foreground transition-colors">Cancel</button>
-              <button type="submit" className="bg-foreground text-background mono-label px-4 py-2 font-bold hover:bg-foreground/90 transition-colors">Create Shift</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFormOpen(false);
+                  setFormErrors({});
+                }}
+                className="mono-label text-muted-foreground px-4 py-2 hover:text-foreground transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-foreground text-background mono-label px-4 py-2 font-bold hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSubmitting ? "Creating Shift..." : "Create Shift"}
+              </button>
             </div>
           </form>
         </div>

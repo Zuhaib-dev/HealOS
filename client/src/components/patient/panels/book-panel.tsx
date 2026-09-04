@@ -298,7 +298,7 @@ export function BookPanel() {
                   >
                     <div className="size-14 rounded-full bg-muted border border-border/50 shrink-0 overflow-hidden relative">
                       {doc.avatarUrl ? (
-                        <Image src={doc.avatarUrl} alt={doc.name} fill sizes="56px" className="object-cover" />
+                        <Image src={doc.avatarUrl} alt={doc.name || "Doctor profile picture"} fill sizes="56px" className="object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary font-bold">
                           {doc.name.charAt(0)}
@@ -446,16 +446,18 @@ export function BookPanel() {
                         ))}
                       </div>
 
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
+                      <label htmlFor="appointment-visit-reason" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
                         <FileText className="size-3.5" />
                         Visit Reason
                       </label>
                       <textarea
+                        id="appointment-visit-reason"
+                        aria-label="Visit Reason"
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         rows={3}
                         placeholder="Briefly describe symptoms..."
-                        className="w-full resize-none bg-background border border-border/70 p-3 text-sm outline-none rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all flex-1"
+                        className="w-full resize-none bg-background border border-border/70 p-3 text-sm outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all flex-1"
                       />
                     </div>
                   </div>

@@ -117,7 +117,14 @@ export function FluidBalancePanel() {
                       {k}
                     </button>
                   ))}
-                  <input value={amount} onChange={(ev) => setAmount(ev.target.value)} placeholder="mL" className="hairline w-20 bg-transparent px-2 py-1.5 font-mono text-sm outline-none" />
+                  <input
+                    id={`fluid-amount-input-${e.bed}`}
+                    aria-label="Fluid volume in milliliters"
+                    value={amount}
+                    onChange={(ev) => setAmount(ev.target.value)}
+                    placeholder="mL"
+                    className="hairline w-20 bg-transparent px-2 py-1.5 font-mono text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
+                  />
                   <ActionButton tone="solid" onClick={() => commit(e.bed)}>Log</ActionButton>
                 </div>
               ) : (

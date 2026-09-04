@@ -6,6 +6,7 @@ import { ActionButton, PanelHeader } from "../admin-shell";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -206,16 +207,18 @@ export function BillingPanel() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>From Date (Optional)</Label>
+              <Label htmlFor="export-from-date">From Date (Optional)</Label>
               <Input 
+                id="export-from-date"
                 type="date" 
                 value={exportStartDate} 
                 onChange={(e) => setExportStartDate(e.target.value)} 
               />
             </div>
             <div className="space-y-2">
-              <Label>To Date (Optional)</Label>
+              <Label htmlFor="export-to-date">To Date (Optional)</Label>
               <Input 
+                id="export-to-date"
                 type="date" 
                 value={exportEndDate} 
                 onChange={(e) => setExportEndDate(e.target.value)} 
@@ -292,6 +295,10 @@ export function BillingPanel() {
                       </button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md border-0 bg-transparent shadow-none p-0">
+                      <DialogHeader className="sr-only">
+                        <DialogTitle>Invoice Receipt INV-{inv._id.slice(-8).toUpperCase()}</DialogTitle>
+                        <DialogDescription>Hospital payment receipt details for {inv.patient?.name || "Patient"}</DialogDescription>
+                      </DialogHeader>
                       {/* Receipt paper container */}
                       <div className="relative bg-card text-card-foreground p-6 pt-10 font-mono shadow-2xl rounded-sm overflow-hidden" 
                            style={{

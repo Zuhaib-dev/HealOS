@@ -108,13 +108,14 @@ export function UsersPanel() {
 
       <div className="hairline-b flex gap-1 px-5 py-3 sm:px-8">
         <input
+          aria-label="Search users by name, email, phone, or role"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
             setPage(1);
           }}
           placeholder="Search name, email, phone, or role (e.g. Doctor, Admin)"
-          className="mono-label hairline placeholder:text-muted-foreground mr-3 w-full max-w-xs bg-transparent px-3 py-2 outline-none"
+          className="mono-label hairline placeholder:text-muted-foreground mr-3 w-full max-w-xs bg-transparent px-3 py-2 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
         />
         {(
           [
@@ -177,6 +178,7 @@ export function UsersPanel() {
                     </Td>
                     <Td>
                       <select
+                        aria-label={`Change role for ${u.name}`}
                         value={u.role || "USER"}
                         onChange={(e) => handleRoleChange(u._id, e.target.value)}
                         className="bg-background/50 border border-border/60 rounded-md px-2 py-1.5 text-xs mono-label outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"

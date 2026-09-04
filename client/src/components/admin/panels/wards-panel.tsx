@@ -25,6 +25,7 @@ import { useAdminRealtime } from "../use-admin-realtime";
 
 export function WardsPanel() {
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [dbWards, setDbWards] = useState<AdminWardData[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -79,6 +80,7 @@ export function WardsPanel() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setIsSubmitting(true);
       if (editingId) {
         await updateWardApi(editingId, formData);
         toast.success("Ward updated successfully");
@@ -90,6 +92,8 @@ export function WardsPanel() {
       loadWards();
     } catch (err) {
       toast.error("Failed to save ward");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -113,8 +117,14 @@ export function WardsPanel() {
         <div className="mx-5 sm:mx-8 mb-8 p-6 bg-card/40 rounded-2xl border border-border/60 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="mono-label font-bold text-foreground">{editingId ? "Edit Ward" : "Add New Ward"}</h3>
-            <button type="button" onClick={() => setIsFormOpen(false)} className="text-muted-foreground hover:text-foreground">
+            <button
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              aria-label="Close ward form"
+              className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
+            >
               <X className="size-4" />
+              <span className="sr-only">Close ward form</span>
             </button>
           </div>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -140,8 +150,12 @@ export function WardsPanel() {
             </label>
             <div className="sm:col-span-2 lg:col-span-5 flex justify-end gap-3 mt-2">
               <button type="button" onClick={() => setIsFormOpen(false)} className="mono-label text-muted-foreground px-4 py-2 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors">Cancel</button>
-              <button type="submit" className="bg-primary text-primary-foreground mono-label rounded-lg px-4 py-2 font-bold hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-sm transition-all">
-                {editingId ? "Save Changes" : "Create Ward"}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-primary text-primary-foreground mono-label rounded-lg px-4 py-2 font-bold hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSubmitting ? "Saving..." : editingId ? "Save Changes" : "Create Ward"}
               </button>
             </div>
           </form>
@@ -160,11 +174,23 @@ export function WardsPanel() {
             return (
               <div key={w._id} className="bg-card/40 border border-border/60 rounded-2xl p-6 relative group hover:-translate-y-1 hover:shadow-lg transition-all duration-300 backdrop-blur-sm overflow-hidden">
                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
-                  <button type="button" onClick={() => handleEdit(w)} className="bg-background/80 backdrop-blur border border-border/60 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(w)}
+                    aria-label={`Edit ${w.name}`}
+                    className="bg-background/80 backdrop-blur border border-border/60 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm"
+                  >
                     <Pencil className="size-4" />
+                    <span className="sr-only">Edit {w.name}</span>
                   </button>
-                  <button type="button" onClick={() => handleDelete(w._id)} className="bg-background/80 backdrop-blur border border-border/60 p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(w._id)}
+                    aria-label={`Delete ${w.name}`}
+                    className="bg-background/80 backdrop-blur border border-border/60 p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shadow-sm"
+                  >
                     <Trash2 className="size-4" />
+                    <span className="sr-only">Delete {w.name}</span>
                   </button>
                 </div>
                 <div className="flex items-start justify-between relative z-0">

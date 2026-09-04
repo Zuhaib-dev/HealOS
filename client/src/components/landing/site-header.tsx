@@ -35,7 +35,7 @@ export function SiteHeader() {
           </Link>
 
           {/* Center Navigation Links */}
-          <nav className="hidden items-center gap-8 lg:flex ml-10 mr-auto">
+          <nav aria-label="Main site navigation" className="hidden items-center gap-8 lg:flex ml-10 mr-auto">
             <Link href="/about" className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors">
               About
             </Link>
@@ -127,7 +127,7 @@ export function SiteHeader() {
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed inset-x-4 top-24 z-40 rounded-2xl border border-border/40 bg-background/95 p-6 shadow-2xl backdrop-blur-xl lg:hidden"
           >
-            <nav className="flex flex-col gap-4">
+            <nav aria-label="Mobile site navigation" className="flex flex-col gap-4">
               <Link href="/about" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">About</Link>
               <Link href="/features" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Features</Link>
               <Link href="/testimonials" onClick={() => setOpen(false)} className="mono-label text-sm text-muted-foreground hover:text-foreground">Testimonials</Link>

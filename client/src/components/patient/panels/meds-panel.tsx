@@ -197,14 +197,17 @@ export function MedsPanel() {
                       <p className="text-sm font-medium text-muted-foreground">{m.dose} • {m.freq}</p>
                     </div>
                     <button
+                      type="button"
                       onClick={() => toggleTaken(m.id)}
-                      className={`shrink-0 flex items-center justify-center size-8 rounded-full border-2 transition-colors ${
+                      aria-label={isTaken ? `Mark ${m.name} as not taken` : `Mark ${m.name} as taken`}
+                      className={`shrink-0 flex items-center justify-center size-8 rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                         isTaken 
                         ? "bg-emerald-500 border-emerald-500 text-white"
                         : "border-muted-foreground/30 hover:border-primary text-transparent hover:text-primary/20"
                       }`}
                     >
-                      <Check className={`size-5 ${isTaken ? "opacity-100" : "opacity-0"}`} />
+                      <Check className={`size-5 ${isTaken ? "opacity-100" : "opacity-0"}`} aria-hidden="true" />
+                      <span className="sr-only">{isTaken ? `Mark ${m.name} as not taken` : `Mark ${m.name} as taken`}</span>
                     </button>
                   </div>
                   {m.instructions && (

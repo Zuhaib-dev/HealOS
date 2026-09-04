@@ -171,14 +171,16 @@ export function ReportingPanel() {
 
         <div className="bg-background p-5 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="mono-label text-muted-foreground">Report body — {tpl.label}</p>
+            <label htmlFor="radiology-report-body" className="mono-label text-muted-foreground">Report body — {tpl.label}</label>
             <span className="mono-label text-muted-foreground">autosaved 12s ago</span>
           </div>
           <textarea
+            id="radiology-report-body"
+            aria-label={`Report body — ${tpl.label}`}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={20}
-            className="hairline mt-3 w-full resize-none bg-transparent p-4 font-mono text-sm leading-relaxed outline-none"
+            className="hairline mt-3 w-full resize-none bg-transparent p-4 font-mono text-sm leading-relaxed outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
           />
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <ActionButton>Attach key image</ActionButton>

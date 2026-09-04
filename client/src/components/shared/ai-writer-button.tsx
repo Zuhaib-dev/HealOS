@@ -59,11 +59,14 @@ export function AIWriterButton({ role, onBioGenerated }: AIWriterButtonProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
+            <label htmlFor="ai-writer-keywords" className="sr-only">Keywords for bio generation</label>
             <textarea
+              id="ai-writer-keywords"
+              aria-label="Keywords for bio generation"
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
               placeholder="e.g. Cardiologist, 15 years experience, loves tennis, holistic care..."
-              className="w-full resize-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all min-h-25"
+              className="w-full resize-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/30 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all min-h-25"
             />
           </div>
           <DialogFooter>

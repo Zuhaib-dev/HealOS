@@ -103,7 +103,7 @@ export function MajorIncidentPanel() {
       />
 
       {isLoading ? (
-        <div className="p-12 text-center mono-label text-muted-foreground animate-pulse">
+        <div role="status" aria-live="polite" className="p-12 text-center mono-label text-muted-foreground animate-pulse">
           Loading major incident protocols...
         </div>
       ) : (

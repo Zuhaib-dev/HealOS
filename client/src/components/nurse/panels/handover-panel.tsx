@@ -72,26 +72,34 @@ export function HandoverPanel() {
         </div>
 
         <div className="bg-background p-5">
-          <p className="mono-label text-muted-foreground">Add handover note</p>
+          <label htmlFor="nurse-handover-bed" className="mono-label block text-muted-foreground text-xs">Add handover note — Bed</label>
           <input
+            id="nurse-handover-bed"
+            aria-label="Bed number"
             value={draft.bed}
             onChange={(e) => setDraft({ ...draft, bed: e.target.value })}
             placeholder="Bed (e.g. W3-12)"
-            className="hairline mono-label mt-3 w-full bg-transparent px-3 py-2 outline-none"
+            className="hairline mono-label mt-3 w-full bg-transparent px-3 py-2 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
           />
+          <label htmlFor="nurse-handover-situation" className="mono-label block text-muted-foreground text-xs mt-3">Situation</label>
           <textarea
+            id="nurse-handover-situation"
+            aria-label="Situation"
             value={draft.situation}
             onChange={(e) => setDraft({ ...draft, situation: e.target.value })}
             placeholder="Situation"
             rows={3}
-            className="hairline mt-2 w-full resize-none bg-transparent px-3 py-2 text-sm outline-none"
+            className="hairline mt-2 w-full resize-none bg-transparent px-3 py-2 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
           />
+          <label htmlFor="nurse-handover-recommendation" className="mono-label block text-muted-foreground text-xs mt-3">Recommendation</label>
           <textarea
+            id="nurse-handover-recommendation"
+            aria-label="Recommendation"
             value={draft.recommendation}
             onChange={(e) => setDraft({ ...draft, recommendation: e.target.value })}
             placeholder="Recommendation"
             rows={3}
-            className="hairline mt-2 w-full resize-none bg-transparent px-3 py-2 text-sm outline-none"
+            className="hairline mt-2 w-full resize-none bg-transparent px-3 py-2 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
           />
           <div className="mt-3">
             <ActionButton

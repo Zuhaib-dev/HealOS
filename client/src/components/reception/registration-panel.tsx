@@ -22,56 +22,63 @@ const FloatingInput = ({
   onChange, 
   placeholder, 
   error,
-  type = "text"
+  type = "text",
+  id,
 }: { 
   label: string, 
   value: string, 
   onChange: (val: string) => void, 
   placeholder?: string,
   error?: string,
-  type?: string
-}) => (
-  <div className="relative group">
-    <label className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5 block group-focus-within:text-primary transition-colors">
-      {label}
-    </label>
-    <div className="relative">
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-        }}
-        placeholder={placeholder}
-        className={`w-full bg-background border ${error ? "border-rose-500/50" : "border-border/60"} rounded-xl px-4 py-3 text-sm text-foreground outline-none transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10`}
-      />
+  type?: string,
+  id?: string,
+}) => {
+  const inputId = id || `reg-${label.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
+  return (
+    <div className="relative group">
+      <label htmlFor={inputId} className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5 block group-focus-within:text-primary transition-colors">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={inputId}
+          aria-label={label}
+          type={type}
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+          placeholder={placeholder}
+          className={`w-full bg-background border ${error ? "border-rose-500/50" : "border-border/60"} rounded-xl px-4 py-3 text-sm text-foreground outline-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10`}
+        />
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, x: -5 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0 }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-500"
+            >
+              <AlertCircle className="size-4" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
       <AnimatePresence>
         {error && (
-          <motion.div 
-            initial={{ opacity: 0, x: -5 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0 }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-500"
+          <motion.p 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="text-rose-500 text-[10px] mt-1.5 font-medium ml-1"
           >
-            <AlertCircle className="size-4" />
-          </motion.div>
+            {error}
+          </motion.p>
         )}
       </AnimatePresence>
     </div>
-    <AnimatePresence>
-      {error && (
-        <motion.p 
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          className="text-rose-500 text-[10px] mt-1.5 font-medium ml-1"
-        >
-          {error}
-        </motion.p>
-      )}
-    </AnimatePresence>
-  </div>
-);
+  );
+};
 
 export function RegistrationPanel() {
   const [form, setForm] = useState({

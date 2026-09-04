@@ -43,6 +43,7 @@ import { useAdminRealtime } from "../use-admin-realtime";
 
 export function SuppliesPanel() {
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [dbInventory, setDbInventory] = useState<AdminInventoryData[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -97,6 +98,7 @@ export function SuppliesPanel() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setIsSubmitting(true);
       if (editingId) {
         await updateInventoryItemApi(editingId, formData);
         toast.success("Inventory item updated successfully");
@@ -108,6 +110,8 @@ export function SuppliesPanel() {
       loadInventory();
     } catch (err) {
       toast.error("Failed to save inventory item");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -131,8 +135,14 @@ export function SuppliesPanel() {
         <div className="mx-5 sm:mx-8 mb-8 p-6 bg-card/40 rounded-2xl border border-border/60 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="mono-label font-bold text-foreground">{editingId ? "Edit Inventory Item" : "Add New Item"}</h3>
-            <button type="button" onClick={() => setIsFormOpen(false)} className="text-muted-foreground hover:text-foreground">
+            <button
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              aria-label="Close inventory item form"
+              className="text-muted-foreground hover:text-foreground p-1 rounded-sm transition-colors"
+            >
               <X className="size-4" />
+              <span className="sr-only">Close inventory item form</span>
             </button>
           </div>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -162,8 +172,12 @@ export function SuppliesPanel() {
             </label>
             <div className="sm:col-span-2 lg:col-span-5 flex justify-end gap-3 mt-2 lg:col-start-2">
               <button type="button" onClick={() => setIsFormOpen(false)} className="mono-label text-muted-foreground px-4 py-2 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors">Cancel</button>
-              <button type="submit" className="bg-primary text-primary-foreground mono-label rounded-lg px-4 py-2 font-bold hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-sm transition-all">
-                {editingId ? "Save Changes" : "Create Item"}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-primary text-primary-foreground mono-label rounded-lg px-4 py-2 font-bold hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSubmitting ? "Saving..." : editingId ? "Save Changes" : "Create Item"}
               </button>
             </div>
           </form>
@@ -220,11 +234,23 @@ export function SuppliesPanel() {
                   </Td>
                   <Td className="text-right">
                     <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => handleEdit(s)} className="text-muted-foreground hover:text-foreground hover:bg-muted/50 p-1.5 rounded-lg transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(s)}
+                        aria-label={`Edit ${s.itemName}`}
+                        className="text-muted-foreground hover:text-foreground hover:bg-muted/50 p-1.5 rounded-lg transition-colors"
+                      >
                         <Pencil className="size-4" />
+                        <span className="sr-only">Edit {s.itemName}</span>
                       </button>
-                      <button onClick={() => handleDelete(s._id)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-1.5 rounded-lg transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(s._id)}
+                        aria-label={`Delete ${s.itemName}`}
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-1.5 rounded-lg transition-colors"
+                      >
                         <Trash2 className="size-4" />
+                        <span className="sr-only">Delete {s.itemName}</span>
                       </button>
                     </div>
                   </Td>

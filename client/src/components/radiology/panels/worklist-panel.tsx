@@ -199,12 +199,15 @@ export function WorklistPanel() {
         <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col border-r border-border/60 bg-background/50">
           <div className="p-4 sm:p-6 border-b border-border/40">
             <div className="relative">
+              <label htmlFor="radiology-worklist-search" className="sr-only">Search MRN, Patient Name</label>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input 
+                id="radiology-worklist-search"
+                aria-label="Search MRN, Patient Name"
                 placeholder="Search MRN, Patient Name..." 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-card/60 border border-border/60 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-primary/50 transition-colors"
+                className="w-full bg-card/60 border border-border/60 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50 transition-colors"
               />
             </div>
           </div>
@@ -305,15 +308,17 @@ export function WorklistPanel() {
                     {!isPaid && (
                       <div className="mt-2 sm:mt-0 flex items-center justify-between sm:justify-end gap-2 sm:gap-4 pt-3 sm:pt-0 border-t sm:border-0 border-border/30">
                         <div className="flex flex-col items-start sm:items-end">
-                          <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Set Price</span>
+                          <label htmlFor="radiology-order-price" className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Set Price</label>
                           <div className="relative">
                             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs">₹</span>
                             <input 
+                              id="radiology-order-price"
+                              aria-label="Set Price in rupees"
                               type="number" 
                               disabled={isPaid}
                               value={price} 
                               onChange={(e) => setPrice(e.target.value)}
-                              className="w-20 bg-card border border-border/60 rounded px-2 pl-5 py-1 text-xs font-mono outline-none focus:border-primary/50 text-right"
+                              className="w-20 bg-card border border-border/60 rounded px-2 pl-5 py-1 text-xs font-mono outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50 text-right"
                             />
                           </div>
                         </div>

@@ -173,6 +173,7 @@ export default function RegisterClient() {
                 <Input
                   id="name"
                   type="text"
+                  autoComplete="name"
                   placeholder="Dr. Sarah Connor"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -189,6 +190,7 @@ export default function RegisterClient() {
                 <Input
                   id="email"
                   type="email"
+                  autoComplete="email"
                   placeholder="doctor@healos.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -205,6 +207,7 @@ export default function RegisterClient() {
                 <Input
                   id="password"
                   type="password"
+                  autoComplete="new-password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -248,7 +251,7 @@ export default function RegisterClient() {
               </div>
             </div>
             <form onSubmit={handleVerifyOtp} className="space-y-6 flex flex-col items-center">
-              <InputOTP maxLength={6} pattern={REGEXP_ONLY_DIGITS} value={otp} onChange={(val: string) => setOtp(val)}>
+              <InputOTP aria-label="One-time registration verification code" maxLength={6} pattern={REGEXP_ONLY_DIGITS} value={otp} onChange={(val: string) => setOtp(val)}>
                 <InputOTPGroup className="gap-2">
                   <InputOTPSlot index={0} className="w-11 h-12 text-lg rounded-md border-border/50" />
                   <InputOTPSlot index={1} className="w-11 h-12 text-lg rounded-md border-border/50" />
@@ -300,6 +303,7 @@ export default function RegisterClient() {
                 <Input
                   id="phone"
                   type="tel"
+                  autoComplete="tel"
                   placeholder="+1 (555) 000-0000"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}

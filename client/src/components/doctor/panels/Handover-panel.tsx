@@ -149,12 +149,16 @@ export function HandoverPanel() {
           )}
         </div>
         <div className="hairline-l px-5 py-6">
-          <p className="mono-label text-muted-foreground">Add handover note</p>
+          <label htmlFor="handover-note-draft" className="mono-label text-muted-foreground block">
+            Add handover note
+          </label>
           <textarea
+            id="handover-note-draft"
+            aria-label="Add handover note"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="e.g. ICU-A 04 — repeat ABG at 12:00, escalate if lactate rising"
-            className="hairline placeholder:text-muted-foreground mt-3 min-h-32 w-full resize-y bg-transparent p-3 text-sm outline-none"
+            className="hairline placeholder:text-muted-foreground mt-3 min-h-32 w-full resize-y bg-transparent p-3 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
           />
           <button
             type="button"

@@ -136,7 +136,8 @@ function CommandPaletteCell() {
               }
             }}
             placeholder="Type a command or search the record…"
-            className="text-foreground placeholder:text-muted-foreground/60 w-full bg-transparent font-mono text-sm outline-none"
+            aria-label="Type a command or search the record"
+            className="text-foreground placeholder:text-muted-foreground/60 w-full bg-transparent font-mono text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
           />
           <span className="mono-label text-muted-foreground hidden sm:inline">
             {filtered.length} result{filtered.length === 1 ? "" : "s"}

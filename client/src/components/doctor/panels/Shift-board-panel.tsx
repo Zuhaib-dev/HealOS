@@ -307,11 +307,14 @@ export function ShiftPanel() {
                    <p className="mono-label text-muted-foreground mt-1 text-[10px]">{selectedPatient.email}</p>
                  </div>
                  <button 
+                   type="button"
                    onClick={() => setSelectedPatient(null)}
+                   aria-label="Close patient details panel"
                    className="size-10 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                  >
-                   <X className="size-5" />
-                 </button>
+                    <X className="size-5" />
+                    <span className="sr-only">Close patient details panel</span>
+                  </button>
                </div>
 
                <div className="px-6 py-4 bg-muted/30 border-b border-border/40 flex justify-end">

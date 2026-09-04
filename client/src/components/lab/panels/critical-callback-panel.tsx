@@ -107,10 +107,12 @@ export function CriticalPanel() {
             ) : (
               <div className="mt-4">
                 <input
+                  id={`clinician-called-${c._id}`}
+                  aria-label="Clinician called"
                   value={target}
                   onChange={(e) => setTarget(e.target.value)}
                   placeholder="Clinician called"
-                  className="hairline mono-label w-full bg-transparent px-3 py-2 outline-none"
+                  className="hairline mono-label w-full bg-transparent px-3 py-2 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
                 />
                 <div className="mt-2 flex gap-2">
                   <ActionButton

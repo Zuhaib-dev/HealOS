@@ -22,7 +22,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="absolute -left-48 -top-48 z-0 h-160 w-160 rounded-full bg-emerald-500/20 blur-[100px] pointer-events-none" />
         
         <div className="relative z-10 flex flex-1 flex-col justify-between p-12 lg:p-16">
-          <Link href="/" className="inline-flex items-center gap-2 text-emerald-50 w-max">
+          <Link href="/" aria-label="HealOS Home" className="inline-flex items-center gap-2 text-emerald-50 w-max">
             <HealOSLogo size={32} />
           </Link>
           
@@ -62,10 +62,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         
         {/* Mobile Logo + Back Arrow */}
         <div className="absolute top-6 left-6 lg:hidden flex items-center gap-3">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+          <Link href="/" aria-label="Back to home" className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <Link href="/" className="inline-flex items-center gap-2">
+          <Link href="/" aria-label="HealOS Home" className="inline-flex items-center gap-2">
             <HealOSLogo size={28} />
           </Link>
         </div>

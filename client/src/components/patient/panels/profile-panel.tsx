@@ -11,7 +11,10 @@ import { AIWriterButton } from "@/components/shared/ai-writer-button";
 
 export function ProfilePanel() {
   const { user, updateUser } = useAuthStore();
-  const [saving, setSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isPending = isSubmitting;
+  const saving = isSubmitting;
+  const setSaving = setIsSubmitting;
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState<"MALE" | "FEMALE">("MALE");
   const [bloodGroup, setBloodGroup] = useState<"A+" | "A-" | "B+" | "B-" | "O+" | "O-" | "AB+" | "AB-">("O+");
@@ -87,8 +90,8 @@ export function ProfilePanel() {
           title="Personal Profile"
           note="Manage your contact details, emergency information, and account preferences securely."
           actions={
-            <ActionButton tone="solid" type="submit" disabled={saving}>
-              {saving ? "Saving Changes..." : "Save Changes"}
+            <ActionButton tone="solid" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving Changes..." : "Save Changes"}
             </ActionButton>
           }
         />
@@ -111,47 +114,57 @@ export function ProfilePanel() {
                   {/* Read Only Fields */}
                   <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 bg-muted/30 p-4 rounded-lg border border-border/40">
                     <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                      <label htmlFor="patient-profile-name" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                         Full Name
                       </label>
                       <input
+                        id="patient-profile-name"
+                        aria-label="Full Name"
+                        autoComplete="name"
                         readOnly
                         value={user?.name || ""}
-                        className="w-full bg-transparent text-sm font-medium outline-none text-foreground/70 cursor-not-allowed"
+                        className="w-full bg-transparent text-sm font-medium outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm text-foreground/70 cursor-not-allowed"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                      <label htmlFor="patient-profile-email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                         Email Address
                       </label>
                       <input
+                        id="patient-profile-email"
+                        aria-label="Email Address"
+                        autoComplete="email"
                         readOnly
                         value={user?.email || ""}
-                        className="w-full bg-transparent text-sm font-medium outline-none text-foreground/70 cursor-not-allowed"
+                        className="w-full bg-transparent text-sm font-medium outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm text-foreground/70 cursor-not-allowed"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    <label htmlFor="patient-profile-dob" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                       Date of Birth
                     </label>
                     <input
+                      id="patient-profile-dob"
+                      aria-label="Date of Birth"
                       type="date"
                       value={dob}
                       onChange={(e) => setDob(e.target.value)}
-                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    <label htmlFor="patient-profile-gender" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                       Gender
                     </label>
                     <select
+                      id="patient-profile-gender"
+                      aria-label="Gender"
                       value={gender}
                       onChange={(e) => setGender(e.target.value as any)}
-                      className="w-full appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      className="w-full appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     >
                       <option value="MALE">Male</option>
                       <option value="FEMALE">Female</option>
@@ -160,13 +173,15 @@ export function ProfilePanel() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    <label htmlFor="patient-profile-blood-group" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                       Blood Group
                     </label>
                     <select
+                      id="patient-profile-blood-group"
+                      aria-label="Blood Group"
                       value={bloodGroup}
                       onChange={(e) => setBloodGroup(e.target.value as any)}
-                      className="w-full appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      className="w-full appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     >
                       {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map(bg => (
                         <option key={bg} value={bg}>{bg}</option>
@@ -175,59 +190,70 @@ export function ProfilePanel() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    <label htmlFor="patient-profile-emergency-name" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                       Emergency Contact Name
                     </label>
                     <input
+                      id="patient-profile-emergency-name"
+                      aria-label="Emergency Contact Name"
                       value={emergencyContactName}
                       onChange={(e) => setEmergencyContactName(e.target.value)}
                       placeholder="Primary contact name"
-                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    <label htmlFor="patient-profile-emergency-phone" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                       Emergency Phone Number
                     </label>
                     <input
+                      id="patient-profile-emergency-phone"
+                      aria-label="Emergency Phone Number"
+                      autoComplete="tel"
                       value={emergencyPhone}
                       onChange={(e) => setEmergencyPhone(e.target.value)}
                       placeholder="+91 9876543210"
-                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <label htmlFor="patient-profile-allergies" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <AlertTriangle className="size-3.5 text-amber-500" />
                       Known Allergies (Comma Separated)
                     </label>
                     <input
+                      id="patient-profile-allergies"
+                      aria-label="Known Allergies"
                       value={allergies}
                       onChange={(e) => setAllergies(e.target.value)}
                       placeholder="e.g. Penicillin, Dust Mites, Peanuts"
-                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
                   </div>
 
                   <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 bg-muted/10 p-4 rounded-lg border border-border/40 mb-6">
                     <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                      <label htmlFor="patient-profile-height" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                         Height
                       </label>
                       <div className="flex gap-2">
                         <input
+                          id="patient-profile-height"
+                          aria-label="Height"
                           type="number"
                           value={height}
                           onChange={(e) => setHeight(e.target.value === "" ? "" : Number(e.target.value))}
                           placeholder="e.g. 175"
-                          className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                          className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                         />
                         <select
+                          id="patient-profile-height-unit"
+                          aria-label="Height unit"
                           value={heightUnit}
                           onChange={(e) => setHeightUnit(e.target.value as "cm" | "ft")}
-                          className="appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all w-24"
+                          className="appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all w-24"
                         >
                           <option value="cm">cm</option>
                           <option value="ft">ft</option>
@@ -235,45 +261,52 @@ export function ProfilePanel() {
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                      <label htmlFor="patient-profile-weight" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                         Weight (kg)
                       </label>
                       <input
+                        id="patient-profile-weight"
+                        aria-label="Weight in kilograms"
                         type="number"
                         value={weight}
                         onChange={(e) => setWeight(e.target.value === "" ? "" : Number(e.target.value))}
                         placeholder="e.g. 70"
-                        className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                        className="w-full bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                       />
                     </div>
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    <label htmlFor="patient-profile-address" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                       Residential Address
                     </label>
                     <textarea
+                      id="patient-profile-address"
+                      aria-label="Residential Address"
+                      autoComplete="street-address"
                       rows={3}
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                       placeholder="Enter full residential address"
-                      className="w-full resize-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      className="w-full resize-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
                   </div>
 
                   <div className="sm:col-span-2 space-y-2 mb-2 mt-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                      <label htmlFor="patient-profile-bio" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
                         Personal Bio
                       </label>
                       <AIWriterButton role={user?.role || "Patient"} onBioGenerated={(b) => setBio(b)} />
                     </div>
                     <textarea
+                      id="patient-profile-bio"
+                      aria-label="Personal Bio"
                       rows={4}
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       placeholder="Share a short bio about yourself..."
-                      className="w-full resize-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      className="w-full resize-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
                   </div>
 

@@ -146,12 +146,14 @@ export function ConsultationForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Chief Complaint</label>
+              <label htmlFor="chief-complaint" className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Chief Complaint</label>
               <div className="flex flex-col xl:flex-row gap-4">
                 <div className="w-full xl:w-2/5 min-w-45 flex items-center justify-center">
                   <AnatomySelector onSelect={(part) => setChiefComplaint(prev => prev ? `${prev}, [${part}]` : `[${part}]`)} />
                 </div>
                 <textarea
+                  id="chief-complaint"
+                  aria-label="Chief Complaint"
                   value={chiefComplaint}
                   onChange={(e) => setChiefComplaint(e.target.value)}
                   className="w-full xl:w-3/5 bg-background border border-border/60 rounded-xl p-3 min-h-32 outline-none focus:border-primary/50 transition-colors resize-none"
@@ -160,8 +162,10 @@ export function ConsultationForm({
               </div>
             </div>
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Diagnosis</label>
+              <label htmlFor="consultation-diagnosis" className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Diagnosis</label>
               <input
+                id="consultation-diagnosis"
+                aria-label="Diagnosis"
                 type="text"
                 value={diagnosis}
                 onChange={(e) => setDiagnosis(e.target.value)}
@@ -170,8 +174,10 @@ export function ConsultationForm({
               />
             </div>
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Advice & Lifestyle</label>
+              <label htmlFor="consultation-advice" className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Advice & Lifestyle</label>
               <textarea
+                id="consultation-advice"
+                aria-label="Advice & Lifestyle"
                 value={advice}
                 onChange={(e) => setAdvice(e.target.value)}
                 className="w-full bg-background border border-border/60 rounded-xl p-3 min-h-25 outline-none focus:border-primary/50 transition-colors"
@@ -179,8 +185,10 @@ export function ConsultationForm({
               />
             </div>
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Next Follow-Up Date</label>
+              <label htmlFor="consultation-followup" className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Next Follow-Up Date</label>
               <input
+                id="consultation-followup"
+                aria-label="Next Follow-Up Date"
                 type="date"
                 value={followUpDate}
                 onChange={(e) => setFollowUpDate(e.target.value)}
@@ -206,7 +214,12 @@ export function ConsultationForm({
                       <p className="text-xs font-semibold text-muted-foreground mt-1 uppercase tracking-wider">{m.frequency} x {m.duration}</p>
                       {m.instructions && <p className="text-xs text-emerald-500 mt-2 bg-emerald-500/10 px-2 py-1 rounded inline-block">{m.instructions}</p>}
                     </div>
-                    <button onClick={() => removeMedicine(i)} className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors border border-transparent hover:border-destructive/20">
+                    <button
+                      type="button"
+                      onClick={() => removeMedicine(i)}
+                      aria-label={`Remove ${m.name} from prescription`}
+                      className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors border border-transparent hover:border-destructive/20"
+                    >
                       <X className="size-4" />
                     </button>
                   </div>
@@ -216,9 +229,11 @@ export function ConsultationForm({
 
             {/* Add New Medicine */}
             <div className="border border-border/60 p-5 rounded-2xl bg-card shadow-sm">
-              <p className="text-xs uppercase tracking-wider font-bold text-primary mb-4">Add Medicine (Free Text / Search)</p>
+              <label htmlFor="new-med-name" className="text-xs uppercase tracking-wider font-bold text-primary mb-4 block">Add Medicine (Free Text / Search)</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <input
+                  id="new-med-name"
+                  aria-label="Drug Name"
                   type="text"
                   placeholder="Drug Name (e.g. Paracetamol)"
                   value={newMed.name}
@@ -238,6 +253,7 @@ export function ConsultationForm({
                 </datalist>
                 
                 <input
+                  aria-label="Dosage"
                   type="text"
                   placeholder="Dosage (e.g. 500mg)"
                   value={newMed.dosage}
@@ -245,6 +261,7 @@ export function ConsultationForm({
                   className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
                 />
                 <input
+                  aria-label="Frequency"
                   type="text"
                   placeholder="Freq (e.g. 1-0-1)"
                   value={newMed.frequency}
@@ -252,6 +269,7 @@ export function ConsultationForm({
                   className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
                 />
                 <input
+                  aria-label="Duration"
                   type="text"
                   placeholder="Duration (e.g. 5 days)"
                   value={newMed.duration}
@@ -260,13 +278,14 @@ export function ConsultationForm({
                 />
               </div>
               <input
+                aria-label="Instructions"
                 type="text"
                 placeholder="Instructions (e.g. After food) [Optional]"
                 value={newMed.instructions}
                 onChange={(e) => setNewMed({ ...newMed, instructions: e.target.value })}
                 className="w-full bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50 mb-4"
               />
-              <button onClick={addMedicine} className="w-full bg-primary/10 text-primary font-bold py-3 rounded-xl text-sm hover:bg-primary/20 transition-colors">
+              <button type="button" onClick={addMedicine} className="w-full bg-primary/10 text-primary font-bold py-3 rounded-xl text-sm hover:bg-primary/20 transition-colors">
                 + Add to Prescription
               </button>
             </div>
@@ -289,7 +308,12 @@ export function ConsultationForm({
                     <span className="font-bold text-base">{o.testName}</span>
                     {o.clinicalNotes && <p className="text-sm text-muted-foreground mt-2 border-l-2 border-primary/30 pl-2">{o.clinicalNotes}</p>}
                   </div>
-                  <button onClick={() => removeOrder(i)} className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors border border-transparent hover:border-destructive/20">
+                  <button
+                    type="button"
+                    onClick={() => removeOrder(i)}
+                    aria-label={`Remove ${o.testName} from diagnostic orders`}
+                    className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors border border-transparent hover:border-destructive/20"
+                  >
                     <X className="size-4" />
                   </button>
                 </div>
@@ -301,6 +325,8 @@ export function ConsultationForm({
           <div className="border border-border/60 p-5 rounded-2xl bg-background/50">
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                <select
+                 id="diagnostic-order-type"
+                 aria-label="Test Type"
                  value={newOrder.testType}
                  onChange={(e) => setNewOrder({ ...newOrder, testType: e.target.value as any })}
                  className="bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50"
@@ -309,6 +335,8 @@ export function ConsultationForm({
                  <option value="RADIOLOGY">Radiology (Scan/Imaging)</option>
                </select>
                <input
+                 id="diagnostic-order-name"
+                 aria-label="Test Name"
                  type="text"
                  placeholder="Test Name (e.g. CBC, MRI Brain)"
                  value={newOrder.testName}
@@ -317,13 +345,15 @@ export function ConsultationForm({
                />
              </div>
              <input
+               id="diagnostic-order-notes"
+               aria-label="Clinical Notes or Indications"
                type="text"
                placeholder="Clinical Notes / Indications [Optional]"
                value={newOrder.clinicalNotes}
                onChange={(e) => setNewOrder({ ...newOrder, clinicalNotes: e.target.value })}
                className="w-full bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50 mb-4"
              />
-             <button onClick={addOrder} className="w-full bg-indigo-500/10 text-indigo-500 font-bold py-3 rounded-xl text-sm hover:bg-indigo-500/20 transition-colors">
+             <button type="button" onClick={addOrder} className="w-full bg-indigo-500/10 text-indigo-500 font-bold py-3 rounded-xl text-sm hover:bg-indigo-500/20 transition-colors">
                 + Add Diagnostic Order
              </button>
           </div>

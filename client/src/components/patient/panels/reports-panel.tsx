@@ -194,11 +194,14 @@ export function ReportsPanel() {
       />
 
       <div className="hairline-b flex flex-wrap items-center gap-3 px-5 py-4 sm:px-8">
+        <label htmlFor="patient-reports-filter" className="sr-only">Filter reports</label>
         <input
+          id="patient-reports-filter"
+          aria-label="Filter reports"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Filter reports"
-          className="hairline mono-label placeholder:text-muted-foreground w-full max-w-sm bg-transparent px-3 py-2.5 outline-none"
+          className="hairline mono-label placeholder:text-muted-foreground w-full max-w-sm bg-transparent px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
         />
         <span className="mono-label text-muted-foreground">
           {rows.length} records found
@@ -218,64 +221,77 @@ export function ReportsPanel() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className="hairline-b hover:bg-foreground/2">
-                <Td>
-                  <span className="flex items-center gap-2">
-                    <FileText className="text-accent size-3.5 shrink-0" />
-                    <span className="font-mono text-sm">{r.name}</span>
-                    {r.flagged && <Pill tone="bad">abnormal</Pill>}
-                  </span>
-                  {r.pages > 0 && (
-                    <p className="mono-label text-muted-foreground mt-1">
-                      {r.pages} pages · {r.size}
-                    </p>
-                  )}
-                </Td>
-                <Td>
-                  <span className="mono-label text-muted-foreground">{r.kind}</span>
-                </Td>
-                <Td>
-                  <span className="mono-label">{r.dept}</span>
-                </Td>
-                <Td>
-                  <span className="mono-label">{r.date}</span>
-                </Td>
-                <Td>
-                  <Pill
-                    tone={r.status === "ready" ? "ok" : "warn"}
-                  >
-                    {r.status}
-                  </Pill>
-                </Td>
-                <Td>
-                  <div className="text-muted-foreground flex items-center gap-3">
-                    {r.fileUrl ? (
-                      <>
-                        <a href={r.fileUrl} target="_blank" rel="noopener noreferrer" aria-label="View" className="hover:text-foreground">
-                          <Eye className="size-3.5" />
-                        </a>
-                        <a href={r.fileUrl} download aria-label="Download" className="hover:text-foreground">
-                          <Download className="size-3.5" />
-                        </a>
-                      </>
-                    ) : (
-                      <>
-                        <button type="button" aria-label="View" className="hover:text-foreground opacity-50 cursor-not-allowed">
-                          <Eye className="size-3.5" />
-                        </button>
-                        <button type="button" aria-label="Download" className="hover:text-foreground opacity-50 cursor-not-allowed">
-                          <Download className="size-3.5" />
-                        </button>
-                      </>
-                    )}
-                    <button type="button" aria-label="Share" className="hover:text-foreground">
-                      <Share2 className="size-3.5" />
-                    </button>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="p-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
+                      <FileText className="size-6 text-muted-foreground/60" />
+                    </div>
+                    <p className="mono-label text-muted-foreground">No records found.</p>
                   </div>
-                </Td>
+                </td>
               </tr>
-            ))}
+            ) : (
+              rows.map((r) => (
+                <tr key={r.id} className="hairline-b hover:bg-foreground/2">
+                  <Td>
+                    <span className="flex items-center gap-2">
+                      <FileText className="text-accent size-3.5 shrink-0" />
+                      <span className="font-mono text-sm">{r.name}</span>
+                      {r.flagged && <Pill tone="bad">abnormal</Pill>}
+                    </span>
+                    {r.pages > 0 && (
+                      <p className="mono-label text-muted-foreground mt-1">
+                        {r.pages} pages · {r.size}
+                      </p>
+                    )}
+                  </Td>
+                  <Td>
+                    <span className="mono-label text-muted-foreground">{r.kind}</span>
+                  </Td>
+                  <Td>
+                    <span className="mono-label">{r.dept}</span>
+                  </Td>
+                  <Td>
+                    <span className="mono-label">{r.date}</span>
+                  </Td>
+                  <Td>
+                    <Pill
+                      tone={r.status === "ready" ? "ok" : "warn"}
+                    >
+                      {r.status}
+                    </Pill>
+                  </Td>
+                  <Td>
+                    <div className="text-muted-foreground flex items-center gap-3">
+                      {r.fileUrl ? (
+                        <>
+                          <a href={r.fileUrl} target="_blank" rel="noopener noreferrer" aria-label="View" className="hover:text-foreground">
+                            <Eye className="size-3.5" />
+                          </a>
+                          <a href={r.fileUrl} download aria-label="Download" className="hover:text-foreground">
+                            <Download className="size-3.5" />
+                          </a>
+                        </>
+                      ) : (
+                        <>
+                          <button type="button" aria-label="View" className="hover:text-foreground opacity-50 cursor-not-allowed">
+                            <Eye className="size-3.5" />
+                          </button>
+                          <button type="button" aria-label="Download" className="hover:text-foreground opacity-50 cursor-not-allowed">
+                            <Download className="size-3.5" />
+                          </button>
+                        </>
+                      )}
+                      <button type="button" aria-label="Share" className="hover:text-foreground">
+                        <Share2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </Td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -291,17 +307,22 @@ export function ReportsPanel() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <label htmlFor="patient-upload-report-title" className="sr-only">Report name</label>
             <input 
+              id="patient-upload-report-title"
+              aria-label="Report name (optional)"
               type="text" 
               placeholder="Report name (optional)" 
               value={uploadTitle}
               onChange={e => setUploadTitle(e.target.value)}
               disabled={isUploading}
-              className="hairline mono-label placeholder:text-muted-foreground bg-transparent px-3 py-2 outline-none w-48 text-xs"
+              className="hairline mono-label placeholder:text-muted-foreground bg-transparent px-3 py-2 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm w-48 text-xs"
             />
-            <label className={`relative overflow-hidden cursor-pointer flex items-center justify-center px-4 py-2 bg-foreground text-background font-bold text-xs uppercase tracking-wider rounded-lg transition-all ${isUploading ? "opacity-70 cursor-wait" : "hover:bg-foreground/90"}`}>
+            <label htmlFor="patient-report-file-input" className={`relative overflow-hidden cursor-pointer flex items-center justify-center px-4 py-2 bg-foreground text-background font-bold text-xs uppercase tracking-wider rounded-lg transition-all ${isUploading ? "opacity-70 cursor-wait" : "hover:bg-foreground/90"}`}>
               {isUploading ? "Uploading..." : "Upload"}
               <input
+                id="patient-report-file-input"
+                aria-label="Upload document file"
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png,.dcm"
                 className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"

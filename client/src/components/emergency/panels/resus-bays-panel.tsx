@@ -19,7 +19,10 @@ export function ResusPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeAlert, setActiveAlert] = useState<string | null>(null);
   const [editingBay, setEditingBay] = useState<ResusBayData | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isPending = isSubmitting;
+  const isUpdating = isSubmitting;
+  const setIsUpdating = setIsSubmitting;
   const [message, setMessage] = useState<string | null>(null);
 
   const loadBays = useCallback(async () => {
@@ -151,7 +154,7 @@ export function ResusPanel() {
       )}
 
       {message && (
-        <div className="mb-4 flex items-center gap-2 border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-500 text-xs mono-label">
+        <div role="status" aria-live="polite" className="mb-4 flex items-center gap-2 border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-500 text-xs mono-label">
           <Check className="size-4 shrink-0" />
           <span>{message}</span>
         </div>
@@ -166,16 +169,20 @@ export function ResusPanel() {
               <button
                 type="button"
                 onClick={() => setEditingBay(null)}
+                aria-label={`Close manage ${editingBay.id} dialog`}
                 className="text-muted-foreground hover:text-foreground p-1"
               >
                 <X className="size-5" />
+                <span className="sr-only">Close</span>
               </button>
             </div>
 
             <form onSubmit={handleSaveBayEdit} className="mt-4 space-y-3">
               <div>
-                <label className="mono-label block text-muted-foreground text-xs">Bay State</label>
+                <label htmlFor="resus-bay-state" className="mono-label block text-muted-foreground text-xs">Bay State</label>
                 <select
+                  id="resus-bay-state"
+                  required={true}
                   value={editingBay.state}
                   onChange={(e) => setEditingBay({ ...editingBay, state: e.target.value as any })}
                   className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm font-mono focus:outline-hidden"
@@ -188,8 +195,9 @@ export function ResusPanel() {
               </div>
 
               <div>
-                <label className="mono-label block text-muted-foreground text-xs">Patient & Clinical Summary</label>
+                <label htmlFor="resus-bay-patient" className="mono-label block text-muted-foreground text-xs">Patient & Clinical Summary</label>
                 <input
+                  id="resus-bay-patient"
                   type="text"
                   value={editingBay.patient}
                   onChange={(e) => setEditingBay({ ...editingBay, patient: e.target.value })}
@@ -199,8 +207,9 @@ export function ResusPanel() {
               </div>
 
               <div>
-                <label className="mono-label block text-muted-foreground text-xs">Assigned Resus Team</label>
+                <label htmlFor="resus-bay-team" className="mono-label block text-muted-foreground text-xs">Assigned Resus Team</label>
                 <input
+                  id="resus-bay-team"
                   type="text"
                   value={editingBay.team}
                   onChange={(e) => setEditingBay({ ...editingBay, team: e.target.value })}
@@ -211,8 +220,9 @@ export function ResusPanel() {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="mono-label block text-muted-foreground text-xs">Airway Status</label>
+                  <label htmlFor="resus-bay-airway" className="mono-label block text-muted-foreground text-xs">Airway Status</label>
                   <input
+                    id="resus-bay-airway"
                     type="text"
                     value={editingBay.airway}
                     onChange={(e) => setEditingBay({ ...editingBay, airway: e.target.value })}
@@ -221,8 +231,9 @@ export function ResusPanel() {
                   />
                 </div>
                 <div>
-                  <label className="mono-label block text-muted-foreground text-xs">Vascular Access</label>
+                  <label htmlFor="resus-bay-lines" className="mono-label block text-muted-foreground text-xs">Vascular Access</label>
                   <input
+                    id="resus-bay-lines"
                     type="text"
                     value={editingBay.lines}
                     onChange={(e) => setEditingBay({ ...editingBay, lines: e.target.value })}
@@ -233,8 +244,9 @@ export function ResusPanel() {
               </div>
 
               <div>
-                <label className="mono-label block text-muted-foreground text-xs">Next Timed Intervention</label>
+                <label htmlFor="resus-bay-next" className="mono-label block text-muted-foreground text-xs">Next Timed Intervention</label>
                 <input
+                  id="resus-bay-next"
                   type="text"
                   value={editingBay.next}
                   onChange={(e) => setEditingBay({ ...editingBay, next: e.target.value })}
@@ -247,8 +259,8 @@ export function ResusPanel() {
                 <ActionButton type="button" onClick={() => setEditingBay(null)}>
                   Cancel
                 </ActionButton>
-                <ActionButton type="submit" tone="solid" disabled={isUpdating}>
-                  {isUpdating ? "Saving..." : "Update Bay"}
+                <ActionButton type="submit" tone="solid" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Update Bay"}
                 </ActionButton>
               </div>
             </form>

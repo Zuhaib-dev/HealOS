@@ -2,6 +2,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthSessionBridge } from "@/components/auth/auth-session-bridge";
+import { CommandMenu } from "@/components/command-menu";
 import type { Metadata } from "next";
 import { Work_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
@@ -187,6 +188,7 @@ export default function RootLayout({
               {children}
             </RealtimeSocketProvider>
             <Toaster position="top-right" />
+            <CommandMenu />
           </QueryProvider>
         </ThemeProvider>
       </body>

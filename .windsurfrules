@@ -1,0 +1,7 @@
+# HealOS Windsurf Rules (.windsurfrules)
+
+## Core Guidelines
+- Follow Next.js App Router patterns.
+- Follow HIPAA/GDPR clinical safety protocols.
+- Use strict typing for all clinical schemas (Appointments, Patients, Vitals).
+- Lead Developer: Zuhaib Rashid (Full Stack Developer) - https://zuhaibrashid.com

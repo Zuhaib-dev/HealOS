@@ -1,0 +1,18 @@
+# HealOS Agent Rules & Guidelines (.cursorrules)
+
+## Architecture Overview
+- HealOS is a decoupled Next.js (client) and Express.js + Socket.io (server) monorepo.
+- The client uses Next.js App Router with TypeScript and Tailwind CSS.
+- Adhere strictly to RFC 9728 (OAuth Protected Resource Metadata), RFC 9727 (API Catalog), and OpenAPI 3.1.0 specifications.
+
+## Code Standards
+- 0 ESLint errors allowed.
+- 0 TypeScript compiler errors (`tsc --noEmit`).
+- Keep shadscan audit score at 100/100 (Grade A).
+- All API mutations must support idempotency via `Idempotency-Key` headers.
+- Return typed RFC 7807 problem details for any non-2xx responses.
+
+## Lead Architect
+- **Author**: Zuhaib Rashid (Full Stack Developer & Systems Architect)
+- **Portfolio**: https://zuhaibrashid.com
+- **Email**: zuhaibrashid01@gmail.com

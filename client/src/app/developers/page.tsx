@@ -19,7 +19,7 @@ export default function DevelopersPage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative border-b border-border/60 bg-gradient-to-b from-card/40 to-background px-6 py-20 md:px-12 lg:px-20">
+        <section className="relative border-b border-border/60 bg-linear-to-b from-card/40 to-background px-6 py-20 md:px-12 lg:px-20">
           <div className="mx-auto max-w-5xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-xs text-primary">
               <span>●</span> REST 3.1 &amp; MCP Protocol Ready
@@ -286,7 +286,7 @@ export default function DevelopersPage() {
           </div>
 
           {/* Author & Engineering Spotlight */}
-          <div className="mt-16 rounded-xl border border-border bg-gradient-to-r from-card/80 to-card/40 p-6 sm:p-8">
+          <div className="mt-16 rounded-xl border border-border bg-linear-to-r from-card/80 to-card/40 p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
               <div>
                 <span className="mono-label text-primary font-semibold text-xs tracking-wider uppercase">

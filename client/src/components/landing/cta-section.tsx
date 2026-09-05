@@ -29,11 +29,11 @@ export function CtaSection() {
 
   return (
     <section id="access" className="relative overflow-hidden">
-      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+      <div className="mx-auto max-w-350 px-5 sm:px-8">
         <div className="hairline-t relative">
           {/* brass sweep */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="via-accent/25 animate-sweep absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent to-transparent" />
+            <div className="via-accent/25 animate-sweep absolute inset-y-0 w-1/2 bg-linear-to-r from-transparent to-transparent" />
           </div>
 
           <div className="relative grid grid-cols-1 items-end gap-10 py-20 lg:grid-cols-12 lg:py-28">

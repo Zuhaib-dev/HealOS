@@ -38,7 +38,7 @@ export default function SandboxPage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative border-b border-border/60 bg-gradient-to-b from-card/40 to-background px-6 py-16 md:px-12 lg:px-20">
+        <section className="relative border-b border-border/60 bg-linear-to-b from-card/40 to-background px-6 py-16 md:px-12 lg:px-20">
           <div className="mx-auto max-w-5xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 font-mono text-xs text-emerald-500">
               <span>●</span> Zero-Auth Agent Testing Sandbox Active

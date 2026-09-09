@@ -69,6 +69,12 @@ export function SiteHeader() {
             >
               Contact
             </Link>
+            <Link
+              href="/patient"
+              className="mono-label text-muted-foreground hover:text-foreground text-xs transition-colors"
+            >
+              Patient
+            </Link>
           </nav>
 
           {/* Right Actions */}
@@ -180,6 +186,13 @@ export function SiteHeader() {
                 className="mono-label text-sm text-muted-foreground hover:text-foreground"
               >
                 Contact
+              </Link>
+              <Link
+                href="/patient"
+                onClick={() => setOpen(false)}
+                className="mono-label text-sm text-muted-foreground hover:text-foreground"
+              >
+                Patient
               </Link>
 
               {!isAuthenticated ? (

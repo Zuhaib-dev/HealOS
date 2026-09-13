@@ -138,7 +138,7 @@ export function SuppliesPanel() {
             <button
               type="button"
               onClick={() => setIsFormOpen(false)}
-              aria-label="Close inventory item form"
+              aria-label="Close inventory item form" title="Close inventory item form"
               className="text-muted-foreground hover:text-foreground p-1 rounded-sm transition-colors"
             >
               <X className="size-4" />

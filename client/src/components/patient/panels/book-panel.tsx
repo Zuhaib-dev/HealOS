@@ -452,7 +452,7 @@ export function BookPanel() {
                       </label>
                       <textarea
                         id="appointment-visit-reason"
-                        aria-label="Visit Reason"
+                        aria-label="Visit Reason" title="Visit Reason"
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         rows={3}

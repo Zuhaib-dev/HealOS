@@ -35,14 +35,14 @@ export function SiteHeader() {
           <Link
             href="/"
             className="flex items-center gap-2 pl-2"
-            aria-label="HealOS home"
+            aria-label="HealOS home" title="HealOS home"
           >
             <HealOSLogo size={28} />
           </Link>
 
           {/* Center Navigation Links */}
           <nav
-            aria-label="Main site navigation"
+            aria-label="Main site navigation" title="Main site navigation"
             className="hidden items-center gap-8 lg:flex ml-10 mr-auto"
           >
             <Link
@@ -123,7 +123,7 @@ export function SiteHeader() {
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
-              aria-label="Toggle navigation"
+              aria-label="Toggle navigation" title="Toggle navigation"
               className="flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-background/50 text-foreground transition-colors hover:bg-muted lg:hidden"
             >
               <div className="flex w-3.5 flex-col gap-1">
@@ -156,7 +156,7 @@ export function SiteHeader() {
             className="fixed inset-x-4 top-24 z-40 rounded-2xl border border-border/40 bg-background/95 p-6 shadow-2xl backdrop-blur-xl lg:hidden"
           >
             <nav
-              aria-label="Mobile site navigation"
+              aria-label="Mobile site navigation" title="Mobile site navigation"
               className="flex flex-col gap-4"
             >
               <Link

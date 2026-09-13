@@ -112,7 +112,7 @@ export function ArchivePanel() {
         <label htmlFor="radiology-archive-filter" className="sr-only">Filter archive</label>
         <input
           id="radiology-archive-filter"
-          aria-label="Filter by file, patient or accession"
+          aria-label="Filter by file, patient or accession" title="Filter by file, patient or accession"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Filter by file, patient or accession"
@@ -174,18 +174,18 @@ export function ArchivePanel() {
                 </Td>
                 <Td>
                   <div className="text-muted-foreground flex items-center gap-3">
-                    <button type="button" aria-label="Preview" className="hover:text-foreground">
+                    <button type="button" aria-label="Preview" title="Preview" className="hover:text-foreground">
                       <Eye className="size-3.5" />
                     </button>
-                    <button type="button" aria-label="Download" className="hover:text-foreground">
+                    <button type="button" aria-label="Download" title="Download" className="hover:text-foreground">
                       <Download className="size-3.5" />
                     </button>
-                    <button type="button" aria-label="Share" className="hover:text-foreground">
+                    <button type="button" aria-label="Share" title="Share" className="hover:text-foreground">
                       <Share2 className="size-3.5" />
                     </button>
                     <button
                       type="button"
-                      aria-label="Delete"
+                      aria-label="Delete" title="Delete"
                       className="hover:text-destructive"
                     >
                       <Trash2 className="size-3.5" />

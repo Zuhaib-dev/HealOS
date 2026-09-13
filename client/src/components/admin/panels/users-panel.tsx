@@ -108,7 +108,7 @@ export function UsersPanel() {
 
       <div className="hairline-b flex gap-1 px-5 py-3 sm:px-8">
         <input
-          aria-label="Search users by name, email, phone, or role"
+          aria-label="Search users by name, email, phone, or role" title="Search users by name, email, phone, or role"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);

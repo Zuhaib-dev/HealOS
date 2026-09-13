@@ -120,7 +120,7 @@ export function WardsPanel() {
             <button
               type="button"
               onClick={() => setIsFormOpen(false)}
-              aria-label="Close ward form"
+              aria-label="Close ward form" title="Close ward form"
               className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
             >
               <X className="size-4" />

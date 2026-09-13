@@ -128,7 +128,7 @@ export default function SandboxPage() {
                       <input
                         type="text"
                         readOnly
-                        aria-label="Active Sandbox Bearer Token"
+                        aria-label="Active Sandbox Bearer Token" title="Active Sandbox Bearer Token"
                         value={token}
                         className="flex-1 rounded-md border border-border bg-muted/50 px-4 py-2 font-mono text-sm text-foreground focus:outline-none"
                       />

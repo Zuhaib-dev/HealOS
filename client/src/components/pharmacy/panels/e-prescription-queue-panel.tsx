@@ -234,7 +234,7 @@ export function RxQueuePanel() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input 
                 id="pharmacy-queue-search"
-                aria-label="Search MRN, Patient Name"
+                aria-label="Search MRN, Patient Name" title="Search MRN, Patient Name"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search MRN, Patient Name..." 
@@ -352,7 +352,7 @@ export function RxQueuePanel() {
                           <label htmlFor="pharmacy-custom-name" className="sr-only">Medicine Name</label>
                           <input 
                             id="pharmacy-custom-name"
-                            aria-label="Medicine Name"
+                            aria-label="Medicine Name" title="Medicine Name"
                             value={customName}
                             onChange={(e) => setCustomName(e.target.value)}
                             placeholder="Medicine Name (e.g. Paracetamol)"
@@ -363,7 +363,7 @@ export function RxQueuePanel() {
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">₹</span>
                             <input 
                               id="pharmacy-custom-price"
-                              aria-label="Price in rupees"
+                              aria-label="Price in rupees" title="Price in rupees"
                               type="number"
                               value={customPrice}
                               onChange={(e) => setCustomPrice(e.target.value)}

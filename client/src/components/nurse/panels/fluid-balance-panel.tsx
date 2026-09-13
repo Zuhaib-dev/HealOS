@@ -119,7 +119,7 @@ export function FluidBalancePanel() {
                   ))}
                   <input
                     id={`fluid-amount-input-${e.bed}`}
-                    aria-label="Fluid volume in milliliters"
+                    aria-label="Fluid volume in milliliters" title="Fluid volume in milliliters"
                     value={amount}
                     onChange={(ev) => setAmount(ev.target.value)}
                     placeholder="mL"

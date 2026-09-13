@@ -72,7 +72,7 @@ export function RadiologyShell({
       <header className="bg-background/90 border-b border-border/60 sticky top-0 z-40 backdrop-blur-md transition-all">
         <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-8">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-3 group" aria-label="HealOS home">
+            <Link href="/" className="flex items-center gap-3 group" aria-label="HealOS home" title="HealOS home">
               <HealOSLogo size={30} />
             </Link>
 
@@ -92,7 +92,7 @@ export function RadiologyShell({
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("open-command-menu"))}
-            aria-label="Search accession number, MRN, X-Ray or CT scans"
+            aria-label="Search accession number, MRN, X-Ray or CT scans" title="Search accession number, MRN, X-Ray or CT scans"
             className="hidden lg:flex w-80 items-center gap-2.5 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:border-primary/50 transition-all text-left cursor-pointer"
           >
             <Search className="text-muted-foreground size-3.5 shrink-0" />
@@ -109,7 +109,7 @@ export function RadiologyShell({
             <button
               type="button"
               className="group relative flex items-center justify-center size-9 rounded-full border border-border/70 bg-card/60 hover:bg-muted/50 transition-colors"
-              aria-label="Notifications"
+              aria-label="Notifications" title="Notifications"
             >
               <Bell className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               <span className="bg-cyan-500 absolute top-1.5 right-1.5 size-2 animate-ping rounded-full" />
@@ -141,7 +141,7 @@ export function RadiologyShell({
             </div>
           </div>
 
-          <nav aria-label="Radiology portal sidebar navigation" className="flex flex-col gap-1">
+          <nav aria-label="Radiology portal sidebar navigation" title="Radiology portal sidebar navigation" className="flex flex-col gap-1">
             {radiologySections.map((s) => {
               const Icon = s.icon;
               const isActive = isSectionActive(s.id);
@@ -185,7 +185,7 @@ export function RadiologyShell({
 
       {/* Persistent Bottom Navigation Bar - Mobile Only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
-        <nav aria-label="Radiology portal mobile navigation" className="flex justify-around items-center px-2 py-1.5">
+        <nav aria-label="Radiology portal mobile navigation" title="Radiology portal mobile navigation" className="flex justify-around items-center px-2 py-1.5">
           {mainMobileTabs.map((s) => {
             const Icon = s.icon;
             const isActive = isSectionActive(s.id);

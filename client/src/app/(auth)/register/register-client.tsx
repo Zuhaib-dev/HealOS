@@ -251,7 +251,7 @@ export default function RegisterClient() {
               </div>
             </div>
             <form onSubmit={handleVerifyOtp} className="space-y-6 flex flex-col items-center">
-              <InputOTP aria-label="One-time registration verification code" maxLength={6} pattern={REGEXP_ONLY_DIGITS} value={otp} onChange={(val: string) => setOtp(val)}>
+              <InputOTP aria-label="One-time registration verification code" title="One-time registration verification code" maxLength={6} pattern={REGEXP_ONLY_DIGITS} value={otp} onChange={(val: string) => setOtp(val)}>
                 <InputOTPGroup className="gap-2">
                   <InputOTPSlot index={0} className="w-11 h-12 text-lg rounded-md border-border/50" />
                   <InputOTPSlot index={1} className="w-11 h-12 text-lg rounded-md border-border/50" />

@@ -309,7 +309,7 @@ export function ShiftPanel() {
                  <button 
                    type="button"
                    onClick={() => setSelectedPatient(null)}
-                   aria-label="Close patient details panel"
+                   aria-label="Close patient details panel" title="Close patient details panel"
                    className="size-10 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                  >
                     <X className="size-5" />

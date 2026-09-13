@@ -66,7 +66,7 @@ export function PatientsPanel() {
       />
       <div className="hairline-b px-5 py-3 sm:px-8">
         <input
-          aria-label="Filter patients by name or email"
+          aria-label="Filter patients by name or email" title="Filter patients by name or email"
           value={q}
           onChange={(e) => {
             setQ(e.target.value);

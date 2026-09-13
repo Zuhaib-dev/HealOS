@@ -193,7 +193,7 @@ export function MessagesPanel() {
           <label htmlFor="patient-new-message" className="mono-label block text-muted-foreground">New message</label>
           <textarea
             id="patient-new-message"
-            aria-label="Type your message"
+            aria-label="Type your message" title="Type your message"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={8}

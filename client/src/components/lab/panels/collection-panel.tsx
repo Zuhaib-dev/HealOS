@@ -262,7 +262,7 @@ export function CollectionPanel() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <input 
                   id="diagnostic-history-search"
-                  aria-label="Search diagnostic reports archive by test name or title"
+                  aria-label="Search diagnostic reports archive by test name or title" title="Search diagnostic reports archive by test name or title"
                   placeholder="Search by test name or title..." 
                   value={historySearch}
                   onChange={(e) => {
@@ -325,7 +325,7 @@ export function CollectionPanel() {
                 <div className="flex gap-2">
                   <button 
                     type="button"
-                    aria-label="Previous page"
+                    aria-label="Previous page" title="Previous page"
                     disabled={historyPage === 1}
                     onClick={() => setHistoryPage(p => p - 1)}
                     className="p-2 border rounded hover:bg-muted disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
@@ -335,7 +335,7 @@ export function CollectionPanel() {
                   </button>
                   <button 
                     type="button"
-                    aria-label="Next page"
+                    aria-label="Next page" title="Next page"
                     disabled={historyPage === historyData.pagination.pages}
                     onClick={() => setHistoryPage(p => p + 1)}
                     className="p-2 border rounded hover:bg-muted disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
@@ -356,7 +356,7 @@ export function CollectionPanel() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input 
                 id="collection-queue-search"
-                aria-label="Search MRN, Patient Name"
+                aria-label="Search MRN, Patient Name" title="Search MRN, Patient Name"
                 placeholder="Search MRN, Patient Name..." 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -472,7 +472,7 @@ export function CollectionPanel() {
                             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs">₹</span>
                             <input 
                               id="lab-test-price-input"
-                              aria-label="Set price in rupees"
+                              aria-label="Set price in rupees" title="Set price in rupees"
                               type="number" 
                               disabled={isPaid}
                               value={price} 
@@ -526,7 +526,7 @@ export function CollectionPanel() {
                          <label htmlFor="diagnostic-pdf-upload" className={`cursor-pointer relative transition-all ${isUploading[selectedOrder._id] ? 'opacity-70 pointer-events-none' : ''}`}>
                            <input
                              id="diagnostic-pdf-upload"
-                             aria-label="Upload finalized diagnostic PDF report"
+                             aria-label="Upload finalized diagnostic PDF report" title="Upload finalized diagnostic PDF report"
                              type="file"
                              className="absolute hidden"
                              accept=".pdf,image/*"

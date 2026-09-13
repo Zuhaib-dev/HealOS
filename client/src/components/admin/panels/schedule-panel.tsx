@@ -160,7 +160,7 @@ export function SchedulePanel() {
                 setIsFormOpen(false);
                 setFormErrors({});
               }}
-              aria-label="Close add shift form"
+              aria-label="Close add shift form" title="Close add shift form"
               className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
             >
               <LogOut className="size-4 rotate-45" />

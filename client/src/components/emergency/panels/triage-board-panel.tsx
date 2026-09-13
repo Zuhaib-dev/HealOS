@@ -194,7 +194,7 @@ export function TriageBoardPanel() {
               <button
                 type="button"
                 onClick={() => setIsIntakeOpen(false)}
-                aria-label="Close intake dialog"
+                aria-label="Close intake dialog" title="Close intake dialog"
                 className="text-muted-foreground hover:text-foreground p-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
               >
                 <X className="size-5" aria-hidden="true" />
@@ -243,7 +243,7 @@ export function TriageBoardPanel() {
                     />
                     <select
                       id="triage-patient-sex"
-                      aria-label="Sex"
+                      aria-label="Sex" title="Sex"
                       value={form.sex}
                       onChange={(e) => setForm({ ...form, sex: e.target.value as any })}
                       className="hairline bg-foreground/3 flex-1 p-2 text-sm focus:outline-hidden"

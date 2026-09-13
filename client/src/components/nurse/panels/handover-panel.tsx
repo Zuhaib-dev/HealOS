@@ -75,7 +75,7 @@ export function HandoverPanel() {
           <label htmlFor="nurse-handover-bed" className="mono-label block text-muted-foreground text-xs">Add handover note — Bed</label>
           <input
             id="nurse-handover-bed"
-            aria-label="Bed number"
+            aria-label="Bed number" title="Bed number"
             value={draft.bed}
             onChange={(e) => setDraft({ ...draft, bed: e.target.value })}
             placeholder="Bed (e.g. W3-12)"
@@ -84,7 +84,7 @@ export function HandoverPanel() {
           <label htmlFor="nurse-handover-situation" className="mono-label block text-muted-foreground text-xs mt-3">Situation</label>
           <textarea
             id="nurse-handover-situation"
-            aria-label="Situation"
+            aria-label="Situation" title="Situation"
             value={draft.situation}
             onChange={(e) => setDraft({ ...draft, situation: e.target.value })}
             placeholder="Situation"
@@ -94,7 +94,7 @@ export function HandoverPanel() {
           <label htmlFor="nurse-handover-recommendation" className="mono-label block text-muted-foreground text-xs mt-3">Recommendation</label>
           <textarea
             id="nurse-handover-recommendation"
-            aria-label="Recommendation"
+            aria-label="Recommendation" title="Recommendation"
             value={draft.recommendation}
             onChange={(e) => setDraft({ ...draft, recommendation: e.target.value })}
             placeholder="Recommendation"

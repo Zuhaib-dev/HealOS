@@ -220,7 +220,7 @@ export function VitalsRoundsPanel() {
                                 </label>
                                 <textarea
                                   id={`notes-${item.appointment._id}`}
-                                  aria-label="Additional Notes"
+                                  aria-label="Additional Notes" title="Additional Notes"
                                   value={draft.notes}
                                   onChange={(e) => setDraft({...draft, notes: e.target.value})}
                                   placeholder="Patient appears stable, no distress..."

@@ -17,7 +17,7 @@ export function SwitchboardGlyph({ className }: { className?: string }) {
       className={className}
       fill="none"
       role="img"
-      aria-label="Signal routed from one inbound line into three department lines"
+      aria-label="Signal routed from one inbound line into three department lines" title="Signal routed from one inbound line into three department lines"
     >
       <defs>
         <linearGradient id="sb-brass" x1="0" y1="0" x2="1" y2="0">
@@ -107,7 +107,7 @@ export function SiteMapGlyph({ className }: { className?: string }) {
   ];
 
   return (
-    <svg viewBox="0 0 360 180" className={className} fill="none" role="img" aria-label="Global deployment sites">
+    <svg viewBox="0 0 360 180" className={className} fill="none" role="img" aria-label="Global deployment sites" title="Global deployment sites">
       {Array.from({ length: 9 }).map((_, i) => (
         <line key={`v${i}`} x1={i * 45} y1="0" x2={i * 45} y2="180" stroke="var(--hairline)" />
       ))}

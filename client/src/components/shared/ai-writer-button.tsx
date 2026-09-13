@@ -62,7 +62,7 @@ export function AIWriterButton({ role, onBioGenerated }: AIWriterButtonProps) {
             <label htmlFor="ai-writer-keywords" className="sr-only">Keywords for bio generation</label>
             <textarea
               id="ai-writer-keywords"
-              aria-label="Keywords for bio generation"
+              aria-label="Keywords for bio generation" title="Keywords for bio generation"
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
               placeholder="e.g. Cardiologist, 15 years experience, loves tennis, holistic care..."

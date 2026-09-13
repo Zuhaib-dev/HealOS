@@ -64,7 +64,7 @@ export function WorkspaceShell({
     <div className="bg-background text-foreground min-h-screen">
       <header className="bg-background/90 hairline-b sticky top-0 z-40 backdrop-blur-md">
         <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-3" aria-label="HealOS home">
+          <Link href="/" className="flex items-center gap-3" aria-label="HealOS home" title="HealOS home">
             <HealOSLogo size={28} />
           </Link>
           <span className="mono-label text-muted-foreground hairline-l hidden pl-4 md:inline">
@@ -86,7 +86,7 @@ export function WorkspaceShell({
           <button
             type="button"
             className="hairline relative ml-auto p-2 lg:ml-0"
-            aria-label="Notifications"
+            aria-label="Notifications" title="Notifications"
           >
             <Bell className="size-4" />
             <span className="bg-destructive absolute top-1 right-1 size-1.5 animate-pulse rounded-full" />
@@ -102,7 +102,7 @@ export function WorkspaceShell({
         <aside 
           className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-(--hairline) p-3 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? "w-18 items-center px-2" : "w-60"}`}
         >
-          <nav aria-label="Workspace sidebar navigation" className="flex flex-col gap-0.5 w-full">
+          <nav aria-label="Workspace sidebar navigation" title="Workspace sidebar navigation" className="flex flex-col gap-0.5 w-full">
             {sections.map((s, i) => {
               const Icon = s.icon;
               const isActive = isSectionActive(s.id);
@@ -150,7 +150,7 @@ export function WorkspaceShell({
           <button
             onClick={toggleSidebar}
             className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors hairline ${isSidebarCollapsed ? "" : "w-full"}`}
-            aria-label="Toggle sidebar"
+            aria-label="Toggle sidebar" title="Toggle sidebar"
           >
             {isSidebarCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
           </button>
@@ -163,7 +163,7 @@ export function WorkspaceShell({
 
       {/* Persistent Bottom Navigation Bar - Mobile Only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
-        <nav aria-label="Workspace mobile navigation" className="flex justify-around items-center px-2 py-1.5">
+        <nav aria-label="Workspace mobile navigation" title="Workspace mobile navigation" className="flex justify-around items-center px-2 py-1.5">
           {mainMobileTabs.map((s) => {
             const Icon = s.icon;
             const isActive = isSectionActive(s.id);

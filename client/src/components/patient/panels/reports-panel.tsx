@@ -302,7 +302,7 @@ export function ReportsPanel() {
         <label htmlFor="patient-reports-filter" className="sr-only">Filter reports</label>
         <input
           id="patient-reports-filter"
-          aria-label="Filter reports"
+          aria-label="Filter reports" title="Filter reports"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Filter reports"
@@ -427,7 +427,7 @@ export function ReportsPanel() {
             <label htmlFor="patient-upload-report-title" className="sr-only">Report name</label>
             <input 
               id="patient-upload-report-title"
-              aria-label="Report name (optional)"
+              aria-label="Report name (optional)" title="Report name (optional)"
               type="text" 
               placeholder="Report name (optional)" 
               value={uploadTitle}
@@ -439,7 +439,7 @@ export function ReportsPanel() {
               {isUploading ? "Uploading..." : "Upload"}
               <input
                 id="patient-report-file-input"
-                aria-label="Upload document file"
+                aria-label="Upload document file" title="Upload document file"
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png,.dcm"
                 className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
@@ -463,7 +463,7 @@ export function ReportsPanel() {
             <div className="flex min-h-full items-center justify-center p-4 sm:p-6 text-center">
               <button
                 type="button"
-                aria-label="Close dialog backdrop"
+                aria-label="Close dialog backdrop" title="Close dialog backdrop"
                 onClick={() => setIsAiModalOpen(false)}
                 className="fixed inset-0 w-full h-full bg-transparent border-0 cursor-default outline-none"
               />

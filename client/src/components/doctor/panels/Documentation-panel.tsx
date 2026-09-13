@@ -117,7 +117,7 @@ export function NotesPanel() {
               {template}
             </p>
             <select
-              aria-label="Select patient for clinical documentation"
+              aria-label="Select patient for clinical documentation" title="Select patient for clinical documentation"
               value={selectedPatientId}
               onChange={(e) => setSelectedPatientId(e.target.value)}
               className="bg-background border border-(--hairline) px-3 py-1.5 text-sm mono-label outline-none focus:border-accent"
@@ -129,7 +129,7 @@ export function NotesPanel() {
             </select>
           </div>
           <textarea
-            aria-label="Clinical note content"
+            aria-label="Clinical note content" title="Clinical note content"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             spellCheck={false}

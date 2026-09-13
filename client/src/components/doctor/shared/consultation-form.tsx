@@ -153,7 +153,7 @@ export function ConsultationForm({
                 </div>
                 <textarea
                   id="chief-complaint"
-                  aria-label="Chief Complaint"
+                  aria-label="Chief Complaint" title="Chief Complaint"
                   value={chiefComplaint}
                   onChange={(e) => setChiefComplaint(e.target.value)}
                   className="w-full xl:w-3/5 bg-background border border-border/60 rounded-xl p-3 min-h-32 outline-none focus:border-primary/50 transition-colors resize-none"
@@ -165,7 +165,7 @@ export function ConsultationForm({
               <label htmlFor="consultation-diagnosis" className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Diagnosis</label>
               <input
                 id="consultation-diagnosis"
-                aria-label="Diagnosis"
+                aria-label="Diagnosis" title="Diagnosis"
                 type="text"
                 value={diagnosis}
                 onChange={(e) => setDiagnosis(e.target.value)}
@@ -177,7 +177,7 @@ export function ConsultationForm({
               <label htmlFor="consultation-advice" className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Advice & Lifestyle</label>
               <textarea
                 id="consultation-advice"
-                aria-label="Advice & Lifestyle"
+                aria-label="Advice & Lifestyle" title="Advice & Lifestyle"
                 value={advice}
                 onChange={(e) => setAdvice(e.target.value)}
                 className="w-full bg-background border border-border/60 rounded-xl p-3 min-h-25 outline-none focus:border-primary/50 transition-colors"
@@ -188,7 +188,7 @@ export function ConsultationForm({
               <label htmlFor="consultation-followup" className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Next Follow-Up Date</label>
               <input
                 id="consultation-followup"
-                aria-label="Next Follow-Up Date"
+                aria-label="Next Follow-Up Date" title="Next Follow-Up Date"
                 type="date"
                 value={followUpDate}
                 onChange={(e) => setFollowUpDate(e.target.value)}
@@ -233,7 +233,7 @@ export function ConsultationForm({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <input
                   id="new-med-name"
-                  aria-label="Drug Name"
+                  aria-label="Drug Name" title="Drug Name"
                   type="text"
                   placeholder="Drug Name (e.g. Paracetamol)"
                   value={newMed.name}
@@ -253,7 +253,7 @@ export function ConsultationForm({
                 </datalist>
                 
                 <input
-                  aria-label="Dosage"
+                  aria-label="Dosage" title="Dosage"
                   type="text"
                   placeholder="Dosage (e.g. 500mg)"
                   value={newMed.dosage}
@@ -261,7 +261,7 @@ export function ConsultationForm({
                   className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
                 />
                 <input
-                  aria-label="Frequency"
+                  aria-label="Frequency" title="Frequency"
                   type="text"
                   placeholder="Freq (e.g. 1-0-1)"
                   value={newMed.frequency}
@@ -269,7 +269,7 @@ export function ConsultationForm({
                   className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
                 />
                 <input
-                  aria-label="Duration"
+                  aria-label="Duration" title="Duration"
                   type="text"
                   placeholder="Duration (e.g. 5 days)"
                   value={newMed.duration}
@@ -278,7 +278,7 @@ export function ConsultationForm({
                 />
               </div>
               <input
-                aria-label="Instructions"
+                aria-label="Instructions" title="Instructions"
                 type="text"
                 placeholder="Instructions (e.g. After food) [Optional]"
                 value={newMed.instructions}
@@ -326,7 +326,7 @@ export function ConsultationForm({
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                <select
                  id="diagnostic-order-type"
-                 aria-label="Test Type"
+                 aria-label="Test Type" title="Test Type"
                  value={newOrder.testType}
                  onChange={(e) => setNewOrder({ ...newOrder, testType: e.target.value as any })}
                  className="bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50"
@@ -336,7 +336,7 @@ export function ConsultationForm({
                </select>
                <input
                  id="diagnostic-order-name"
-                 aria-label="Test Name"
+                 aria-label="Test Name" title="Test Name"
                  type="text"
                  placeholder="Test Name (e.g. CBC, MRI Brain)"
                  value={newOrder.testName}
@@ -346,7 +346,7 @@ export function ConsultationForm({
              </div>
              <input
                id="diagnostic-order-notes"
-               aria-label="Clinical Notes or Indications"
+               aria-label="Clinical Notes or Indications" title="Clinical Notes or Indications"
                type="text"
                placeholder="Clinical Notes / Indications [Optional]"
                value={newOrder.clinicalNotes}

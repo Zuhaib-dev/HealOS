@@ -145,7 +145,7 @@ function CommandPaletteCell() {
               }
             }}
             placeholder="Type a command or search the record…"
-            aria-label="Type a command or search the record"
+            aria-label="Type a command or search the record" title="Type a command or search the record"
             className="text-foreground placeholder:text-muted-foreground/60 w-full bg-transparent font-mono text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
           />
           <span className="mono-label text-muted-foreground hidden sm:inline">
@@ -369,7 +369,7 @@ function BreakGlassCell() {
           onPointerUp={cancel}
           onPointerLeave={cancel}
           className="relative grid size-16 shrink-0 cursor-pointer place-items-center select-none"
-          aria-label="Hold to authorize break-glass access"
+          aria-label="Hold to authorize break-glass access" title="Hold to authorize break-glass access"
         >
           <svg viewBox="0 0 40 40" className="absolute inset-0 size-16 -rotate-90">
             <circle

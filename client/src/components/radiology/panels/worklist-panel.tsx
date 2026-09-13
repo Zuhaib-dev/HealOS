@@ -203,7 +203,7 @@ export function WorklistPanel() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input 
                 id="radiology-worklist-search"
-                aria-label="Search MRN, Patient Name"
+                aria-label="Search MRN, Patient Name" title="Search MRN, Patient Name"
                 placeholder="Search MRN, Patient Name..." 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -313,7 +313,7 @@ export function WorklistPanel() {
                             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs">₹</span>
                             <input 
                               id="radiology-order-price"
-                              aria-label="Set Price in rupees"
+                              aria-label="Set Price in rupees" title="Set Price in rupees"
                               type="number" 
                               disabled={isPaid}
                               value={price} 

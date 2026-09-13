@@ -119,7 +119,7 @@ export function ProfilePanel() {
                       </label>
                       <input
                         id="patient-profile-name"
-                        aria-label="Full Name"
+                        aria-label="Full Name" title="Full Name"
                         autoComplete="name"
                         readOnly
                         value={user?.name || ""}
@@ -132,7 +132,7 @@ export function ProfilePanel() {
                       </label>
                       <input
                         id="patient-profile-email"
-                        aria-label="Email Address"
+                        aria-label="Email Address" title="Email Address"
                         autoComplete="email"
                         readOnly
                         value={user?.email || ""}
@@ -147,7 +147,7 @@ export function ProfilePanel() {
                     </label>
                     <input
                       id="patient-profile-dob"
-                      aria-label="Date of Birth"
+                      aria-label="Date of Birth" title="Date of Birth"
                       type="date"
                       value={dob}
                       onChange={(e) => setDob(e.target.value)}
@@ -161,7 +161,7 @@ export function ProfilePanel() {
                     </label>
                     <select
                       id="patient-profile-gender"
-                      aria-label="Gender"
+                      aria-label="Gender" title="Gender"
                       value={gender}
                       onChange={(e) => setGender(e.target.value as any)}
                       className="w-full appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
@@ -178,7 +178,7 @@ export function ProfilePanel() {
                     </label>
                     <select
                       id="patient-profile-blood-group"
-                      aria-label="Blood Group"
+                      aria-label="Blood Group" title="Blood Group"
                       value={bloodGroup}
                       onChange={(e) => setBloodGroup(e.target.value as any)}
                       className="w-full appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
@@ -195,7 +195,7 @@ export function ProfilePanel() {
                     </label>
                     <input
                       id="patient-profile-emergency-name"
-                      aria-label="Emergency Contact Name"
+                      aria-label="Emergency Contact Name" title="Emergency Contact Name"
                       value={emergencyContactName}
                       onChange={(e) => setEmergencyContactName(e.target.value)}
                       placeholder="Primary contact name"
@@ -209,7 +209,7 @@ export function ProfilePanel() {
                     </label>
                     <input
                       id="patient-profile-emergency-phone"
-                      aria-label="Emergency Phone Number"
+                      aria-label="Emergency Phone Number" title="Emergency Phone Number"
                       autoComplete="tel"
                       value={emergencyPhone}
                       onChange={(e) => setEmergencyPhone(e.target.value)}
@@ -225,7 +225,7 @@ export function ProfilePanel() {
                     </label>
                     <input
                       id="patient-profile-allergies"
-                      aria-label="Known Allergies"
+                      aria-label="Known Allergies" title="Known Allergies"
                       value={allergies}
                       onChange={(e) => setAllergies(e.target.value)}
                       placeholder="e.g. Penicillin, Dust Mites, Peanuts"
@@ -241,7 +241,7 @@ export function ProfilePanel() {
                       <div className="flex gap-2">
                         <input
                           id="patient-profile-height"
-                          aria-label="Height"
+                          aria-label="Height" title="Height"
                           type="number"
                           value={height}
                           onChange={(e) => setHeight(e.target.value === "" ? "" : Number(e.target.value))}
@@ -250,7 +250,7 @@ export function ProfilePanel() {
                         />
                         <select
                           id="patient-profile-height-unit"
-                          aria-label="Height unit"
+                          aria-label="Height unit" title="Height unit"
                           value={heightUnit}
                           onChange={(e) => setHeightUnit(e.target.value as "cm" | "ft")}
                           className="appearance-none bg-background border border-border/70 text-sm rounded-md px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all w-24"
@@ -266,7 +266,7 @@ export function ProfilePanel() {
                       </label>
                       <input
                         id="patient-profile-weight"
-                        aria-label="Weight in kilograms"
+                        aria-label="Weight in kilograms" title="Weight in kilograms"
                         type="number"
                         value={weight}
                         onChange={(e) => setWeight(e.target.value === "" ? "" : Number(e.target.value))}
@@ -282,7 +282,7 @@ export function ProfilePanel() {
                     </label>
                     <textarea
                       id="patient-profile-address"
-                      aria-label="Residential Address"
+                      aria-label="Residential Address" title="Residential Address"
                       autoComplete="street-address"
                       rows={3}
                       value={address}
@@ -301,7 +301,7 @@ export function ProfilePanel() {
                     </div>
                     <textarea
                       id="patient-profile-bio"
-                      aria-label="Personal Bio"
+                      aria-label="Personal Bio" title="Personal Bio"
                       rows={4}
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}

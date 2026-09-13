@@ -108,7 +108,7 @@ export function CriticalPanel() {
               <div className="mt-4">
                 <input
                   id={`clinician-called-${c._id}`}
-                  aria-label="Clinician called"
+                  aria-label="Clinician called" title="Clinician called"
                   value={target}
                   onChange={(e) => setTarget(e.target.value)}
                   placeholder="Clinician called"

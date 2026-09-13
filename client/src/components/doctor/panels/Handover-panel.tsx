@@ -154,7 +154,7 @@ export function HandoverPanel() {
           </label>
           <textarea
             id="handover-note-draft"
-            aria-label="Add handover note"
+            aria-label="Add handover note" title="Add handover note"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="e.g. ICU-A 04 — repeat ABG at 12:00, escalate if lactate rising"

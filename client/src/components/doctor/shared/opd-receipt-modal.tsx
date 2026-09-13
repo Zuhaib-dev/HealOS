@@ -78,7 +78,7 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
           <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
             <button
               type="button"
-              aria-label="Close dialog backdrop"
+              aria-label="Close dialog backdrop" title="Close dialog backdrop"
               onClick={onClose}
               className="fixed inset-0 w-full h-full bg-transparent border-0 cursor-default p-0 outline-none"
             />
@@ -108,7 +108,7 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close dialog"
+                aria-label="Close dialog" title="Close dialog"
                 className="size-9 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground transition-colors"
               >
                 <X className="size-5" />

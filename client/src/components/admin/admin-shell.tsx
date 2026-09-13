@@ -83,7 +83,7 @@ export function AdminShell({
       <header className="bg-background/90 border-b border-border/60 sticky top-0 z-40 backdrop-blur-md transition-all">
         <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-8">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-3 group" aria-label="HealOS home">
+            <Link href="/" className="flex items-center gap-3 group" aria-label="HealOS home" title="HealOS home">
               <HealOSLogo size={30} />
             </Link>
 
@@ -103,7 +103,7 @@ export function AdminShell({
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("open-command-menu"))}
-            aria-label="Search patients, staff, invoices, approvals"
+            aria-label="Search patients, staff, invoices, approvals" title="Search patients, staff, invoices, approvals"
             className="hidden lg:flex w-80 items-center gap-2.5 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:border-primary/50 transition-all text-left cursor-pointer"
           >
             <Search className="text-muted-foreground size-3.5 shrink-0" />
@@ -120,7 +120,7 @@ export function AdminShell({
             <button
               type="button"
               className="group relative flex items-center justify-center size-9 rounded-full border border-border/70 bg-card/60 hover:bg-muted/50 transition-colors"
-              aria-label="Notifications"
+              aria-label="Notifications" title="Notifications"
             >
               <Bell className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               <span className="bg-amber-500 absolute top-1.5 right-1.5 size-2 animate-ping rounded-full" />
@@ -162,7 +162,7 @@ export function AdminShell({
             </div>
           )}
 
-          <nav aria-label="Admin sidebar navigation" className="flex flex-col gap-1 w-full">
+          <nav aria-label="Admin sidebar navigation" title="Admin sidebar navigation" className="flex flex-col gap-1 w-full">
             {sections.map((s) => {
               const Icon = s.icon;
               const isActive = s.id === "overview" ? pathname === "/admin" : pathname.startsWith(`/admin/${s.id}`);
@@ -207,7 +207,7 @@ export function AdminShell({
           <button
             onClick={toggleSidebar}
             className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 ${isSidebarCollapsed ? "" : "w-full"}`}
-            aria-label="Toggle sidebar"
+            aria-label="Toggle sidebar" title="Toggle sidebar"
           >
             {isSidebarCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
           </button>
@@ -221,7 +221,7 @@ export function AdminShell({
 
       {/* Persistent Bottom Navigation Bar - Mobile Only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
-        <nav aria-label="Admin mobile navigation" className="flex justify-around items-center px-2 py-1.5">
+        <nav aria-label="Admin mobile navigation" title="Admin mobile navigation" className="flex justify-around items-center px-2 py-1.5">
           {mainMobileTabs.map((s) => {
             const Icon = s.icon;
             const isActive = s.id === "overview" ? pathname === "/admin" : pathname.startsWith(`/admin/${s.id}`);

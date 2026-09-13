@@ -54,7 +54,7 @@ export function PastOrdersPanel() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input 
                 id="pharmacy-past-orders-search"
-                aria-label="Search by Patient Name or Order ID"
+                aria-label="Search by Patient Name or Order ID" title="Search by Patient Name or Order ID"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by Patient Name or Order ID..." 

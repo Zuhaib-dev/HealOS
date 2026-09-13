@@ -71,7 +71,7 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100]"
+        className="fixed inset-0 z-100"
       >
         {/* Scrollable Backdrop */}
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm overflow-y-auto">
@@ -266,6 +266,8 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
             </div>
           </div>
         </motion.div>
+          </div>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

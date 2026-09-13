@@ -50,14 +50,32 @@ export const explainReport = async (req: Request, res: Response) => {
     if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
     if (ext === 'png') mimeType = 'image/png';
 
-    const fileRes = await fetch(fileUrl);
-    if (!fileRes.ok) {
-      throw new AppError("Failed to fetch report file for AI processing", 400);
-    }
+    let base64Data = "";
 
-    const arrayBuffer = await fileRes.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const base64Data = buffer.toString('base64');
+    try {
+      if (fileUrl.startsWith('/uploads')) {
+        // Read local file directly from filesystem
+        const fs = await import('fs');
+        const path = await import('path');
+        const localPath = path.join(process.cwd(), fileUrl);
+        if (!fs.existsSync(localPath)) {
+          throw new AppError("Report file no longer exists on the server.", 404);
+        }
+        const fileBuffer = await fs.promises.readFile(localPath);
+        base64Data = fileBuffer.toString('base64');
+      } else {
+        // Fetch remote file (e.g. ImageKit)
+        const fileRes = await fetch(fileUrl);
+        if (!fileRes.ok) {
+          throw new AppError("Failed to fetch remote report file for AI processing", 400);
+        }
+        const arrayBuffer = await fileRes.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        base64Data = buffer.toString('base64');
+      }
+    } catch (err: any) {
+      throw new AppError(err.message || "Failed to process report file", err.statusCode || 500);
+    }
 
     const prompt = `You are an empathetic, expert medical AI. Review this lab report or medical document. Explain the findings to the patient in simple, non-jargon terms.
     

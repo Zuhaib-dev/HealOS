@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Check,
@@ -107,11 +107,29 @@ export function ReportsPanel() {
   const [selectedReportForAi, setSelectedReportForAi] = useState<{name: string, url: string} | null>(null);
   const [aiExplanation, setAiExplanation] = useState<string>("");
   const [isExplaining, setIsExplaining] = useState(false);
+  
+  // Chat State
+  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatting, setIsChatting] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      scrollToBottom();
+    }
+  }, [chatMessages, isChatting]);
 
   const handleExplainReport = async (name: string, url: string) => {
     setSelectedReportForAi({ name, url });
     setIsAiModalOpen(true);
     setAiExplanation("");
+    setChatMessages([]);
+    setChatInput("");
     setIsExplaining(true);
 
     try {
@@ -137,6 +155,53 @@ export function ReportsPanel() {
       setIsAiModalOpen(false);
     } finally {
       setIsExplaining(false);
+    }
+  };
+
+  const handleSendChatMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!chatInput.trim() || isChatting || !selectedReportForAi) return;
+
+    const userMessage = chatInput.trim();
+    setChatInput("");
+    setChatMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setIsChatting(true);
+
+    try {
+      const token = useAuthStore.getState().token;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+      
+      // We pass the initial prompt implicitly as history to Gemini if we wanted to, 
+      // but to keep it simple, we just pass the user's explicit chat questions 
+      // + the file URL so Gemini can re-read the file in the new context.
+      const apiMessages = [
+        ...chatMessages,
+        { role: 'user', text: userMessage }
+      ];
+
+      const res = await fetch(`${apiUrl}/ai/chat-report`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          messages: apiMessages,
+          fileUrl: selectedReportForAi.url
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setChatMessages(prev => [...prev, { role: 'model', text: json.text }]);
+      } else {
+        throw new Error(json.message || "Failed to get response");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Chat error occurred");
+      setChatMessages(prev => [...prev, { role: 'model', text: "Sorry, I encountered an error. Please try again." }]);
+    } finally {
+      setIsChatting(false);
     }
   };
 
@@ -487,7 +552,57 @@ export function ReportsPanel() {
                       })}
                     </div>
                   )}
+                  
+                  {/* Chat History */}
+                  {!isExplaining && aiExplanation && chatMessages.length > 0 && (
+                    <div className="mt-8 space-y-4 border-t border-border/50 pt-6">
+                      {chatMessages.map((msg, idx) => (
+                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                            msg.role === 'user' 
+                              ? 'bg-foreground text-background rounded-br-sm' 
+                              : 'bg-muted border border-border/50 text-foreground/90 rounded-bl-sm'
+                          }`}>
+                            <p className="text-[15px] leading-relaxed">{msg.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {isChatting && (
+                        <div className="flex justify-start">
+                          <div className="bg-muted border border-border/50 rounded-2xl rounded-bl-sm px-4 py-4 flex items-center gap-2">
+                            <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                            <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                            <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce" />
+                          </div>
+                        </div>
+                      )}
+                      <div ref={chatEndRef} />
+                    </div>
+                  )}
                 </div>
+
+                {/* Chat Input */}
+                {!isExplaining && aiExplanation && (
+                  <div className="p-4 sm:p-5 border-t border-border/50 bg-background/50 backdrop-blur-sm">
+                    <form onSubmit={handleSendChatMessage} className="flex items-center gap-3">
+                      <input 
+                        type="text" 
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="Ask a follow-up question..."
+                        className="flex-1 bg-muted/50 border border-border/50 rounded-full px-5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-shadow placeholder:text-muted-foreground/70"
+                        disabled={isChatting}
+                      />
+                      <button 
+                        type="submit" 
+                        disabled={!chatInput.trim() || isChatting}
+                        className="size-10 shrink-0 rounded-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:hover:bg-amber-500 text-white flex items-center justify-center transition-colors"
+                      >
+                        <Send className="size-4 -ml-0.5" />
+                      </button>
+                    </form>
+                  </div>
+                )}
 
                 {/* Footer Disclaimer */}
                 <div className="bg-muted/50 border-t border-border p-4 sm:p-5 flex items-center justify-center gap-2">

@@ -168,7 +168,7 @@ export function DoctorShell({
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                   }`}
                 >
-                  <Icon className={`size-4 ${isActive ? "text-primary-foreground" : "text-primary/70 group-hover:text-primary"}`} />
+                  <Icon className={`size-4 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === 'settings' ? 'group-hover:rotate-90' : 'group-hover:scale-[1.15]'}`}`} />
                   {!isSidebarCollapsed && <span>{s.label}</span>}
                 </Link>
               );

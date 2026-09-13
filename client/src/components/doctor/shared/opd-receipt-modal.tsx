@@ -71,23 +71,26 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-100 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 sm:p-6"
+        className="fixed inset-0 z-[100]"
       >
-        <button
-          type="button"
-          aria-label="Close dialog backdrop"
-          onClick={onClose}
-          className="absolute inset-0 bg-transparent border-0 cursor-default p-0 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 w-full h-full"
-        />
-        
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl shadow-2xl border border-border/60 flex flex-col hide-scrollbar"
-        >
+        {/* Scrollable Backdrop */}
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+            <button
+              type="button"
+              aria-label="Close dialog backdrop"
+              onClick={onClose}
+              className="fixed inset-0 w-full h-full bg-transparent border-0 cursor-default p-0 outline-none"
+            />
+            
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-2xl bg-card rounded-2xl shadow-2xl border border-border/60 flex flex-col z-10 overflow-hidden"
+            >
           {/* Header Controls */}
-          <div className="sticky top-0 bg-card/90 backdrop-blur-sm border-b border-border/40 p-4 flex items-center justify-between z-10">
+          <div className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border/40 p-3 sm:p-4 flex items-center justify-between z-50">
             <h2 className="font-display font-semibold text-lg flex items-center gap-2">
               <ClipboardList className="size-5 text-primary" />
               OPD Consultation Ticket
@@ -114,7 +117,7 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
           </div>
 
           {/* Printable Receipt Area */}
-          <div className="p-8 sm:p-12 bg-white text-slate-900 relative overflow-hidden" id="printable-receipt">
+          <div className="p-5 sm:p-8 md:p-12 bg-white text-slate-900 relative overflow-hidden" id="printable-receipt">
             
             {/* Aesthetic Watermark */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none select-none">
@@ -122,34 +125,34 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
             </div>
 
             {/* Hospital Header */}
-            <div className="flex items-start justify-between border-b-2 border-slate-200 pb-8 mb-8 relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="size-14 text-emerald-600 flex items-center justify-center">
+            <div className="flex flex-col sm:flex-row items-start justify-between border-b-2 border-slate-200 pb-6 sm:pb-8 mb-6 sm:mb-8 relative z-10 gap-6 sm:gap-0">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="size-10 sm:size-14 text-emerald-600 flex items-center justify-center shrink-0">
                    <HealOSLogo size={42} showWordmark={false} />
                 </div>
                 <div>
-                  <h1 className="font-display font-black text-3xl tracking-tight text-slate-900 mb-1">HealOS Hospital</h1>
-                  <p className="text-sm text-slate-500 font-medium tracking-wide uppercase">Advanced Care Center</p>
+                  <h1 className="font-display font-black text-2xl sm:text-3xl tracking-tight text-slate-900 mb-0.5 sm:mb-1 overflow-wrap-anywhere min-w-0">HealOS Hospital</h1>
+                  <p className="text-xs sm:text-sm text-slate-500 font-medium tracking-wide uppercase">Advanced Care Center</p>
                 </div>
               </div>
-              <div className="text-right text-sm text-slate-500 space-y-1.5 mt-1">
-                <p className="flex items-center justify-end gap-2"><MapPin className="size-3.5" /> 123 Health Ave, Medical District</p>
-                <p className="flex items-center justify-end gap-2"><Phone className="size-3.5" /> +1 (555) 019-8273</p>
+              <div className="text-left sm:text-right text-xs sm:text-sm text-slate-500 space-y-1.5 mt-1">
+                <p className="flex items-center justify-start sm:justify-end gap-2"><MapPin className="size-3.5" /> 123 Health Ave, Medical District</p>
+                <p className="flex items-center justify-start sm:justify-end gap-2"><Phone className="size-3.5" /> +1 (555) 019-8273</p>
                 <div className="mt-3 inline-block bg-slate-100 px-3 py-1 rounded-md">
-                  <p className="font-mono text-xs font-bold text-slate-700">TICKET #: {consultation._id?.slice(-8).toUpperCase()}</p>
+                  <p className="font-mono text-[10px] sm:text-xs font-bold text-slate-700">TICKET #: {consultation._id?.slice(-8).toUpperCase()}</p>
                 </div>
               </div>
             </div>
 
             {/* Patient & Doctor Info */}
-            <div className="grid grid-cols-2 gap-8 mb-10 relative z-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mb-8 sm:mb-10 relative z-10">
               <div className="space-y-1.5">
                 <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Patient Details</p>
-                <h3 className="font-bold text-xl text-slate-900">{patient?.name || "Unknown Patient"}</h3>
-                <p className="text-sm text-slate-600 font-mono">ID: {patient?._id?.slice(-6).toUpperCase()}</p>
-                {patient?.email && <p className="text-sm text-slate-600">{patient.email}</p>}
+                <h3 className="font-bold text-lg sm:text-xl text-slate-900 overflow-wrap-anywhere min-w-0">{patient?.name || "Unknown Patient"}</h3>
+                <p className="text-xs sm:text-sm text-slate-600 font-mono">ID: {patient?._id?.slice(-6).toUpperCase()}</p>
+                {patient?.email && <p className="text-xs sm:text-sm text-slate-600 truncate">{patient.email}</p>}
               </div>
-              <div className="space-y-1.5 text-right">
+              <div className="space-y-1.5 sm:text-right">
                 <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Attending Doctor</p>
                 <h3 className="font-bold text-xl text-slate-900">Dr. {doctor?.name || "Physician"}</h3>
                 <p className="text-sm text-slate-600">Date: {new Date(consultation.createdAt).toLocaleDateString()}</p>
@@ -216,20 +219,20 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
               {consultation.medicines && consultation.medicines.length > 0 ? (
                 <div className="space-y-4">
                   {consultation.medicines.map((med: any, idx: number) => (
-                    <div key={idx} className="flex items-start justify-between pb-4 border-b border-slate-100 last:border-0 last:pb-0">
+                    <div key={idx} className="flex flex-col sm:flex-row sm:items-start justify-between pb-4 border-b border-slate-100 last:border-0 last:pb-0 gap-2 sm:gap-4">
                       <div>
-                        <p className="font-bold text-[15px] text-slate-900 flex items-center gap-2">
-                          <span className="text-slate-400 text-xs font-mono w-4">{idx + 1}.</span> {med.name}
+                        <p className="font-bold text-sm sm:text-[15px] text-slate-900 flex items-start sm:items-center gap-2 overflow-wrap-anywhere min-w-0">
+                          <span className="text-slate-400 text-xs font-mono w-4 shrink-0 pt-0.5 sm:pt-0">{idx + 1}.</span> {med.name}
                         </p>
-                        <p className="text-sm text-slate-600 mt-1 pl-6">
+                        <p className="text-xs sm:text-sm text-slate-600 mt-1 pl-5 sm:pl-6">
                           {med.dosage} — {med.frequency}
                         </p>
                         {med.instructions && (
-                          <p className="text-xs text-slate-500 mt-1 italic pl-6">Note: {med.instructions}</p>
+                          <p className="text-[11px] sm:text-xs text-slate-500 mt-1 italic pl-5 sm:pl-6">Note: {med.instructions}</p>
                         )}
                       </div>
-                      <div className="text-right">
-                        <span className="inline-block bg-slate-100 text-slate-700 font-mono text-xs px-2.5 py-1 rounded-md">
+                      <div className="mt-2 sm:mt-0 sm:text-right shrink-0">
+                        <span className="inline-block bg-slate-100 text-slate-700 font-mono text-[10px] sm:text-xs px-2.5 py-1 rounded-md">
                           {med.duration}
                         </span>
                       </div>
@@ -242,23 +245,23 @@ export function OpdReceiptModal({ consultation, patient, doctor, onClose }: OpdR
             </div>
 
             {/* Follow-up & Sign */}
-            <div className="flex items-end justify-between mt-12 pt-8 border-t-2 border-slate-100 relative z-10">
-              <div>
+            <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between mt-8 sm:mt-12 pt-6 sm:pt-8 border-t-2 border-slate-100 relative z-10 gap-8 sm:gap-0">
+              <div className="w-full sm:w-auto text-center sm:text-left">
                 {consultation.followUpDate && (
-                  <div className="flex items-center gap-2 text-sm bg-emerald-50 text-emerald-700 px-4 py-2.5 rounded-xl border border-emerald-100 font-semibold shadow-sm">
+                  <div className="inline-flex items-center justify-center gap-2 text-xs sm:text-sm bg-emerald-50 text-emerald-700 px-4 py-2.5 rounded-xl border border-emerald-100 font-semibold shadow-sm">
                     <Calendar className="size-4" />
                     Follow-up: {new Date(consultation.followUpDate).toLocaleDateString()}
                   </div>
                 )}
               </div>
-              <div className="text-center">
-                <div className="w-48 border-b-2 border-slate-300 border-dashed mb-3 h-12"></div>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Doctor's Signature</p>
+              <div className="text-center w-full sm:w-auto flex flex-col items-center">
+                <div className="w-40 sm:w-48 border-b-2 border-slate-300 border-dashed mb-3 h-8 sm:h-12"></div>
+                <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-widest">Doctor's Signature</p>
               </div>
             </div>
             
             {/* Footer */}
-            <div className="mt-12 text-center text-[10px] text-slate-400 font-mono border-t border-slate-100 pt-6 relative z-10">
+            <div className="mt-8 sm:mt-12 text-center text-[9px] sm:text-[10px] text-slate-400 font-mono border-t border-slate-100 pt-4 sm:pt-6 relative z-10 leading-relaxed px-4 sm:px-0">
               Generated by HealOS System • Valid for 30 days • Not for medico-legal purposes without stamp
             </div>
           </div>

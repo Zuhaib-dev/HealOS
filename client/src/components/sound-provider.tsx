@@ -27,7 +27,7 @@ export function SoundProvider() {
 
         // 2. Create gain node for volume
         const gainNode = audioCtx.createGain();
-        gainNode.gain.value = 0.25; // 0.5 * intensity(0.5)
+        gainNode.gain.value = 0.28; // Increased by ~10% for a louder click (was 0.25)
 
         // 3. Connect: buffer -> filter -> gain -> speakers
         filter.connect(gainNode);

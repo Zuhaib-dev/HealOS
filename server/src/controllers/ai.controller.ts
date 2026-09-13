@@ -53,21 +53,38 @@ export const explainReport = async (req: Request, res: Response) => {
     let base64Data = "";
 
     try {
+      let localPath = "";
       if (fileUrl.startsWith('/uploads')) {
+        localPath = fileUrl;
+      } else if (fileUrl.includes('/uploads/')) {
+        try {
+          const urlObj = new URL(fileUrl);
+          if (urlObj.pathname.startsWith('/uploads')) {
+            localPath = urlObj.pathname;
+          }
+        } catch (e) {
+          // ignore parsing errors
+        }
+      }
+
+      if (localPath) {
         // Read local file directly from filesystem
         const fs = await import('fs');
         const path = await import('path');
-        const localPath = path.join(process.cwd(), fileUrl);
-        if (!fs.existsSync(localPath)) {
-          throw new AppError("Report file no longer exists on the server.", 404);
+        const fullLocalPath = path.join(process.cwd(), localPath);
+        if (!fs.existsSync(fullLocalPath)) {
+          throw new AppError("Report file no longer exists on the server (ephemeral storage wiped). Please re-upload.", 404);
         }
-        const fileBuffer = await fs.promises.readFile(localPath);
+        const fileBuffer = await fs.promises.readFile(fullLocalPath);
         base64Data = fileBuffer.toString('base64');
       } else {
         // Fetch remote file (e.g. ImageKit)
         const fileRes = await fetch(fileUrl);
         if (!fileRes.ok) {
-          throw new AppError("Failed to fetch remote report file for AI processing", 400);
+          if (fileRes.status === 404) {
+             throw new AppError("Remote report file no longer exists. Please re-upload.", 404);
+          }
+          throw new AppError(`Failed to fetch report file (Status: ${fileRes.status})`, 400);
         }
         const arrayBuffer = await fileRes.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);

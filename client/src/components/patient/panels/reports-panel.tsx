@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Check,
   Download,
@@ -15,6 +15,8 @@ import {
   Send,
   RefreshCw,
   UploadCloud,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
@@ -99,6 +101,44 @@ export function ReportsPanel() {
   const { data, isLoading, refetch } = usePatientDashboard();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
+
+  // AI Explainer State
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [selectedReportForAi, setSelectedReportForAi] = useState<{name: string, url: string} | null>(null);
+  const [aiExplanation, setAiExplanation] = useState<string>("");
+  const [isExplaining, setIsExplaining] = useState(false);
+
+  const handleExplainReport = async (name: string, url: string) => {
+    setSelectedReportForAi({ name, url });
+    setIsAiModalOpen(true);
+    setAiExplanation("");
+    setIsExplaining(true);
+
+    try {
+      const token = useAuthStore.getState().token;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+      const res = await fetch(`${apiUrl}/ai/explain-report`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ fileUrl: url }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setAiExplanation(json.explanation);
+      } else {
+        throw new Error(json.message || "Failed to explain report");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred during AI processing");
+      setIsAiModalOpen(false);
+    } finally {
+      setIsExplaining(false);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -284,6 +324,17 @@ export function ReportsPanel() {
                           </button>
                         </>
                       )}
+                      {r.fileUrl && (
+                        <button 
+                          type="button" 
+                          aria-label="Explain with AI" 
+                          className="hover:text-amber-500 text-amber-500/70 transition-colors flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-full"
+                          onClick={() => handleExplainReport(r.name, r.fileUrl!)}
+                        >
+                          <Sparkles className="size-3.5" />
+                          <span className="text-[10px] uppercase font-bold tracking-wider">Explain</span>
+                        </button>
+                      )}
                       <button type="button" aria-label="Share" className="hover:text-foreground">
                         <Share2 className="size-3.5" />
                       </button>
@@ -333,6 +384,123 @@ export function ReportsPanel() {
           </div>
         </div>
       </div>
+
+      {/* AI Explainer Modal */}
+      <AnimatePresence>
+        {isAiModalOpen && selectedReportForAi && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-100 bg-background/80 backdrop-blur-sm overflow-y-auto"
+          >
+            <div className="flex min-h-full items-center justify-center p-4 sm:p-6 text-center">
+              <button
+                type="button"
+                aria-label="Close dialog backdrop"
+                onClick={() => setIsAiModalOpen(false)}
+                className="fixed inset-0 w-full h-full bg-transparent border-0 cursor-default outline-none"
+              />
+              
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                className="relative w-full max-w-2xl text-left bg-card rounded-2xl shadow-2xl border border-amber-500/30 flex flex-col z-10 overflow-hidden"
+              >
+                {/* Header */}
+                <div className="sticky top-0 bg-background/80 backdrop-blur-xl border-b border-border/50 p-5 sm:p-6 flex items-start justify-between z-50">
+                  <div className="flex gap-4 items-center">
+                    <div className="size-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0 shadow-inner">
+                      <Sparkles className="size-6" />
+                    </div>
+                    <div>
+                      <h2 className="font-display font-semibold text-xl text-foreground flex items-center gap-2">
+                        AI Lab Report Explainer
+                      </h2>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        Simplifying: <span className="font-medium text-foreground">{selectedReportForAi.name}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsAiModalOpen(false)}
+                    className="size-8 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors mt-1"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 sm:p-8 relative min-h-75 bg-linear-to-b from-background to-muted/20">
+                  {isExplaining ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl animate-pulse" />
+                        <Loader2 className="size-10 animate-spin text-amber-500 relative z-10" />
+                      </div>
+                      <p className="text-sm font-medium text-foreground/80 animate-pulse">Gemini is translating medical jargon...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-w-none text-foreground/90 leading-relaxed">
+                      {aiExplanation.split('\\n').map((line, i) => {
+                        const trimmedLine = line.trim();
+                        if (trimmedLine === '' || trimmedLine.match(/^[-_*]{3,}$/)) return null; // Skip empty lines and horizontal rules
+                        
+                        if (trimmedLine.startsWith('### ')) {
+                          return <h3 key={i} className="text-lg font-display font-semibold text-foreground mt-8 mb-3 flex items-center gap-2">{trimmedLine.replace('### ', '')}</h3>;
+                        }
+                        if (trimmedLine.startsWith('## ')) {
+                          return <h2 key={i} className="text-xl font-display font-bold text-foreground mt-8 mb-4 pb-2 border-b border-border/50">{trimmedLine.replace('## ', '')}</h2>;
+                        }
+                        if (trimmedLine.startsWith('# ')) {
+                          return <h1 key={i} className="text-2xl font-display font-bold text-foreground mt-8 mb-4">{trimmedLine.replace('# ', '')}</h1>;
+                        }
+                        if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
+                          const listItemText = trimmedLine.substring(2);
+                          // Parse bold in lists
+                          const parts = listItemText.split(/(\\*\\*.*?\\*\\*)/g);
+                          return (
+                            <li key={i} className="ml-6 mb-2 list-disc pl-1 marker:text-amber-500">
+                              {parts.map((part, j) => {
+                                if (part.startsWith('**') && part.endsWith('**')) {
+                                  return <strong key={j} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
+                                }
+                                return part;
+                              })}
+                            </li>
+                          );
+                        }
+                        
+                        // Basic bold parsing for paragraphs
+                        const parts = trimmedLine.split(/(\\*\\*.*?\\*\\*)/g);
+                        return (
+                          <p key={i} className="mb-3 text-[15px]">
+                            {parts.map((part, j) => {
+                              if (part.startsWith('**') && part.endsWith('**')) {
+                                return <strong key={j} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
+                              }
+                              return part;
+                            })}
+                          </p>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Disclaimer */}
+                <div className="bg-muted/50 border-t border-border p-4 sm:p-5 flex items-center justify-center gap-2">
+                  <TriangleAlert className="size-4 text-amber-500/70" />
+                  <p className="text-xs text-muted-foreground font-medium">
+                    This explanation was generated by AI and is not medical advice. Always consult your doctor.
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

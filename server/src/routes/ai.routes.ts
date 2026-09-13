@@ -1,5 +1,5 @@
 import express from "express";
-import { generateBio } from "../controllers/ai.controller";
+import { generateBio, explainReport } from "../controllers/ai.controller";
 import { verifyToken } from "../middleware/auth.middleware";
 
 const router = express.Router();
@@ -8,5 +8,6 @@ const router = express.Router();
 router.use(verifyToken);
 
 router.post("/generate-bio", generateBio);
+router.post("/explain-report", explainReport);
 
 export default router;

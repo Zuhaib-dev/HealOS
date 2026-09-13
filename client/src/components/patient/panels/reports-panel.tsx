@@ -372,19 +372,19 @@ export function ReportsPanel() {
                     <div className="text-muted-foreground flex items-center gap-3">
                       {r.fileUrl ? (
                         <>
-                          <a href={r.fileUrl} target="_blank" rel="noopener noreferrer" aria-label="View" className="hover:text-foreground">
+                          <a href={r.fileUrl} target="_blank" rel="noopener noreferrer" aria-label="View" title="View Report" className="hover:text-foreground">
                             <Eye className="size-3.5" />
                           </a>
-                          <a href={r.fileUrl} download aria-label="Download" className="hover:text-foreground">
+                          <a href={r.fileUrl} download aria-label="Download" title="Download Report" className="hover:text-foreground">
                             <Download className="size-3.5" />
                           </a>
                         </>
                       ) : (
                         <>
-                          <button type="button" aria-label="View" className="hover:text-foreground opacity-50 cursor-not-allowed">
+                          <button type="button" aria-label="View" title="View Report" className="hover:text-foreground opacity-50 cursor-not-allowed">
                             <Eye className="size-3.5" />
                           </button>
-                          <button type="button" aria-label="Download" className="hover:text-foreground opacity-50 cursor-not-allowed">
+                          <button type="button" aria-label="Download" title="Download Report" className="hover:text-foreground opacity-50 cursor-not-allowed">
                             <Download className="size-3.5" />
                           </button>
                         </>
@@ -392,7 +392,8 @@ export function ReportsPanel() {
                       {r.fileUrl && (
                         <button 
                           type="button" 
-                          aria-label="Explain with AI" 
+                          aria-label="Explain with AI"
+                          title="Explain with AI"
                           className="hover:text-amber-500 text-amber-500/70 transition-colors flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-full"
                           onClick={() => handleExplainReport(r.name, r.fileUrl!)}
                         >
@@ -400,7 +401,7 @@ export function ReportsPanel() {
                           <span className="text-[10px] uppercase font-bold tracking-wider">Explain</span>
                         </button>
                       )}
-                      <button type="button" aria-label="Share" className="hover:text-foreground">
+                      <button type="button" aria-label="Share" title="Share Report" className="hover:text-foreground">
                         <Share2 className="size-3.5" />
                       </button>
                     </div>

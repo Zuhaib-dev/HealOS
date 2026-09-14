@@ -3,6 +3,17 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { motion } from "motion/react";
 import { AreaChart, Area, XAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+
+// Cast recharts components to any to bypass React 19 TS definition conflicts
+const RAreaChart = AreaChart as any;
+const RArea = Area as any;
+const RXAxis = XAxis as any;
+const RCartesianGrid = CartesianGrid as any;
+const RTooltip = RechartsTooltip as any;
+const RResponsiveContainer = ResponsiveContainer as any;
+const RPieChart = PieChart as any;
+const RPie = Pie as any;
+const RCell = Cell as any;
 import { ArrowUpRight } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { ActionButton, PanelHeader } from "../admin-shell";
@@ -85,30 +96,30 @@ function RevenueChart({ invoices }: { invoices: AdminInvoiceData[] }) {
       </div>
 
       <div className="mt-5 h-40 w-full relative z-10">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={revenueData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+        <RResponsiveContainer width="100%" height="100%">
+          <RAreaChart data={revenueData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.3}/>
                 <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--hairline)" />
-            <XAxis 
+            <RCartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--hairline)" />
+            <RXAxis 
               dataKey="date" 
               axisLine={false} 
               tickLine={false} 
               tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} 
               dy={10} 
             />
-            <RechartsTooltip
+            <RTooltip
               contentStyle={{ backgroundColor: "color-mix(in oklab, var(--color-background) 80%, transparent)", backdropFilter: "blur(8px)", borderColor: "var(--hairline)", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
               itemStyle={{ color: "var(--color-foreground)", fontWeight: "bold" }}
               labelStyle={{ color: "var(--color-muted-foreground)", fontSize: "12px", marginBottom: "4px" }}
               formatter={(value: number) => [`₹${value.toLocaleString()}`, "Revenue"]}
               cursor={{ stroke: 'var(--hairline)', strokeWidth: 1, strokeDasharray: '3 3' }}
             />
-            <Area 
+            <RArea 
               type="monotone" 
               dataKey="total" 
               stroke="var(--color-accent)" 
@@ -117,8 +128,8 @@ function RevenueChart({ invoices }: { invoices: AdminInvoiceData[] }) {
               fill="url(#colorTotal)" 
               animationDuration={1500}
             />
-          </AreaChart>
-        </ResponsiveContainer>
+          </RAreaChart>
+        </RResponsiveContainer>
       </div>
     </div>
   );
@@ -140,9 +151,9 @@ function OccupancyGauge({ wards }: { wards: AdminWardData[] }) {
   return (
     <div className="hairline-l flex items-center gap-6 px-5 py-6">
       <div className="size-28 shrink-0 relative">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
+        <RResponsiveContainer width="100%" height="100%">
+          <RPieChart>
+            <RPie
               data={data}
               innerRadius={36}
               outerRadius={52}
@@ -153,16 +164,16 @@ function OccupancyGauge({ wards }: { wards: AdminWardData[] }) {
               animationDuration={1500}
             >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <RCell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
-            </Pie>
-            <RechartsTooltip 
+            </RPie>
+            <RTooltip 
               contentStyle={{ backgroundColor: "color-mix(in oklab, var(--color-background) 80%, transparent)", backdropFilter: "blur(8px)", borderColor: "var(--hairline)", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
               itemStyle={{ color: "var(--color-foreground)", fontWeight: "bold", fontSize: "14px" }}
               labelStyle={{ display: "none" }}
             />
-          </PieChart>
-        </ResponsiveContainer>
+          </RPieChart>
+        </RResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold -mb-1">Used</p>
           <p className="text-xl font-mono font-bold text-foreground">{pct}%</p>

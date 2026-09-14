@@ -244,13 +244,20 @@ function stamp(offsetSec: number) {
 function AuditStreamCell() {
   const reduce = useReducedMotion() ?? false;
   const [paused, setPaused] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  
   const [lines, setLines] = useState(() =>
-    auditPool.slice(0, 4).map((text, i) => ({ id: i, t: stamp((4 - i) * 2), text }))
+    auditPool.slice(0, 4).map((text, i) => ({ id: i, t: "--:--:--", text }))
   );
   const next = useRef(4);
 
   useEffect(() => {
-    if (paused || reduce) return;
+    setIsMounted(true);
+    setLines(auditPool.slice(0, 4).map((text, i) => ({ id: i, t: stamp((4 - i) * 2), text })));
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || paused || reduce) return;
     const id = window.setInterval(() => {
       setLines((ls) => {
         const entry = {
@@ -263,7 +270,7 @@ function AuditStreamCell() {
       });
     }, 1600);
     return () => window.clearInterval(id);
-  }, [paused, reduce]);
+  }, [isMounted, paused, reduce]);
 
   return (
     <CellShell

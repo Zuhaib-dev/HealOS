@@ -38,6 +38,12 @@ export function NotificationBell() {
     // Listen to real-time broadcasts
     const socket = getSocket();
     
+    // Join the user's personal room
+    socket.emit("join:user", user.id);
+    
+    // Also join their role room (useful for PATIENTS / DOCTORS / ADMIN broadcasts)
+    socket.emit("join:role", user.role);
+
     const handleNewNotification = (notif: any) => {
       setNotifications(prev => [{ ...notif, isRead: false }, ...prev]);
       toast(notif.title, {

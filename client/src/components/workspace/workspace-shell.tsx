@@ -17,6 +17,13 @@ import {
   DrawerTrigger,
   DrawerClose,
 } from "@/components/ui/drawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { NotificationBell } from "@/components/shared/notification-bell";
 
 export type WorkspaceSection = {
   id: string;
@@ -83,14 +90,9 @@ export function WorkspaceShell({
             </span>
           </button>
 
-          <button
-            type="button"
-            className="hairline relative ml-auto p-2 lg:ml-0"
-            aria-label="Notifications" title="Notifications"
-          >
-            <Bell className="size-4" />
-            <span className="bg-destructive absolute top-1 right-1 size-1.5 animate-pulse rounded-full" />
-          </button>
+          <div className="ml-auto lg:ml-0">
+            <NotificationBell />
+          </div>
           <ThemeToggle />
           <div className="hairline-l flex items-center gap-2 pl-3 sm:gap-3 sm:pl-4">
             <UserProfileMenu />

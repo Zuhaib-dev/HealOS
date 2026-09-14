@@ -182,7 +182,6 @@ export function GuestGuard({ children }: GuestGuardProps) {
                 {user.isEmailVerified && (
                   <ShieldCheck
                     className="size-3.5 text-emerald-500 shrink-0"
-                    title="Verified Account"
                   />
                 )}
               </div>

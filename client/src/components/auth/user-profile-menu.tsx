@@ -192,7 +192,7 @@ export function UserProfileMenu() {
                   {user.name}
                 </span>
                 {user.isEmailVerified && (
-                  <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" title="Verified Account" />
+                  <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
                 )}
               </div>
               <span className="text-xs text-muted-foreground truncate font-mono">

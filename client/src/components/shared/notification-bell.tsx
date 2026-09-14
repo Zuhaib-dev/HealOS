@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, Check, Loader2 } from "lucide-react";
+import { Bell, Check, Loader2, ChevronLeft, CheckCheck } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { getSocket } from "@/lib/socket";
@@ -13,6 +13,14 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState<any>(null);
+
+  // Close detail view when popover closes
+  useEffect(() => {
+    if (!isOpen) {
+      setTimeout(() => setSelectedNotif(null), 200); // Wait for exit animation
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!user || !token) return;
@@ -72,6 +80,19 @@ export function NotificationBell() {
     }
   };
 
+  const handleMarkAllAsRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+      await fetch(`${apiUrl}/notifications/read-all`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   if (!user) return null;
@@ -100,39 +121,96 @@ export function NotificationBell() {
           sideOffset={8}
           align="end"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-sm">Notifications</h3>
-            {unreadCount > 0 && (
-              <span className="text-[10px] font-mono bg-rose-500/10 text-rose-500 px-2 py-0.5 rounded-full">{unreadCount} unread</span>
-            )}
-          </div>
-          
-          <div className="max-h-75 overflow-y-auto space-y-3 pr-1 -mr-1">
-            {isLoading ? (
-              <div className="flex justify-center py-6"><Loader2 className="size-4 animate-spin text-muted-foreground" /></div>
-            ) : notifications.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground text-xs">No notifications yet</div>
+          <AnimatePresence mode="wait">
+            {selectedNotif ? (
+              <motion.div
+                key="detail"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col h-full"
+              >
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/60">
+                  <button 
+                    onClick={() => setSelectedNotif(null)}
+                    className="p-1.5 hover:bg-muted/50 rounded-md transition-colors"
+                  >
+                    <ChevronLeft className="size-4 text-muted-foreground" />
+                  </button>
+                  <h3 className="font-semibold text-sm">Notification Detail</h3>
+                </div>
+                <div className="flex-1 overflow-y-auto max-h-75 pr-1 space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-foreground text-sm">{selectedNotif.title}</h4>
+                    <p className="text-[10px] font-mono text-muted-foreground/60 mt-1">
+                      {new Date(selectedNotif.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="bg-muted/30 p-3 rounded-lg border border-border/40">
+                    <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                      {selectedNotif.message}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
             ) : (
-              notifications.map(n => (
-                <div key={n._id} className={`p-3 rounded-xl border transition-colors ${n.isRead ? 'bg-background border-transparent' : 'bg-accent/5 border-accent/20'}`}>
-                  <div className="flex justify-between items-start gap-2">
-                    <p className={`text-xs font-semibold ${n.isRead ? 'text-muted-foreground' : 'text-foreground'}`}>{n.title}</p>
-                    {!n.isRead && (
-                      <button 
-                        onClick={() => handleMarkAsRead(n._id)}
-                        className="shrink-0 p-1 rounded-md text-muted-foreground hover:bg-accent/20 hover:text-accent transition-colors"
-                        title="Mark as read"
-                      >
-                        <Check className="size-3" />
-                      </button>
+              <motion.div
+                key="list"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-border/40">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-sm">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <span className="text-[10px] font-mono bg-rose-500/10 text-rose-500 px-2 py-0.5 rounded-full">{unreadCount}</span>
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-1 line-clamp-3">{n.message}</p>
-                  <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">{new Date(n.createdAt).toLocaleString()}</p>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={handleMarkAllAsRead}
+                      className="text-[10px] font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1 bg-primary/10 px-2 py-1 rounded-md"
+                    >
+                      <CheckCheck className="size-3" />
+                      Mark all read
+                    </button>
+                  )}
                 </div>
-              ))
+                
+                <div className="max-h-75 overflow-y-auto space-y-2 pr-1 -mr-1">
+                  {isLoading ? (
+                    <div className="flex justify-center py-6"><Loader2 className="size-4 animate-spin text-muted-foreground" /></div>
+                  ) : notifications.length === 0 ? (
+                    <div className="text-center py-8 flex flex-col items-center gap-2">
+                      <Bell className="size-8 text-muted-foreground/30" />
+                      <p className="text-muted-foreground text-xs">You're all caught up!</p>
+                    </div>
+                  ) : (
+                    notifications.map(n => (
+                      <div 
+                        key={n._id} 
+                        onClick={() => {
+                          setSelectedNotif(n);
+                          if (!n.isRead) handleMarkAsRead(n._id);
+                        }}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer hover:shadow-sm ${n.isRead ? 'bg-background hover:bg-muted/30 border-border/50' : 'bg-primary/5 hover:bg-primary/10 border-primary/20'}`}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <p className={`text-xs font-semibold ${n.isRead ? 'text-foreground/80' : 'text-primary'}`}>{n.title}</p>
+                          {!n.isRead && <div className="size-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{n.message}</p>
+                        <p className="text-[9px] font-mono text-muted-foreground/50 mt-2">{new Date(n.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

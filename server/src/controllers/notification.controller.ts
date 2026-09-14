@@ -125,3 +125,37 @@ export const markAsRead = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Mark all notifications as read
+export const markAllAsRead = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+    const userEmail = req.user?.email;
+
+    if (!userId) throw new AppError("Unauthorized", 401);
+
+    const query: any = {
+      $or: [
+        { targetGroup: "EVERYONE" },
+      ],
+    };
+
+    if (userRole === "PATIENT") {
+      query.$or.push({ targetGroup: "PATIENTS" });
+    } else if (userRole === "DOCTOR" || userRole === "NURSE") {
+      query.$or.push({ targetGroup: "DOCTORS" });
+    }
+
+    if (userEmail) {
+      query.$or.push({ targetGroup: "SPECIFIC", targetEmail: userEmail });
+    }
+
+    // Update all matching notifications that haven't been read by this user
+    await Notification.updateMany(query, { $addToSet: { readBy: userId } });
+
+    res.status(200).json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

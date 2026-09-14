@@ -5,7 +5,8 @@
  * contrast: pass
  */
 
-import { motion } from "motion/react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   TriangleAlert,
   Activity,
@@ -21,10 +22,14 @@ import {
   Calendar,
   ChevronRight,
   CalendarClock,
-  Pill
+  Pill,
+  Sparkles,
+  X
 } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
+import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 
 /** Animated trend line — drawn, never an image. */
@@ -117,6 +122,10 @@ export function OverviewPanel() {
   const conditions = data.consultations.map(c => c.diagnosis).filter(Boolean);
   const uniqueConditions = conditions.length ? Array.from(new Set(conditions)) : ["No active conditions"];
 
+  const [isVitalsModalOpen, setIsVitalsModalOpen] = useState(false);
+  const [aiSummary, setAiSummary] = useState("");
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+
   // Vitals logic
   const displayVitals = [];
   if (data.vitals && data.vitals.length > 0) {
@@ -132,6 +141,37 @@ export function OverviewPanel() {
   const bmi = (profile?.height && profile?.weight) 
     ? (profile.weight / Math.pow(profile.heightUnit === "ft" ? profile.height * 0.3048 : profile.height / 100, 2)).toFixed(1)
     : "--";
+
+  const handleGenerateSummary = async () => {
+    setIsVitalsModalOpen(true);
+    setAiSummary("");
+    setIsGeneratingSummary(true);
+
+    try {
+      const token = useAuthStore.getState().token;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+      const res = await fetch(`${apiUrl}/ai/vitals-summary`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ vitals: data.vitals, profile: data.profile }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setAiSummary(json.summary);
+      } else {
+        throw new Error(json.message || "Failed to generate health summary");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
+      setIsVitalsModalOpen(false);
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
 
   const upcomingAppointments = data.appointments
     ?.filter(a => a.status === "PENDING" || a.status === "CONFIRMED")
@@ -232,6 +272,15 @@ export function OverviewPanel() {
                 <p className="font-mono text-sm mt-1 text-indigo-500">{bmi}</p>
               </div>
             </div>
+
+            {data.vitals && data.vitals.length > 0 && (
+              <button 
+                onClick={handleGenerateSummary}
+                className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 py-2.5 text-xs font-bold uppercase tracking-wider transition-all"
+              >
+                <Sparkles className="size-4" /> Generate AI Summary
+              </button>
+            )}
           </div>
         </CellShell>
 
@@ -371,6 +420,58 @@ export function OverviewPanel() {
         </CellShell>
 
       </div>
+
+      <AnimatePresence>
+        {isVitalsModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-0">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsVitalsModalOpen(false)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-card border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            >
+              <div className="px-6 py-4 border-b border-border/60 flex items-center justify-between bg-card">
+                <div className="flex items-center gap-2 text-amber-500">
+                  <Sparkles className="size-5" />
+                  <h2 className="font-display text-xl font-bold tracking-tight text-foreground">AI Health Summary</h2>
+                </div>
+                <button
+                  onClick={() => setIsVitalsModalOpen(false)}
+                  className="p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto">
+                {isGeneratingSummary ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Loader2 className="size-8 animate-spin text-amber-500 mb-4" />
+                    <p className="text-sm font-medium animate-pulse text-muted-foreground">Analyzing vitals history...</p>
+                  </div>
+                ) : (
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-primary prose-ul:list-disc">
+                    <ReactMarkdown>{aiSummary}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
+              <div className="p-4 border-t border-border/60 bg-muted/30">
+                <p className="text-xs text-muted-foreground text-center">
+                  This summary is generated by AI and is for informational purposes only. Always consult your doctor for medical advice.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </section>
   );
 }

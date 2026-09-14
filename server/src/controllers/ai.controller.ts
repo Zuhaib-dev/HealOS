@@ -202,3 +202,48 @@ CRITICAL RULES:
     res.status(500).json({ success: false, message: error.stack || error.message || "Failed to process chat" });
   }
 };
+
+export const generateVitalsSummary = async (req: Request, res: Response) => {
+  try {
+    const { vitals, profile } = req.body;
+    
+    if (!vitals || !Array.isArray(vitals) || vitals.length === 0) {
+      throw new AppError("No vitals data provided for analysis", 400);
+    }
+
+    const prompt = `You are an empathetic, expert medical AI assistant.
+Review the following recent vitals and profile for a patient.
+Profile:
+- Age/DOB: ${profile?.dob ? new Date().getFullYear() - new Date(profile.dob).getFullYear() : 'Unknown'}
+- BMI: ${profile?.bmi || 'Unknown'}
+
+Recent Vitals (latest first):
+${vitals.slice(0, 10).map((v: any) => `- Date: ${new Date(v.date).toLocaleDateString()}, BP: ${v.bloodPressure}, HR: ${v.heartRate} bpm, Temp: ${v.temperature}°F, SpO2: ${v.spO2}%, Weight: ${v.weight} kg`).join('\n')}
+
+Provide a short, structured predictive health summary highlighting any concerning trends or reassuring stability.
+CRITICAL FORMATTING RULES:
+1. Do NOT use horizontal rules (no \`---\` or \`***\`).
+2. Use clean, simple headings (e.g., \`## Health Summary\`, \`### Key Trends\`).
+3. Keep the text highly structured with bullet points.
+4. Keep the tone empathetic and reassuring.
+5. Always end by advising them to discuss these results with their doctor for clinical decisions.`;
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents: [
+            {
+                role: 'user',
+                parts: [{ text: prompt }]
+            }
+        ]
+    });
+
+    res.status(200).json({
+      success: true,
+      summary: response.text,
+    });
+  } catch (error: any) {
+    console.error("AI Vitals Summary Error:", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to generate health summary" });
+  }
+};

@@ -98,6 +98,10 @@ export function OverviewPanel() {
   const { user } = useAuthStore();
   const { data, isLoading, error } = usePatientDashboard();
 
+  const [isVitalsModalOpen, setIsVitalsModalOpen] = useState(false);
+  const [aiSummary, setAiSummary] = useState("");
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -121,10 +125,6 @@ export function OverviewPanel() {
   
   const conditions = data.consultations.map(c => c.diagnosis).filter(Boolean);
   const uniqueConditions = conditions.length ? Array.from(new Set(conditions)) : ["No active conditions"];
-
-  const [isVitalsModalOpen, setIsVitalsModalOpen] = useState(false);
-  const [aiSummary, setAiSummary] = useState("");
-  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   // Vitals logic
   const displayVitals = [];

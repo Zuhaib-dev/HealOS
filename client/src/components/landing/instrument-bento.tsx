@@ -557,7 +557,7 @@ function SiteClocksCell() {
           const { h, m, s: sec } = tzParts(s.tz, now);
           return (
             <div key={s.id} className="group/row flex items-center gap-4">
-              <svg viewBox="0 0 32 32" className="size-8 shrink-0">
+              <svg viewBox="0 0 32 32" className="size-8 shrink-0" suppressHydrationWarning>
                 <circle
                   cx="16"
                   cy="16"
@@ -620,9 +620,9 @@ function SiteClocksCell() {
                   <p className="text-sm font-medium">{s.city}</p>
                   <p className="mono-label text-muted-foreground">{s.id}</p>
                 </div>
-                <p className="text-foreground font-mono text-sm tabular-nums">
+                <p className="text-foreground font-mono text-sm tabular-nums" suppressHydrationWarning>
                   {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}
-                  <span className="text-brass">:{String(sec).padStart(2, "0")}</span>
+                  <span className="text-brass" suppressHydrationWarning>:{String(sec).padStart(2, "0")}</span>
                 </p>
               </div>
             </div>

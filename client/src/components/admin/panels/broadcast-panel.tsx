@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Send, Clock, Users, Activity, Loader2, CheckCircle2 } from "lucide-react";

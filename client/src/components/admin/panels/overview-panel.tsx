@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { motion } from "motion/react";
+import { AreaChart, Area, XAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { ArrowUpRight } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { ActionButton, PanelHeader } from "../admin-shell";
@@ -56,57 +57,69 @@ function Metric({
   );
 }
 
-function Throughput({ values }: { values: number[] }) {
-  const safeValues = values.length > 0 ? values : [0];
-  const max = Math.max(...safeValues, 1);
-  const denominator = Math.max(safeValues.length - 1, 1);
-  const points = safeValues.map((v, i) => `${(i / denominator) * 100},${40 - (v / max) * 34}`).join(" ");
+function RevenueChart({ invoices }: { invoices: AdminInvoiceData[] }) {
+  const revenueData = useMemo(() => {
+    const sorted = [...invoices].filter(i => i.status === "PAID").sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    const grouped: Record<string, number> = {};
+    sorted.forEach(inv => {
+      const date = new Date(inv.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      grouped[date] = (grouped[date] || 0) + (inv.totalAmount || 0);
+    });
+    const data = Object.entries(grouped).map(([date, total]) => ({ date, total }));
+    return data.length > 0 ? data : [{ date: "No data", total: 0 }];
+  }, [invoices]);
+
+  const max = Math.max(...revenueData.map(d => d.total));
 
   return (
     <div className="hairline-b px-5 py-6 sm:px-8">
       <div className="flex items-end justify-between">
         <div>
-          <p className="mono-label text-muted-foreground">Facility activity snapshot</p>
+          <p className="mono-label text-muted-foreground">Revenue trends</p>
           <p className="mt-2 font-mono text-2xl font-bold">
-            {safeValues[safeValues.length - 1]}
-            <span className="text-muted-foreground text-sm"> pending approvals</span>
+            ₹{revenueData[revenueData.length - 1]?.total.toLocaleString()}
+            <span className="text-muted-foreground text-sm"> latest period</span>
           </p>
         </div>
-        <p className="mono-label text-brass">peak {max}</p>
+        <p className="mono-label text-brass">peak ₹{max.toLocaleString()}</p>
       </div>
 
-      <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="mt-5 h-32 w-full">
-        {[10, 20, 30].map((y) => (
-          <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="var(--hairline)" strokeWidth="0.2" />
-        ))}
-        <motion.polyline
-          points={`0,40 ${points} 100,40`}
-          fill="color-mix(in oklab, var(--color-accent) 12%, transparent)"
-          stroke="none"
-        />
-        <motion.polyline
-          points={points}
-          fill="none"
-          stroke="var(--color-accent)"
-          strokeWidth="1.6"
-          vectorEffect="non-scaling-stroke"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 1.6, ease: "easeInOut" }}
-        />
-        {safeValues.map((v, i) => (
-          <motion.circle
-            key={i}
-            cx={(i / denominator) * 100}
-            cy={40 - (v / max) * 34}
-            r="0.6"
-            fill="var(--color-accent)"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ duration: 2.4, delay: i * 0.12, repeat: Infinity }}
-          />
-        ))}
-      </svg>
+      <div className="mt-5 h-40 w-full relative z-10">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={revenueData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--hairline)" />
+            <XAxis 
+              dataKey="date" 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} 
+              dy={10} 
+            />
+            <RechartsTooltip
+              contentStyle={{ backgroundColor: "color-mix(in oklab, var(--color-background) 80%, transparent)", backdropFilter: "blur(8px)", borderColor: "var(--hairline)", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+              itemStyle={{ color: "var(--color-foreground)", fontWeight: "bold" }}
+              labelStyle={{ color: "var(--color-muted-foreground)", fontSize: "12px", marginBottom: "4px" }}
+              formatter={(value: number) => [`₹${value.toLocaleString()}`, "Revenue"]}
+              cursor={{ stroke: 'var(--hairline)', strokeWidth: 1, strokeDasharray: '3 3' }}
+            />
+            <Area 
+              type="monotone" 
+              dataKey="total" 
+              stroke="var(--color-accent)" 
+              strokeWidth={2}
+              fillOpacity={1} 
+              fill="url(#colorTotal)" 
+              animationDuration={1500}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
@@ -114,33 +127,52 @@ function Throughput({ values }: { values: number[] }) {
 function OccupancyGauge({ wards }: { wards: AdminWardData[] }) {
   const total = wards.reduce((a, w) => a + (w.capacity || 0), 0);
   const used = wards.reduce((a, w) => a + (w.currentOccupancy || 0), 0);
+  const free = Math.max(0, total - used);
   const pct = total > 0 ? Math.round((used / total) * 100) : 0;
-  const r = 46;
-  const c = 2 * Math.PI * r;
+  
+  const data = [
+    { name: "Occupied", value: used },
+    { name: "Available", value: free },
+  ];
+  
+  const COLORS = ["var(--color-accent)", "var(--hairline)"];
 
   return (
     <div className="hairline-l flex items-center gap-6 px-5 py-6">
-      <svg viewBox="0 0 120 120" className="size-28 shrink-0 -rotate-90">
-        <circle cx="60" cy="60" r={r} fill="none" stroke="var(--hairline)" strokeWidth="6" />
-        <motion.circle
-          cx="60"
-          cy="60"
-          r={r}
-          fill="none"
-          stroke="var(--color-accent)"
-          strokeWidth="6"
-          strokeLinecap="butt"
-          strokeDasharray={c}
-          initial={{ strokeDashoffset: c }}
-          animate={{ strokeDashoffset: c - (c * pct) / 100 }}
-          transition={{ duration: 1.4, ease: "easeOut" }}
-        />
-      </svg>
+      <div className="size-28 shrink-0 relative">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              innerRadius={36}
+              outerRadius={52}
+              paddingAngle={4}
+              dataKey="value"
+              stroke="none"
+              animationBegin={0}
+              animationDuration={1500}
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <RechartsTooltip 
+              contentStyle={{ backgroundColor: "color-mix(in oklab, var(--color-background) 80%, transparent)", backdropFilter: "blur(8px)", borderColor: "var(--hairline)", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+              itemStyle={{ color: "var(--color-foreground)", fontWeight: "bold", fontSize: "14px" }}
+              labelStyle={{ display: "none" }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold -mb-1">Used</p>
+          <p className="text-xl font-mono font-bold text-foreground">{pct}%</p>
+        </div>
+      </div>
       <div>
         <p className="mono-label text-muted-foreground">Bed occupancy</p>
-        <p className="mt-2 font-mono text-3xl font-bold">{pct}%</p>
+        <p className="mt-2 font-mono text-3xl font-bold tracking-tight">{used} <span className="text-muted-foreground text-base font-normal">/ {total}</span></p>
         <p className="mono-label text-muted-foreground mt-2">
-          {used} of {total} beds in service
+          active patients in wards
         </p>
       </div>
     </div>
@@ -224,7 +256,7 @@ export function OverviewPanel() {
       </div>
 
       <div className="hairline-b grid lg:grid-cols-[1.6fr_1fr]">
-        <Throughput values={throughputValues} />
+        <RevenueChart invoices={invoices} />
         <OccupancyGauge wards={wards} />
       </div>
 

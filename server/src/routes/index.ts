@@ -18,6 +18,7 @@ import labRouter from "./lab.routes.js";
 import aiRouter from "./ai.routes.js";
 import emergencyRouter from "./emergency.routes.js";
 import notificationRouter from "./notification.routes.js";
+import systemRouter from "./system.routes.js";
 
 export const apiRouter = Router();
 
@@ -59,3 +60,4 @@ apiRouter.use("/lab", labRouter);
 apiRouter.use("/ai", aiRouter);
 apiRouter.use("/emergency", emergencyRouter);
 apiRouter.use("/notifications", notificationRouter);
+apiRouter.use("/system", systemRouter);

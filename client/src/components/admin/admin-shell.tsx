@@ -26,6 +26,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Send,
+  Server,
 } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -56,6 +57,7 @@ export const sections = [
   { id: "supplies", label: "Supplies", icon: Boxes },
   { id: "audit", label: "Audit & Security", icon: ShieldAlert },
   { id: "integrations", label: "Integrations & Keys", icon: Plug },
+  { id: "system", label: "System Health", icon: Server },
   { id: "settings", label: "Facility Settings", icon: Settings2 },
 ] as const;
 

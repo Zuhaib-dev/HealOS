@@ -25,6 +25,7 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  Send,
 } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -44,6 +45,7 @@ export const sections = [
   { id: "overview", label: "Overview", icon: Activity },
   { id: "approvals", label: "Clinicians", icon: ClipboardCheck },
   { id: "users", label: "Users", icon: UserCog },
+  { id: "broadcast", label: "Broadcast", icon: Send },
   { id: "patients", label: "Patient Registry", icon: HeartPulse },
   { id: "schedule", label: "Theatre Schedule", icon: CalendarClock },
   { id: "staff", label: "Staff & Access", icon: Users },

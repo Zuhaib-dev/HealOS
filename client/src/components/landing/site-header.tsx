@@ -7,6 +7,7 @@ import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuthStore } from "@/store/use-auth-store";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
+import { NotificationBell } from "@/components/shared/notification-bell";
 
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -78,11 +79,14 @@ export function SiteHeader() {
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-2 md:gap-3 ml-auto">
             {!isAuthenticated && <ThemeToggle />}
 
             {isAuthenticated && user ? (
-              <UserProfileMenu />
+              <>
+                <NotificationBell />
+                <UserProfileMenu />
+              </>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
                 <Link

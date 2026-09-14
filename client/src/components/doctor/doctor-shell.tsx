@@ -25,6 +25,7 @@ import {
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
+import { NotificationBell } from "@/components/shared/notification-bell";
 import { useAuthStore } from "@/store/use-auth-store";
 import { useUIStore } from "@/store/use-ui-store";
 import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle, DrawerHeader, DrawerClose } from "@/components/ui/drawer";
@@ -107,15 +108,7 @@ export function DoctorShell({
 
           {/* Right Header Actions */}
           <div className="flex items-center gap-3 ml-auto">
-            <button
-              type="button"
-              className="group relative flex items-center justify-center size-9 rounded-full border border-border/70 bg-card/60 hover:bg-muted/50 transition-colors"
-              aria-label="Notifications" title="Notifications"
-            >
-              <Bell className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-              <span className="bg-emerald-500 absolute top-1.5 right-1.5 size-2 animate-ping rounded-full" />
-              <span className="bg-emerald-500 absolute top-1.5 right-1.5 size-2 rounded-full" />
-            </button>
+            <NotificationBell />
 
             <ThemeToggle />
 

@@ -57,7 +57,7 @@ export const broadcastNotification = async (req: Request, res: Response) => {
 };
 
 // Get broadcast history (Admin only)
-export const getBroadcastHistory = async (req: Request, res: Response) => {
+export const getBroadcastHistory = async (_req: Request, res: Response) => {
   try {
     const history = await Notification.find().sort({ createdAt: -1 }).populate("sender", "name email");
     res.status(200).json({ success: true, data: history });

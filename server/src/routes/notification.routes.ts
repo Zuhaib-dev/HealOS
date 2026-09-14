@@ -1,6 +1,6 @@
 import express from "express";
 import { broadcastNotification, getBroadcastHistory, getUserNotifications, markAsRead } from "../controllers/notification.controller.js";
-import { verifyToken, restrictTo } from "../middleware/auth.middleware.js";
+import { verifyToken, requireRole } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ router.get("/", getUserNotifications);
 router.put("/:id/read", markAsRead);
 
 // Admin routes
-router.post("/broadcast", restrictTo("ADMIN"), broadcastNotification);
-router.get("/history", restrictTo("ADMIN"), getBroadcastHistory);
+router.post("/broadcast", requireRole(["ADMIN"]), broadcastNotification);
+router.get("/history", requireRole(["ADMIN"]), getBroadcastHistory);
 
 export default router;

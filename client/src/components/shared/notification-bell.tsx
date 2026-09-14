@@ -99,7 +99,7 @@ export function NotificationBell() {
             )}
           </div>
           
-          <div className="max-h-[300px] overflow-y-auto space-y-3 pr-1 -mr-1">
+          <div className="max-h-75 overflow-y-auto space-y-3 pr-1 -mr-1">
             {isLoading ? (
               <div className="flex justify-center py-6"><Loader2 className="size-4 animate-spin text-muted-foreground" /></div>
             ) : notifications.length === 0 ? (

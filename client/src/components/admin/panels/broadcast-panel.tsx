@@ -73,9 +73,9 @@ export function BroadcastPanel() {
   return (
     <section className="pb-12 h-full flex flex-col">
       <PanelHeader
+        index="ADM / 07"
         title="Broadcast"
-        description="Push real-time notifications to users and partners."
-        icon={Send}
+        note="Push real-time notifications to users and partners."
       />
       
       <div className="grid lg:grid-cols-2 gap-8 px-5 py-6 sm:px-8 flex-1">
@@ -130,13 +130,13 @@ export function BroadcastPanel() {
               />
             </div>
 
-            <div className="flex-1 min-h-[120px]">
+            <div className="flex-1 min-h-30">
               <label className="mono-label text-muted-foreground block mb-1.5 text-xs">Message Body</label>
               <textarea 
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Enter the notification details here..."
-                className="w-full h-full min-h-[120px] bg-background border border-border/60 rounded-xl px-4 py-3 text-sm focus:outline-hidden focus:border-primary/50 transition-colors resize-none"
+                className="w-full h-full min-h-30 bg-background border border-border/60 rounded-xl px-4 py-3 text-sm focus:outline-hidden focus:border-primary/50 transition-colors resize-none"
               />
             </div>
 

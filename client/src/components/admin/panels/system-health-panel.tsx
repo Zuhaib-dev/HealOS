@@ -168,7 +168,7 @@ export function SystemHealthPanel() {
               
               <div className="mt-auto border-t border-border/40 pt-4 flex justify-between items-center">
                 <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">Uptime</span>
-                <span className="text-lg font-bold text-foreground font-mono tracking-tight text-amber-500">
+                <span className="text-lg font-bold font-mono tracking-tight text-amber-500">
                   {formatUptime(healthData.process.uptime)}
                 </span>
               </div>

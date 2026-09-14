@@ -4,7 +4,7 @@ import { envConfig } from "./config/env.js";
 
 let io: Server | null = null;
 
-export const getIO = () => io;
+
 
 export const initSocketIO = (server: HttpServer): Server => {
   io = new Server(server, {

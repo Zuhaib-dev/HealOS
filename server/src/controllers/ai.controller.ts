@@ -79,6 +79,15 @@ export const explainReport = async (req: Request, res: Response) => {
         base64Data = fileBuffer.toString('base64');
       } else {
         // Fetch remote file (e.g. ImageKit)
+        try {
+          const urlObj = new URL(fileUrl);
+          if (urlObj.hostname !== "ik.imagekit.io") {
+            throw new AppError("Invalid file URL domain. Only trusted storage providers are allowed.", 403);
+          }
+        } catch (e: any) {
+          throw new AppError(e.message || "Invalid file URL", 400);
+        }
+
         const fileRes = await fetch(fileUrl);
         if (!fileRes.ok) {
           if (fileRes.status === 404) {
@@ -147,6 +156,17 @@ export const chatReport = async (req: Request, res: Response) => {
       let mimeType = 'application/pdf';
       if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
       if (ext === 'png') mimeType = 'image/png';
+
+      try {
+        const urlObj = new URL(fileUrl);
+        if (process.env.NODE_ENV === 'development' && (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1')) {
+          if (!urlObj.pathname.startsWith('/uploads/')) throw new AppError("Invalid local file path.", 403);
+        } else if (urlObj.hostname !== "ik.imagekit.io") {
+          throw new AppError("Invalid file URL domain. Only trusted storage providers are allowed.", 403);
+        }
+      } catch (e: any) {
+        throw new AppError(e.message || "Invalid file URL", 400);
+      }
 
       const fileRes = await fetch(fileUrl);
       if (fileRes.ok) {

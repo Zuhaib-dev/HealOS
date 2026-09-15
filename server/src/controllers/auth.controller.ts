@@ -85,7 +85,7 @@ const serializeAuthUser = (user: {
 
 const hasValidSyncSecret = (req: Request): boolean => {
   if (!envConfig.AUTH_SYNC_SECRET) {
-    return envConfig.NODE_ENV !== "production";
+    return false;
   }
   return req.headers["x-sync-secret"] === envConfig.AUTH_SYNC_SECRET;
 };

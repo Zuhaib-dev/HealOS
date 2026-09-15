@@ -39,12 +39,12 @@ interface AuthState {
   setHasHydrated: (state: boolean) => void;
 }
 
-const syncAuthCookies = (role?: string | null, hasToken: boolean = false) => {
+const syncAuthCookies = (role?: string | null, token?: string | null) => {
   if (typeof document === "undefined") return;
   try {
-    if (role && hasToken) {
+    if (role && token) {
       document.cookie = `healos_role=${encodeURIComponent(role)}; path=/; max-age=604800; SameSite=Lax`;
-      document.cookie = `healos_token=1; path=/; max-age=604800; SameSite=Lax`;
+      document.cookie = `healos_token=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
     } else {
       document.cookie = "healos_role=; path=/; max-age=0; SameSite=Lax";
       document.cookie = "healos_token=; path=/; max-age=0; SameSite=Lax";
@@ -63,7 +63,7 @@ export const useAuthStore = create<AuthState>()(
       _hasHydrated: false,
 
       setAuth: (user, token) => {
-        syncAuthCookies(user.role, Boolean(token));
+        syncAuthCookies(user.role, token);
         set({
           user,
           token,
@@ -73,7 +73,7 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user) => {
         set((state) => {
-          syncAuthCookies(user.role, Boolean(state.token));
+          syncAuthCookies(user.role, state.token);
           return { user };
         });
       },
@@ -82,7 +82,7 @@ export const useAuthStore = create<AuthState>()(
         set((state) => {
           const updatedUser = state.user ? { ...state.user, ...partialUser } : null;
           if (updatedUser) {
-            syncAuthCookies(updatedUser.role, Boolean(state.token));
+            syncAuthCookies(updatedUser.role, state.token);
           }
           return { user: updatedUser };
         }),
@@ -90,7 +90,7 @@ export const useAuthStore = create<AuthState>()(
       setToken: (token) => set({ token }),
 
       logout: () => {
-        syncAuthCookies(null, false);
+        syncAuthCookies(null, null);
         if (typeof window !== "undefined") {
           try {
             localStorage.removeItem("healos-auth-storage");
@@ -117,9 +117,9 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
         if (state?.isAuthenticated && state?.user?.role && state?.token) {
-          syncAuthCookies(state.user.role, true);
+          syncAuthCookies(state.user.role, state.token);
         } else if (!state?.isAuthenticated) {
-          syncAuthCookies(null, false);
+          syncAuthCookies(null, null);
         }
       },
     }

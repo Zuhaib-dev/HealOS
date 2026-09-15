@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 import { getSafeRedirectPath, getRoleDashboardPath, isPathAllowedForRole } from "@/lib/auth-navigation";
 
 const RFC8288_LINK_HEADER =
@@ -8,7 +9,7 @@ const RFC8288_LINK_HEADER =
   '<https://healos-theta.vercel.app/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json", ' +
   '<https://healos-theta.vercel.app/.well-known/api-catalog>; rel="api-catalog"';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const acceptHeader = request.headers.get("accept") || "";
   const userAgent = request.headers.get("user-agent") || "";
@@ -104,6 +105,26 @@ export function middleware(request: NextRequest) {
     response.headers.set("Vary", "Accept, User-Agent, Accept-Encoding");
     response.headers.set("Link", RFC8288_LINK_HEADER);
     return response;
+  }
+
+  // Verify authentication for protected paths
+  const tokenCookie = request.cookies.get("healos_token")?.value;
+  const nextAuthCookie = request.cookies.get("authjs.session-token")?.value || request.cookies.get("__Secure-authjs.session-token")?.value;
+
+  if (!tokenCookie && !nextAuthCookie) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (tokenCookie) {
+    try {
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "dev-jwt-secret-change-in-production");
+      await jwtVerify(tokenCookie, secret);
+    } catch (error) {
+      const response = NextResponse.redirect(new URL("/login", request.url));
+      response.cookies.delete("healos_token");
+      response.cookies.delete("healos_role");
+      return response;
+    }
   }
 
   // Enforce role workspace boundaries (e.g. ADMIN cannot view /doctor or /patient)

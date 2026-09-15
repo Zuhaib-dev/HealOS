@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { StatusCodes } from "http-status-codes";
 import { User, UserRole, OTP } from "../models";
 import { envConfig } from "../config/env";
@@ -211,7 +212,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     // Generate & save 6-digit OTP
     const otpCode = generate6DigitOtp();
     await OTP.deleteMany({ email, purpose: "email_verification" }); // Delete old OTPs for this email
-    await OTP.create({ email, otp: otpCode, purpose: "email_verification" });
+    const hashedOtp = crypto.createHash("sha256").update(otpCode).digest("hex");
+    await OTP.create({ email, otp: hashedOtp, purpose: "email_verification" });
 
     // Send OTP email via Nodemailer
     const otpRes = await sendOtpOrRespond(email, otpCode);
@@ -253,7 +255,8 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
 
     const { email, otp } = parsed.data;
 
-    const otpRecord = await OTP.findOne({ email, otp, purpose: "email_verification" });
+    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+    const otpRecord = await OTP.findOne({ email, otp: hashedOtp, purpose: "email_verification" });
     if (!otpRecord) {
       res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -333,7 +336,8 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
 
     const otpCode = generate6DigitOtp();
     await OTP.deleteMany({ email, purpose: "email_verification" });
-    await OTP.create({ email, otp: otpCode, purpose: "email_verification" });
+    const hashedOtp = crypto.createHash("sha256").update(otpCode).digest("hex");
+    await OTP.create({ email, otp: hashedOtp, purpose: "email_verification" });
 
     const otpRes = await sendOtpOrRespond(email, otpCode);
     if (!otpRes.success) {
@@ -382,7 +386,8 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
     const otpCode = generate6DigitOtp();
     await OTP.deleteMany({ email, purpose: "password_reset" });
-    await OTP.create({ email, otp: otpCode, purpose: "password_reset" });
+    const hashedOtp = crypto.createHash("sha256").update(otpCode).digest("hex");
+    await OTP.create({ email, otp: hashedOtp, purpose: "password_reset" });
 
     const otpRes = await sendOtpOrRespond(email, otpCode, "password_reset");
     if (!otpRes.success) {
@@ -421,7 +426,8 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     }
 
     const { email, otp, password } = parsed.data;
-    const otpRecord = await OTP.findOne({ email, otp, purpose: "password_reset" });
+    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+    const otpRecord = await OTP.findOne({ email, otp: hashedOtp, purpose: "password_reset" });
     if (!otpRecord) {
       res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -497,7 +503,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       // Re-send OTP automatically
       const otpCode = generate6DigitOtp();
       await OTP.deleteMany({ email, purpose: "email_verification" });
-      await OTP.create({ email, otp: otpCode, purpose: "email_verification" });
+      const hashedOtp = crypto.createHash("sha256").update(otpCode).digest("hex");
+      await OTP.create({ email, otp: hashedOtp, purpose: "email_verification" });
       const otpRes = await sendOtpOrRespond(email, otpCode);
       if (!otpRes.success) {
         res.status(StatusCodes.BAD_GATEWAY).json(otpRes);

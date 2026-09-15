@@ -1,10 +1,9 @@
 import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
 import { envConfig } from "./config/env.js";
+import jwt from "jsonwebtoken";
 
 let io: Server | null = null;
-
-
 
 export const initSocketIO = (server: HttpServer): Server => {
   io = new Server(server, {
@@ -12,34 +11,60 @@ export const initSocketIO = (server: HttpServer): Server => {
       origin:
         envConfig.NODE_ENV === "production"
           ? [envConfig.CLIENT_URL, "http://localhost:3000"].filter(Boolean) as string[]
-          : true,
+          : ["http://localhost:3000", "http://127.0.0.1:3000"],
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     },
   });
 
+  // Authenticate socket connection using the JWT cookie
+  io.use((socket, next) => {
+    try {
+      const cookieHeader = socket.handshake.headers.cookie;
+      if (cookieHeader) {
+        const match = cookieHeader.match(/healos_token=([^;]+)/);
+        if (match) {
+          const token = decodeURIComponent(match[1]);
+          const decoded = jwt.verify(token, envConfig.JWT_SECRET) as any;
+          socket.data.user = decoded;
+        }
+      }
+    } catch (err) {
+      // If token is invalid/expired, leave socket.data.user as undefined
+    }
+    next();
+  });
+
   io.on("connection", (socket: Socket) => {
-    console.log(`⚡ Realtime socket connected: ${socket.id}`);
+    console.log(`⚡ Realtime socket connected: ${socket.id} (Auth: ${!!socket.data.user})`);
 
     // Join user-specific room
     socket.on("join:user", (userId: string) => {
-      if (userId) {
+      if (userId && socket.data.user && socket.data.user.id === userId) {
         socket.join(`user:${userId}`);
         console.log(`👤 Socket ${socket.id} joined room user:${userId}`);
+      } else {
+        console.warn(`⚠️ Unauthorized attempt by socket ${socket.id} to join user:${userId}`);
       }
     });
 
     // Join role-specific rooms
     socket.on("join:role", (role: string) => {
-      if (role) {
+      if (role && socket.data.user && socket.data.user.role.toUpperCase() === role.toUpperCase()) {
         const roomName = role.toLowerCase();
         socket.join(roomName);
         console.log(`🛡️ Socket ${socket.id} joined role room: ${roomName}`);
+      } else {
+        console.warn(`⚠️ Unauthorized attempt by socket ${socket.id} to join role room ${role}`);
       }
     });
 
     // Real-time Chat
     socket.on("chat:send_message", (messageData: { senderId: string, text: string, senderName: string, role: string, timestamp: string }) => {
+      if (!socket.data.user) {
+        console.warn(`⚠️ Unauthenticated chat message attempt from socket ${socket.id}`);
+        return;
+      }
       // Broadcast to the care team (doctors, nurses, etc) and back to the patient's room so all their devices sync
       socket.broadcast.emit("chat:receive_message", messageData);
       console.log(`💬 Chat message from ${messageData.senderName}: ${messageData.text}`);

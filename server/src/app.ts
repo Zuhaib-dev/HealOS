@@ -33,7 +33,7 @@ app.use(
     origin:
       envConfig.NODE_ENV === "production"
         ? [envConfig.CLIENT_URL, "http://localhost:3000"].filter(Boolean) as string[]
-        : true,
+        : ["http://localhost:3000", "http://127.0.0.1:3000"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],

@@ -93,23 +93,24 @@ export const getAllPatients = async (req: Request, res: Response): Promise<void>
   try {
     const { page, limit, skip } = getPagination(req);
     const queryText = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const sanitizedRegex = queryText ? queryText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&") : "";
 
-    const matchingUsers = queryText
+    const matchingUsers = sanitizedRegex
       ? await User.find({
           $or: [
-            { name: { $regex: queryText, $options: "i" } },
-            { email: { $regex: queryText, $options: "i" } },
-            { phone: { $regex: queryText, $options: "i" } },
+            { name: { $regex: sanitizedRegex, $options: "i" } },
+            { email: { $regex: sanitizedRegex, $options: "i" } },
+            { phone: { $regex: sanitizedRegex, $options: "i" } },
           ],
         }).select("_id")
       : [];
 
-    const query = queryText
+    const query = sanitizedRegex
       ? {
           $or: [
             { user: { $in: matchingUsers.map((user) => user._id) } },
-            { emergencyContactName: { $regex: queryText, $options: "i" } },
-            { emergencyPhone: { $regex: queryText, $options: "i" } },
+            { emergencyContactName: { $regex: sanitizedRegex, $options: "i" } },
+            { emergencyPhone: { $regex: sanitizedRegex, $options: "i" } },
           ],
         }
       : {};

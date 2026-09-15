@@ -94,7 +94,7 @@ describe("Authentication API", () => {
     expect(resetOtp).toBeTruthy();
 
     const lastCall = mockedSendOtpEmail.mock.calls[mockedSendOtpEmail.mock.calls.length - 1];
-    const plaintextOtp = lastCall[1];
+    const plaintextOtp = lastCall![1];
 
     const resetRes = await request(app)
       .post(`${API_PREFIX}/auth/reset-password`)

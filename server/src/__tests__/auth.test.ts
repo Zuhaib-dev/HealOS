@@ -93,9 +93,12 @@ describe("Authentication API", () => {
     const resetOtp = await OTP.findOne({ email: registerPayload.email, purpose: "password_reset" });
     expect(resetOtp).toBeTruthy();
 
+    const lastCall = mockedSendOtpEmail.mock.calls[mockedSendOtpEmail.mock.calls.length - 1];
+    const plaintextOtp = lastCall[1];
+
     const resetRes = await request(app)
       .post(`${API_PREFIX}/auth/reset-password`)
-      .send({ email: registerPayload.email, otp: resetOtp?.otp, password: newPassword });
+      .send({ email: registerPayload.email, otp: plaintextOtp, password: newPassword });
 
     expect(resetRes.status).toBe(200);
     expect(resetRes.body.success).toBe(true);

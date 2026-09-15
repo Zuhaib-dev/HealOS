@@ -25,7 +25,7 @@ export const initSocketIO = (server: HttpServer): Server => {
         const match = cookieHeader.match(/healos_token=([^;]+)/);
         if (match) {
           const token = decodeURIComponent(match[1]);
-          const decoded = jwt.verify(token, envConfig.JWT_SECRET) as any;
+          const decoded = jwt.verify(token, envConfig.JWT_SECRET as string) as any;
           socket.data.user = decoded;
         }
       }

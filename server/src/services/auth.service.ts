@@ -32,7 +32,7 @@ export const sendOtpOrRespond = async (
   const emailSent = await sendOtpEmail(email, otp, purpose);
   if (emailSent) return { success: true };
 
-  await OTP.deleteMany({ email, otp, purpose });
+  await OTP.deleteMany({ email, purpose });
   return {
     success: false,
     message: `We couldn't send the ${purpose === "password_reset" ? "password reset" : "verification"} email right now. Please try again in a moment.`,

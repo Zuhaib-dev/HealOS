@@ -54,6 +54,23 @@ export function TelemedicineWorkbench({
           }
         };
 
+        let makingOffer = false;
+        let ignoreOffer = false;
+        const isPolite = !isDoctor; // The patient is the polite peer (yields to doctor's offer on collision)
+
+        // Perfect Negotiation: triggered automatically when tracks are added
+        pc.onnegotiationneeded = async () => {
+          try {
+            makingOffer = true;
+            await pc.setLocalDescription(); 
+            socket.emit("webrtc:offer", { appointmentId, offer: pc.localDescription });
+          } catch (err) {
+            console.error("Error during negotiation", err);
+          } finally {
+            makingOffer = false;
+          }
+        };
+
         // Handle ICE candidates
         pc.onicecandidate = (event) => {
           if (event.candidate) {
@@ -61,36 +78,56 @@ export function TelemedicineWorkbench({
           }
         };
 
-        // Socket Listeners
-        socket.on("webrtc:user_joined", async (userId) => {
-          // When someone joins, the person already in the room creates an offer
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          socket.emit("webrtc:offer", { appointmentId, offer });
-        });
-
         socket.on("webrtc:offer", async ({ offer }) => {
           if (!peerConnectionRef.current) return;
-          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
-          const answer = await peerConnectionRef.current.createAnswer();
-          await peerConnectionRef.current.setLocalDescription(answer);
-          socket.emit("webrtc:answer", { appointmentId, answer });
+          try {
+            const offerCollision = (offer.type === "offer") && (makingOffer || pc.signalingState !== "stable");
+            
+            ignoreOffer = !isPolite && offerCollision;
+            if (ignoreOffer) {
+              console.warn("Ignoring colliding offer because we are impolite");
+              return;
+            }
+
+            await pc.setRemoteDescription(new RTCSessionDescription(offer));
+            await pc.setLocalDescription();
+            socket.emit("webrtc:answer", { appointmentId, answer: pc.localDescription });
+          } catch (e) {
+            console.error("Error handling offer:", e);
+          }
         });
 
         socket.on("webrtc:answer", async ({ answer }) => {
           if (!peerConnectionRef.current) return;
-          const remoteDesc = new RTCSessionDescription(answer);
-          if (peerConnectionRef.current.signalingState !== "stable") {
-            await peerConnectionRef.current.setRemoteDescription(remoteDesc);
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(answer));
+          } catch (e) {
+            console.error("Error handling answer:", e);
           }
         });
 
         socket.on("webrtc:ice_candidate", async ({ candidate }) => {
           if (!peerConnectionRef.current) return;
           try {
-            await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+            // Only add candidate if we have a remote description, or if polite, wait until we do
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
           } catch (e) {
-            console.error("Error adding received ice candidate", e);
+            if (!ignoreOffer) {
+              console.error("Error adding received ice candidate", e);
+            }
+          }
+        });
+
+        socket.on("webrtc:user_joined", async () => {
+          // If a new user joins, we re-trigger negotiation just in case they missed our initial offer
+          try {
+            makingOffer = true;
+            await pc.setLocalDescription();
+            socket.emit("webrtc:offer", { appointmentId, offer: pc.localDescription });
+          } catch (err) {
+            console.error(err);
+          } finally {
+            makingOffer = false;
           }
         });
 

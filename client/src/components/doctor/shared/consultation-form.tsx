@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { AppointmentRecord } from "@/lib/api/appointment";
 import { AnatomySelector } from "./anatomy-selector";
+import { TelemedicineWorkbench } from "../../video-call/telemedicine-workbench";
+import { Video } from "lucide-react";
 
 export function ConsultationForm({
   appointment,
@@ -27,6 +29,7 @@ export function ConsultationForm({
   const [medicines, setMedicines] = useState<IMedicine[]>([]);
   const [diagnosticOrders, setDiagnosticOrders] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [isVideoCallActive, setIsVideoCallActive] = useState(false);
 
   // New Medicine Form
   const [newMed, setNewMed] = useState<IMedicine>({
@@ -126,6 +129,14 @@ export function ConsultationForm({
           )}
         </div>
         <div className="flex items-center gap-3">
+          {appointment?.type === "TELECONSULT" && !isVideoCallActive && (
+            <ActionButton 
+              onClick={() => setIsVideoCallActive(true)}
+              className="bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 border-indigo-500/30 flex items-center gap-2"
+            >
+              <Video className="size-4" /> Start Video Call
+            </ActionButton>
+          )}
           <ActionButton onClick={onBack}>Cancel</ActionButton>
           <ActionButton tone="solid" onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save & Complete"}
@@ -134,6 +145,17 @@ export function ConsultationForm({
       </div>
       <div className="p-4 sm:p-6 lg:p-8 max-w-5xl w-full mx-auto space-y-8 pb-32">
         
+        {/* Video Call Workspace */}
+        {isVideoCallActive && appointment && (
+          <div className="mb-8 w-full">
+            <TelemedicineWorkbench 
+              appointmentId={appointment._id} 
+              isDoctor={true} 
+              onEndCall={() => setIsVideoCallActive(false)} 
+            />
+          </div>
+        )}
+
         {/* Vitals / Reason */}
         {appointment?.reason && (
           <div className="bg-muted/30 border border-border/60 rounded-xl p-4 shadow-sm">

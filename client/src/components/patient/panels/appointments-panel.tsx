@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { OpdReceiptModal } from "@/components/doctor/shared/opd-receipt-modal";
+import { TelemedicineWorkbench } from "../../video-call/telemedicine-workbench";
 
 export function AppointmentsPanel() {
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
@@ -33,6 +34,7 @@ export function AppointmentsPanel() {
   const limit = 6;
   const { data, isLoading, refetch } = usePatientDashboard();
   const [selectedConsultation, setSelectedConsultation] = useState<DashboardConsultation | null>(null);
+  const [activeVideoCallId, setActiveVideoCallId] = useState<string | null>(null);
 
   const handleCancel = async (id: string) => {
     if (!window.confirm("Are you sure you want to cancel this appointment booking?")) return;
@@ -95,6 +97,18 @@ export function AppointmentsPanel() {
 
   const paginatedAppointments = filteredLive.slice((page - 1) * limit, page * limit);
   const totalPages = Math.ceil(filteredLive.length / limit);
+
+  if (activeVideoCallId) {
+    return (
+      <div className="fixed inset-0 z-100 bg-background">
+        <TelemedicineWorkbench 
+          appointmentId={activeVideoCallId} 
+          isDoctor={false} 
+          onEndCall={() => setActiveVideoCallId(null)} 
+        />
+      </div>
+    );
+  }
 
   return (
     <section className="pb-12">
@@ -208,7 +222,16 @@ export function AppointmentsPanel() {
                   </div>
 
                   {/* Actions footer anchored to bottom */}
-                  <div className="mt-auto pt-2">
+                  <div className="mt-auto pt-2 space-y-2">
+                    {a.type === "TELECONSULT" && a.status === "CONFIRMED" && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveVideoCallId(a._id)}
+                        className="w-full flex items-center justify-center gap-2 text-xs font-bold text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500/20 border border-transparent hover:border-indigo-500/30 py-2.5 rounded-md transition-all shadow-sm"
+                      >
+                        <Video className="size-4" /> Join Video Call
+                      </button>
+                    )}
                     {(a as any).isFollowUp ? (
                       <div className="w-full text-center text-xs font-semibold text-indigo-500 bg-indigo-500/10 py-2 rounded-md">
                         Walk-in Follow-Up Required

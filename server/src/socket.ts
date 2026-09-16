@@ -59,7 +59,6 @@ export const initSocketIO = (server: HttpServer): Server => {
       }
     });
 
-    // Real-time Chat
     socket.on("chat:send_message", (messageData: { senderId: string, text: string, senderName: string, role: string, timestamp: string }) => {
       if (!socket.data.user) {
         console.warn(`⚠️ Unauthenticated chat message attempt from socket ${socket.id}`);
@@ -68,6 +67,42 @@ export const initSocketIO = (server: HttpServer): Server => {
       // Broadcast to the care team (doctors, nurses, etc) and back to the patient's room so all their devices sync
       socket.broadcast.emit("chat:receive_message", messageData);
       console.log(`💬 Chat message from ${messageData.senderName}: ${messageData.text}`);
+    });
+
+    // ============================================
+    // WebRTC Signaling Events
+    // ============================================
+
+    socket.on("webrtc:join_call", (appointmentId: string) => {
+      if (!socket.data.user) return;
+      const room = `call:${appointmentId}`;
+      socket.join(room);
+      console.log(`📹 Socket ${socket.id} joined WebRTC call room ${room}`);
+      // Notify others in the room that a user joined
+      socket.to(room).emit("webrtc:user_joined", socket.data.user.id);
+    });
+
+    socket.on("webrtc:offer", ({ appointmentId, offer }: { appointmentId: string, offer: any }) => {
+      if (!socket.data.user) return;
+      socket.to(`call:${appointmentId}`).emit("webrtc:offer", { offer, senderId: socket.data.user.id });
+    });
+
+    socket.on("webrtc:answer", ({ appointmentId, answer }: { appointmentId: string, answer: any }) => {
+      if (!socket.data.user) return;
+      socket.to(`call:${appointmentId}`).emit("webrtc:answer", { answer, senderId: socket.data.user.id });
+    });
+
+    socket.on("webrtc:ice_candidate", ({ appointmentId, candidate }: { appointmentId: string, candidate: any }) => {
+      if (!socket.data.user) return;
+      socket.to(`call:${appointmentId}`).emit("webrtc:ice_candidate", { candidate, senderId: socket.data.user.id });
+    });
+
+    socket.on("webrtc:leave_call", (appointmentId: string) => {
+      if (!socket.data.user) return;
+      const room = `call:${appointmentId}`;
+      socket.leave(room);
+      socket.to(room).emit("webrtc:user_left", socket.data.user.id);
+      console.log(`🚪 Socket ${socket.id} left WebRTC call room ${room}`);
     });
 
     socket.on("disconnect", () => {

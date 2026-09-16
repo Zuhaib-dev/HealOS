@@ -54,14 +54,20 @@ export function TelemedicineWorkbench({
           }
         };
 
+        let makingOffer = false;
+        
         const sendOffer = async () => {
           if (!peerConnectionRef.current) return;
+          if (makingOffer || peerConnectionRef.current.signalingState !== "stable") return;
           try {
+            makingOffer = true;
             const offer = await peerConnectionRef.current.createOffer();
             await peerConnectionRef.current.setLocalDescription(offer);
-            socket.emit("webrtc:offer", { appointmentId, offer });
+            socket.emit("webrtc:offer", { appointmentId, offer: peerConnectionRef.current.localDescription });
           } catch (e) {
             console.error("Error creating offer", e);
+          } finally {
+            makingOffer = false;
           }
         };
 
@@ -86,12 +92,16 @@ export function TelemedicineWorkbench({
         socket.on("webrtc:offer", async ({ offer }) => {
           if (!peerConnectionRef.current) return;
           if (isDoctor) return; // Doctor NEVER processes offers, only sends them
+          if (peerConnectionRef.current.signalingState !== "stable") {
+            console.warn("Patient: Ignoring offer because state is not stable");
+            return;
+          }
 
           try {
             await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
             const answer = await peerConnectionRef.current.createAnswer();
             await peerConnectionRef.current.setLocalDescription(answer);
-            socket.emit("webrtc:answer", { appointmentId, answer });
+            socket.emit("webrtc:answer", { appointmentId, answer: peerConnectionRef.current.localDescription });
           } catch (e) {
             console.error("Error handling offer:", e);
           }
@@ -100,6 +110,10 @@ export function TelemedicineWorkbench({
         socket.on("webrtc:answer", async ({ answer }) => {
           if (!peerConnectionRef.current) return;
           if (!isDoctor) return; // Patient NEVER processes answers, only sends them
+          if (peerConnectionRef.current.signalingState !== "have-local-offer") {
+            console.warn("Doctor: Ignoring answer because state is not have-local-offer");
+            return;
+          }
 
           try {
             await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));

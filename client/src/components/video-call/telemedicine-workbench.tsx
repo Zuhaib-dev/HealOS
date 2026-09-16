@@ -48,8 +48,10 @@ export function TelemedicineWorkbench({
 
         // Handle incoming tracks (remote video)
         pc.ontrack = (event) => {
-          if (remoteVideoRef.current && event.streams[0]) {
-            remoteVideoRef.current.srcObject = event.streams[0];
+          if (event.streams && event.streams[0]) {
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.srcObject = event.streams[0];
+            }
             setIsConnected(true);
           }
         };
@@ -71,6 +73,8 @@ export function TelemedicineWorkbench({
           }
         };
 
+        let iceCandidateQueue: RTCIceCandidateInit[] = [];
+
         // Only the Doctor initiates offers to prevent WebRTC glare (collisions)
         if (isDoctor) {
           pc.onnegotiationneeded = () => {
@@ -89,43 +93,67 @@ export function TelemedicineWorkbench({
           }
         };
 
+        let processingOffer = false;
         socket.on("webrtc:offer", async ({ offer }) => {
-          if (!peerConnectionRef.current) return;
+          if (pc.signalingState === "closed") return;
           if (isDoctor) return; // Doctor NEVER processes offers, only sends them
-          if (peerConnectionRef.current.signalingState !== "stable") {
-            console.warn("Patient: Ignoring offer because state is not stable");
+          if (processingOffer || pc.signalingState !== "stable") {
+            console.warn("Patient: Ignoring concurrent or invalid offer");
             return;
           }
 
           try {
-            await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
-            const answer = await peerConnectionRef.current.createAnswer();
-            await peerConnectionRef.current.setLocalDescription(answer);
-            socket.emit("webrtc:answer", { appointmentId, answer: peerConnectionRef.current.localDescription });
+            processingOffer = true;
+            await pc.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            socket.emit("webrtc:answer", { appointmentId, answer: pc.localDescription });
+            
+            // Process queued ICE candidates
+            for (const c of iceCandidateQueue) {
+              await pc.addIceCandidate(new RTCIceCandidate(c));
+            }
+            iceCandidateQueue = [];
           } catch (e) {
             console.error("Error handling offer:", e);
+          } finally {
+            processingOffer = false;
           }
         });
 
+        let processingAnswer = false;
         socket.on("webrtc:answer", async ({ answer }) => {
-          if (!peerConnectionRef.current) return;
+          if (pc.signalingState === "closed") return;
           if (!isDoctor) return; // Patient NEVER processes answers, only sends them
-          if (peerConnectionRef.current.signalingState !== "have-local-offer") {
-            console.warn("Doctor: Ignoring answer because state is not have-local-offer");
+          if (processingAnswer || pc.signalingState !== "have-local-offer") {
+            console.warn("Doctor: Ignoring concurrent or invalid answer");
             return;
           }
 
           try {
-            await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+            processingAnswer = true;
+            await pc.setRemoteDescription(new RTCSessionDescription(answer));
+            
+            // Process queued ICE candidates
+            for (const c of iceCandidateQueue) {
+              await pc.addIceCandidate(new RTCIceCandidate(c));
+            }
+            iceCandidateQueue = [];
           } catch (e) {
             console.error("Error handling answer:", e);
+          } finally {
+            processingAnswer = false;
           }
         });
 
         socket.on("webrtc:ice_candidate", async ({ candidate }) => {
-          if (!peerConnectionRef.current) return;
+          if (pc.signalingState === "closed") return;
           try {
-            await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+            if (pc.remoteDescription) {
+              await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            } else {
+              iceCandidateQueue.push(candidate);
+            }
           } catch (e) {
             // This can fail gracefully if candidates arrive before remote description is set
             console.warn("Ignoring ICE candidate error:", (e as Error).message);
@@ -202,19 +230,19 @@ export function TelemedicineWorkbench({
       <div className="flex-1 relative bg-black/5 flex items-center justify-center p-4">
         
         {/* Remote Video (Main) */}
-        {isConnected ? (
-          <video 
-            ref={remoteVideoRef} 
-            autoPlay 
-            playsInline 
-            className="w-full h-full object-cover rounded-xl shadow-lg border border-border/20"
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center text-muted-foreground animate-pulse">
-            <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mb-4">
-               <UserRound className="size-10 text-muted-foreground/50" />
+        <video 
+          ref={remoteVideoRef} 
+          autoPlay 
+          playsInline 
+          className={`w-full h-full object-cover rounded-xl shadow-lg border border-border/20 ${isConnected ? 'block' : 'hidden'}`}
+        />
+        
+        {!isConnected && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground animate-pulse z-0 bg-background/50 backdrop-blur-sm">
+            <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mb-4 border border-border/50">
+               <UserRound className="size-10 text-muted-foreground/60" />
             </div>
-            <p className="font-mono text-sm tracking-wider uppercase">Waiting for {isDoctor ? "patient" : "doctor"}...</p>
+            <p className="font-mono text-sm tracking-wider uppercase font-semibold">Waiting for {isDoctor ? "patient" : "doctor"}...</p>
           </div>
         )}
 

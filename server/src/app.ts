@@ -2,6 +2,15 @@
 // HealOS Server — Application Entry Point
 // ============================================
 import "dotenv/config";
+import * as Sentry from "@sentry/node";
+import { nodeProfilingIntegration } from "@sentry/profiling-node";
+
+// Initialize Sentry
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  integrations: [nodeProfilingIntegration()],
+  tracesSampleRate: 1.0,
+});
 import dns from "node:dns";
 // Render IPv6 workaround for Nodemailer and other outbound requests
 dns.setDefaultResultOrder("ipv4first");
@@ -70,6 +79,9 @@ import { initSocketIO } from "./socket.js";
 // ---------------------------
 // Error Handling
 // ---------------------------
+// Sentry error handler must be before any other error middleware and after all controllers
+Sentry.setupExpressErrorHandler(app);
+
 app.use(notFoundHandler);
 app.use(errorHandler);
 

@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Blobatar } from "@blobatar/react";
+import { GazeBlobatar as Blobatar } from "@/components/ui/gaze-blobatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/use-auth-store";
 import { fetchPatientProfileApi, PatientProfileData } from "@/lib/api/onboarding";

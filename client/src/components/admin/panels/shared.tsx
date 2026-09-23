@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Blobatar } from "@blobatar/react";
+import { GazeBlobatar as Blobatar } from "@/components/ui/gaze-blobatar";
 import { LogOut, KeyRound, ShieldCheck, ShieldOff, Copy, Plus, UserCog, HeartPulse } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 import {
@@ -127,7 +127,7 @@ export function Avatar({ name, online }: { name: string; online: boolean }) {
           />
         )}
       </svg>
-      <div className="size-full overflow-hidden flex items-center justify-center p-[2px]">
+      <div className="size-full overflow-hidden flex items-center justify-center p-0.5">
         <Blobatar name={name || "healos"} />
       </div>
     </span>

@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 export default withSentryConfig(nextConfig, {
   org: "zuhaibs-world",
@@ -47,7 +47,4 @@ export default withSentryConfig(nextConfig, {
     enabled: true,
   },
   tunnelRoute: "/monitoring",
-  hideSourceMaps: true,
-  disableLogger: true,
-  automaticVercelMonitors: true,
 });

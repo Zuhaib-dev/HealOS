@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Blobatar } from "@blobatar/react";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/use-auth-store";
 import { fetchPatientProfileApi, PatientProfileData } from "@/lib/api/onboarding";
@@ -151,8 +152,8 @@ export function UserProfileMenu() {
             {user.avatarUrl ? (
               <AvatarImage src={user.avatarUrl} alt={user.name} />
             ) : null}
-            <AvatarFallback className="bg-primary/15 text-primary font-mono text-xs font-bold">
-              {getInitials(user.name)}
+            <AvatarFallback className="bg-primary/15 text-primary font-mono text-xs font-bold overflow-hidden flex items-center justify-center">
+              <Blobatar name={user.email || user.name || "healos"} />
             </AvatarFallback>
           </Avatar>
 
@@ -181,8 +182,8 @@ export function UserProfileMenu() {
               {user.avatarUrl ? (
                 <AvatarImage src={user.avatarUrl} alt={user.name} />
               ) : null}
-              <AvatarFallback className="bg-primary/20 text-primary font-mono text-sm font-bold">
-                {getInitials(user.name)}
+              <AvatarFallback className="bg-primary/20 text-primary font-mono text-sm font-bold overflow-hidden flex items-center justify-center">
+                <Blobatar name={user.email || user.name || "healos"} />
               </AvatarFallback>
             </Avatar>
 

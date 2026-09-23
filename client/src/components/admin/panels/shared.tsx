@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
+import { Blobatar } from "@blobatar/react";
 import { LogOut, KeyRound, ShieldCheck, ShieldOff, Copy, Plus, UserCog, HeartPulse } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 import {
@@ -104,11 +105,11 @@ export function initials(name: string) {
     .toUpperCase();
 }
 
-/** Monogram avatar with a live presence ring — no raster assets. */
+/** Blobatar avatar with a live presence ring — deterministic geometric avatars. */
 export function Avatar({ name, online }: { name: string; online: boolean }) {
   return (
     <span className="relative inline-grid size-9 shrink-0 place-items-center">
-      <svg viewBox="0 0 40 40" className="absolute inset-0 size-full">
+      <svg viewBox="0 0 40 40" className="absolute inset-0 size-full pointer-events-none z-10">
         <rect x="1" y="1" width="38" height="38" fill="none" stroke="var(--hairline)" />
         {online && (
           <motion.rect
@@ -126,9 +127,9 @@ export function Avatar({ name, online }: { name: string; online: boolean }) {
           />
         )}
       </svg>
-      <span className={`mono-label relative ${online ? "text-brass" : "text-muted-foreground"}`}>
-        {initials(name)}
-      </span>
+      <div className="size-full overflow-hidden flex items-center justify-center p-[2px]">
+        <Blobatar name={name || "healos"} />
+      </div>
     </span>
   );
 }

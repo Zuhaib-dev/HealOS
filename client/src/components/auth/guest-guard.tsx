@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/use-auth-store";
 import { getSafeRedirectPath, getRoleDisplayName } from "@/lib/auth-navigation";
 import { signOut } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Blobatar } from "@blobatar/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LogOut, ShieldCheck, RefreshCw } from "lucide-react";
@@ -169,8 +170,8 @@ export function GuestGuard({ children }: GuestGuardProps) {
               {user.avatarUrl ? (
                 <AvatarImage src={user.avatarUrl} alt={user.name} />
               ) : null}
-              <AvatarFallback className="bg-primary/15 text-primary font-mono text-sm font-bold">
-                {getInitials(user.name)}
+              <AvatarFallback className="bg-primary/15 text-primary font-mono text-sm font-bold overflow-hidden flex items-center justify-center">
+                <Blobatar name={user.email || user.name || "healos"} />
               </AvatarFallback>
             </Avatar>
 

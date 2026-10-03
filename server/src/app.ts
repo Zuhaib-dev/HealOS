@@ -3,14 +3,6 @@
 // ============================================
 import "dotenv/config";
 import * as Sentry from "@sentry/node";
-import { nodeProfilingIntegration } from "@sentry/profiling-node";
-
-// Initialize Sentry
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  integrations: [nodeProfilingIntegration()],
-  tracesSampleRate: 1.0,
-});
 import dns from "node:dns";
 // Render IPv6 workaround for Nodemailer and other outbound requests
 dns.setDefaultResultOrder("ipv4first");
@@ -66,6 +58,10 @@ app.get("/health", (_req, res) => {
     environment: envConfig.NODE_ENV,
     timestamp: new Date().toISOString(),
   });
+});
+
+app.get("/debug-sentry", function mainHandler(_req, _res) {
+  throw new Error("My first Sentry error!");
 });
 
 // ---------------------------

@@ -5,9 +5,9 @@
   "description": "HealOS Backend — Express.js + TypeScript API Server",
   "main": "dist/app.js",
   "scripts": {
-    "dev": "tsx watch src/app.ts",
+    "dev": "tsx watch --import ./src/instrument.ts src/app.ts",
     "build": "tsc",
-    "start": "NODE_OPTIONS='--dns-result-order=ipv4first' node dist/app.js",
+    "start": "NODE_OPTIONS='--dns-result-order=ipv4first --import ./dist/instrument.js' node dist/app.js",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "typecheck": "tsc --noEmit",

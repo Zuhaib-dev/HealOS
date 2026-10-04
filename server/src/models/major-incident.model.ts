@@ -53,10 +53,10 @@ const majorIncidentSchema = new Schema<IMajorIncident>(
     },
     steps: [cascadeStepSchema],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const MajorIncident = mongoose.model<IMajorIncident>(
   "MajorIncident",
-  majorIncidentSchema
+  majorIncidentSchema,
 );

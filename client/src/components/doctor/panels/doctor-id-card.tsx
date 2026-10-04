@@ -13,7 +13,13 @@ export interface DoctorIDCardProps {
   avatarUrl: string | null;
 }
 
-export function DoctorIDCard({ name, department, specialization, licenseNumber, avatarUrl }: DoctorIDCardProps) {
+export function DoctorIDCard({
+  name,
+  department,
+  specialization,
+  licenseNumber,
+  avatarUrl,
+}: DoctorIDCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -21,9 +27,17 @@ export function DoctorIDCard({ name, department, specialization, licenseNumber, 
   const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
   const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["17.5deg", "-17.5deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-17.5deg", "17.5deg"]);
-  
+  const rotateX = useTransform(
+    mouseYSpring,
+    [-0.5, 0.5],
+    ["17.5deg", "-17.5deg"],
+  );
+  const rotateY = useTransform(
+    mouseXSpring,
+    [-0.5, 0.5],
+    ["-17.5deg", "17.5deg"],
+  );
+
   const glareX = useTransform(mouseXSpring, [-0.5, 0.5], ["-100%", "100%"]);
   const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["-100%", "100%"]);
 
@@ -34,10 +48,10 @@ export function DoctorIDCard({ name, department, specialization, licenseNumber, 
     const height = rect.height;
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-    
+
     const xPct = mouseX / width - 0.5;
     const yPct = mouseY / height - 0.5;
-    
+
     x.set(xPct);
     y.set(yPct);
   };
@@ -48,7 +62,10 @@ export function DoctorIDCard({ name, department, specialization, licenseNumber, 
   };
 
   return (
-    <div style={{ perspective: "1000px" }} className="w-full max-w-sm mx-auto p-4 flex items-center justify-center">
+    <div
+      style={{ perspective: "1000px" }}
+      className="w-full max-w-sm mx-auto p-4 flex items-center justify-center"
+    >
       <motion.div
         ref={ref}
         onMouseMove={handleMouseMove}
@@ -64,7 +81,8 @@ export function DoctorIDCard({ name, department, specialization, licenseNumber, 
         <motion.div
           className="pointer-events-none absolute inset-0 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mix-blend-overlay"
           style={{
-            background: "radial-gradient(circle at center, rgba(255,255,255,0.4) 0%, transparent 60%)",
+            background:
+              "radial-gradient(circle at center, rgba(255,255,255,0.4) 0%, transparent 60%)",
             x: glareX,
             y: glareY,
             scale: 2,
@@ -72,34 +90,40 @@ export function DoctorIDCard({ name, department, specialization, licenseNumber, 
         />
 
         {/* Card Header Background */}
-        <div 
-          className="absolute top-0 inset-x-0 h-32 bg-primary/20 backdrop-blur-md border-b border-primary/20"
-        />
-        
+        <div className="absolute top-0 inset-x-0 h-32 bg-primary/20 backdrop-blur-md border-b border-primary/20" />
+
         <div className="relative z-10 h-full flex flex-col p-6 items-center">
           {/* Logo / Header text */}
-          <div 
+          <div
             className="w-full flex items-center justify-between mb-8"
             style={{ transform: "translateZ(30px)" }}
           >
-            <span className="text-xs font-bold tracking-widest text-primary uppercase">HealOS</span>
+            <span className="text-xs font-bold tracking-widest text-primary uppercase">
+              HealOS
+            </span>
             <ShieldCheck className="size-5 text-primary" />
           </div>
 
           {/* Avatar */}
-          <div 
+          <div
             className="relative size-32 rounded-full border-4 border-background shadow-xl overflow-hidden mb-6 flex items-center justify-center bg-muted"
             style={{ transform: "translateZ(50px)" }}
           >
             {avatarUrl ? (
-              <Image src={avatarUrl} alt="Avatar" fill sizes="128px" className="object-cover" />
+              <Image
+                src={avatarUrl}
+                alt="Avatar"
+                fill
+                sizes="128px"
+                className="object-cover"
+              />
             ) : (
               <UserCheck className="size-12 text-muted-foreground/50" />
             )}
           </div>
 
           {/* Info */}
-          <div 
+          <div
             className="flex flex-col items-center text-center space-y-1.5 w-full"
             style={{ transform: "translateZ(40px)" }}
           >
@@ -107,9 +131,9 @@ export function DoctorIDCard({ name, department, specialization, licenseNumber, 
               {name || "Dr. Your Name"}
             </h3>
             <div className="px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
-                <p className="text-xs font-semibold text-primary uppercase tracking-wide">
+              <p className="text-xs font-semibold text-primary uppercase tracking-wide">
                 {department || "Department"}
-                </p>
+              </p>
             </div>
             <p className="text-sm text-muted-foreground truncate w-full mt-2">
               {specialization || "Specialization"}
@@ -119,15 +143,19 @@ export function DoctorIDCard({ name, department, specialization, licenseNumber, 
           <div className="flex-1" />
 
           {/* Footer Barcode/Details */}
-          <div 
+          <div
             className="w-full border-t border-border/50 pt-4 mt-6 flex justify-between items-end"
             style={{ transform: "translateZ(20px)" }}
           >
             <div className="space-y-1 text-left">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">License No.</p>
-              <p className="text-xs font-mono font-semibold">{licenseNumber || "UNVERIFIED"}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                License No.
+              </p>
+              <p className="text-xs font-mono font-semibold">
+                {licenseNumber || "UNVERIFIED"}
+              </p>
             </div>
-            
+
             <Stethoscope className="size-6 text-muted-foreground/30" />
           </div>
         </div>

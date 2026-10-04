@@ -29,10 +29,10 @@ export interface IProfessionalProfile extends Document {
 const professionalProfileSchema = new Schema<IProfessionalProfile>(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    requestedRole: { 
-      type: String, 
-      enum: [UserRole.DOCTOR, UserRole.RADIOLOGIST], 
-      required: true 
+    requestedRole: {
+      type: String,
+      enum: [UserRole.DOCTOR, UserRole.RADIOLOGIST],
+      required: true,
     },
     degree: { type: String, required: true },
     specialization: { type: String, required: true },
@@ -41,19 +41,19 @@ const professionalProfileSchema = new Schema<IProfessionalProfile>(
     department: { type: String },
     bio: { type: String },
     documentUrls: [{ type: String }],
-    status: { 
-      type: String, 
-      enum: Object.values(ProfileStatus), 
-      default: ProfileStatus.PENDING 
+    status: {
+      type: String,
+      enum: Object.values(ProfileStatus),
+      default: ProfileStatus.PENDING,
     },
     rejectionReason: { type: String },
     onboardingStep: { type: Number, default: 1 }, // Used by frontend to track multi-step forms
     reviewedBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const ProfessionalProfile = mongoose.model<IProfessionalProfile>(
-  "ProfessionalProfile", 
-  professionalProfileSchema
+  "ProfessionalProfile",
+  professionalProfileSchema,
 );

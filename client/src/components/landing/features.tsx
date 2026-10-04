@@ -67,8 +67,9 @@ export function Features() {
             </h2>
           </div>
           <p className="text-muted-foreground lg:col-span-5 lg:col-start-8 lg:self-end">
-            Modules share one data model, so a bed transfer, a claim and a radiology order all
-            reference the same patient object. Nothing is reconciled after the fact.
+            Modules share one data model, so a bed transfer, a claim and a
+            radiology order all reference the same patient object. Nothing is
+            reconciled after the fact.
           </p>
         </div>
 
@@ -91,8 +92,12 @@ export function Features() {
                 <m.Glyph className="h-full w-auto transition-transform duration-700 group-hover:scale-[1.04]" />
               </div>
 
-              <h3 className="font-display mt-8 text-xl font-bold tracking-tight">{m.name}</h3>
-              <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{m.body}</p>
+              <h3 className="font-display mt-8 text-xl font-bold tracking-tight">
+                {m.name}
+              </h3>
+              <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
+                {m.body}
+              </p>
 
               <span className="bg-accent absolute bottom-0 left-0 h-px w-0 transition-all duration-500 group-hover:w-full" />
             </motion.article>

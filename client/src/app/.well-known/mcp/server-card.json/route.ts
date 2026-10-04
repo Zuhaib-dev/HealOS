@@ -5,7 +5,8 @@ export const dynamic = "force-static";
 export async function GET() {
   const serverCard = {
     name: "HealOS Core MCP Server",
-    description: "Model Context Protocol toolsuite for clinical hospital management, patient records, and workflow orchestration.",
+    description:
+      "Model Context Protocol toolsuite for clinical hospital management, patient records, and workflow orchestration.",
     version: "1.0.0",
     serverUrl: "https://healos-theta.vercel.app/.well-known/mcp",
     homepage: "https://healos-theta.vercel.app/developers",
@@ -21,19 +22,22 @@ export async function GET() {
       {
         uri: "ui://healos/appointment-booking-form",
         name: "Interactive Appointment Booking Affordance",
-        description: "A2UI / MCP App component enabling interactive in-agent clinic booking.",
+        description:
+          "A2UI / MCP App component enabling interactive in-agent clinic booking.",
         mimeType: "text/html",
       },
       {
         uri: "ui://healos/vitals-telemetry-monitor",
         name: "Real-time Telemetry Monitor Component",
-        description: "A2UI / MCP App component rendering live patient ECG, SpO2, and BP curves.",
+        description:
+          "A2UI / MCP App component rendering live patient ECG, SpO2, and BP curves.",
         mimeType: "text/html",
       },
       {
         uri: "ui://healos/emergency-triage-board",
         name: "ED Triage Matrix",
-        description: "A2UI interactive triage board view for emergency room staff.",
+        description:
+          "A2UI interactive triage board view for emergency room staff.",
         mimeType: "text/html",
       },
     ],
@@ -45,7 +49,10 @@ export async function GET() {
           type: "object",
           required: ["query"],
           properties: {
-            query: { type: "string", description: "Patient name, MRN, or phone" },
+            query: {
+              type: "string",
+              description: "Patient name, MRN, or phone",
+            },
           },
         },
         _meta: {
@@ -56,7 +63,8 @@ export async function GET() {
       },
       {
         name: "get_patient_vitals",
-        description: "Fetch recent telemetry and recorded vital signs for an admitted patient.",
+        description:
+          "Fetch recent telemetry and recorded vital signs for an admitted patient.",
         parameters: {
           type: "object",
           required: ["patientId"],
@@ -91,7 +99,8 @@ export async function GET() {
       },
       {
         name: "get_emergency_triage",
-        description: "Inspect active Emergency Department triage board entries and bed capacity.",
+        description:
+          "Inspect active Emergency Department triage board entries and bed capacity.",
         parameters: {
           type: "object",
           properties: {},

@@ -28,7 +28,6 @@ export default function LandingPage() {
     }
   }, [_hasHydrated, isAuthenticated, user, router]);
 
-
   return (
     <div className="bg-background min-h-screen overflow-x-hidden">
       <SiteHeader />

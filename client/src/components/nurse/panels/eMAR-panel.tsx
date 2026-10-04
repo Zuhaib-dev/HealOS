@@ -7,7 +7,16 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Check, X, PauseCircle, TriangleAlert, Pill as PillIcon, Loader2, Clock, AlertCircle } from "lucide-react";
+import {
+  Check,
+  X,
+  PauseCircle,
+  TriangleAlert,
+  Pill as PillIcon,
+  Loader2,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { fetchMarDosesApi, type MarDose } from "@/lib/api/nurse";
 import { toast } from "sonner";
@@ -15,7 +24,9 @@ import { toast } from "sonner";
 export function EmarPanel() {
   const [rows, setRows] = useState<MarDose[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "due" | "high" | "controlled">("all");
+  const [filter, setFilter] = useState<"all" | "due" | "high" | "controlled">(
+    "all",
+  );
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,12 +70,18 @@ export function EmarPanel() {
 
   const getStateStyles = (state: MarDose["state"]) => {
     switch (state) {
-      case "due": return "bg-primary/10 text-primary border-primary/20";
-      case "overdue": return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20";
-      case "given": return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
-      case "held": return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
-      case "refused": return "bg-destructive/10 text-destructive border-destructive/20";
-      default: return "bg-muted text-muted-foreground border-border";
+      case "due":
+        return "bg-primary/10 text-primary border-primary/20";
+      case "overdue":
+        return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20";
+      case "given":
+        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
+      case "held":
+        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
+      case "refused":
+        return "bg-destructive/10 text-destructive border-destructive/20";
+      default:
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -86,8 +103,8 @@ export function EmarPanel() {
                 key={f.id}
                 onClick={() => setFilter(f.id as any)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 border ${
-                  filter === f.id 
-                    ? "bg-foreground text-background border-foreground shadow-sm scale-105" 
+                  filter === f.id
+                    ? "bg-foreground text-background border-foreground shadow-sm scale-105"
                     : "bg-background text-muted-foreground border-border/60 hover:bg-muted/50"
                 }`}
               >
@@ -100,17 +117,18 @@ export function EmarPanel() {
 
       <div className="flex-1 bg-background/50 p-4 sm:p-6 lg:p-10 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
-          
           {loading ? (
-             <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-               <Loader2 className="size-8 animate-spin mb-4 text-primary" />
-               <p className="mono-label">Loading medication records...</p>
-             </div>
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <Loader2 className="size-8 animate-spin mb-4 text-primary" />
+              <p className="mono-label">Loading medication records...</p>
+            </div>
           ) : visible.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border/60 rounded-3xl bg-card/30">
-               <Check className="size-10 text-emerald-500/50 mb-4" />
-               <p className="font-medium text-foreground">All caught up</p>
-               <p className="text-sm text-muted-foreground mt-1">No medication records match this filter.</p>
+              <Check className="size-10 text-emerald-500/50 mb-4" />
+              <p className="font-medium text-foreground">All caught up</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                No medication records match this filter.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
@@ -124,14 +142,13 @@ export function EmarPanel() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
                     className={`relative flex flex-col overflow-hidden rounded-2xl border transition-all ${
-                      d.state === "given" 
+                      d.state === "given"
                         ? "bg-emerald-500/5 border-emerald-500/20"
                         : d.state === "overdue"
                           ? "bg-rose-500/5 border-rose-500/30 ring-1 ring-rose-500/10 shadow-sm"
                           : "bg-card/50 border-border/60 hover:border-primary/30"
                     }`}
                   >
-                    
                     {/* Header */}
                     <div className="p-5 border-b border-border/40 flex items-start justify-between gap-4">
                       <div className="flex items-center gap-3">
@@ -139,7 +156,9 @@ export function EmarPanel() {
                           {d.bed}
                         </div>
                         <div>
-                          <h3 className="font-bold text-foreground">{d.patient}</h3>
+                          <h3 className="font-bold text-foreground">
+                            {d.patient}
+                          </h3>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="mono-label text-[10px] text-muted-foreground bg-background border border-border/60 px-2 py-0.5 rounded flex items-center gap-1">
                               <Clock className="size-3" /> {d.time}
@@ -147,10 +166,14 @@ export function EmarPanel() {
                           </div>
                         </div>
                       </div>
-                      
-                      <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1.5 ${getStateStyles(d.state)}`}>
+
+                      <div
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1.5 ${getStateStyles(d.state)}`}
+                      >
                         {d.state === "given" && <Check className="size-3" />}
-                        {d.state === "overdue" && <AlertCircle className="size-3" />}
+                        {d.state === "overdue" && (
+                          <AlertCircle className="size-3" />
+                        )}
                         {d.state}
                       </div>
                     </div>
@@ -158,12 +181,21 @@ export function EmarPanel() {
                     {/* Body */}
                     <div className="p-5 flex-1 flex flex-col justify-center">
                       <div className="flex items-start gap-4">
-                        <div className={`p-2 rounded-xl shrink-0 ${d.highAlert ? "bg-rose-500/10 text-rose-500" : "bg-primary/10 text-primary"}`}>
+                        <div
+                          className={`p-2 rounded-xl shrink-0 ${d.highAlert ? "bg-rose-500/10 text-rose-500" : "bg-primary/10 text-primary"}`}
+                        >
                           <PillIcon className="size-6" />
                         </div>
                         <div>
-                          <p className="font-bold text-lg text-foreground leading-tight">{d.drug}</p>
-                          <p className="font-mono text-sm text-primary mt-1">{d.dose} <span className="text-muted-foreground ml-1">{d.route}</span></p>
+                          <p className="font-bold text-lg text-foreground leading-tight">
+                            {d.drug}
+                          </p>
+                          <p className="font-mono text-sm text-primary mt-1">
+                            {d.dose}{" "}
+                            <span className="text-muted-foreground ml-1">
+                              {d.route}
+                            </span>
+                          </p>
                           {d.note && (
                             <p className="text-xs text-muted-foreground mt-2 italic bg-background/50 p-2 rounded-lg border border-border/40">
                               Note: {d.note}
@@ -190,37 +222,49 @@ export function EmarPanel() {
                     <div className="p-4 bg-background/30 border-t border-border/40">
                       {d.state === "due" || d.state === "overdue" ? (
                         <div className="grid grid-cols-3 gap-2">
-                          <button 
+                          <button
                             disabled={processingId === d._id}
-                            onClick={() => setDoseState(d._id, "given")} 
+                            onClick={() => setDoseState(d._id, "given")}
                             className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
                           >
-                            {processingId === d._id ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Give</span>
+                            {processingId === d._id ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Check className="size-4" />
+                            )}
+                            <span className="text-[10px] font-bold uppercase tracking-wider">
+                              Give
+                            </span>
                           </button>
-                          
-                          <button 
+
+                          <button
                             disabled={processingId === d._id}
-                            onClick={() => setDoseState(d._id, "held")} 
+                            onClick={() => setDoseState(d._id, "held")}
                             className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
                           >
                             <PauseCircle className="size-4" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Hold</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider">
+                              Hold
+                            </span>
                           </button>
 
-                          <button 
+                          <button
                             disabled={processingId === d._id}
-                            onClick={() => setDoseState(d._id, "refused")} 
+                            onClick={() => setDoseState(d._id, "refused")}
                             className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
                           >
                             <X className="size-4" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Refuse</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider">
+                              Refuse
+                            </span>
                           </button>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center gap-2 py-2.5 text-muted-foreground">
                           <Check className="size-4 opacity-50" />
-                          <span className="text-xs font-semibold">Processed</span>
+                          <span className="text-xs font-semibold">
+                            Processed
+                          </span>
                         </div>
                       )}
                     </div>

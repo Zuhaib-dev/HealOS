@@ -1,6 +1,7 @@
 import apiClient from "../api-client";
 
-export type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+export type AppointmentStatus =
+  "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
 export type AppointmentType = "IN_PERSON" | "TELECONSULT" | "EMERGENCY";
 export type PaymentMethod = "ONLINE" | "CASH";
 export type PaymentStatus = "PAID" | "PENDING_CASH" | "REFUNDED";
@@ -83,7 +84,10 @@ export const fetchPatientAppointmentsApi = async () => {
   return response.data;
 };
 
-export const fetchDoctorAppointmentsApi = async (page: number = 1, limit: number = 10) => {
+export const fetchDoctorAppointmentsApi = async (
+  page: number = 1,
+  limit: number = 10,
+) => {
   const response = await apiClient.get<{
     success: boolean;
     count: number;
@@ -98,7 +102,7 @@ export const fetchDoctorAppointmentsApi = async (page: number = 1, limit: number
 export const updateAppointmentStatusApi = async (
   id: string,
   status: AppointmentStatus,
-  notes?: string
+  notes?: string,
 ) => {
   const response = await apiClient.put<{
     success: boolean;

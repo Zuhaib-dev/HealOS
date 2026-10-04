@@ -63,11 +63,7 @@ export const sections = [
 
 export type SectionId = (typeof sections)[number]["id"];
 
-export function AdminShell({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function AdminShell({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const { user } = useAuthStore();
   const { isSidebarCollapsed, toggleSidebar } = useUIStore();
@@ -75,9 +71,12 @@ export function AdminShell({
   const pathname = usePathname();
 
   // Determine current section based on URL
-  const currentSection = sections.find((s) => 
-    s.id === "overview" ? pathname === "/admin" : pathname.startsWith(`/admin/${s.id}`)
-  ) || sections[0];
+  const currentSection =
+    sections.find((s) =>
+      s.id === "overview"
+        ? pathname === "/admin"
+        : pathname.startsWith(`/admin/${s.id}`),
+    ) || sections[0];
 
   const mainMobileTabs = sections.slice(0, 4);
   const moreMobileTabs = sections.slice(4);
@@ -88,7 +87,12 @@ export function AdminShell({
       <header className="bg-background/90 border-b border-border/60 sticky top-0 z-40 backdrop-blur-md transition-all">
         <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-8">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-3 group" aria-label="HealOS home" title="HealOS home">
+            <Link
+              href="/"
+              className="flex items-center gap-3 group"
+              aria-label="HealOS home"
+              title="HealOS home"
+            >
               <HealOSLogo size={30} />
             </Link>
 
@@ -107,8 +111,11 @@ export function AdminShell({
           {/* Search bar instrument */}
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("open-command-menu"))}
-            aria-label="Search patients, staff, invoices, approvals" title="Search patients, staff, invoices, approvals"
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("open-command-menu"))
+            }
+            aria-label="Search patients, staff, invoices, approvals"
+            title="Search patients, staff, invoices, approvals"
             className="hidden lg:flex w-80 items-center gap-2.5 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:border-primary/50 transition-all text-left cursor-pointer"
           >
             <Search className="text-muted-foreground size-3.5 shrink-0" />
@@ -136,7 +143,7 @@ export function AdminShell({
       {/* Main Layout Container */}
       <div className="flex">
         {/* Sidebar Navigation - Desktop Only */}
-        <aside 
+        <aside
           className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? "w-18 items-center px-2" : "w-64"}`}
         >
           {isSidebarCollapsed ? (
@@ -159,10 +166,17 @@ export function AdminShell({
             </div>
           )}
 
-          <nav aria-label="Admin sidebar navigation" title="Admin sidebar navigation" className="flex flex-col gap-1 w-full">
+          <nav
+            aria-label="Admin sidebar navigation"
+            title="Admin sidebar navigation"
+            className="flex flex-col gap-1 w-full"
+          >
             {sections.map((s) => {
               const Icon = s.icon;
-              const isActive = s.id === "overview" ? pathname === "/admin" : pathname.startsWith(`/admin/${s.id}`);
+              const isActive =
+                s.id === "overview"
+                  ? pathname === "/admin"
+                  : pathname.startsWith(`/admin/${s.id}`);
               const href = s.id === "overview" ? "/admin" : `/admin/${s.id}`;
               return (
                 <Link
@@ -175,16 +189,25 @@ export function AdminShell({
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                   }`}
                 >
-                  <Icon className={`size-3.5 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === 'settings' ? 'group-hover:rotate-90' : 'group-hover:scale-[1.15]'}`}`} />
-                  {!isSidebarCollapsed && <span className="truncate">{s.label}</span>}
+                  <Icon
+                    className={`size-3.5 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === "settings" ? "group-hover:rotate-90" : "group-hover:scale-[1.15]"}`}`}
+                  />
+                  {!isSidebarCollapsed && (
+                    <span className="truncate">{s.label}</span>
+                  )}
                 </Link>
               );
             })}
           </nav>
 
-          <div className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3"}`}>
+          <div
+            className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3"}`}
+          >
             {isSidebarCollapsed ? (
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" title="System Status: All Nominal" />
+              <span
+                className="size-2 rounded-full bg-emerald-500 animate-pulse"
+                title="System Status: All Nominal"
+              />
             ) : (
               <>
                 <div className="flex items-center justify-between">
@@ -193,35 +216,47 @@ export function AdminShell({
                   </span>
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
-                <p className="font-semibold text-xs mt-1 text-foreground">All Systems Nominal</p>
+                <p className="font-semibold text-xs mt-1 text-foreground">
+                  All Systems Nominal
+                </p>
                 <p className="mono-label text-[10px] text-muted-foreground mt-0.5 font-mono">
                   MongoDB Atlas Cloud Connected
                 </p>
               </>
             )}
           </div>
-          
+
           <button
             onClick={toggleSidebar}
             className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 ${isSidebarCollapsed ? "" : "w-full"}`}
-            aria-label="Toggle sidebar" title="Toggle sidebar"
+            aria-label="Toggle sidebar"
+            title="Toggle sidebar"
           >
-            {isSidebarCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen className="size-4.5" />
+            ) : (
+              <PanelLeftClose className="size-4.5" />
+            )}
           </button>
         </aside>
 
         {/* Main Content Area */}
-        <main className="min-w-0 flex-1 pb-24 md:pb-0">
-          {children}
-        </main>
+        <main className="min-w-0 flex-1 pb-24 md:pb-0">{children}</main>
       </div>
 
       {/* Persistent Bottom Navigation Bar - Mobile Only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
-        <nav aria-label="Admin mobile navigation" title="Admin mobile navigation" className="flex justify-around items-center px-2 py-1.5">
+        <nav
+          aria-label="Admin mobile navigation"
+          title="Admin mobile navigation"
+          className="flex justify-around items-center px-2 py-1.5"
+        >
           {mainMobileTabs.map((s) => {
             const Icon = s.icon;
-            const isActive = s.id === "overview" ? pathname === "/admin" : pathname.startsWith(`/admin/${s.id}`);
+            const isActive =
+              s.id === "overview"
+                ? pathname === "/admin"
+                : pathname.startsWith(`/admin/${s.id}`);
             const href = s.id === "overview" ? "/admin" : `/admin/${s.id}`;
             return (
               <Link
@@ -230,18 +265,27 @@ export function AdminShell({
                 onClick={() => setIsMoreOpen(false)}
                 className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
               >
-                <motion.div 
-                  animate={isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }}
+                <motion.div
+                  animate={
+                    isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }
+                  }
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
-                  <Icon className={`size-5 ${isActive ? "fill-primary/20" : ""}`} strokeWidth={isActive ? 2.5 : 2} />
+                  <Icon
+                    className={`size-5 ${isActive ? "fill-primary/20" : ""}`}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
                 </motion.div>
-                <span 
+                <span
                   className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                    isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                    isActive
+                      ? "text-primary font-semibold"
+                      : "text-muted-foreground"
                   }`}
                 >
                   {s.label}
@@ -258,14 +302,35 @@ export function AdminShell({
                   type="button"
                   className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
                 >
-                  <div className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                    moreMobileTabs.some(s => pathname.startsWith(`/admin/${s.id}`)) ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-                  }`}>
-                    <Menu className={`size-5 ${moreMobileTabs.some(s => pathname.startsWith(`/admin/${s.id}`)) ? "fill-primary/20" : ""}`} strokeWidth={moreMobileTabs.some(s => pathname.startsWith(`/admin/${s.id}`)) ? 2.5 : 2} />
+                  <div
+                    className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                      moreMobileTabs.some((s) =>
+                        pathname.startsWith(`/admin/${s.id}`),
+                      )
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground"
+                    }`}
+                  >
+                    <Menu
+                      className={`size-5 ${moreMobileTabs.some((s) => pathname.startsWith(`/admin/${s.id}`)) ? "fill-primary/20" : ""}`}
+                      strokeWidth={
+                        moreMobileTabs.some((s) =>
+                          pathname.startsWith(`/admin/${s.id}`),
+                        )
+                          ? 2.5
+                          : 2
+                      }
+                    />
                   </div>
-                  <span className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                    moreMobileTabs.some(s => pathname.startsWith(`/admin/${s.id}`)) ? "text-primary font-semibold" : "text-muted-foreground"
-                  }`}>
+                  <span
+                    className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                      moreMobileTabs.some((s) =>
+                        pathname.startsWith(`/admin/${s.id}`),
+                      )
+                        ? "text-primary font-semibold"
+                        : "text-muted-foreground"
+                    }`}
+                  >
                     More
                   </span>
                 </button>
@@ -294,8 +359,13 @@ export function AdminShell({
                             : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
                         }`}
                       >
-                        <Icon className="size-6" strokeWidth={isActive ? 2.5 : 2} />
-                        <span className="text-[10px] font-semibold tracking-wide text-center leading-tight">{s.label}</span>
+                        <Icon
+                          className="size-6"
+                          strokeWidth={isActive ? 2.5 : 2}
+                        />
+                        <span className="text-[10px] font-semibold tracking-wide text-center leading-tight">
+                          {s.label}
+                        </span>
                       </Link>
                     );
                   })}
@@ -340,7 +410,9 @@ export function PanelHeader({
     <div className="hairline-b flex flex-wrap items-end justify-between gap-4 px-5 py-6 sm:px-8">
       <div>
         <p className="mono-label text-accent/80">{index}</p>
-        <h1 className="mt-2 font-mono text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+        <h1 className="mt-2 font-mono text-2xl font-bold tracking-tight sm:text-3xl">
+          {title}
+        </h1>
         <p className="text-muted-foreground mt-1 max-w-xl text-sm">{note}</p>
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}

@@ -41,8 +41,8 @@ export function FaqSection() {
               every signature.
             </h2>
             <p className="text-muted-foreground mt-6 max-w-sm text-sm leading-relaxed">
-              Anything not answered here, our clinical implementation lead will answer on a call —
-              not a sales engineer.
+              Anything not answered here, our clinical implementation lead will
+              answer on a call — not a sales engineer.
             </p>
           </div>
 

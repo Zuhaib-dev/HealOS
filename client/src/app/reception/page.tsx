@@ -7,9 +7,21 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "motion/react";
-import { UserPlus, Activity, Landmark, ShieldCheck, RefreshCw, Clock, ArrowRight, UserCheck } from "lucide-react";
+import {
+  UserPlus,
+  Activity,
+  Landmark,
+  ShieldCheck,
+  RefreshCw,
+  Clock,
+  ArrowRight,
+  UserCheck,
+} from "lucide-react";
 import Link from "next/link";
-import { fetchReceptionOverviewApi, ReceptionOverviewData } from "@/lib/api/reception";
+import {
+  fetchReceptionOverviewApi,
+  ReceptionOverviewData,
+} from "@/lib/api/reception";
 import { getSocket } from "@/lib/socket";
 
 // Reusable Cell Shell
@@ -46,13 +58,23 @@ function MetricCard({
         </span>
         <Icon className="size-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />
       </div>
-      <div className="relative z-10 flex flex-col justify-end flex-1" role="status" aria-live="polite">
+      <div
+        className="relative z-10 flex flex-col justify-end flex-1"
+        role="status"
+        aria-live="polite"
+      >
         {isLoading ? (
           <div className="h-12 w-28 bg-foreground/10 rounded-lg animate-pulse mb-2" />
         ) : (
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-5xl font-bold tracking-tight text-foreground">{value}</span>
-            {subValue && <span className="font-mono text-sm font-semibold text-muted-foreground">{subValue}</span>}
+            <span className="font-display text-5xl font-bold tracking-tight text-foreground">
+              {value}
+            </span>
+            {subValue && (
+              <span className="font-mono text-sm font-semibold text-muted-foreground">
+                {subValue}
+              </span>
+            )}
           </div>
         )}
         <p className="text-sm font-medium text-muted-foreground mt-4">{note}</p>
@@ -100,7 +122,11 @@ export default function ReceptionOverview() {
   // Dynamic Greeting based on client hour
   const currentHour = new Date().getHours();
   const greeting =
-    currentHour < 12 ? "Good morning." : currentHour < 17 ? "Good afternoon." : "Good evening.";
+    currentHour < 12
+      ? "Good morning."
+      : currentHour < 17
+        ? "Good afternoon."
+        : "Good evening.";
 
   return (
     <section className="p-4 sm:p-6 lg:p-8 max-w-350 mx-auto min-h-[calc(100vh-4rem)] flex flex-col">
@@ -110,7 +136,9 @@ export default function ReceptionOverview() {
         className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
         <div>
-          <h1 className="font-display text-4xl font-bold tracking-tight text-foreground">{greeting}</h1>
+          <h1 className="font-display text-4xl font-bold tracking-tight text-foreground">
+            {greeting}
+          </h1>
           <p className="text-muted-foreground mt-2">
             Live patient registration, OPD token queue, and billing overview.
           </p>
@@ -122,7 +150,9 @@ export default function ReceptionOverview() {
             disabled={loading}
             className="hairline bg-foreground/3 hover:bg-foreground/6 inline-flex items-center gap-2 px-3 py-2 text-xs font-mono rounded-none transition-colors"
           >
-            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`size-3.5 ${loading ? "animate-spin" : ""}`}
+            />
             Sync Feed
           </button>
           <Link
@@ -187,7 +217,9 @@ export default function ReceptionOverview() {
             <span className="mono-label text-xs uppercase tracking-wider text-muted-foreground font-semibold">
               Live OPD Queue
             </span>
-            <h2 className="font-mono text-base font-bold mt-1">Recent Waiting Patients</h2>
+            <h2 className="font-mono text-base font-bold mt-1">
+              Recent Waiting Patients
+            </h2>
           </div>
           <Link
             href="/reception/queue"
@@ -213,13 +245,17 @@ export default function ReceptionOverview() {
                 className="hairline bg-foreground/2 p-4 flex flex-col justify-between rounded-xl hover:bg-foreground/4 transition-colors"
               >
                 <div className="flex items-start justify-between">
-                  <span className="mono-label text-accent font-bold text-sm">{item.tokenNumber}</span>
+                  <span className="mono-label text-accent font-bold text-sm">
+                    {item.tokenNumber}
+                  </span>
                   <span className="mono-label text-xs bg-accent/10 text-accent px-2 py-0.5">
                     {item.status}
                   </span>
                 </div>
                 <div className="mt-2">
-                  <p className="font-medium text-sm text-foreground">{item.patientName}</p>
+                  <p className="font-medium text-sm text-foreground">
+                    {item.patientName}
+                  </p>
                   <p className="mono-label text-xs text-muted-foreground mt-0.5">
                     {item.department} · {item.doctorName}
                   </p>

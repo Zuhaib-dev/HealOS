@@ -18,7 +18,8 @@ import fs from "fs";
 const imagekit = new ImageKit({
   publicKey: process.env.IMAGEKIT_PUBLIC_KEY || "public_key",
   privateKey: process.env.IMAGEKIT_PRIVATE_KEY || "private_key",
-  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/your_endpoint"
+  urlEndpoint:
+    process.env.IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/your_endpoint",
 });
 
 // ==========================================
@@ -53,21 +54,25 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
       .lean();
 
     // 4. Get Diagnostic Reports
-    const diagnosticReports = await DiagnosticReport.find({ patient: patientId })
+    const diagnosticReports = await DiagnosticReport.find({
+      patient: patientId,
+    })
       .populate("uploadedBy", "name")
       .populate("order", "testName testType")
       .sort({ createdAt: -1 })
       .lean();
 
     // 5. Get Vitals
-    const vitals = await Vitals.find({ patient: patientId }).sort({ createdAt: -1 }).lean();
+    const vitals = await Vitals.find({ patient: patientId })
+      .sort({ createdAt: -1 })
+      .lean();
 
     // 6. Get Invoices
     const invoices = await Invoice.find({ patient: patientId })
       .populate("appointment", "date timeSlot")
       .sort({ createdAt: -1 })
       .lean();
-      
+
     // 7. Get Profile
     const profile = await PatientProfile.findOne({ user: patientId }).lean();
 
@@ -94,7 +99,9 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
 const profileSchema = z.object({
   dob: z.string().optional(),
   gender: z.enum(["MALE", "FEMALE"]).optional(),
-  bloodGroup: z.enum(["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]).optional(),
+  bloodGroup: z
+    .enum(["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"])
+    .optional(),
   emergencyPhone: z.string().optional(),
   emergencyContactName: z.string().optional(),
   allergies: z.array(z.string()).optional(),
@@ -144,19 +151,23 @@ export const payInvoice = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const patientId = req.user?.id;
-    
+
     const invoice = await Invoice.findOne({ _id: id, patient: patientId });
     if (!invoice) {
-      return res.status(404).json({ success: false, message: "Invoice not found or unauthorized" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Invoice not found or unauthorized" });
     }
 
     if (invoice.status === "PAID") {
-      return res.status(400).json({ success: false, message: "Invoice is already paid" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invoice is already paid" });
     }
 
     invoice.status = "PAID" as any; // InvoiceStatus.PAID
     invoice.paidAt = new Date();
-    
+
     // Check if it's an appointment invoice
     if (invoice.appointment) {
       const appointment = await Appointment.findById(invoice.appointment);
@@ -165,7 +176,7 @@ export const payInvoice = async (req: Request, res: Response) => {
         await appointment.save();
       }
     }
-    
+
     await invoice.save();
 
     const io = getIO();
@@ -174,7 +185,9 @@ export const payInvoice = async (req: Request, res: Response) => {
       io.emit("admin:data_changed", { types: ["invoices", "billing"] });
     }
 
-    res.status(200).json({ success: true, message: "Invoice paid successfully", invoice });
+    res
+      .status(200)
+      .json({ success: true, message: "Invoice paid successfully", invoice });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
@@ -209,7 +222,10 @@ export const uploadPatientDocument = async (req: Request, res: Response) => {
         fileUrl = uploadResponse.url;
         fs.unlinkSync(req.file.path);
       } catch (err) {
-        console.warn("ImageKit upload failed, falling back to local storage:", err);
+        console.warn(
+          "ImageKit upload failed, falling back to local storage:",
+          err,
+        );
         fileUrl = `/uploads/reports/${req.file.filename}`;
       }
     }

@@ -17,7 +17,10 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
 
-  const allowedRoleKey = useMemo(() => allowedRoles?.join("|") ?? "", [allowedRoles]);
+  const allowedRoleKey = useMemo(
+    () => allowedRoles?.join("|") ?? "",
+    [allowedRoles],
+  );
   const roles = useMemo(
     () => (allowedRoleKey ? (allowedRoleKey.split("|") as UserRole[]) : []),
     [allowedRoleKey],

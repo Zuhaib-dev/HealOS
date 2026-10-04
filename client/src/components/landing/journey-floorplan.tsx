@@ -32,19 +32,46 @@ export function JourneyFloorplan({ className }: { className?: string }) {
   const reduce = useReducedMotion() ?? false;
 
   return (
-    <svg viewBox="0 0 640 200" fill="none" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 640 200"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+    >
       {/* graph paper */}
       <g className="text-foreground" opacity={0.08}>
         {Array.from({ length: 33 }).map((_, i) => (
-          <line key={`v${i}`} x1={i * 20} y1="0" x2={i * 20} y2="200" stroke="currentColor" strokeWidth="0.5" />
+          <line
+            key={`v${i}`}
+            x1={i * 20}
+            y1="0"
+            x2={i * 20}
+            y2="200"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
         ))}
         {Array.from({ length: 11 }).map((_, i) => (
-          <line key={`h${i}`} x1="0" y1={i * 20} x2="640" y2={i * 20} stroke="currentColor" strokeWidth="0.5" />
+          <line
+            key={`h${i}`}
+            x1="0"
+            y1={i * 20}
+            x2="640"
+            y2={i * 20}
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
         ))}
       </g>
 
       {/* corridor — ghost then drawn */}
-      <path d={PATH} stroke="currentColor" strokeWidth="1" className="text-foreground" opacity={0.18} />
+      <path
+        d={PATH}
+        stroke="currentColor"
+        strokeWidth="1"
+        className="text-foreground"
+        opacity={0.18}
+      />
       <motion.path
         d={PATH}
         stroke="currentColor"
@@ -88,7 +115,12 @@ export function JourneyFloorplan({ className }: { className?: string }) {
             transition={{ duration: 4, repeat: Infinity, delay: i * 0.5 }}
           />
           {/* corner ticks */}
-          <g stroke="currentColor" strokeWidth="1" className="text-brass" opacity={0.9}>
+          <g
+            stroke="currentColor"
+            strokeWidth="1"
+            className="text-brass"
+            opacity={0.9}
+          >
             <path d={`M${b.x} ${b.y + 7}V${b.y}h7`} />
             <path d={`M${b.x + b.w} ${b.y + 7}V${b.y}h-7`} />
             <path d={`M${b.x} ${b.y + b.h - 7}V${b.y + b.h}h7`} />
@@ -113,7 +145,11 @@ export function JourneyFloorplan({ className }: { className?: string }) {
               height="5"
               className="fill-accent"
               animate={reduce ? {} : { opacity: [0.25, 0.9, 0.25] }}
-              transition={{ duration: 2.6, repeat: Infinity, delay: (i + k) * 0.3 }}
+              transition={{
+                duration: 2.6,
+                repeat: Infinity,
+                delay: (i + k) * 0.3,
+              }}
             />
           ))}
         </motion.g>
@@ -123,17 +159,30 @@ export function JourneyFloorplan({ className }: { className?: string }) {
       {!reduce && (
         <>
           <motion.g
-            style={{ offsetPath: `path("${PATH}")`, offsetRotate: "0deg" } as never}
+            style={
+              { offsetPath: `path("${PATH}")`, offsetRotate: "0deg" } as never
+            }
             animate={{ offsetDistance: ["0%", "100%"] } as never}
             transition={{ duration: 11, repeat: Infinity, ease: "linear" }}
           >
-            <circle cx="0" cy="0" r="9" className="fill-accent" opacity={0.18} />
+            <circle
+              cx="0"
+              cy="0"
+              r="9"
+              className="fill-accent"
+              opacity={0.18}
+            />
             <circle cx="0" cy="0" r="4" className="fill-accent" />
           </motion.g>
           <motion.g
             style={{ offsetPath: `path("${PATH}")` } as never}
             animate={{ offsetDistance: ["0%", "100%"] } as never}
-            transition={{ duration: 11, repeat: Infinity, ease: "linear", delay: 4.5 }}
+            transition={{
+              duration: 11,
+              repeat: Infinity,
+              ease: "linear",
+              delay: 4.5,
+            }}
             opacity={0.6}
           >
             <circle cx="0" cy="0" r="3" className="fill-primary-glow" />
@@ -142,7 +191,12 @@ export function JourneyFloorplan({ className }: { className?: string }) {
       )}
 
       {/* frame brackets */}
-      <g className="text-accent" stroke="currentColor" strokeWidth="1.25" opacity={0.75}>
+      <g
+        className="text-accent"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        opacity={0.75}
+      >
         <path d="M2 14V2h12" />
         <path d="M638 14V2h-12" />
         <path d="M2 186v12h12" />

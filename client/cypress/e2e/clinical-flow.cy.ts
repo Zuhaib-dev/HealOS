@@ -21,7 +21,7 @@ describe("Critical Clinical Flows", () => {
     beforeEach(() => {
       // Mock patient login and data
       cy.loginAs("PATIENT");
-      
+
       // Mock the dashboard stats API call
       cy.intercept("GET", "**/api/v1/patient/dashboard**", {
         statusCode: 200,
@@ -34,10 +34,10 @@ describe("Critical Clinical Flows", () => {
             stats: {
               totalAppointments: 2,
               activePrescriptions: 1,
-              unreadReports: 0
-            }
-          }
-        }
+              unreadReports: 0,
+            },
+          },
+        },
       }).as("getPatientDashboard");
     });
 
@@ -56,7 +56,7 @@ describe("Critical Clinical Flows", () => {
     beforeEach(() => {
       // Mock admin login
       cy.loginAs("ADMIN");
-      
+
       // Mock the admin stats API call
       cy.intercept("GET", "**/api/v1/admin/stats**", {
         statusCode: 200,
@@ -66,17 +66,17 @@ describe("Critical Clinical Flows", () => {
             totalPatients: 150,
             totalDoctors: 25,
             totalAppointments: 300,
-            revenue: 45000
-          }
-        }
+            revenue: 45000,
+          },
+        },
       }).as("getAdminStats");
     });
 
     it("should allow an admin to view their dashboard", () => {
       cy.visit("/admin");
       cy.wait("@session");
-      
-      // Since admin stats might be fetched, we can wait if necessary, 
+
+      // Since admin stats might be fetched, we can wait if necessary,
       // but verifying basic rendering is enough for structural E2E.
       cy.contains("System Administration").should("be.visible");
       cy.contains("Manage Users").should("be.visible");

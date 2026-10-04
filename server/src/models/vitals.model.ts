@@ -4,13 +4,13 @@ export interface IVitals extends Document {
   patient: mongoose.Types.ObjectId;
   appointment?: mongoose.Types.ObjectId;
   recordedBy: mongoose.Types.ObjectId; // The Nurse
-  heartRate?: number;       // bpm
+  heartRate?: number; // bpm
   respiratoryRate?: number; // breaths/min
-  spo2?: number;            // %
-  temperature?: number;     // °C
-  bloodPressure?: string;   // e.g. "120/80"
-  weight?: number;          // kg
-  height?: number;          // cm
+  spo2?: number; // %
+  temperature?: number; // °C
+  bloodPressure?: string; // e.g. "120/80"
+  weight?: number; // kg
+  height?: number; // cm
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -30,7 +30,7 @@ const vitalsSchema = new Schema<IVitals>(
     height: { type: Number },
     notes: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 vitalsSchema.index({ patient: 1, createdAt: -1 });

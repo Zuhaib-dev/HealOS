@@ -56,7 +56,14 @@ export interface AppointmentRecord {
   date: string;
   timeSlot: string;
   reason: string;
-  status: "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "IN_CONSULTATION" | "COMPLETED" | "CANCELLED" | string;
+  status:
+    | "PENDING"
+    | "CONFIRMED"
+    | "IN_PROGRESS"
+    | "IN_CONSULTATION"
+    | "COMPLETED"
+    | "CANCELLED"
+    | string;
   createdAt: string;
 }
 
@@ -121,7 +128,7 @@ export const fetchPendingBillsApi = async (): Promise<{
 
 export const payBillApi = async (
   invoiceId: string,
-  paymentMethod: string
+  paymentMethod: string,
 ): Promise<{
   status: string;
   data: { invoice: InvoiceRecord };
@@ -133,7 +140,7 @@ export const payBillApi = async (
 };
 
 export const registerPatientApi = async (
-  payload: RegisterPatientPayload
+  payload: RegisterPatientPayload,
 ): Promise<{
   status: string;
   data: {

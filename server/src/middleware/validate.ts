@@ -12,7 +12,10 @@ type ValidationTarget = "body" | "query" | "params";
  * Validates request data against a Zod schema.
  * Usage: validate(myZodSchema, "body")
  */
-export const validate = (schema: ZodSchema, target: ValidationTarget = "body") => {
+export const validate = (
+  schema: ZodSchema,
+  target: ValidationTarget = "body",
+) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const result = schema.safeParse(req[target]);
 

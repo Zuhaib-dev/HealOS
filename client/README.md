@@ -56,22 +56,26 @@ client/
 ## 🛠️ Development Setup
 
 1. **Install Dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Environment Configuration:**
    Create a `.env.local` file in the `client` directory and populate it with the following:
+
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:5001/api/v1
    NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key
    ```
 
 3. **Run Development Server:**
+
    ```bash
    npm run dev
    ```
-   *The app will be available at `http://localhost:3000`.*
+
+   _The app will be available at `http://localhost:3000`._
 
 4. **Run E2E Tests (Cypress):**
    ```bash
@@ -99,6 +103,6 @@ Full-stack engineer · UI/UX obsessive · Real-time systems nerd
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Zuhaib_Rashid-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/zuhaib-rashid-661345318/)
 [![Twitter](https://img.shields.io/badge/Twitter-@xuhaib__x9-1DA1F2?style=for-the-badge&logo=twitter)](https://x.com/xuhaib_x9)
 
-*Built with obsessive attention to detail, real-world production patterns, and way too much coffee.*
+_Built with obsessive attention to detail, real-world production patterns, and way too much coffee._
 
 </div>

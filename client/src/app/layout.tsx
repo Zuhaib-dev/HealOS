@@ -46,7 +46,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "HealOS | Modern Healthcare Management",
-    description: "The Operating System for Modern Hospitals. Seamlessly unified patient records, revenue analytics, and clinician workflows.",
+    description:
+      "The Operating System for Modern Hospitals. Seamlessly unified patient records, revenue analytics, and clinician workflows.",
     url: "https://healos-theta.vercel.app",
     siteName: "HealOS",
     locale: "en_US",
@@ -84,117 +85,126 @@ export default function RootLayout({
       {
         "@type": "Person",
         "@id": "https://healos-theta.vercel.app/#creator",
-        "name": "Zuhaib Rashid",
-        "description": "Full Stack Developer & Lead Architect of HealOS",
-        "jobTitle": "Full Stack Developer & Founder",
-        "email": "mailto:zuhaibrashid01@gmail.com",
-        "url": "https://zuhaibrashid.com",
-        "sameAs": [
+        name: "Zuhaib Rashid",
+        description: "Full Stack Developer & Lead Architect of HealOS",
+        jobTitle: "Full Stack Developer & Founder",
+        email: "mailto:zuhaibrashid01@gmail.com",
+        url: "https://zuhaibrashid.com",
+        sameAs: [
           "https://github.com/Zuhaib-dev",
           "https://www.linkedin.com/in/zuhaib-rashid-661345318/",
-          "https://x.com/xuhaib_x9"
-        ]
+          "https://x.com/xuhaib_x9",
+        ],
       },
       {
         "@type": "Organization",
         "@id": "https://healos-theta.vercel.app/#organization",
-        "name": "HealOS",
-        "url": "https://healos-theta.vercel.app",
-        "logo": "https://healos-theta.vercel.app/icon.svg",
-        "founder": {
-          "@id": "https://healos-theta.vercel.app/#creator"
+        name: "HealOS",
+        url: "https://healos-theta.vercel.app",
+        logo: "https://healos-theta.vercel.app/icon.svg",
+        founder: {
+          "@id": "https://healos-theta.vercel.app/#creator",
         },
-        "contactPoint": {
+        contactPoint: {
           "@type": "ContactPoint",
-          "telephone": "+1-800-555-1234",
-          "contactType": "customer service",
-          "email": "hello@healos.com"
+          telephone: "+1-800-555-1234",
+          contactType: "customer service",
+          email: "hello@healos.com",
         },
-        "address": {
+        address: {
           "@type": "PostalAddress",
-          "streetAddress": "123 HealOS Ave",
-          "addressLocality": "San Francisco",
-          "addressRegion": "CA",
-          "postalCode": "94105",
-          "addressCountry": "US"
+          streetAddress: "123 HealOS Ave",
+          addressLocality: "San Francisco",
+          addressRegion: "CA",
+          postalCode: "94105",
+          addressCountry: "US",
         },
-        "sameAs": [
+        sameAs: [
           "https://github.com/Zuhaib-dev",
           "https://www.linkedin.com/in/zuhaib-rashid-661345318/",
-          "https://x.com/xuhaib_x9"
-        ]
+          "https://x.com/xuhaib_x9",
+        ],
       },
       {
         "@type": "WebSite",
         "@id": "https://healos-theta.vercel.app/#website",
-        "url": "https://healos-theta.vercel.app",
-        "name": "HealOS",
-        "description": "The Operating System for Modern Hospitals. Seamlessly unified patient records, revenue analytics, and clinician workflows.",
-        "publisher": {
-          "@id": "https://healos-theta.vercel.app/#organization"
+        url: "https://healos-theta.vercel.app",
+        name: "HealOS",
+        description:
+          "The Operating System for Modern Hospitals. Seamlessly unified patient records, revenue analytics, and clinician workflows.",
+        publisher: {
+          "@id": "https://healos-theta.vercel.app/#organization",
         },
-        "author": {
-          "@id": "https://healos-theta.vercel.app/#creator"
-        }
+        author: {
+          "@id": "https://healos-theta.vercel.app/#creator",
+        },
       },
       {
         "@type": "SoftwareApplication",
         "@id": "https://healos-theta.vercel.app/#softwareapplication",
-        "name": "HealOS Healthcare Platform",
-        "operatingSystem": "All",
-        "applicationCategory": "HealthApplication",
-        "url": "https://healos-theta.vercel.app",
-        "description": "Hospital operating system unifying clinical scheduling, EHR records, emergency triage, radiology PACS, and pharmacy dispensing.",
-        "author": {
-          "@id": "https://healos-theta.vercel.app/#creator"
+        name: "HealOS Healthcare Platform",
+        operatingSystem: "All",
+        applicationCategory: "HealthApplication",
+        url: "https://healos-theta.vercel.app",
+        description:
+          "Hospital operating system unifying clinical scheduling, EHR records, emergency triage, radiology PACS, and pharmacy dispensing.",
+        author: {
+          "@id": "https://healos-theta.vercel.app/#creator",
         },
-        "publisher": {
-          "@id": "https://healos-theta.vercel.app/#organization"
+        publisher: {
+          "@id": "https://healos-theta.vercel.app/#organization",
         },
-        "offers": {
+        offers: {
           "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD",
-          "availability": "https://schema.org/InStock"
+          price: "0",
+          priceCurrency: "USD",
+          availability: "https://schema.org/InStock",
         },
-        "featureList": [
+        featureList: [
           "Real-time Emergency Department Triage",
           "Physiological Bedside Vitals Telemetry",
           "Longitudinal Patient EHR Records",
           "Radiology PACS Modality Worklists",
           "Model Context Protocol (MCP) Agent Interface",
-          "REST API 3.1 & OAuth 2.0 Security"
-        ]
+          "REST API 3.1 & OAuth 2.0 Security",
+        ],
       },
       {
         "@type": ["MedicalOrganization", "Hospital"],
         "@id": "https://healos-theta.vercel.app/#medicalorganization",
-        "name": "HealOS Clinical Medical Center",
-        "url": "https://healos-theta.vercel.app",
-        "medicalSpecialty": ["Emergency", "Radiology", "Cardiology", "Pathology", "GeneralPractice"],
-        "hasMap": "https://healos-theta.vercel.app",
-        "parentOrganization": {
-          "@id": "https://healos-theta.vercel.app/#organization"
+        name: "HealOS Clinical Medical Center",
+        url: "https://healos-theta.vercel.app",
+        medicalSpecialty: [
+          "Emergency",
+          "Radiology",
+          "Cardiology",
+          "Pathology",
+          "GeneralPractice",
+        ],
+        hasMap: "https://healos-theta.vercel.app",
+        parentOrganization: {
+          "@id": "https://healos-theta.vercel.app/#organization",
         },
-        "department": [
-          { "@type": "MedicalClinic", "name": "Emergency Department" },
-          { "@type": "MedicalClinic", "name": "Radiology PACS" },
-          { "@type": "MedicalClinic", "name": "Outpatient Clinic" },
-          { "@type": "MedicalClinic", "name": "Pathology Diagnostics" }
-        ]
+        department: [
+          { "@type": "MedicalClinic", name: "Emergency Department" },
+          { "@type": "MedicalClinic", name: "Radiology PACS" },
+          { "@type": "MedicalClinic", name: "Outpatient Clinic" },
+          { "@type": "MedicalClinic", name: "Pathology Diagnostics" },
+        ],
       },
       {
         "@type": "WebAPI",
         "@id": "https://healos-theta.vercel.app/#webapi",
-        "name": "HealOS Clinical API",
-        "description": "HIPAA-compliant RESTful and MCP clinical API for healthcare applications and autonomous agents.",
-        "documentation": "https://healos-theta.vercel.app/developers",
-        "termsOfService": "https://healos-theta.vercel.app/about",
-        "provider": {
-          "@id": "https://healos-theta.vercel.app/#organization"
-        }
-      }
-    ]
+        name: "HealOS Clinical API",
+        description:
+          "HIPAA-compliant RESTful and MCP clinical API for healthcare applications and autonomous agents.",
+        documentation: "https://healos-theta.vercel.app/developers",
+        termsOfService: "https://healos-theta.vercel.app/about",
+        provider: {
+          "@id": "https://healos-theta.vercel.app/#organization",
+        },
+      },
+    ],
   };
 
   return (
@@ -210,9 +220,17 @@ export default function RootLayout({
           href="https://healos-theta.vercel.app/index.md"
           title="Markdown representation"
         />
-        <link rel="preconnect" href="https://ik.imagekit.io" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://ik.imagekit.io"
+          crossOrigin="anonymous"
+        />
         <link rel="dns-prefetch" href="https://ik.imagekit.io" />
-        <link rel="preconnect" href="https://lh3.googleusercontent.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://lh3.googleusercontent.com"
+          crossOrigin="anonymous"
+        />
         <link rel="dns-prefetch" href="https://lh3.googleusercontent.com" />
         <script
           type="application/ld+json"
@@ -221,13 +239,16 @@ export default function RootLayout({
         <script
           id="webmcp-registration"
           dangerouslySetInnerHTML={{
-            __html: `(function(){if(typeof window!=='undefined'){var mc={version:"1.0",tools:[{name:"search_clinical_records",description:"Search patient directory, clinical records, and bed occupancy",parameters:{type:"object",properties:{query:{type:"string",description:"Search query for patient or record"}},required:["query"]}},{name:"book_appointment",description:"Schedule a patient appointment with a physician",parameters:{type:"object",properties:{department:{type:"string"},dateTime:{type:"string",format:"date-time"}},required:["department","dateTime"]}},{name:"triage_patient",description:"Evaluate incoming emergency patient by Emergency Severity Index (ESI 1-5)",parameters:{type:"object",properties:{chief_complaint:{type:"string"},vital_signs:{type:"object"}},required:["chief_complaint"]}}]};window.modelContext=mc;if(typeof navigator!=='undefined'){try{navigator.modelContext=mc;}catch(e){}}}})();`
+            __html: `(function(){if(typeof window!=='undefined'){var mc={version:"1.0",tools:[{name:"search_clinical_records",description:"Search patient directory, clinical records, and bed occupancy",parameters:{type:"object",properties:{query:{type:"string",description:"Search query for patient or record"}},required:["query"]}},{name:"book_appointment",description:"Schedule a patient appointment with a physician",parameters:{type:"object",properties:{department:{type:"string"},dateTime:{type:"string",format:"date-time"}},required:["department","dateTime"]}},{name:"triage_patient",description:"Evaluate incoming emergency patient by Emergency Severity Index (ESI 1-5)",parameters:{type:"object",properties:{chief_complaint:{type:"string"},vital_signs:{type:"object"}},required:["chief_complaint"]}}]};window.modelContext=mc;if(typeof navigator!=='undefined'){try{navigator.modelContext=mc;}catch(e){}}}})();`,
           }}
         />
         <meta name="application-name" content="HealOS" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <meta name="apple-mobile-web-app-title" content="HealOS" />
         <meta name="theme-color" content="#10b981" />
       </head>
@@ -242,9 +263,7 @@ export default function RootLayout({
             <AuthSessionBridge />
             <SoundProvider />
             <WebMcpProvider />
-            <RealtimeSocketProvider>
-              {children}
-            </RealtimeSocketProvider>
+            <RealtimeSocketProvider>{children}</RealtimeSocketProvider>
             <Toaster position="top-right" />
             <CommandMenu />
           </QueryProvider>

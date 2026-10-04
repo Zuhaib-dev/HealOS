@@ -13,12 +13,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const operations = Array.isArray(body.operations) ? body.operations : [];
 
-    const results = operations.map((op: { path?: string; method?: string }, idx: number) => ({
-      index: idx,
-      path: op.path || "/api/v1/unknown",
-      status: 200,
-      body: { success: true, message: "Operation processed in batch" },
-    }));
+    const results = operations.map(
+      (op: { path?: string; method?: string }, idx: number) => ({
+        index: idx,
+        path: op.path || "/api/v1/unknown",
+        status: 200,
+        body: { success: true, message: "Operation processed in batch" },
+      }),
+    );
 
     return NextResponse.json(
       {
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
       {
         status: 200,
         headers: getStandardApiHeaders(idempotencyKey),
-      }
+      },
     );
   } catch {
     return NextResponse.json(
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
       {
         status: 400,
         headers: getStandardApiHeaders(idempotencyKey),
-      }
+      },
     );
   }
 }

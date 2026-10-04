@@ -11,7 +11,7 @@ export function GazeBlobatar(props: BlobatarProps) {
 
   useEffect(() => {
     if (!containerRef.current) return;
-    
+
     // Find the svg inside the container
     const svg = containerRef.current.querySelector("svg");
     if (!svg) return;
@@ -21,7 +21,7 @@ export function GazeBlobatar(props: BlobatarProps) {
 
     // Initialize the gaze driver to follow the pointer
     const driver = gaze(svg, { target: "pointer" });
-    
+
     return () => {
       driver.stop();
     };
@@ -29,7 +29,10 @@ export function GazeBlobatar(props: BlobatarProps) {
 
   // We enforce animate="always" because only SVGs (animated) can move eyes
   return (
-    <div ref={containerRef} className="size-full flex items-center justify-center">
+    <div
+      ref={containerRef}
+      className="size-full flex items-center justify-center"
+    >
       <Blobatar {...(props as any)} animate="always" />
     </div>
   );

@@ -64,6 +64,6 @@ export async function GET(request: NextRequest) {
         Sunset: "Fri, 31 Dec 2027 23:59:59 GMT",
         Link: '<https://healos-theta.vercel.app/developers#deprecation>; rel="deprecation"',
       },
-    }
+    },
   );
 }

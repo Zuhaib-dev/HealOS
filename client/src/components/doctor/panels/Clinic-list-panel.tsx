@@ -2,10 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2 } from "lucide-react";
+import {
+  Check,
+  TriangleAlert,
+  PenLine,
+  Send,
+  X,
+  CheckCircle2,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
-import { updateAppointmentStatusApi, AppointmentRecord, fetchDoctorAppointmentsApi } from "@/lib/api/appointment";
+import {
+  updateAppointmentStatusApi,
+  AppointmentRecord,
+  fetchDoctorAppointmentsApi,
+} from "@/lib/api/appointment";
 import { toast } from "sonner";
 import { ConsultationForm } from "@/components/doctor/shared/consultation-form";
 // imports removed
@@ -29,12 +40,16 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
@@ -55,7 +70,11 @@ function Vitals({ series }: { series: number[] }) {
     .join(" ");
 
   return (
-    <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-8 w-24 shrink-0">
+    <svg
+      viewBox="0 0 100 32"
+      preserveAspectRatio="none"
+      className="h-8 w-24 shrink-0"
+    >
       <motion.polyline
         points={pts}
         fill="none"
@@ -86,8 +105,9 @@ export function ClinicPanel() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [activeConsultation, setActiveConsultation] = useState<AppointmentRecord | null>(null);
-  
+  const [activeConsultation, setActiveConsultation] =
+    useState<AppointmentRecord | null>(null);
+
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -123,7 +143,10 @@ export function ClinicPanel() {
     }
   }, []);
 
-  const handleUpdateStatus = async (id: string, status: "CONFIRMED" | "COMPLETED" | "CANCELLED") => {
+  const handleUpdateStatus = async (
+    id: string,
+    status: "CONFIRMED" | "COMPLETED" | "CANCELLED",
+  ) => {
     let notes: string | undefined = undefined;
 
     if (status === "COMPLETED") {
@@ -164,9 +187,13 @@ export function ClinicPanel() {
         index="03 / clinic"
         title="Assigned Clinic Appointments"
         note="Live patient consultation queue assigned to your clinical schedule."
-        actions={<ActionButton tone="solid" onClick={() => loadAppointments()}>Refresh schedule</ActionButton>}
+        actions={
+          <ActionButton tone="solid" onClick={() => loadAppointments()}>
+            Refresh schedule
+          </ActionButton>
+        }
       />
-      
+
       {/* Dashboard Visualizations */}
       {!loading && appointments.length > 0 && (
         <div className="px-4 sm:px-6 lg:px-8 pb-8 pt-4">
@@ -196,7 +223,10 @@ export function ClinicPanel() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">
+                <td
+                  colSpan={6}
+                  className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse"
+                >
                   Loading clinical schedule...
                 </td>
               </tr>
@@ -208,24 +238,38 @@ export function ClinicPanel() {
                 return (
                   <tr key={a._id} className="hairline-b">
                     <Td>
-                      <span className="mono-label font-bold text-brass">{a.date}</span>
-                      <p className="mono-label text-muted-foreground text-xs">{a.timeSlot}</p>
+                      <span className="mono-label font-bold text-brass">
+                        {a.date}
+                      </span>
+                      <p className="mono-label text-muted-foreground text-xs">
+                        {a.timeSlot}
+                      </p>
                     </Td>
                     <Td>
-                      <span className="font-medium text-foreground">{pat?.name || "Patient"}</span>
-                      <p className="mono-label text-muted-foreground text-[11px]">{pat?.phone || pat?.email}</p>
+                      <span className="font-medium text-foreground">
+                        {pat?.name || "Patient"}
+                      </span>
+                      <p className="mono-label text-muted-foreground text-[11px]">
+                        {pat?.phone || pat?.email}
+                      </p>
                     </Td>
                     <Td>
-                      <span className="mono-label font-semibold">{a.department}</span>
+                      <span className="mono-label font-semibold">
+                        {a.department}
+                      </span>
                     </Td>
                     <Td>
                       <p className="text-sm font-medium">{a.reason}</p>
                       {a.notes && (
-                        <p className="text-xs text-emerald-500 font-mono mt-0.5">Note: {a.notes}</p>
+                        <p className="text-xs text-emerald-500 font-mono mt-0.5">
+                          Note: {a.notes}
+                        </p>
                       )}
                     </Td>
                     <Td>
-                      <span className="mono-label text-muted-foreground">{a.type}</span>
+                      <span className="mono-label text-muted-foreground">
+                        {a.type}
+                      </span>
                     </Td>
                     <Td>
                       <div className="flex items-center gap-2">
@@ -234,7 +278,9 @@ export function ClinicPanel() {
                             <button
                               type="button"
                               disabled={isBusy}
-                              onClick={() => handleUpdateStatus(a._id, "CONFIRMED")}
+                              onClick={() =>
+                                handleUpdateStatus(a._id, "CONFIRMED")
+                              }
                               className="hairline mono-label bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 px-2.5 py-1 text-xs rounded hover:opacity-80"
                             >
                               Confirm
@@ -242,7 +288,9 @@ export function ClinicPanel() {
                             <button
                               type="button"
                               disabled={isBusy}
-                              onClick={() => handleUpdateStatus(a._id, "CANCELLED")}
+                              onClick={() =>
+                                handleUpdateStatus(a._id, "CANCELLED")
+                              }
                               className="hairline mono-label text-destructive px-2 py-1 text-xs rounded hover:bg-destructive/10"
                             >
                               Cancel
@@ -255,7 +303,9 @@ export function ClinicPanel() {
                             <button
                               type="button"
                               disabled={isBusy}
-                              onClick={() => handleUpdateStatus(a._id, "COMPLETED")}
+                              onClick={() =>
+                                handleUpdateStatus(a._id, "COMPLETED")
+                              }
                               className="hairline mono-label bg-primary/15 text-primary border-primary/30 px-2.5 py-1 text-xs rounded font-bold hover:opacity-80"
                             >
                               Mark Completed
@@ -277,7 +327,10 @@ export function ClinicPanel() {
               })
             ) : (
               <tr>
-                <td colSpan={6} className="p-8 text-center mono-label text-xs text-muted-foreground">
+                <td
+                  colSpan={6}
+                  className="p-8 text-center mono-label text-xs text-muted-foreground"
+                >
                   No appointments scheduled.
                 </td>
               </tr>
@@ -285,7 +338,7 @@ export function ClinicPanel() {
           </tbody>
         </table>
       </div>
-      
+
       {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-border/40 bg-background">

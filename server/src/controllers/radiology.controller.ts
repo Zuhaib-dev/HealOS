@@ -2,7 +2,13 @@ import { Request, Response } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { DiagnosticOrder, DiagnosticReport, Invoice, InvoiceStatus, InvoicePaymentMethod } from "../models/index.js";
+import {
+  DiagnosticOrder,
+  DiagnosticReport,
+  Invoice,
+  InvoiceStatus,
+  InvoicePaymentMethod,
+} from "../models/index.js";
 import { AppError } from "../middleware/error-handler.js";
 import ImageKit from "imagekit";
 
@@ -10,7 +16,8 @@ import ImageKit from "imagekit";
 const imagekit = new ImageKit({
   publicKey: process.env.IMAGEKIT_PUBLIC_KEY || "public_key",
   privateKey: process.env.IMAGEKIT_PRIVATE_KEY || "private_key",
-  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/your_endpoint"
+  urlEndpoint:
+    process.env.IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/your_endpoint",
 });
 
 // Ensure uploads directory exists
@@ -39,7 +46,12 @@ export const upload = multer({
     if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new AppError("Invalid file type. Only PDF, JPG, and PNG are allowed.", 400));
+      cb(
+        new AppError(
+          "Invalid file type. Only PDF, JPG, and PNG are allowed.",
+          400,
+        ),
+      );
     }
   },
 });
@@ -47,7 +59,10 @@ export const upload = multer({
 // ==========================================
 // 1. Get Pending/All Orders
 // ==========================================
-export const getOrders = async (_req: Request, res: Response): Promise<void> => {
+export const getOrders = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const orders = await DiagnosticOrder.find({ testType: "RADIOLOGY" })
       .populate("patient", "name phone")
@@ -87,14 +102,17 @@ export const createRadiologyBill = async (req: Request, res: Response) => {
       payer: "self",
       insuranceCoverage: 0,
     });
-    
+
     const { getIO } = await import("../socket.js");
     const io = getIO();
     if (io) io.emit("invoice_created", { invoice });
 
     res.status(201).json({ success: true, invoice });
   } catch (error: any) {
-    res.status(error.statusCode || 500).json({ success: false, message: error.message || "Failed to create bill" });
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Failed to create bill",
+    });
   }
 };
 
@@ -109,25 +127,32 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     if (!status) {
       throw new AppError("Status is required", 400);
     }
-    
+
     if (paymentMethod && price) {
-       await Invoice.create({
-          patient: (await DiagnosticOrder.findById(id))?.patient,
-          issuedBy: req.user?.id,
-          items: [{ description: (await DiagnosticOrder.findById(id))?.testName || "Radiology Scan", amount: price }],
-          totalAmount: price,
-          status: InvoiceStatus.PAID,
-          paymentMethod: paymentMethod as InvoicePaymentMethod,
-          payer: "self",
-          insuranceCoverage: 0,
-          paidAt: new Date(),
-       });
+      await Invoice.create({
+        patient: (await DiagnosticOrder.findById(id))?.patient,
+        issuedBy: req.user?.id,
+        items: [
+          {
+            description:
+              (await DiagnosticOrder.findById(id))?.testName ||
+              "Radiology Scan",
+            amount: price,
+          },
+        ],
+        totalAmount: price,
+        status: InvoiceStatus.PAID,
+        paymentMethod: paymentMethod as InvoicePaymentMethod,
+        payer: "self",
+        insuranceCoverage: 0,
+        paidAt: new Date(),
+      });
     }
 
     const order = await DiagnosticOrder.findByIdAndUpdate(
       id,
       { status },
-      { new: true }
+      { new: true },
     );
 
     if (!order) {
@@ -209,7 +234,10 @@ export const uploadReport = async (req: Request, res: Response) => {
 // ==========================================
 // 4. Get Documents (Reports)
 // ==========================================
-export const getDocuments = async (_req: Request, res: Response): Promise<void> => {
+export const getDocuments = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const documents = await DiagnosticReport.find()
       .populate("patient", "name")
@@ -234,7 +262,10 @@ export const getDocuments = async (_req: Request, res: Response): Promise<void> 
 // ==========================================
 // 5. Get Report Templates
 // ==========================================
-export const getTemplates = async (_req: Request, res: Response): Promise<void> => {
+export const getTemplates = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { ReportTemplate } = await import("../models/index.js");
     const templates = await ReportTemplate.find().lean();
@@ -247,7 +278,10 @@ export const getTemplates = async (_req: Request, res: Response): Promise<void> 
 // ==========================================
 // 6. Get Modalities
 // ==========================================
-export const getModalities = async (_req: Request, res: Response): Promise<void> => {
+export const getModalities = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { ModalityMachine } = await import("../models/index.js");
     const modalities = await ModalityMachine.find().lean();
@@ -260,10 +294,15 @@ export const getModalities = async (_req: Request, res: Response): Promise<void>
 // ==========================================
 // 7. Get Critical Findings
 // ==========================================
-export const getCriticalFindings = async (_req: Request, res: Response): Promise<void> => {
+export const getCriticalFindings = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { CriticalFinding } = await import("../models/index.js");
-    const findings = await CriticalFinding.find().sort({ createdAt: -1 }).lean();
+    const findings = await CriticalFinding.find()
+      .sort({ createdAt: -1 })
+      .lean();
     res.status(200).json({ status: "success", data: { findings } });
   } catch (error: any) {
     res.status(500).json({ status: "error", message: error.message });
@@ -273,7 +312,10 @@ export const getCriticalFindings = async (_req: Request, res: Response): Promise
 // ==========================================
 // 8. Get Bookings
 // ==========================================
-export const getBookings = async (_req: Request, res: Response): Promise<void> => {
+export const getBookings = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { RadiologyBooking } = await import("../models/index.js");
     const bookings = await RadiologyBooking.find().sort({ time: 1 }).lean();
@@ -288,12 +330,25 @@ export const getBookings = async (_req: Request, res: Response): Promise<void> =
 // ==========================================
 export const getStats = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const totalOrders = await DiagnosticOrder.countDocuments({ testType: "RADIOLOGY" });
-    const pendingOrders = await DiagnosticOrder.countDocuments({ testType: "RADIOLOGY", status: { $in: ["PENDING", "IN_PROGRESS"] } });
+    const totalOrders = await DiagnosticOrder.countDocuments({
+      testType: "RADIOLOGY",
+    });
+    const pendingOrders = await DiagnosticOrder.countDocuments({
+      testType: "RADIOLOGY",
+      status: { $in: ["PENDING", "IN_PROGRESS"] },
+    });
     const stats = [
-      { label: "Studies today", value: totalOrders.toString(), note: `${pendingOrders} remaining` },
+      {
+        label: "Studies today",
+        value: totalOrders.toString(),
+        note: `${pendingOrders} remaining`,
+      },
       { label: "Median report TAT", value: "24m", note: "stat SLA 30m" },
-      { label: "Unreported backlog", value: pendingOrders.toString(), note: "—" },
+      {
+        label: "Unreported backlog",
+        value: pendingOrders.toString(),
+        note: "—",
+      },
       { label: "Reject / repeat rate", value: "1.8%", note: "target < 3%" },
     ];
     res.status(200).json({ status: "success", data: { stats } });

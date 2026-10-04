@@ -31,7 +31,8 @@ export default function GlobalError({
             Something went wrong
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            An unexpected error occurred while rendering this view. You can attempt to restore the session or return to safety.
+            An unexpected error occurred while rendering this view. You can
+            attempt to restore the session or return to safety.
           </p>
           {error.digest && (
             <p className="mono-label text-[11px] text-muted-foreground/70 pt-1">

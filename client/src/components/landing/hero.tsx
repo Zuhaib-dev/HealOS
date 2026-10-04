@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { VitalsInstrument } from "./illustrations";
 import { useAuthStore } from "@/store/use-auth-store";
-import { Calendar, Stethoscope, ArrowRight, ShieldCheck, Activity } from "lucide-react";
+import {
+  Calendar,
+  Stethoscope,
+  ArrowRight,
+  ShieldCheck,
+  Activity,
+} from "lucide-react";
 
 const readouts = [
   { k: "Beds live", v: "1 284", d: "94% utilisation" },
@@ -68,30 +74,36 @@ export function Hero() {
               </motion.div>
 
               <h1 className="font-display text-[clamp(2.4rem,6vw,4.6rem)] leading-[0.95] font-bold tracking-[-0.03em]">
-                {["Run the whole", "hospital from", "one instrument."].map((row, i) => (
-                  <motion.span
-                    key={row}
-                    className="block overflow-hidden"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 + i * 0.12 }}
-                  >
+                {["Run the whole", "hospital from", "one instrument."].map(
+                  (row, i) => (
                     <motion.span
-                      className="block"
-                      initial={{ y: "110%" }}
-                      animate={{ y: "0%" }}
-                      transition={{ duration: 0.85, delay: 0.1 + i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+                      key={row}
+                      className="block overflow-hidden"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.1 + i * 0.12 }}
                     >
-                      {i === 2 ? (
-                        <>
-                          one <span className="text-brass">instrument</span>.
-                        </>
-                      ) : (
-                        row
-                      )}
+                      <motion.span
+                        className="block"
+                        initial={{ y: "110%" }}
+                        animate={{ y: "0%" }}
+                        transition={{
+                          duration: 0.85,
+                          delay: 0.1 + i * 0.12,
+                          ease: [0.16, 1, 0.3, 1],
+                        }}
+                      >
+                        {i === 2 ? (
+                          <>
+                            one <span className="text-brass">instrument</span>.
+                          </>
+                        ) : (
+                          row
+                        )}
+                      </motion.span>
                     </motion.span>
-                  </motion.span>
-                ))}
+                  ),
+                )}
               </h1>
 
               <motion.p
@@ -100,7 +112,9 @@ export function Hero() {
                 transition={{ duration: 0.7, delay: 0.55 }}
                 className="text-muted-foreground mt-8 max-w-xl text-[1.0625rem] leading-relaxed"
               >
-                HealOS connects patient scheduling, doctor consultations, DICOM radiology imaging, and hospital billing into one unified calibrated surface for clinicians and patients.
+                HealOS connects patient scheduling, doctor consultations, DICOM
+                radiology imaging, and hospital billing into one unified
+                calibrated surface for clinicians and patients.
               </motion.p>
 
               {/* Action Buttons */}
@@ -123,7 +137,11 @@ export function Hero() {
                     <motion.span
                       initial={{ x: 0 }}
                       whileHover={{ x: 4 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 10,
+                      }}
                       className="inline-block"
                     >
                       <ArrowRight className="size-4" />
@@ -132,7 +150,11 @@ export function Hero() {
                   <div className="absolute inset-0 z-0 bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
                 </motion.button>
 
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full sm:w-auto"
+                >
                   <Link
                     href="/onboarding"
                     className="group flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-border/80 bg-background/50 px-7 py-4 text-xs font-semibold text-foreground shadow-sm backdrop-blur-sm transition-colors hover:border-emerald-500/30 hover:bg-muted/80 mono-label"
@@ -151,13 +173,15 @@ export function Hero() {
                 className="mt-8 flex flex-wrap items-center gap-4 pt-6 border-t border-border/40 font-mono text-xs text-muted-foreground"
               >
                 <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="size-4 text-emerald-500" /> Instant OTP Auth
+                  <ShieldCheck className="size-4 text-emerald-500" /> Instant
+                  OTP Auth
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Activity className="size-4 text-brass" /> Real-Time Telemetry
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Calendar className="size-4 text-primary" /> 24/7 Patient Booking
+                  <Calendar className="size-4 text-primary" /> 24/7 Patient
+                  Booking
                 </span>
               </motion.div>
             </div>
@@ -190,9 +214,13 @@ export function Hero() {
                     transition={{ delay: 0.6 + i * 0.12 }}
                     className="hairline-b flex items-baseline justify-between gap-4 py-5"
                   >
-                    <span className="mono-label text-muted-foreground">{r.k}</span>
+                    <span className="mono-label text-muted-foreground">
+                      {r.k}
+                    </span>
                     <span className="text-right">
-                      <span className="font-display block text-2xl font-bold tracking-tight">{r.v}</span>
+                      <span className="font-display block text-2xl font-bold tracking-tight">
+                        {r.v}
+                      </span>
                       <span className="mono-label text-brass">{r.d}</span>
                     </span>
                   </motion.div>

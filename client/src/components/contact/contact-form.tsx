@@ -3,9 +3,21 @@ import { motion, AnimatePresence } from "motion/react";
 import { z } from "zod";
 
 const enquirySchema = z.object({
-  name: z.string().trim().min(2, "Enter your full name").max(80, "Name is too long"),
-  email: z.string().trim().email("Enter a valid work email").max(160, "Email is too long"),
-  organisation: z.string().trim().min(2, "Enter your hospital or organisation").max(120, "Too long"),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Enter your full name")
+    .max(80, "Name is too long"),
+  email: z
+    .string()
+    .trim()
+    .email("Enter a valid work email")
+    .max(160, "Email is too long"),
+  organisation: z
+    .string()
+    .trim()
+    .min(2, "Enter your hospital or organisation")
+    .max(120, "Too long"),
   role: z.string().trim().min(1, "Select your role"),
   beds: z.string().trim().min(1, "Select facility size"),
   topic: z.string().trim().min(1, "Select a subject"),
@@ -19,8 +31,20 @@ const enquirySchema = z.object({
 
 type Field = keyof z.infer<typeof enquirySchema>;
 
-const roles = ["Clinician", "Hospital administrator", "CIO / IT lead", "Procurement", "Other"];
-const bedBands = ["< 100 beds", "100–299 beds", "300–699 beds", "700+ beds", "Multi-site network"];
+const roles = [
+  "Clinician",
+  "Hospital administrator",
+  "CIO / IT lead",
+  "Procurement",
+  "Other",
+];
+const bedBands = [
+  "< 100 beds",
+  "100–299 beds",
+  "300–699 beds",
+  "700+ beds",
+  "Multi-site network",
+];
 const topics = [
   "Product walkthrough",
   "Implementation & migration",
@@ -29,7 +53,11 @@ const topics = [
   "Existing deployment support",
   "Partnership or press",
 ];
-const urgencies = ["Planning (this quarter)", "Evaluating now", "Live incident"];
+const urgencies = [
+  "Planning (this quarter)",
+  "Evaluating now",
+  "Live incident",
+];
 
 const initial: Record<Field, string> = {
   name: "",
@@ -90,10 +118,16 @@ export function ContactForm() {
             </h3>
             <p className="text-muted-foreground mt-5 max-w-xl leading-relaxed">
               Routed to{" "}
-              <span className="text-foreground">{values.topic.toLowerCase()}</span> with{" "}
-              <span className="text-foreground">{values.urgency.toLowerCase()}</span> priority. A
-              named specialist replies to {values.email} — clinical incidents inside 15 minutes,
-              everything else inside one working day.
+              <span className="text-foreground">
+                {values.topic.toLowerCase()}
+              </span>{" "}
+              with{" "}
+              <span className="text-foreground">
+                {values.urgency.toLowerCase()}
+              </span>{" "}
+              priority. A named specialist replies to {values.email} — clinical
+              incidents inside 15 minutes, everything else inside one working
+              day.
             </p>
             <button
               type="button"
@@ -115,12 +149,55 @@ export function ContactForm() {
             noValidate
             className="grid grid-cols-1 gap-x-10 gap-y-8 py-12 sm:grid-cols-2"
           >
-            <Text label="Full name" field="name" value={values.name} error={errors.name} onChange={set} placeholder="Dr. Anaya Rao" />
-            <Text label="Work email" field="email" value={values.email} error={errors.email} onChange={set} placeholder="a.rao@hospital.org" type="email" />
-            <Text label="Hospital / organisation" field="organisation" value={values.organisation} error={errors.organisation} onChange={set} placeholder="Northside General" />
-            <Select label="Your role" field="role" value={values.role} error={errors.role} onChange={set} options={roles} />
-            <Select label="Facility size" field="beds" value={values.beds} error={errors.beds} onChange={set} options={bedBands} />
-            <Select label="Subject" field="topic" value={values.topic} error={errors.topic} onChange={set} options={topics} />
+            <Text
+              label="Full name"
+              field="name"
+              value={values.name}
+              error={errors.name}
+              onChange={set}
+              placeholder="Dr. Anaya Rao"
+            />
+            <Text
+              label="Work email"
+              field="email"
+              value={values.email}
+              error={errors.email}
+              onChange={set}
+              placeholder="a.rao@hospital.org"
+              type="email"
+            />
+            <Text
+              label="Hospital / organisation"
+              field="organisation"
+              value={values.organisation}
+              error={errors.organisation}
+              onChange={set}
+              placeholder="Northside General"
+            />
+            <Select
+              label="Your role"
+              field="role"
+              value={values.role}
+              error={errors.role}
+              onChange={set}
+              options={roles}
+            />
+            <Select
+              label="Facility size"
+              field="beds"
+              value={values.beds}
+              error={errors.beds}
+              onChange={set}
+              options={bedBands}
+            />
+            <Select
+              label="Subject"
+              field="topic"
+              value={values.topic}
+              error={errors.topic}
+              onChange={set}
+              options={topics}
+            />
 
             <div className="sm:col-span-2">
               <p className="mono-label text-brass">Urgency</p>
@@ -143,7 +220,11 @@ export function ContactForm() {
                   );
                 })}
               </div>
-              {errors.urgency && <p className="mono-label text-destructive mt-3">{errors.urgency}</p>}
+              {errors.urgency && (
+                <p className="mono-label text-destructive mt-3">
+                  {errors.urgency}
+                </p>
+              )}
             </div>
 
             <div className="sm:col-span-2">
@@ -160,7 +241,10 @@ export function ContactForm() {
                 className="hairline-b placeholder:text-muted-foreground/50 mt-4 w-full resize-none bg-transparent pb-3 text-lg outline-none transition-colors focus:border-b-accent"
               />
               <div className="mono-label text-muted-foreground mt-3 flex justify-between">
-                <span>{errors.message ?? "No patient identifiable information, please."}</span>
+                <span>
+                  {errors.message ??
+                    "No patient identifiable information, please."}
+                </span>
                 <span>{values.message.length} / 1200</span>
               </div>
             </div>
@@ -172,7 +256,9 @@ export function ContactForm() {
                 className="bg-foreground text-background mono-label group inline-flex items-center gap-3 px-7 py-4 transition-opacity hover:opacity-85 disabled:opacity-60"
               >
                 {isSubmitting ? "Routing…" : "Open a ticket"}
-                <span className="transition-transform group-hover:translate-x-1">→</span>
+                <span className="transition-transform group-hover:translate-x-1">
+                  →
+                </span>
               </button>
               <p className="mono-label text-muted-foreground">
                 Encrypted in transit · Retained 24 months · No marketing lists

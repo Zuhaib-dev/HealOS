@@ -1,6 +1,18 @@
 import { Router } from "express";
 import { verifyToken, requireRole } from "../middleware/auth.middleware.js";
-import { getOrders, updateOrderStatus, uploadReport, upload, getDocuments, getTemplates, getModalities, getCriticalFindings, getBookings, getStats, createRadiologyBill } from "../controllers/radiology.controller.js";
+import {
+  getOrders,
+  updateOrderStatus,
+  uploadReport,
+  upload,
+  getDocuments,
+  getTemplates,
+  getModalities,
+  getCriticalFindings,
+  getBookings,
+  getStats,
+  createRadiologyBill,
+} from "../controllers/radiology.controller.js";
 import { UserRole } from "../models/user.model.js";
 
 const router = Router();

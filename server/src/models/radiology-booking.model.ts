@@ -16,9 +16,16 @@ const radiologyBookingSchema = new Schema<IRadiologyBooking>(
     room: { type: String, required: true },
     patientName: { type: String },
     study: { type: String },
-    state: { type: String, enum: ["booked", "open", "blocked"], required: true },
+    state: {
+      type: String,
+      enum: ["booked", "open", "blocked"],
+      required: true,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const RadiologyBooking = mongoose.model<IRadiologyBooking>("RadiologyBooking", radiologyBookingSchema);
+export const RadiologyBooking = mongoose.model<IRadiologyBooking>(
+  "RadiologyBooking",
+  radiologyBookingSchema,
+);

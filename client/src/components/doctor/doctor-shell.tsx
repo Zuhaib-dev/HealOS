@@ -20,7 +20,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
 } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -28,7 +28,14 @@ import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { NotificationBell } from "@/components/shared/notification-bell";
 import { useAuthStore } from "@/store/use-auth-store";
 import { useUIStore } from "@/store/use-ui-store";
-import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle, DrawerHeader, DrawerClose } from "@/components/ui/drawer";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTrigger,
+  DrawerTitle,
+  DrawerHeader,
+  DrawerClose,
+} from "@/components/ui/drawer";
 import { UserCircle, MoreHorizontal } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 
@@ -48,24 +55,25 @@ const mainMobileTabs = ["shift", "clinic", "rounds", "profile"];
 
 export type DoctorSectionId = (typeof doctorSections)[number]["id"];
 
-export function DoctorShell({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function DoctorShell({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const { user } = useAuthStore();
   const { isSidebarCollapsed, toggleSidebar } = useUIStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const pathname = usePathname();
 
-  const currentSection = doctorSections.find((s) =>
-    s.id === "shift" ? pathname === "/doctor" : pathname.startsWith(`/doctor/${s.id}`)
-  ) || doctorSections[0];
+  const currentSection =
+    doctorSections.find((s) =>
+      s.id === "shift"
+        ? pathname === "/doctor"
+        : pathname.startsWith(`/doctor/${s.id}`),
+    ) || doctorSections[0];
 
   // Helper to check if a section is active
   const isSectionActive = (id: string) => {
-    return id === "shift" ? pathname === "/doctor" : pathname.startsWith(`/doctor/${id}`);
+    return id === "shift"
+      ? pathname === "/doctor"
+      : pathname.startsWith(`/doctor/${id}`);
   };
 
   return (
@@ -74,7 +82,12 @@ export function DoctorShell({
       <header className="bg-background/90 border-b border-border/60 sticky top-0 z-40 backdrop-blur-md transition-all">
         <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-8">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-3 group" aria-label="HealOS home" title="HealOS home">
+            <Link
+              href="/"
+              className="flex items-center gap-3 group"
+              aria-label="HealOS home"
+              title="HealOS home"
+            >
               <HealOSLogo size={30} />
             </Link>
 
@@ -93,8 +106,11 @@ export function DoctorShell({
           {/* Search bar instrument */}
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("open-command-menu"))}
-            aria-label="Search patients, MRN, lab results, prescriptions" title="Search patients, MRN, lab results, prescriptions"
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("open-command-menu"))
+            }
+            aria-label="Search patients, MRN, lab results, prescriptions"
+            title="Search patients, MRN, lab results, prescriptions"
             className="hidden lg:flex w-80 items-center gap-2.5 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:border-primary/50 transition-all text-left cursor-pointer"
           >
             <Search className="text-muted-foreground size-3.5 shrink-0" />
@@ -122,7 +138,7 @@ export function DoctorShell({
       {/* Main Layout Container */}
       <div className="flex">
         {/* Sidebar Navigation */}
-        <aside 
+        <aside
           className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? "w-18 items-center px-2" : "w-64"}`}
         >
           {isSidebarCollapsed ? (
@@ -145,7 +161,11 @@ export function DoctorShell({
             </div>
           )}
 
-          <nav aria-label="Doctor portal sidebar navigation" title="Doctor portal sidebar navigation" className="flex flex-col gap-1 w-full">
+          <nav
+            aria-label="Doctor portal sidebar navigation"
+            title="Doctor portal sidebar navigation"
+            className="flex flex-col gap-1 w-full"
+          >
             {doctorSections.map((s) => {
               const Icon = s.icon;
               const isActive = isSectionActive(s.id);
@@ -161,16 +181,23 @@ export function DoctorShell({
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                   }`}
                 >
-                  <Icon className={`size-4 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === 'settings' ? 'group-hover:rotate-90' : 'group-hover:scale-[1.15]'}`}`} />
+                  <Icon
+                    className={`size-4 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === "settings" ? "group-hover:rotate-90" : "group-hover:scale-[1.15]"}`}`}
+                  />
                   {!isSidebarCollapsed && <span>{s.label}</span>}
                 </Link>
               );
             })}
           </nav>
 
-          <div className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3.5"}`}>
+          <div
+            className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3.5"}`}
+          >
             {isSidebarCollapsed ? (
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" title="On Shift & Available" />
+              <span
+                className="size-2 rounded-full bg-emerald-500 animate-pulse"
+                title="On Shift & Available"
+              />
             ) : (
               <>
                 <div className="flex items-center justify-between">
@@ -179,20 +206,27 @@ export function DoctorShell({
                   </span>
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
-                <p className="font-semibold text-xs mt-1.5 text-foreground">On Shift &amp; Available</p>
+                <p className="font-semibold text-xs mt-1.5 text-foreground">
+                  On Shift &amp; Available
+                </p>
                 <p className="mono-label text-[10px] text-muted-foreground mt-0.5 font-mono">
                   MongoDB Atlas Sync Active
                 </p>
               </>
             )}
           </div>
-          
+
           <button
             onClick={toggleSidebar}
             className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 ${isSidebarCollapsed ? "" : "w-full"}`}
-            aria-label="Toggle sidebar" title="Toggle sidebar"
+            aria-label="Toggle sidebar"
+            title="Toggle sidebar"
           >
-            {isSidebarCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen className="size-4.5" />
+            ) : (
+              <PanelLeftClose className="size-4.5" />
+            )}
           </button>
         </aside>
 
@@ -200,10 +234,12 @@ export function DoctorShell({
         <main className="min-w-0 flex-1 relative pb-20 md:pb-0">
           {/* Mobile "Header" - just the title of the current section */}
           <div className="md:hidden border-b border-border/60 bg-card/40 p-4 sticky top-16 z-30 backdrop-blur-md flex items-center gap-2">
-            {currentSection && <currentSection.icon className="size-4 text-primary" />}
+            {currentSection && (
+              <currentSection.icon className="size-4 text-primary" />
+            )}
             <h1 className="font-semibold text-sm">{currentSection?.label}</h1>
           </div>
-          
+
           <div className="mx-auto w-full">
             <AnimatePresence mode="wait">
               <motion.div
@@ -222,7 +258,11 @@ export function DoctorShell({
 
       {/* Persistent Bottom Navigation Bar - Mobile Only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
-        <nav aria-label="Doctor portal mobile navigation" title="Doctor portal mobile navigation" className="flex justify-around items-center px-2 py-1.5">
+        <nav
+          aria-label="Doctor portal mobile navigation"
+          title="Doctor portal mobile navigation"
+          className="flex justify-around items-center px-2 py-1.5"
+        >
           {doctorSections
             .filter((s) => mainMobileTabs.includes(s.id))
             .map((s) => {
@@ -236,18 +276,27 @@ export function DoctorShell({
                   onClick={() => setIsMoreOpen(false)}
                   className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
                 >
-                  <motion.div 
-                    animate={isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }}
+                  <motion.div
+                    animate={
+                      isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }
+                    }
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                      isActive
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground"
                     }`}
                   >
-                    <Icon className={`size-5 ${isActive ? "fill-primary/20" : ""}`} strokeWidth={isActive ? 2.5 : 2} />
+                    <Icon
+                      className={`size-5 ${isActive ? "fill-primary/20" : ""}`}
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
                   </motion.div>
-                  <span 
+                  <span
                     className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                      isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                      isActive
+                        ? "text-primary font-semibold"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {s.label.split(" ")[0]}
@@ -265,16 +314,28 @@ export function DoctorShell({
               >
                 <div
                   className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                    isMoreOpen || !mainMobileTabs.some(id => isSectionActive(id))
+                    isMoreOpen ||
+                    !mainMobileTabs.some((id) => isSectionActive(id))
                       ? "text-primary"
                       : "text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
-                  <MoreHorizontal className="size-5" strokeWidth={isMoreOpen || !mainMobileTabs.some(id => isSectionActive(id)) ? 2.5 : 2} />
+                  <MoreHorizontal
+                    className="size-5"
+                    strokeWidth={
+                      isMoreOpen ||
+                      !mainMobileTabs.some((id) => isSectionActive(id))
+                        ? 2.5
+                        : 2
+                    }
+                  />
                 </div>
                 <span
                   className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                    isMoreOpen || !mainMobileTabs.some(id => isSectionActive(id)) ? "text-primary font-semibold" : "text-muted-foreground"
+                    isMoreOpen ||
+                    !mainMobileTabs.some((id) => isSectionActive(id))
+                      ? "text-primary font-semibold"
+                      : "text-muted-foreground"
                   }`}
                 >
                   More
@@ -295,7 +356,8 @@ export function DoctorShell({
                   .map((s) => {
                     const Icon = s.icon;
                     const isActive = isSectionActive(s.id);
-                    const href = s.id === "shift" ? "/doctor" : `/doctor/${s.id}`;
+                    const href =
+                      s.id === "shift" ? "/doctor" : `/doctor/${s.id}`;
                     return (
                       <Link
                         key={s.id}
@@ -314,7 +376,9 @@ export function DoctorShell({
                         </div>
                         <span
                           className={`text-xs text-center leading-tight ${
-                            isActive ? "font-semibold text-foreground" : "text-muted-foreground"
+                            isActive
+                              ? "font-semibold text-foreground"
+                              : "text-muted-foreground"
                           }`}
                         >
                           {s.label}

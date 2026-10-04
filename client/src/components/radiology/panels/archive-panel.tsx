@@ -34,17 +34,36 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
-function Td({ children, colSpan, className }: { children?: React.ReactNode, colSpan?: number, className?: string }) {
-  return <td colSpan={colSpan} className={`px-4 py-3.5 align-middle text-sm ${className || ""}`}>{children}</td>;
+function Td({
+  children,
+  colSpan,
+  className,
+}: {
+  children?: React.ReactNode;
+  colSpan?: number;
+  className?: string;
+}) {
+  return (
+    <td
+      colSpan={colSpan}
+      className={`px-4 py-3.5 align-middle text-sm ${className || ""}`}
+    >
+      {children}
+    </td>
+  );
 }
 
 /** Animated scanner glyph — hand-drawn SVG, no raster assets. */
@@ -60,8 +79,24 @@ function ScannerGlyph({ active }: { active: boolean }) {
         stroke="var(--hairline)"
         strokeWidth="1"
       />
-      <circle cx="60" cy="36" r="17" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.5" />
-      <circle cx="60" cy="36" r="8" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.8" />
+      <circle
+        cx="60"
+        cy="36"
+        r="17"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.5"
+      />
+      <circle
+        cx="60"
+        cy="36"
+        r="8"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.8"
+      />
       {active && (
         <motion.line
           x1="8"
@@ -91,7 +126,9 @@ export function ArchivePanel() {
   }, []);
 
   const rows = documents.filter((d) =>
-    `${d.fileName} ${d.patient?.firstName} ${d.patient?.lastName} ${d.order?.accessionNumber}`.toLowerCase().includes(q.toLowerCase()),
+    `${d.fileName} ${d.patient?.firstName} ${d.patient?.lastName} ${d.order?.accessionNumber}`
+      .toLowerCase()
+      .includes(q.toLowerCase()),
   );
 
   return (
@@ -109,10 +146,13 @@ export function ArchivePanel() {
       />
 
       <div className="hairline-b px-5 py-4 sm:px-8">
-        <label htmlFor="radiology-archive-filter" className="sr-only">Filter archive</label>
+        <label htmlFor="radiology-archive-filter" className="sr-only">
+          Filter archive
+        </label>
         <input
           id="radiology-archive-filter"
-          aria-label="Filter by file, patient or accession" title="Filter by file, patient or accession"
+          aria-label="Filter by file, patient or accession"
+          title="Filter by file, patient or accession"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Filter by file, patient or accession"
@@ -135,65 +175,117 @@ export function ArchivePanel() {
           </thead>
           <tbody>
             {documents.length === 0 ? (
-              <tr><Td colSpan={7} className="text-center text-muted-foreground p-8 align-middle">Loading archive...</Td></tr>
-            ) : rows.length === 0 ? (
-              <tr><Td colSpan={7} className="text-center text-muted-foreground p-8 align-middle">No documents found.</Td></tr>
-            ) : rows.map((d) => (
-              <tr key={d._id} className="hairline-b hover:bg-foreground/2">
-                <Td>
-                  <span className="flex items-center gap-2">
-                    <FileText className="text-accent size-3.5" />
-                    <span className="font-mono text-sm">{d.fileName}</span>
-                  </span>
-                  {d.pages > 0 && (
-                    <p className="mono-label text-muted-foreground mt-1">{d.pages} pages</p>
-                  )}
-                </Td>
-                <Td>
-                  <span className="mono-label text-muted-foreground">{d.kind}</span>
-                </Td>
-                <Td>
-                  <p>{d.patient?.firstName} {d.patient?.lastName}</p>
-                  <p className="mono-label text-muted-foreground">{d.order?.accessionNumber}</p>
-                </Td>
-                <Td>
-                  <span className="mono-label">{d.fileSize || "—"}</span>
-                </Td>
-                <Td>
-                  <p className="mono-label">{new Date(d.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                  <p className="mono-label text-muted-foreground">{d.uploadedBy || (d.radiologist ? `Dr. ${d.radiologist.lastName}` : "—")}</p>
-                </Td>
-                <Td>
-                  <Pill
-                    tone={
-                      d.state === "verified" ? "ok" : d.state === "pending sign" ? "warn" : "bad"
-                    }
-                  >
-                    {d.state || "—"}
-                  </Pill>
-                </Td>
-                <Td>
-                  <div className="text-muted-foreground flex items-center gap-3">
-                    <button type="button" aria-label="Preview" title="Preview" className="hover:text-foreground">
-                      <Eye className="size-3.5" />
-                    </button>
-                    <button type="button" aria-label="Download" title="Download" className="hover:text-foreground">
-                      <Download className="size-3.5" />
-                    </button>
-                    <button type="button" aria-label="Share" title="Share" className="hover:text-foreground">
-                      <Share2 className="size-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Delete" title="Delete"
-                      className="hover:text-destructive"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  </div>
+              <tr>
+                <Td
+                  colSpan={7}
+                  className="text-center text-muted-foreground p-8 align-middle"
+                >
+                  Loading archive...
                 </Td>
               </tr>
-            ))}
+            ) : rows.length === 0 ? (
+              <tr>
+                <Td
+                  colSpan={7}
+                  className="text-center text-muted-foreground p-8 align-middle"
+                >
+                  No documents found.
+                </Td>
+              </tr>
+            ) : (
+              rows.map((d) => (
+                <tr key={d._id} className="hairline-b hover:bg-foreground/2">
+                  <Td>
+                    <span className="flex items-center gap-2">
+                      <FileText className="text-accent size-3.5" />
+                      <span className="font-mono text-sm">{d.fileName}</span>
+                    </span>
+                    {d.pages > 0 && (
+                      <p className="mono-label text-muted-foreground mt-1">
+                        {d.pages} pages
+                      </p>
+                    )}
+                  </Td>
+                  <Td>
+                    <span className="mono-label text-muted-foreground">
+                      {d.kind}
+                    </span>
+                  </Td>
+                  <Td>
+                    <p>
+                      {d.patient?.firstName} {d.patient?.lastName}
+                    </p>
+                    <p className="mono-label text-muted-foreground">
+                      {d.order?.accessionNumber}
+                    </p>
+                  </Td>
+                  <Td>
+                    <span className="mono-label">{d.fileSize || "—"}</span>
+                  </Td>
+                  <Td>
+                    <p className="mono-label">
+                      {new Date(d.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                    <p className="mono-label text-muted-foreground">
+                      {d.uploadedBy ||
+                        (d.radiologist ? `Dr. ${d.radiologist.lastName}` : "—")}
+                    </p>
+                  </Td>
+                  <Td>
+                    <Pill
+                      tone={
+                        d.state === "verified"
+                          ? "ok"
+                          : d.state === "pending sign"
+                            ? "warn"
+                            : "bad"
+                      }
+                    >
+                      {d.state || "—"}
+                    </Pill>
+                  </Td>
+                  <Td>
+                    <div className="text-muted-foreground flex items-center gap-3">
+                      <button
+                        type="button"
+                        aria-label="Preview"
+                        title="Preview"
+                        className="hover:text-foreground"
+                      >
+                        <Eye className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Download"
+                        title="Download"
+                        className="hover:text-foreground"
+                      >
+                        <Download className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Share"
+                        title="Share"
+                        className="hover:text-foreground"
+                      >
+                        <Share2 className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Delete"
+                        title="Delete"
+                        className="hover:text-destructive"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </Td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

@@ -41,7 +41,10 @@ export const fetchPharmacyHistoryApi = async () => {
   return response.data;
 };
 
-export const dispenseMedicineApi = async (consultationId: string, medicineId: string) => {
+export const dispenseMedicineApi = async (
+  consultationId: string,
+  medicineId: string,
+) => {
   const response = await apiClient.patch<{
     success: boolean;
     message: string;
@@ -51,7 +54,11 @@ export const dispenseMedicineApi = async (consultationId: string, medicineId: st
   return response.data;
 };
 
-export const createPharmacyBillApi = async (consultationId: string, cartItems: any[], totalAmount: number) => {
+export const createPharmacyBillApi = async (
+  consultationId: string,
+  cartItems: any[],
+  totalAmount: number,
+) => {
   const response = await apiClient.post<{
     success: boolean;
     message: string;

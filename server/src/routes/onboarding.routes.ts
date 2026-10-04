@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { 
-  applyForRole, 
+import {
+  applyForRole,
   getMyStatus,
   updatePatientProfile,
   getPatientProfile,
-  getPendingRequests, 
-  approveRequest, 
-  rejectRequest 
+  getPendingRequests,
+  approveRequest,
+  rejectRequest,
 } from "../controllers/onboarding.controller";
 import { verifyToken, requireRole } from "../middleware/auth.middleware";
 import { UserRole } from "../models";

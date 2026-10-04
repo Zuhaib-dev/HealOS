@@ -15,7 +15,10 @@ export const broadcastNotification = async (req: Request, res: Response) => {
     }
 
     if (targetGroup === "SPECIFIC" && !targetEmail) {
-      throw new AppError("Target email is required for specific notifications", 400);
+      throw new AppError(
+        "Target email is required for specific notifications",
+        400,
+      );
     }
 
     const notification = await Notification.create({
@@ -52,14 +55,18 @@ export const broadcastNotification = async (req: Request, res: Response) => {
 
     res.status(201).json({ success: true, data: notification });
   } catch (error: any) {
-    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ success: false, message: error.message });
   }
 };
 
 // Get broadcast history (Admin only)
 export const getBroadcastHistory = async (_req: Request, res: Response) => {
   try {
-    const history = await Notification.find().sort({ createdAt: -1 }).populate("sender", "name email");
+    const history = await Notification.find()
+      .sort({ createdAt: -1 })
+      .populate("sender", "name email");
     res.status(200).json({ success: true, data: history });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -78,9 +85,7 @@ export const getUserNotifications = async (req: Request, res: Response) => {
     }
 
     const query: any = {
-      $or: [
-        { targetGroup: "EVERYONE" },
-      ],
+      $or: [{ targetGroup: "EVERYONE" }],
     };
 
     if (userRole === "PATIENT") {
@@ -93,8 +98,10 @@ export const getUserNotifications = async (req: Request, res: Response) => {
       query.$or.push({ targetGroup: "SPECIFIC", targetEmail: userEmail });
     }
 
-    const notifications = await Notification.find(query).sort({ createdAt: -1 }).limit(50);
-    
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 })
+      .limit(50);
+
     // Check read status
     const mapped = notifications.map((n) => ({
       _id: n._id,
@@ -136,9 +143,7 @@ export const markAllAsRead = async (req: Request, res: Response) => {
     if (!userId) throw new AppError("Unauthorized", 401);
 
     const query: any = {
-      $or: [
-        { targetGroup: "EVERYONE" },
-      ],
+      $or: [{ targetGroup: "EVERYONE" }],
     };
 
     if (userRole === "PATIENT") {

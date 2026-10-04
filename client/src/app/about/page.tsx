@@ -5,7 +5,8 @@ import { EditorialMission } from "@/components/landing/editorial-mission";
 
 export const metadata: Metadata = {
   title: "About Us | HealOS",
-  description: "Read about the clinical mission driving the development of HealOS.",
+  description:
+    "Read about the clinical mission driving the development of HealOS.",
   alternates: {
     canonical: "/about",
   },

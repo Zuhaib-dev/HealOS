@@ -26,7 +26,11 @@ const woundSchema = new Schema(
     type: { type: String, required: true },
     stage: { type: String, required: true },
     size: { type: String, required: true },
-    exudate: { type: String, enum: ["nil", "low", "moderate", "high"], default: "nil" },
+    exudate: {
+      type: String,
+      enum: ["nil", "low", "moderate", "high"],
+      default: "nil",
+    },
     dressing: { type: String, required: true },
     lastChange: { type: String, required: true },
     nextChange: { type: String, required: true },
@@ -34,7 +38,7 @@ const woundSchema = new Schema(
     photoNote: { type: String },
     overdue: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Wound = mongoose.model<IWound>("Wound", woundSchema);

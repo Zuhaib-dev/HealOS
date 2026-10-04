@@ -1,8 +1,18 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { ProfessionalProfile, ProfileStatus, PatientProfile, User, UserRole } from "../models";
+import {
+  ProfessionalProfile,
+  ProfileStatus,
+  PatientProfile,
+  User,
+  UserRole,
+} from "../models";
 import { z } from "zod";
-import { emitAdminDataChanged, emitUserRoleUpdated, emitNewOnboardingRequest } from "../socket.js";
+import {
+  emitAdminDataChanged,
+  emitUserRoleUpdated,
+  emitNewOnboardingRequest,
+} from "../socket.js";
 import { logAudit } from "../utils/audit.js";
 
 const applyOnboardingSchema = z.object({
@@ -15,13 +25,17 @@ const applyOnboardingSchema = z.object({
 });
 
 const rejectOnboardingSchema = z.object({
-  rejectionReason: z.string().min(5, "Please provide a detailed rejection reason"),
+  rejectionReason: z
+    .string()
+    .min(5, "Please provide a detailed rejection reason"),
 });
 
 const updatePatientProfileSchema = z.object({
   dob: z.string().optional(),
   gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
-  bloodGroup: z.enum(["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]).optional(),
+  bloodGroup: z
+    .enum(["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"])
+    .optional(),
   emergencyPhone: z.string().optional(),
   emergencyContactName: z.string().optional(),
   allergies: z.array(z.string()).optional(),
@@ -33,11 +47,13 @@ const updatePatientProfileSchema = z.object({
   weight: z.number().optional(),
 });
 
-
 // ==========================================
 // 1. Patient Profile Onboarding
 // ==========================================
-export const updatePatientProfile = async (req: Request, res: Response): Promise<void> => {
+export const updatePatientProfile = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = req.user?._id;
     const parsed = updatePatientProfileSchema.safeParse(req.body);
@@ -72,7 +88,10 @@ export const updatePatientProfile = async (req: Request, res: Response): Promise
       await userObj.save();
     }
 
-    emitAdminDataChanged(["patients", "users", "roles"], "patient_profile_updated");
+    emitAdminDataChanged(
+      ["patients", "users", "roles"],
+      "patient_profile_updated",
+    );
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -88,7 +107,10 @@ export const updatePatientProfile = async (req: Request, res: Response): Promise
   }
 };
 
-export const getPatientProfile = async (req: Request, res: Response): Promise<void> => {
+export const getPatientProfile = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = req.user?._id;
     const profile = await PatientProfile.findOne({ user: userId });
@@ -109,7 +131,10 @@ export const getPatientProfile = async (req: Request, res: Response): Promise<vo
 // ==========================================
 // 2. Clinician / Doctor Role Application
 // ==========================================
-export const applyForRole = async (req: Request, res: Response): Promise<void> => {
+export const applyForRole = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = req.user?._id;
 
@@ -125,7 +150,13 @@ export const applyForRole = async (req: Request, res: Response): Promise<void> =
 
     const existingProfile = await ProfessionalProfile.findOne({
       user: userId,
-      status: { $in: [ProfileStatus.PENDING, ProfileStatus.UNDER_REVIEW, ProfileStatus.APPROVED] },
+      status: {
+        $in: [
+          ProfileStatus.PENDING,
+          ProfileStatus.UNDER_REVIEW,
+          ProfileStatus.APPROVED,
+        ],
+      },
     });
 
     if (existingProfile) {
@@ -160,10 +191,15 @@ export const applyForRole = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-export const getMyStatus = async (req: Request, res: Response): Promise<void> => {
+export const getMyStatus = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = req.user?._id;
-    const profile = await ProfessionalProfile.findOne({ user: userId }).sort({ createdAt: -1 });
+    const profile = await ProfessionalProfile.findOne({ user: userId }).sort({
+      createdAt: -1,
+    });
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -181,7 +217,10 @@ export const getMyStatus = async (req: Request, res: Response): Promise<void> =>
 // ==========================================
 // 3. Admin Approval Operations
 // ==========================================
-export const getPendingRequests = async (_req: Request, res: Response): Promise<void> => {
+export const getPendingRequests = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const profiles = await ProfessionalProfile.find({
       status: { $in: [ProfileStatus.PENDING, ProfileStatus.UNDER_REVIEW] },
@@ -201,7 +240,10 @@ export const getPendingRequests = async (_req: Request, res: Response): Promise<
   }
 };
 
-export const approveRequest = async (req: Request, res: Response): Promise<void> => {
+export const approveRequest = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { id } = req.params;
     const adminId = req.user?._id;
@@ -234,10 +276,18 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
       emitUserRoleUpdated(user._id.toString(), profile.requestedRole);
     }
 
-    emitAdminDataChanged(["approvals", "staff", "users", "roles"], "onboarding_approved");
+    emitAdminDataChanged(
+      ["approvals", "staff", "users", "roles"],
+      "onboarding_approved",
+    );
 
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
-    await logAudit(actor, `Approved professional profile`, `user:${profile.user.toString().slice(-6)}`, "info");
+    await logAudit(
+      actor,
+      `Approved professional profile`,
+      `user:${profile.user.toString().slice(-6)}`,
+      "info",
+    );
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -253,7 +303,10 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
   }
 };
 
-export const rejectRequest = async (req: Request, res: Response): Promise<void> => {
+export const rejectRequest = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { id } = req.params;
     const adminId = req.user?._id;
@@ -285,7 +338,12 @@ export const rejectRequest = async (req: Request, res: Response): Promise<void> 
     emitAdminDataChanged(["approvals", "staff"], "onboarding_rejected");
 
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
-    await logAudit(actor, `Rejected professional profile`, `user:${profile.user.toString().slice(-6)}`, "warn");
+    await logAudit(
+      actor,
+      `Rejected professional profile`,
+      `user:${profile.user.toString().slice(-6)}`,
+      "warn",
+    );
 
     res.status(StatusCodes.OK).json({
       success: true,

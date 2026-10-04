@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     {
       status: 200,
       headers: getStandardApiHeaders(),
-    }
+    },
   );
 }
 
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         {
           status: 400,
           headers: getStandardApiHeaders(idempotencyKey),
-        }
+        },
       );
     }
 
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       {
         status: 400,
         headers: getStandardApiHeaders(idempotencyKey),
-      }
+      },
     );
   }
 }

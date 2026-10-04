@@ -7,15 +7,15 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Stethoscope, 
-  Activity, 
-  Pill, 
-  Microscope, 
-  Clock, 
-  ShieldCheck, 
-  Users, 
-  ClipboardList 
+import {
+  Stethoscope,
+  Activity,
+  Pill,
+  Microscope,
+  Clock,
+  ShieldCheck,
+  Users,
+  ClipboardList,
 } from "lucide-react";
 
 const features = [
@@ -24,7 +24,8 @@ const features = [
     label: "Clinical Core",
     icon: Stethoscope,
     title: "Surgical precision in patient management.",
-    description: "Access longitudinal records, active treatment plans, and real-time vital streams in a unified command center. Designed to reduce cognitive load during critical care.",
+    description:
+      "Access longitudinal records, active treatment plans, and real-time vital streams in a unified command center. Designed to reduce cognitive load during critical care.",
     metrics: [
       { label: "Data sync", value: "< 50ms" },
       { label: "Uptime", value: "99.99%" },
@@ -37,7 +38,8 @@ const features = [
     label: "Pharmacy & Dispensing",
     icon: Pill,
     title: "Automated inventory and eMAR validation.",
-    description: "Close the loop on medication administration. Real-time stock decrements, automated refill alerts, and strict dosage verification protocols.",
+    description:
+      "Close the loop on medication administration. Real-time stock decrements, automated refill alerts, and strict dosage verification protocols.",
     metrics: [
       { label: "Error reduction", value: "87%" },
       { label: "Stock alerts", value: "Real-time" },
@@ -50,7 +52,8 @@ const features = [
     label: "Radiology PACS",
     icon: Activity,
     title: "DICOM integration at the speed of thought.",
-    description: "Direct viewing of high-res diagnostic imagery. Complete study archiving, reporting workflows, and critical finding escalations.",
+    description:
+      "Direct viewing of high-res diagnostic imagery. Complete study archiving, reporting workflows, and critical finding escalations.",
     metrics: [
       { label: "Render speed", value: "60fps" },
       { label: "Storage", value: "Unlimited" },
@@ -63,7 +66,8 @@ const features = [
     label: "Laboratory (LIS)",
     icon: Microscope,
     title: "From phlebotomy to verified result.",
-    description: "Complete tracking of accessioning, auto-analyzer interfacing, and critical value alerting. Never lose a sample again.",
+    description:
+      "Complete tracking of accessioning, auto-analyzer interfacing, and critical value alerting. Never lose a sample again.",
     metrics: [
       { label: "Throughput", value: "10k/day" },
       { label: "Interface", value: "HL7" },
@@ -80,11 +84,13 @@ export function WorkbenchFeatures() {
     <section className="relative px-6 py-24 md:px-12 lg:px-24 max-w-7xl mx-auto">
       <div className="mb-16">
         <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground mb-4">
-          The Clinical <span className="text-emerald-500 font-serif italic">Workbench</span>.
+          The Clinical{" "}
+          <span className="text-emerald-500 font-serif italic">Workbench</span>.
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl">
-          We rebuilt hospital infrastructure from first principles. 
-          Stop clicking through legacy tabs and start treating patients with a unified suite of tools.
+          We rebuilt hospital infrastructure from first principles. Stop
+          clicking through legacy tabs and start treating patients with a
+          unified suite of tools.
         </p>
       </div>
 
@@ -94,14 +100,14 @@ export function WorkbenchFeatures() {
           {features.map((f) => {
             const Icon = f.icon;
             const isActive = activeFeature === f.id;
-            
+
             return (
               <button
                 key={f.id}
                 onClick={() => setActiveFeature(f.id)}
                 className={`group relative flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-300 text-left ${
-                  isActive 
-                    ? "bg-card border border-border shadow-sm" 
+                  isActive
+                    ? "bg-card border border-border shadow-sm"
                     : "hover:bg-muted/50 border border-transparent"
                 }`}
               >
@@ -113,13 +119,17 @@ export function WorkbenchFeatures() {
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
-                
-                <div className={`relative z-10 flex items-center justify-center size-10 rounded-lg ${f.color} ${f.border} border`}>
+
+                <div
+                  className={`relative z-10 flex items-center justify-center size-10 rounded-lg ${f.color} ${f.border} border`}
+                >
                   <Icon className="size-5" />
                 </div>
-                
+
                 <div className="relative z-10">
-                  <h3 className={`font-medium ${isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground transition-colors"}`}>
+                  <h3
+                    className={`font-medium ${isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground transition-colors"}`}
+                  >
                     {f.label}
                   </h3>
                 </div>
@@ -133,7 +143,7 @@ export function WorkbenchFeatures() {
           <AnimatePresence mode="wait">
             {features.map((f) => {
               if (f.id !== activeFeature) return null;
-              
+
               const Icon = f.icon;
 
               return (
@@ -145,14 +155,16 @@ export function WorkbenchFeatures() {
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   className="bg-card border border-border rounded-3xl p-8 md:p-12 shadow-sm h-full flex flex-col"
                 >
-                  <div className={`inline-flex items-center justify-center size-14 rounded-2xl ${f.color} ${f.border} border mb-8`}>
+                  <div
+                    className={`inline-flex items-center justify-center size-14 rounded-2xl ${f.color} ${f.border} border mb-8`}
+                  >
                     <Icon className="size-7" />
                   </div>
-                  
+
                   <h2 className="text-3xl font-semibold text-foreground mb-4">
                     {f.title}
                   </h2>
-                  
+
                   <p className="text-muted-foreground text-lg mb-12 max-w-xl">
                     {f.description}
                   </p>

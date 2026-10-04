@@ -1,48 +1,48 @@
-import { MetadataRoute } from 'next'
- 
+import { MetadataRoute } from "next";
+
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: 'https://healos-theta.vercel.app',
+      url: "https://healos-theta.vercel.app",
       lastModified: new Date(),
-      changeFrequency: 'yearly',
+      changeFrequency: "yearly",
       priority: 1,
     },
     {
-      url: 'https://healos-theta.vercel.app/about',
+      url: "https://healos-theta.vercel.app/about",
       lastModified: new Date(),
-      changeFrequency: 'monthly',
+      changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: 'https://healos-theta.vercel.app/features',
+      url: "https://healos-theta.vercel.app/features",
       lastModified: new Date(),
-      changeFrequency: 'weekly',
+      changeFrequency: "weekly",
       priority: 0.9,
     },
     {
-      url: 'https://healos-theta.vercel.app/developers',
+      url: "https://healos-theta.vercel.app/developers",
       lastModified: new Date(),
-      changeFrequency: 'weekly',
+      changeFrequency: "weekly",
       priority: 0.9,
     },
     {
-      url: 'https://healos-theta.vercel.app/testimonials',
+      url: "https://healos-theta.vercel.app/testimonials",
       lastModified: new Date(),
-      changeFrequency: 'monthly',
+      changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: 'https://healos-theta.vercel.app/login',
+      url: "https://healos-theta.vercel.app/login",
       lastModified: new Date(),
-      changeFrequency: 'yearly',
+      changeFrequency: "yearly",
       priority: 0.5,
     },
     {
-      url: 'https://healos-theta.vercel.app/register',
+      url: "https://healos-theta.vercel.app/register",
       lastModified: new Date(),
-      changeFrequency: 'yearly',
+      changeFrequency: "yearly",
       priority: 0.5,
-    }
-  ]
+    },
+  ];
 }

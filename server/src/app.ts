@@ -25,7 +25,6 @@ import { API_PREFIX, APP_NAME, APP_VERSION } from "@healos/shared";
 // ---------------------------
 const app = express();
 
-
 app.set("trust proxy", 1);
 app.use(helmet());
 
@@ -33,12 +32,19 @@ app.use(
   cors({
     origin:
       envConfig.NODE_ENV === "production"
-        ? [envConfig.CLIENT_URL, "http://localhost:3000"].filter(Boolean) as string[]
+        ? ([envConfig.CLIENT_URL, "http://localhost:3000"].filter(
+            Boolean,
+          ) as string[])
         : ["http://localhost:3000", "http://127.0.0.1:3000"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-  })
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+    ],
+  }),
 );
 app.use(compression());
 app.use(morgan(envConfig.NODE_ENV === "production" ? "combined" : "dev"));
@@ -92,9 +98,15 @@ const startServer = async () => {
     console.log(`\n🏥 ${APP_NAME} Server v${APP_VERSION}`);
     console.log(`🌍 Environment: ${envConfig.NODE_ENV}`);
     console.log(`🚀 Server running on: http://localhost:${envConfig.PORT}`);
-    console.log(`📡 API available at: http://localhost:${envConfig.PORT}${API_PREFIX}`);
-    console.log(`⚡ Realtime Socket.IO active at: ws://localhost:${envConfig.PORT}`);
-    console.log(`❤️  Health check: http://localhost:${envConfig.PORT}/health\n`);
+    console.log(
+      `📡 API available at: http://localhost:${envConfig.PORT}${API_PREFIX}`,
+    );
+    console.log(
+      `⚡ Realtime Socket.IO active at: ws://localhost:${envConfig.PORT}`,
+    );
+    console.log(
+      `❤️  Health check: http://localhost:${envConfig.PORT}/health\n`,
+    );
   });
 
   try {
@@ -109,4 +121,3 @@ if (process.env.NODE_ENV !== "test") {
 }
 
 export default app;
- 

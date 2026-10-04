@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { LogOut, KeyRound, ShieldCheck, ShieldOff, Copy, Plus, UserCog, HeartPulse } from "lucide-react";
+import {
+  LogOut,
+  KeyRound,
+  ShieldCheck,
+  ShieldOff,
+  Copy,
+  Plus,
+  UserCog,
+  HeartPulse,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 import {
   fetchAdminUsersApi,
@@ -25,7 +34,15 @@ import {
 import { toast } from "sonner";
 import { useAdminRealtime } from "../use-admin-realtime";
 
-import { getApiErrorMessage, Th, Td, Pill, PaginationControls, initials, Avatar } from "./shared";
+import {
+  getApiErrorMessage,
+  Th,
+  Td,
+  Pill,
+  PaginationControls,
+  initials,
+  Avatar,
+} from "./shared";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -37,7 +54,11 @@ export function PatientsPanel() {
   const { data, isLoading: loading } = useQuery({
     queryKey: ["adminPatients", page, q],
     queryFn: async () => {
-      const res = await fetchAdminPatientsApi({ page, limit: 10, q: q || undefined });
+      const res = await fetchAdminPatientsApi({
+        page,
+        limit: 10,
+        q: q || undefined,
+      });
       if (!res.success) throw new Error("Failed to fetch");
       return res;
     },
@@ -66,7 +87,8 @@ export function PatientsPanel() {
       />
       <div className="hairline-b px-5 py-3 sm:px-8">
         <input
-          aria-label="Filter patients by name or email" title="Filter patients by name or email"
+          aria-label="Filter patients by name or email"
+          title="Filter patients by name or email"
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
@@ -81,88 +103,114 @@ export function PatientsPanel() {
           <table className="w-full min-w-212.5 border-collapse">
             <thead>
               <tr>
-              <Th>Patient ID</Th>
-              <Th>Patient Name</Th>
-              <Th>Gender / Blood</Th>
-              <Th>Emergency Contact</Th>
-              <Th>Emergency Phone</Th>
-              <Th>Registered On</Th>
-              <Th>Profile Status</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse">
-                  Loading patient registry...
-                </td>
+                <Th>Patient ID</Th>
+                <Th>Patient Name</Th>
+                <Th>Gender / Blood</Th>
+                <Th>Emergency Contact</Th>
+                <Th>Emergency Phone</Th>
+                <Th>Registered On</Th>
+                <Th>Profile Status</Th>
               </tr>
-            ) : records.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="p-16 text-center">
-                  <div className="flex flex-col items-center justify-center gap-3 max-w-sm mx-auto">
-                    <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
-                      <HeartPulse className="size-6 text-muted-foreground/60" />
-                    </div>
-                    <h3 className="font-display font-semibold text-base text-foreground">No records found</h3>
-                    <p className="mono-label text-xs text-muted-foreground">
-                      {q ? `No registered patients matched "${q}".` : "No records available in this registry."}
-                    </p>
-                    {q && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQ("");
-                          setPage(1);
-                        }}
-                        className="mt-2 mono-label text-xs font-semibold px-3 py-1.5 rounded-lg border border-border/80 bg-background hover:bg-muted transition-colors text-foreground"
-                      >
-                        Clear search filter
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              records.map((p) => (
-                <tr key={p._id} className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
-                  <Td>
-                    <span className="font-mono text-muted-foreground">{p._id.slice(-8).toUpperCase()}</span>
-                  </Td>
-                  <Td>
-                    <span className="flex items-center gap-3">
-                      <Avatar name={p.user?.name || "Patient"} online={true} />
-                      <div>
-                        <p className="font-medium group-hover:text-primary transition-colors">{p.user?.name || "Anonymous Patient"}</p>
-                        <p className="mono-label text-[11px] text-muted-foreground">{p.user?.email}</p>
-                      </div>
-                    </span>
-                  </Td>
-                  <Td>
-                    <span className="mono-label">
-                      {p.gender || "N/A"} · <span className="font-bold text-primary">{p.bloodGroup || "N/A"}</span>
-                    </span>
-                  </Td>
-                  <Td>{p.emergencyContactName || "—"}</Td>
-                  <Td>
-                    <span className="mono-label text-muted-foreground">{p.emergencyPhone || p.user?.phone || "—"}</span>
-                  </Td>
-                  <Td>
-                    <span className="mono-label text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</span>
-                  </Td>
-                  <Td>
-                    {p.isComplete ? (
-                      <Pill tone="ok">Active Patient</Pill>
-                    ) : (
-                      <Pill tone="warn">Incomplete</Pill>
-                    )}
-                  </Td>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse"
+                  >
+                    Loading patient registry...
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : records.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-16 text-center">
+                    <div className="flex flex-col items-center justify-center gap-3 max-w-sm mx-auto">
+                      <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
+                        <HeartPulse className="size-6 text-muted-foreground/60" />
+                      </div>
+                      <h3 className="font-display font-semibold text-base text-foreground">
+                        No records found
+                      </h3>
+                      <p className="mono-label text-xs text-muted-foreground">
+                        {q
+                          ? `No registered patients matched "${q}".`
+                          : "No records available in this registry."}
+                      </p>
+                      {q && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQ("");
+                            setPage(1);
+                          }}
+                          className="mt-2 mono-label text-xs font-semibold px-3 py-1.5 rounded-lg border border-border/80 bg-background hover:bg-muted transition-colors text-foreground"
+                        >
+                          Clear search filter
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                records.map((p) => (
+                  <tr
+                    key={p._id}
+                    className="border-b border-border/40 hover:bg-muted/30 transition-colors group"
+                  >
+                    <Td>
+                      <span className="font-mono text-muted-foreground">
+                        {p._id.slice(-8).toUpperCase()}
+                      </span>
+                    </Td>
+                    <Td>
+                      <span className="flex items-center gap-3">
+                        <Avatar
+                          name={p.user?.name || "Patient"}
+                          online={true}
+                        />
+                        <div>
+                          <p className="font-medium group-hover:text-primary transition-colors">
+                            {p.user?.name || "Anonymous Patient"}
+                          </p>
+                          <p className="mono-label text-[11px] text-muted-foreground">
+                            {p.user?.email}
+                          </p>
+                        </div>
+                      </span>
+                    </Td>
+                    <Td>
+                      <span className="mono-label">
+                        {p.gender || "N/A"} ·{" "}
+                        <span className="font-bold text-primary">
+                          {p.bloodGroup || "N/A"}
+                        </span>
+                      </span>
+                    </Td>
+                    <Td>{p.emergencyContactName || "—"}</Td>
+                    <Td>
+                      <span className="mono-label text-muted-foreground">
+                        {p.emergencyPhone || p.user?.phone || "—"}
+                      </span>
+                    </Td>
+                    <Td>
+                      <span className="mono-label text-muted-foreground">
+                        {new Date(p.createdAt).toLocaleDateString()}
+                      </span>
+                    </Td>
+                    <Td>
+                      {p.isComplete ? (
+                        <Pill tone="ok">Active Patient</Pill>
+                      ) : (
+                        <Pill tone="warn">Incomplete</Pill>
+                      )}
+                    </Td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
       <PaginationControls pagination={pagination} onPageChange={setPage} />
     </div>

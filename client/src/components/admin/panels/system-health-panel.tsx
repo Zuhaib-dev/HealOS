@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { 
-  Server, 
-  Database, 
-  Activity, 
-  Cpu, 
-  MemoryStick, 
+import {
+  Server,
+  Database,
+  Activity,
+  Cpu,
+  MemoryStick,
   Globe,
   Radio,
-  Power
+  Power,
 } from "lucide-react";
 import { PanelHeader } from "../admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
@@ -23,9 +23,10 @@ export function SystemHealthPanel() {
 
   const fetchHealthData = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
       const res = await fetch(`${apiUrl}/system/health`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
       if (json.success) {
@@ -56,7 +57,7 @@ export function SystemHealthPanel() {
     if (h > 0) parts.push(`${h}h`);
     if (m > 0) parts.push(`${m}m`);
     parts.push(`${s}s`);
-    return parts.join(' ');
+    return parts.join(" ");
   };
 
   const formatBytes = (bytes: number) => {
@@ -76,7 +77,7 @@ export function SystemHealthPanel() {
           </div>
         }
       />
-      
+
       <div className="flex-1 px-5 py-6 sm:px-8 space-y-6">
         {isLoading && !healthData ? (
           <div className="flex justify-center py-20">
@@ -84,7 +85,6 @@ export function SystemHealthPanel() {
           </div>
         ) : healthData ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
             {/* Database Card */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -98,18 +98,30 @@ export function SystemHealthPanel() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">Database</h3>
-                  <p className="text-xs text-muted-foreground">{healthData.database.host}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {healthData.database.host}
+                  </p>
                 </div>
                 <div className="ml-auto flex items-center gap-1.5">
-                  <span className={`size-2 rounded-full ${healthData.database.status === 'Connected' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                  <span className={`text-xs font-semibold ${healthData.database.status === 'Connected' ? 'text-emerald-500' : 'text-rose-500'}`}>{healthData.database.status}</span>
+                  <span
+                    className={`size-2 rounded-full ${healthData.database.status === "Connected" ? "bg-emerald-500" : "bg-rose-500"}`}
+                  />
+                  <span
+                    className={`text-xs font-semibold ${healthData.database.status === "Connected" ? "text-emerald-500" : "text-rose-500"}`}
+                  >
+                    {healthData.database.status}
+                  </span>
                 </div>
               </div>
-              
+
               <div className="mt-auto space-y-3">
                 <div className="flex justify-between items-end border-t border-border/40 pt-4">
-                  <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">Storage Engine</span>
-                  <span className="text-sm font-semibold text-foreground">Atlas Cloud</span>
+                  <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                    Storage Engine
+                  </span>
+                  <span className="text-sm font-semibold text-foreground">
+                    Atlas Cloud
+                  </span>
                 </div>
               </div>
             </motion.div>
@@ -127,24 +139,40 @@ export function SystemHealthPanel() {
                   <Radio className="size-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Socket Engine</h3>
-                  <p className="text-xs text-muted-foreground">{healthData.sockets.gateway}</p>
+                  <h3 className="font-semibold text-foreground">
+                    Socket Engine
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {healthData.sockets.gateway}
+                  </p>
                 </div>
                 <div className="ml-auto flex items-center gap-1.5">
-                  <span className={`size-2 rounded-full ${healthData.sockets.status === 'Online' ? 'bg-cyan-500' : 'bg-rose-500'}`} />
-                  <span className={`text-xs font-semibold ${healthData.sockets.status === 'Online' ? 'text-cyan-500' : 'text-rose-500'}`}>{healthData.sockets.status}</span>
+                  <span
+                    className={`size-2 rounded-full ${healthData.sockets.status === "Online" ? "bg-cyan-500" : "bg-rose-500"}`}
+                  />
+                  <span
+                    className={`text-xs font-semibold ${healthData.sockets.status === "Online" ? "text-cyan-500" : "text-rose-500"}`}
+                  >
+                    {healthData.sockets.status}
+                  </span>
                 </div>
               </div>
-              
+
               <div className="mt-auto space-y-3 border-t border-border/40 pt-4">
                 <div className="flex justify-between items-end">
-                  <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">Active Channels</span>
+                  <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                    Active Channels
+                  </span>
                   <div className="flex items-center gap-2">
                     <Activity className="size-3.5 text-cyan-500" />
-                    <span className="text-lg font-bold text-foreground leading-none">{healthData.sockets.activeChannels}</span>
+                    <span className="text-lg font-bold text-foreground leading-none">
+                      {healthData.sockets.activeChannels}
+                    </span>
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground text-right">Connected clients & drivers</p>
+                <p className="text-[10px] text-muted-foreground text-right">
+                  Connected clients & drivers
+                </p>
               </div>
             </motion.div>
 
@@ -161,13 +189,19 @@ export function SystemHealthPanel() {
                   <Power className="size-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">App Process Uptime</h3>
-                  <p className="text-xs text-muted-foreground">Next.js Server Process</p>
+                  <h3 className="font-semibold text-foreground">
+                    App Process Uptime
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Next.js Server Process
+                  </p>
                 </div>
               </div>
-              
+
               <div className="mt-auto border-t border-border/40 pt-4 flex justify-between items-center">
-                <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">Uptime</span>
+                <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                  Uptime
+                </span>
                 <span className="text-lg font-bold font-mono tracking-tight text-amber-500">
                   {formatUptime(healthData.process.uptime)}
                 </span>
@@ -188,35 +222,60 @@ export function SystemHealthPanel() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-purple-500 font-semibold tracking-wider">MEM / 09</span>
+                    <span className="text-[10px] font-mono text-purple-500 font-semibold tracking-wider">
+                      MEM / 09
+                    </span>
                     <span className="size-1 rounded-full bg-border" />
-                    <span className="text-xs text-muted-foreground">V8 Virtual Machine Memory</span>
+                    <span className="text-xs text-muted-foreground">
+                      V8 Virtual Machine Memory
+                    </span>
                   </div>
-                  <h3 className="font-semibold text-foreground text-lg">Memory Consumption</h3>
+                  <h3 className="font-semibold text-foreground text-lg">
+                    Memory Consumption
+                  </h3>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-auto border-t border-border/40 pt-5">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Heap Used vs Total</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Heap Used vs Total
+                  </p>
                   <p className="text-sm font-semibold text-foreground font-mono">
-                    {formatBytes(healthData.process.memory.heapUsed)} / {formatBytes(healthData.process.memory.heapTotal)}
+                    {formatBytes(healthData.process.memory.heapUsed)} /{" "}
+                    {formatBytes(healthData.process.memory.heapTotal)}
                     <span className="text-purple-500 ml-1">
-                      ({Math.round((healthData.process.memory.heapUsed / healthData.process.memory.heapTotal) * 100)}%)
+                      (
+                      {Math.round(
+                        (healthData.process.memory.heapUsed /
+                          healthData.process.memory.heapTotal) *
+                          100,
+                      )}
+                      %)
                     </span>
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">RSS Size</p>
-                  <p className="text-sm font-semibold text-foreground font-mono">{formatBytes(healthData.process.memory.rss)}</p>
+                  <p className="text-sm font-semibold text-foreground font-mono">
+                    {formatBytes(healthData.process.memory.rss)}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Heap Committed</p>
-                  <p className="text-sm font-semibold text-foreground font-mono">{formatBytes(healthData.process.memory.heapTotal)}</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Heap Committed
+                  </p>
+                  <p className="text-sm font-semibold text-foreground font-mono">
+                    {formatBytes(healthData.process.memory.heapTotal)}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">External Allocations</p>
-                  <p className="text-sm font-semibold text-foreground font-mono">{formatBytes(healthData.process.memory.external)}</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    External Allocations
+                  </p>
+                  <p className="text-sm font-semibold text-foreground font-mono">
+                    {formatBytes(healthData.process.memory.external)}
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -235,34 +294,55 @@ export function SystemHealthPanel() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-blue-500 font-semibold tracking-wider">ENV / 09</span>
+                    <span className="text-[10px] font-mono text-blue-500 font-semibold tracking-wider">
+                      ENV / 09
+                    </span>
                     <span className="size-1 rounded-full bg-border" />
-                    <span className="text-xs text-muted-foreground">Environment Specs</span>
+                    <span className="text-xs text-muted-foreground">
+                      Environment Specs
+                    </span>
                   </div>
-                  <h3 className="font-semibold text-foreground text-lg">System Specs</h3>
+                  <h3 className="font-semibold text-foreground text-lg">
+                    System Specs
+                  </h3>
                 </div>
               </div>
 
               <div className="space-y-4 mt-auto border-t border-border/40 pt-5">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Node Version</span>
-                  <span className="text-sm font-semibold font-mono">{healthData.environment.nodeVersion}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Node Version
+                  </span>
+                  <span className="text-sm font-semibold font-mono">
+                    {healthData.environment.nodeVersion}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Host OS Platform</span>
-                  <span className="text-sm font-semibold font-mono">{healthData.environment.platform}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Host OS Platform
+                  </span>
+                  <span className="text-sm font-semibold font-mono">
+                    {healthData.environment.platform}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Mongoose Version</span>
-                  <span className="text-sm font-semibold font-mono">v{healthData.environment.mongooseVersion}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Mongoose Version
+                  </span>
+                  <span className="text-sm font-semibold font-mono">
+                    v{healthData.environment.mongooseVersion}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Next.js Framework</span>
-                  <span className="text-sm font-semibold">{healthData.environment.nextjsVersion}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Next.js Framework
+                  </span>
+                  <span className="text-sm font-semibold">
+                    {healthData.environment.nextjsVersion}
+                  </span>
                 </div>
               </div>
             </motion.div>
-
           </div>
         ) : null}
       </div>

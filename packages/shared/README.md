@@ -33,9 +33,9 @@ Since this is a local workspace package, it is already linked via Turborepo and 
 You can import directly from `@healos/shared`:
 
 ```typescript
-import { UserRole } from '@healos/shared/constants';
-import { type Patient } from '@healos/shared/types';
-import { loginSchema } from '@healos/shared/schemas';
+import { UserRole } from "@healos/shared/constants";
+import { type Patient } from "@healos/shared/types";
+import { loginSchema } from "@healos/shared/schemas";
 
 // Usage example
 const role: UserRole = UserRole.ADMIN;
@@ -46,7 +46,8 @@ const role: UserRole = UserRole.ADMIN;
 This package uses `tsup` or `tsc` to bundle the TypeScript files for consumption. It is automatically built when running the root `npm run build` command.
 
 ---
-*Part of the [HealOS Monorepo](../../README.md).*
+
+_Part of the [HealOS Monorepo](../../README.md)._
 
 ---
 
@@ -62,6 +63,6 @@ Full-stack engineer · UI/UX obsessive · Real-time systems nerd
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Zuhaib_Rashid-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/zuhaib-rashid-661345318/)
 [![Twitter](https://img.shields.io/badge/Twitter-@xuhaib__x9-1DA1F2?style=for-the-badge&logo=twitter)](https://x.com/xuhaib_x9)
 
-*Built with obsessive attention to detail, real-world production patterns, and way too much coffee.*
+_Built with obsessive attention to detail, real-world production patterns, and way too much coffee._
 
 </div>

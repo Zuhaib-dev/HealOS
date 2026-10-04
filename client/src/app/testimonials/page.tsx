@@ -5,7 +5,8 @@ import { TestimonialMarquee } from "@/components/landing/testimonial-marquee";
 
 export const metadata: Metadata = {
   title: "Testimonials | HealOS",
-  description: "See why top healthcare professionals trust HealOS with their clinical infrastructure.",
+  description:
+    "See why top healthcare professionals trust HealOS with their clinical infrastructure.",
   alternates: {
     canonical: "/testimonials",
   },

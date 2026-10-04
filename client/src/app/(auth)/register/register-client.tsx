@@ -7,20 +7,38 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useAuthStore } from "@/store/use-auth-store";
-import { registerUserApi, verifyOtpApi, resendOtpApi, updatePhoneApi } from "@/lib/api/auth";
+import {
+  registerUserApi,
+  verifyOtpApi,
+  resendOtpApi,
+  updatePhoneApi,
+} from "@/lib/api/auth";
 import { getSafeRedirectPath } from "@/lib/auth-navigation";
 import { toast } from "sonner";
-import { Lock, Mail, User, ArrowRight, ShieldCheck, KeyRound, Phone, CheckCircle2 } from "lucide-react";
+import {
+  Lock,
+  Mail,
+  User,
+  ArrowRight,
+  ShieldCheck,
+  KeyRound,
+  Phone,
+  CheckCircle2,
+} from "lucide-react";
 
 type RegisterStep = "register" | "otp" | "phone";
 
 export default function RegisterClient() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
-  
+
   const [step, setStep] = useState<RegisterStep>("register");
   const [loading, setLoading] = useState(false);
 
@@ -52,7 +70,6 @@ export default function RegisterClient() {
     const destination = getSafeRedirectPath(role);
     router.push(destination);
   };
-
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,9 +167,11 @@ export default function RegisterClient() {
           {step === "phone" && "Almost Done!"}
         </h1>
         <p className="mono-label mt-2 text-xs text-muted-foreground">
-          {step === "register" && "Join the unified healthcare operating system"}
+          {step === "register" &&
+            "Join the unified healthcare operating system"}
           {step === "otp" && `We sent a 6-digit code to ${email}`}
-          {step === "phone" && "Add a contact number for your profile (optional)"}
+          {step === "phone" &&
+            "Add a contact number for your profile (optional)"}
         </p>
       </div>
 
@@ -167,7 +186,9 @@ export default function RegisterClient() {
             className="space-y-5"
           >
             <div className="space-y-2">
-              <Label htmlFor="name" className="mono-label text-xs">Full Name</Label>
+              <Label htmlFor="name" className="mono-label text-xs">
+                Full Name
+              </Label>
               <div className="relative">
                 <User className="text-muted-foreground absolute left-3.5 top-3.5 size-4" />
                 <Input
@@ -184,7 +205,9 @@ export default function RegisterClient() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="mono-label text-xs">Email Address</Label>
+              <Label htmlFor="email" className="mono-label text-xs">
+                Email Address
+              </Label>
               <div className="relative">
                 <Mail className="text-muted-foreground absolute left-3.5 top-3.5 size-4" />
                 <Input
@@ -201,7 +224,9 @@ export default function RegisterClient() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="mono-label text-xs">Password</Label>
+              <Label htmlFor="password" className="mono-label text-xs">
+                Password
+              </Label>
               <div className="relative">
                 <Lock className="text-muted-foreground absolute left-3.5 top-3.5 size-4" />
                 <Input
@@ -230,7 +255,10 @@ export default function RegisterClient() {
 
             <div className="mono-label text-muted-foreground text-center text-xs pt-4">
               Already have an account?{" "}
-              <Link href="/login" className="text-emerald-600 hover:text-emerald-500 font-semibold transition-colors">
+              <Link
+                href="/login"
+                className="text-emerald-600 hover:text-emerald-500 font-semibold transition-colors"
+              >
                 Sign in here
               </Link>
             </div>
@@ -250,15 +278,43 @@ export default function RegisterClient() {
                 <ShieldCheck className="size-8" />
               </div>
             </div>
-            <form onSubmit={handleVerifyOtp} className="space-y-6 flex flex-col items-center">
-              <InputOTP aria-label="One-time registration verification code" title="One-time registration verification code" maxLength={6} pattern={REGEXP_ONLY_DIGITS} value={otp} onChange={(val: string) => setOtp(val)}>
+            <form
+              onSubmit={handleVerifyOtp}
+              className="space-y-6 flex flex-col items-center"
+            >
+              <InputOTP
+                aria-label="One-time registration verification code"
+                title="One-time registration verification code"
+                maxLength={6}
+                pattern={REGEXP_ONLY_DIGITS}
+                value={otp}
+                onChange={(val: string) => setOtp(val)}
+              >
                 <InputOTPGroup className="gap-2">
-                  <InputOTPSlot index={0} className="w-11 h-12 text-lg rounded-md border-border/50" />
-                  <InputOTPSlot index={1} className="w-11 h-12 text-lg rounded-md border-border/50" />
-                  <InputOTPSlot index={2} className="w-11 h-12 text-lg rounded-md border-border/50" />
-                  <InputOTPSlot index={3} className="w-11 h-12 text-lg rounded-md border-border/50" />
-                  <InputOTPSlot index={4} className="w-11 h-12 text-lg rounded-md border-border/50" />
-                  <InputOTPSlot index={5} className="w-11 h-12 text-lg rounded-md border-border/50" />
+                  <InputOTPSlot
+                    index={0}
+                    className="w-11 h-12 text-lg rounded-md border-border/50"
+                  />
+                  <InputOTPSlot
+                    index={1}
+                    className="w-11 h-12 text-lg rounded-md border-border/50"
+                  />
+                  <InputOTPSlot
+                    index={2}
+                    className="w-11 h-12 text-lg rounded-md border-border/50"
+                  />
+                  <InputOTPSlot
+                    index={3}
+                    className="w-11 h-12 text-lg rounded-md border-border/50"
+                  />
+                  <InputOTPSlot
+                    index={4}
+                    className="w-11 h-12 text-lg rounded-md border-border/50"
+                  />
+                  <InputOTPSlot
+                    index={5}
+                    className="w-11 h-12 text-lg rounded-md border-border/50"
+                  />
                 </InputOTPGroup>
               </InputOTP>
 
@@ -281,7 +337,9 @@ export default function RegisterClient() {
                 onClick={handleResendOtp}
                 className="mono-label text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
               >
-                {canResend ? "Resend Verification Code" : `Resend available in ${resendTimer}s`}
+                {canResend
+                  ? "Resend Verification Code"
+                  : `Resend available in ${resendTimer}s`}
               </button>
             </div>
           </motion.div>
@@ -297,7 +355,9 @@ export default function RegisterClient() {
             className="space-y-5"
           >
             <div className="space-y-2">
-              <Label htmlFor="phone" className="mono-label text-xs">Phone Number</Label>
+              <Label htmlFor="phone" className="mono-label text-xs">
+                Phone Number
+              </Label>
               <div className="relative">
                 <Phone className="text-muted-foreground absolute left-3.5 top-3.5 size-4" />
                 <Input
@@ -322,10 +382,12 @@ export default function RegisterClient() {
               {loading ? "Saving..." : "Save & Continue"}
               {!loading && <CheckCircle2 className="size-3.5" />}
             </motion.button>
-            
+
             <button
               type="button"
-              onClick={() => handlePhoneSubmit({ preventDefault: () => {} } as any)}
+              onClick={() =>
+                handlePhoneSubmit({ preventDefault: () => {} } as any)
+              }
               className="mono-label w-full text-center text-xs text-muted-foreground hover:text-foreground mt-2 py-2"
             >
               Skip for now

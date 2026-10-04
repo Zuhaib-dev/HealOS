@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2 } from "lucide-react";
+import {
+  Check,
+  TriangleAlert,
+  PenLine,
+  Send,
+  X,
+  CheckCircle2,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
 import {
@@ -30,12 +37,16 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
@@ -56,7 +67,11 @@ function Vitals({ series }: { series: number[] }) {
     .join(" ");
 
   return (
-    <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-8 w-24 shrink-0">
+    <svg
+      viewBox="0 0 100 32"
+      preserveAspectRatio="none"
+      className="h-8 w-24 shrink-0"
+    >
       <motion.polyline
         points={pts}
         fill="none"
@@ -89,11 +104,17 @@ export function OrdersPanel() {
 
   const loadData = () => {
     getOrdersAndMedsApi()
-      .then(res => {
+      .then((res) => {
         const { orders = [], consultations = [] } = res.data || {};
         const combined = [
           ...orders.map((o: any) => ({ ...o, _type: "Order" })),
-          ...consultations.flatMap((c: any) => c.medicines.map((m: any) => ({ ...m, _type: "Medicine", patient: c.patient })))
+          ...consultations.flatMap((c: any) =>
+            c.medicines.map((m: any) => ({
+              ...m,
+              _type: "Medicine",
+              patient: c.patient,
+            })),
+          ),
         ];
         setDataList(combined);
       })
@@ -135,18 +156,31 @@ export function OrdersPanel() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-muted-foreground">Loading orders...</td>
+                <td
+                  colSpan={5}
+                  className="p-8 text-center text-muted-foreground"
+                >
+                  Loading orders...
+                </td>
               </tr>
             ) : dataList.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-muted-foreground">No active orders or medicines.</td>
+                <td
+                  colSpan={5}
+                  className="p-8 text-center text-muted-foreground"
+                >
+                  No active orders or medicines.
+                </td>
               </tr>
             ) : (
               dataList.map((o, i) => {
-                const patName = typeof o.patient === "object" ? o.patient?.name : "Unknown";
+                const patName =
+                  typeof o.patient === "object" ? o.patient?.name : "Unknown";
                 const isMed = o._type === "Medicine";
-                const detail = isMed ? `${o.name} - ${o.dosage} (${o.frequency})` : (o.testName || "Diagnostic Test");
-                
+                const detail = isMed
+                  ? `${o.name} - ${o.dosage} (${o.frequency})`
+                  : o.testName || "Diagnostic Test";
+
                 return (
                   <tr key={i} className="hairline-b">
                     <Td>
@@ -157,10 +191,14 @@ export function OrdersPanel() {
                     </Td>
                     <Td>{detail}</Td>
                     <Td>
-                      <span className="mono-label text-muted-foreground">{o._type}</span>
+                      <span className="mono-label text-muted-foreground">
+                        {o._type}
+                      </span>
                     </Td>
                     <Td>
-                      <Pill tone="ok">{isMed ? "Dispensed" : o.status || "PENDING"}</Pill>
+                      <Pill tone="ok">
+                        {isMed ? "Dispensed" : o.status || "PENDING"}
+                      </Pill>
                     </Td>
                   </tr>
                 );

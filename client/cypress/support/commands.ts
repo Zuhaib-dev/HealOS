@@ -9,14 +9,24 @@ declare global {
        * Mocks the NextAuth session for a specific role
        * @example cy.loginAs('PATIENT')
        */
-      loginAs(role: 'PATIENT' | 'ADMIN' | 'DOCTOR' | 'NURSE' | 'RECEPTIONIST' | 'PHARMACIST' | 'LAB_TECHNICIAN' | 'RADIOLOGIST'): Chainable<void>;
+      loginAs(
+        role:
+          | "PATIENT"
+          | "ADMIN"
+          | "DOCTOR"
+          | "NURSE"
+          | "RECEPTIONIST"
+          | "PHARMACIST"
+          | "LAB_TECHNICIAN"
+          | "RADIOLOGIST",
+      ): Chainable<void>;
     }
   }
 }
 
-Cypress.Commands.add('loginAs', (role) => {
+Cypress.Commands.add("loginAs", (role) => {
   // Intercept the NextAuth session endpoint to return a mock session
-  cy.intercept('GET', '/api/auth/session', {
+  cy.intercept("GET", "/api/auth/session", {
     statusCode: 200,
     body: {
       user: {
@@ -24,17 +34,17 @@ Cypress.Commands.add('loginAs', (role) => {
         name: `Mock ${role}`,
         email: `mock_${role.toLowerCase()}@example.com`,
         role: role,
-        isEmailVerified: true
+        isEmailVerified: true,
       },
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-    }
-  }).as('session');
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    },
+  }).as("session");
 
   // Intercept the NextAuth providers endpoint
-  cy.intercept('GET', '/api/auth/providers', {
+  cy.intercept("GET", "/api/auth/providers", {
     statusCode: 200,
-    body: {}
-  }).as('providers');
+    body: {},
+  }).as("providers");
 });
 
 export {};

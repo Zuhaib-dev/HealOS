@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: NextRequest,
-  props: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> },
 ) {
   const { id } = await props.params;
 
@@ -24,7 +24,7 @@ export async function GET(
     {
       status: 200,
       headers: getStandardApiHeaders(),
-    }
+    },
   );
 }
 

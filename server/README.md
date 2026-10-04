@@ -39,7 +39,7 @@ server/
 
 ## 🔒 Security & Authentication
 
-The backend implements strict Role-Based Access Control (RBAC). 
+The backend implements strict Role-Based Access Control (RBAC).
 All protected routes verify an incoming JWT Bearer token and check the authenticated user's `role` against an allowed list:
 
 ```typescript
@@ -49,6 +49,7 @@ router.use(requireRole([UserRole.DOCTOR, UserRole.NURSE]));
 ```
 
 ### Supported Roles:
+
 `ADMIN`, `DOCTOR`, `NURSE`, `PHARMACIST`, `LAB_TECHNICIAN`, `RECEPTIONIST`, `PATIENT`, `USER`
 
 ---
@@ -67,12 +68,14 @@ Socket.io is integrated tightly into the Express server to broadcast changes ins
 ## 🛠️ Development Setup
 
 1. **Install Dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Environment Configuration:**
    Create a `.env` file in the `server` directory and add:
+
    ```env
    PORT=5001
    MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/healos
@@ -89,6 +92,7 @@ Socket.io is integrated tightly into the Express server to broadcast changes ins
    ```
 
 3. **Run Development Server (with hot reload):**
+
    ```bash
    npm run dev
    ```
@@ -129,6 +133,6 @@ Full-stack engineer · UI/UX obsessive · Real-time systems nerd
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Zuhaib_Rashid-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/zuhaib-rashid-661345318/)
 [![Twitter](https://img.shields.io/badge/Twitter-@xuhaib__x9-1DA1F2?style=for-the-badge&logo=twitter)](https://x.com/xuhaib_x9)
 
-*Built with obsessive attention to detail, real-world production patterns, and way too much coffee.*
+_Built with obsessive attention to detail, real-world production patterns, and way too much coffee._
 
 </div>

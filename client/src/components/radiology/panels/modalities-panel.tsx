@@ -34,17 +34,36 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
-function Td({ children, colSpan, className }: { children?: React.ReactNode, colSpan?: number, className?: string }) {
-  return <td colSpan={colSpan} className={`px-4 py-3.5 align-middle text-sm ${className || ""}`}>{children}</td>;
+function Td({
+  children,
+  colSpan,
+  className,
+}: {
+  children?: React.ReactNode;
+  colSpan?: number;
+  className?: string;
+}) {
+  return (
+    <td
+      colSpan={colSpan}
+      className={`px-4 py-3.5 align-middle text-sm ${className || ""}`}
+    >
+      {children}
+    </td>
+  );
 }
 
 /** Animated scanner glyph — hand-drawn SVG, no raster assets. */
@@ -60,8 +79,24 @@ function ScannerGlyph({ active }: { active: boolean }) {
         stroke="var(--hairline)"
         strokeWidth="1"
       />
-      <circle cx="60" cy="36" r="17" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.5" />
-      <circle cx="60" cy="36" r="8" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.8" />
+      <circle
+        cx="60"
+        cy="36"
+        r="17"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.5"
+      />
+      <circle
+        cx="60"
+        cy="36"
+        r="8"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.8"
+      />
       {active && (
         <motion.line
           x1="8"
@@ -84,7 +119,9 @@ export function ModalitiesPanel() {
   const [modalities, setModalities] = useState<ModalityMachineRecord[]>([]);
 
   useEffect(() => {
-    fetchModalitiesApi().then(res => setModalities(res.data.modalities)).catch(console.error);
+    fetchModalitiesApi()
+      .then((res) => setModalities(res.data.modalities))
+      .catch(console.error);
   }, []);
 
   return (
@@ -95,47 +132,54 @@ export function ModalitiesPanel() {
         note="Scanner state, queue depth, uptime, dose index and next service window for every room in the department."
       />
 
-      <div className="grid gap-px sm:grid-cols-2 xl:grid-cols-3" style={{ background: "var(--hairline)" }}>
+      <div
+        className="grid gap-px sm:grid-cols-2 xl:grid-cols-3"
+        style={{ background: "var(--hairline)" }}
+      >
         {modalities.length === 0 ? (
-          <div className="bg-background p-8 text-center text-muted-foreground col-span-full">Loading equipment...</div>
-        ) : modalities.map((m) => (
-          <div key={m._id} className="bg-background p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-mono text-lg">{m.room}</p>
-                <p className="mono-label text-muted-foreground">
-                  {m.modality} · {m.vendor}
-                </p>
-              </div>
-              <Pill
-                tone={
-                  m.state === "scanning"
-                    ? "ok"
-                    : m.state === "idle"
-                      ? "mute"
-                      : m.state === "maintenance"
-                        ? "warn"
-                        : "bad"
-                }
-              >
-                {m.state}
-              </Pill>
-            </div>
-
-            <ScannerGlyph active={m.state === "scanning"} />
-
-            <dl className="mono-label mt-3 grid grid-cols-2 gap-y-2">
-              <dt className="text-muted-foreground">Queue</dt>
-              <dd className="text-right">{m.queue} studies</dd>
-              <dt className="text-muted-foreground">Uptime 30d</dt>
-              <dd className="text-right">{m.uptime}</dd>
-              <dt className="text-muted-foreground">Dose index</dt>
-              <dd className="text-right">{m.doseIndex}</dd>
-              <dt className="text-muted-foreground">Next service</dt>
-              <dd className="text-right">{m.nextService}</dd>
-            </dl>
+          <div className="bg-background p-8 text-center text-muted-foreground col-span-full">
+            Loading equipment...
           </div>
-        ))}
+        ) : (
+          modalities.map((m) => (
+            <div key={m._id} className="bg-background p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-mono text-lg">{m.room}</p>
+                  <p className="mono-label text-muted-foreground">
+                    {m.modality} · {m.vendor}
+                  </p>
+                </div>
+                <Pill
+                  tone={
+                    m.state === "scanning"
+                      ? "ok"
+                      : m.state === "idle"
+                        ? "mute"
+                        : m.state === "maintenance"
+                          ? "warn"
+                          : "bad"
+                  }
+                >
+                  {m.state}
+                </Pill>
+              </div>
+
+              <ScannerGlyph active={m.state === "scanning"} />
+
+              <dl className="mono-label mt-3 grid grid-cols-2 gap-y-2">
+                <dt className="text-muted-foreground">Queue</dt>
+                <dd className="text-right">{m.queue} studies</dd>
+                <dt className="text-muted-foreground">Uptime 30d</dt>
+                <dd className="text-right">{m.uptime}</dd>
+                <dt className="text-muted-foreground">Dose index</dt>
+                <dd className="text-right">{m.doseIndex}</dd>
+                <dt className="text-muted-foreground">Next service</dt>
+                <dd className="text-right">{m.nextService}</dd>
+              </dl>
+            </div>
+          ))
+        )}
       </div>
     </section>
   );

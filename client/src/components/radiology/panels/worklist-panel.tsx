@@ -7,9 +7,30 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Check, X, ShieldCheck, CreditCard, Banknote, QrCode, Smartphone, Loader2, ArrowRight, AlertCircle, Search, UploadCloud, TestTube, Barcode, Send, FileText } from "lucide-react";
+import {
+  Check,
+  X,
+  ShieldCheck,
+  CreditCard,
+  Banknote,
+  QrCode,
+  Smartphone,
+  Loader2,
+  ArrowRight,
+  AlertCircle,
+  Search,
+  UploadCloud,
+  TestTube,
+  Barcode,
+  Send,
+  FileText,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { fetchPendingOrdersApi, updateOrderStatusApi, createRadiologyBillApi } from "@/lib/api/radiology";
+import {
+  fetchPendingOrdersApi,
+  updateOrderStatusApi,
+  createRadiologyBillApi,
+} from "@/lib/api/radiology";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import { useAuthStore } from "@/store/use-auth-store";
@@ -26,8 +47,24 @@ function ScannerGlyph({ active }: { active: boolean }) {
         stroke="var(--hairline)"
         strokeWidth="1"
       />
-      <circle cx="60" cy="36" r="17" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.5" />
-      <circle cx="60" cy="36" r="8" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.8" />
+      <circle
+        cx="60"
+        cy="36"
+        r="17"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.5"
+      />
+      <circle
+        cx="60"
+        cy="36"
+        r="8"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.8"
+      />
       {active && (
         <motion.line
           x1="8"
@@ -50,13 +87,17 @@ export function WorklistPanel() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [search, setSearch] = useState("");
-  
+
   // POS State
   const [price, setPrice] = useState<string>("2500"); // default for radiology
-  const [paymentMode, setPaymentMode] = useState<"CASH" | "ONLINE" | null>(null);
+  const [paymentMode, setPaymentMode] = useState<"CASH" | "ONLINE" | null>(
+    null,
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<"IDLE" | "WAITING" | "PAID">("IDLE");
+  const [paymentStatus, setPaymentStatus] = useState<
+    "IDLE" | "WAITING" | "PAID"
+  >("IDLE");
 
   const loadData = async () => {
     try {
@@ -78,18 +119,18 @@ export function WorklistPanel() {
       const reload = () => loadData();
       socket.on("radiology_order_updated", reload);
       socket.on("order_created", reload);
-      
+
       const onInvoicePaid = () => {
-        setPaymentStatus(prev => {
+        setPaymentStatus((prev) => {
           if (prev === "WAITING") {
-             toast.success("Online payment verified by backend!");
-             return "PAID";
+            toast.success("Online payment verified by backend!");
+            return "PAID";
           }
           return prev;
         });
       };
       socket.on("invoice_paid", onInvoicePaid);
-      
+
       return () => {
         socket.off("radiology_order_updated", reload);
         socket.off("order_created", reload);
@@ -121,7 +162,7 @@ export function WorklistPanel() {
 
   const handleCheckout = async () => {
     if (!selectedOrder) return;
-    
+
     if (!paymentMode) {
       toast.error("Please select a payment mode.");
       return;
@@ -132,11 +173,16 @@ export function WorklistPanel() {
       if (paymentMode === "ONLINE" && paymentStatus === "PAID") {
         await updateOrderStatusApi(selectedOrder._id, "IN_PROGRESS");
       } else {
-        await updateOrderStatusApi(selectedOrder._id, "IN_PROGRESS", paymentMode === "ONLINE" ? "UPI" : paymentMode, Number(price));
+        await updateOrderStatusApi(
+          selectedOrder._id,
+          "IN_PROGRESS",
+          paymentMode === "ONLINE" ? "UPI" : paymentMode,
+          Number(price),
+        );
       }
       toast.success(`Payment processed and scan started!`);
       setIsPaid(true);
-      
+
       setTimeout(() => {
         loadData();
       }, 2000);
@@ -147,15 +193,18 @@ export function WorklistPanel() {
       setIsProcessing(false);
     }
   };
-  
-  const handleUpload = async (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+
+  const handleUpload = async (
+    id: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     const formData = new FormData();
     formData.append("reportFile", file);
     formData.append("comments", "Uploaded inline from worklist POS");
-    
+
     try {
       toast.info("Uploading report...");
       const { uploadDiagnosticReportApi } = await import("@/lib/api/radiology");
@@ -182,7 +231,7 @@ export function WorklistPanel() {
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUrl)}`;
 
   // Filter out reported orders from the queue for cleaner POS view
-  const pendingQueue = orders.filter(o => o.status !== "REPORTED");
+  const pendingQueue = orders.filter((o) => o.status !== "REPORTED");
 
   return (
     <section className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
@@ -194,69 +243,110 @@ export function WorklistPanel() {
       />
 
       <div className="flex-1 flex flex-col lg:flex-row bg-background overflow-hidden border-t border-border/60">
-        
         {/* Left Pane: Queue */}
         <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col border-r border-border/60 bg-background/50">
           <div className="p-4 sm:p-6 border-b border-border/40">
             <div className="relative">
-              <label htmlFor="radiology-worklist-search" className="sr-only">Search MRN, Patient Name</label>
+              <label htmlFor="radiology-worklist-search" className="sr-only">
+                Search MRN, Patient Name
+              </label>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <input 
+              <input
                 id="radiology-worklist-search"
-                aria-label="Search MRN, Patient Name" title="Search MRN, Patient Name"
-                placeholder="Search MRN, Patient Name..." 
+                aria-label="Search MRN, Patient Name"
+                title="Search MRN, Patient Name"
+                placeholder="Search MRN, Patient Name..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-card/60 border border-border/60 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50 transition-colors"
               />
             </div>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 custom-scrollbar">
-            {pendingQueue.filter(r => (r.patient?.name?.toLowerCase().includes(search.toLowerCase()) || r.accessionNumber?.toLowerCase().includes(search.toLowerCase()) || r._id?.toLowerCase().includes(search.toLowerCase()))).length === 0 ? (
+            {pendingQueue.filter(
+              (r) =>
+                r.patient?.name?.toLowerCase().includes(search.toLowerCase()) ||
+                r.accessionNumber
+                  ?.toLowerCase()
+                  .includes(search.toLowerCase()) ||
+                r._id?.toLowerCase().includes(search.toLowerCase()),
+            ).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                 <FileText className="size-10 text-muted-foreground/30 mb-3" />
-                 <p className="font-medium text-foreground">Worklist is empty</p>
+                <FileText className="size-10 text-muted-foreground/30 mb-3" />
+                <p className="font-medium text-foreground">Worklist is empty</p>
               </div>
             ) : (
               <AnimatePresence>
-                {pendingQueue.filter(r => (r.patient?.name?.toLowerCase().includes(search.toLowerCase()) || r.accessionNumber?.toLowerCase().includes(search.toLowerCase()) || r._id?.toLowerCase().includes(search.toLowerCase()))).map((order) => {
-                  const isSelected = selectedOrder?._id === order._id;
-                  const patientName = order.patient ? `${order.patient.firstName || ''} ${order.patient.lastName || ''}`.trim() || order.patient.name : "Unknown Patient";
-                  
-                  return (
-                    <motion.button
-                      layout
-                      key={order._id}
-                      onClick={() => handleSelectOrder(order)}
-                      className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all duration-300 ${
-                        isSelected 
-                          ? "bg-primary text-primary-foreground shadow-lg border-primary ring-4 ring-primary/10 scale-[1.02]" 
-                          : "bg-card hover:bg-muted/50 border-border/60 hover:border-primary/40"
-                      }`}
-                    >
-                      <div className="flex justify-between items-start gap-3">
-                        <div>
-                          <p className={`font-bold text-lg leading-tight ${isSelected ? "text-primary-foreground" : "text-foreground"}`}>
-                            {patientName}
-                          </p>
-                          <div className={`flex items-center gap-2 mt-1.5 ${isSelected ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                            <span className="mono-label text-[10px] uppercase tracking-wider">{order.accessionNumber || order._id.slice(-8)}</span>
-                            <span className="opacity-50">•</span>
-                            <span className="mono-label text-[10px]">{order.testName}</span>
+                {pendingQueue
+                  .filter(
+                    (r) =>
+                      r.patient?.name
+                        ?.toLowerCase()
+                        .includes(search.toLowerCase()) ||
+                      r.accessionNumber
+                        ?.toLowerCase()
+                        .includes(search.toLowerCase()) ||
+                      r._id?.toLowerCase().includes(search.toLowerCase()),
+                  )
+                  .map((order) => {
+                    const isSelected = selectedOrder?._id === order._id;
+                    const patientName = order.patient
+                      ? `${order.patient.firstName || ""} ${order.patient.lastName || ""}`.trim() ||
+                        order.patient.name
+                      : "Unknown Patient";
+
+                    return (
+                      <motion.button
+                        layout
+                        key={order._id}
+                        onClick={() => handleSelectOrder(order)}
+                        className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all duration-300 ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground shadow-lg border-primary ring-4 ring-primary/10 scale-[1.02]"
+                            : "bg-card hover:bg-muted/50 border-border/60 hover:border-primary/40"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-3">
+                          <div>
+                            <p
+                              className={`font-bold text-lg leading-tight ${isSelected ? "text-primary-foreground" : "text-foreground"}`}
+                            >
+                              {patientName}
+                            </p>
+                            <div
+                              className={`flex items-center gap-2 mt-1.5 ${isSelected ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+                            >
+                              <span className="mono-label text-[10px] uppercase tracking-wider">
+                                {order.accessionNumber || order._id.slice(-8)}
+                              </span>
+                              <span className="opacity-50">•</span>
+                              <span className="mono-label text-[10px]">
+                                {order.testName}
+                              </span>
+                            </div>
+                          </div>
+                          <div
+                            className={`px-2.5 py-1 rounded-full flex items-center justify-center text-xs font-bold ${
+                              order.status === "IN_PROGRESS"
+                                ? isSelected
+                                  ? "bg-primary-foreground/20 text-primary-foreground"
+                                  : "bg-emerald-500/10 text-emerald-600"
+                                : isSelected
+                                  ? "bg-primary-foreground text-primary"
+                                  : "bg-rose-500/10 text-rose-500"
+                            }`}
+                          >
+                            {order.status === "IN_PROGRESS" ? (
+                              <Check className="size-3.5" />
+                            ) : (
+                              order.priority
+                            )}
                           </div>
                         </div>
-                        <div className={`px-2.5 py-1 rounded-full flex items-center justify-center text-xs font-bold ${
-                          order.status === "IN_PROGRESS"
-                            ? isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-emerald-500/10 text-emerald-600"
-                            : isSelected ? "bg-primary-foreground text-primary" : "bg-rose-500/10 text-rose-500"
-                        }`}>
-                          {order.status === "IN_PROGRESS" ? <Check className="size-3.5" /> : order.priority}
-                        </div>
-                      </div>
-                    </motion.button>
-                  );
-                })}
+                      </motion.button>
+                    );
+                  })}
               </AnimatePresence>
             )}
           </div>
@@ -266,25 +356,27 @@ export function WorklistPanel() {
         <div className="w-full lg:w-[60%] xl:w-[65%] flex flex-col bg-card/20 overflow-hidden relative">
           {selectedOrder ? (
             <AnimatePresence mode="wait">
-              <motion.div 
+              <motion.div
                 key={selectedOrder._id}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 className="flex flex-col h-full overflow-y-auto custom-scrollbar"
               >
-                
                 {/* 1. ORDER DETAILS */}
                 <div className="p-4 sm:p-6 lg:p-8 border-b border-border/40">
                   <div className="flex items-center gap-3 mb-6">
                     <FileText className="size-5 text-primary" />
-                    <h2 className="font-display text-2xl font-bold">Radiology Checkout</h2>
+                    <h2 className="font-display text-2xl font-bold">
+                      Radiology Checkout
+                    </h2>
                   </div>
 
-                  <div className={`w-full p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 ${
+                  <div
+                    className={`w-full p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 ${
                       isPaid
                         ? "bg-muted/50 border-border/40 opacity-70"
-                        : "bg-background border-primary/30 shadow-sm" 
+                        : "bg-background border-primary/30 shadow-sm"
                     }`}
                   >
                     <div className="flex items-start gap-3 sm:gap-4">
@@ -293,13 +385,19 @@ export function WorklistPanel() {
                           <p className="font-bold text-base text-foreground">
                             {selectedOrder.testName}
                           </p>
-                          {isPaid && <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded uppercase">Started & Billed</span>}
+                          {isPaid && (
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded uppercase">
+                              Started & Billed
+                            </span>
+                          )}
                         </div>
-                        
+
                         <div className="mt-3">
                           <ScannerGlyph active={isPaid} />
                           <div className="mono-label text-[10px] text-muted-foreground mt-2">
-                            <span>{selectedOrder.modality || "Imaging"} Modality</span>
+                            <span>
+                              {selectedOrder.modality || "Imaging"} Modality
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -308,15 +406,23 @@ export function WorklistPanel() {
                     {!isPaid && (
                       <div className="mt-2 sm:mt-0 flex items-center justify-between sm:justify-end gap-2 sm:gap-4 pt-3 sm:pt-0 border-t sm:border-0 border-border/30">
                         <div className="flex flex-col items-start sm:items-end">
-                          <label htmlFor="radiology-order-price" className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Set Price</label>
+                          <label
+                            htmlFor="radiology-order-price"
+                            className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground mb-1"
+                          >
+                            Set Price
+                          </label>
                           <div className="relative">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs">₹</span>
-                            <input 
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs">
+                              ₹
+                            </span>
+                            <input
                               id="radiology-order-price"
-                              aria-label="Set Price in rupees" title="Set Price in rupees"
-                              type="number" 
+                              aria-label="Set Price in rupees"
+                              title="Set Price in rupees"
+                              type="number"
                               disabled={isPaid}
-                              value={price} 
+                              value={price}
                               onChange={(e) => setPrice(e.target.value)}
                               className="w-20 bg-card border border-border/60 rounded px-2 pl-5 py-1 text-xs font-mono outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus:border-primary/50 text-right"
                             />
@@ -329,9 +435,8 @@ export function WorklistPanel() {
 
                 {/* 2. POS Checkout */}
                 <div className="p-4 sm:p-6 lg:p-8 flex-1 flex flex-col bg-background/30 pb-24 sm:pb-8">
-                  
                   {isPaid ? (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className="flex-1 flex flex-col items-center justify-center text-center bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8"
@@ -339,22 +444,31 @@ export function WorklistPanel() {
                       <div className="size-16 rounded-full bg-emerald-500 flex items-center justify-center text-white mb-6 shadow-xl shadow-emerald-500/20">
                         <Check className="size-8" strokeWidth={3} />
                       </div>
-                      <h2 className="font-display text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">Scan In Progress</h2>
-                      <p className="text-muted-foreground">The procedure has been billed and marked as in-progress.</p>
-                      
+                      <h2 className="font-display text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
+                        Scan In Progress
+                      </h2>
+                      <p className="text-muted-foreground">
+                        The procedure has been billed and marked as in-progress.
+                      </p>
+
                       <div className="mt-8 flex gap-3">
-                         <label className="cursor-pointer relative">
-                           <input
-                             type="file"
-                             className="absolute hidden"
-                             accept=".pdf,.jpg,.jpeg,.png,.dcm,.zip"
-                             onChange={(e) => handleUpload(selectedOrder._id, e)}
-                           />
-                           <span className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90">
-                             <UploadCloud className="size-3.5" /> Upload Report
-                           </span>
-                         </label>
-                         <ActionButton className="bg-background" onClick={() => setSelectedOrder(null)}>Next Patient</ActionButton>
+                        <label className="cursor-pointer relative">
+                          <input
+                            type="file"
+                            className="absolute hidden"
+                            accept=".pdf,.jpg,.jpeg,.png,.dcm,.zip"
+                            onChange={(e) => handleUpload(selectedOrder._id, e)}
+                          />
+                          <span className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90">
+                            <UploadCloud className="size-3.5" /> Upload Report
+                          </span>
+                        </label>
+                        <ActionButton
+                          className="bg-background"
+                          onClick={() => setSelectedOrder(null)}
+                        >
+                          Next Patient
+                        </ActionButton>
                       </div>
                     </motion.div>
                   ) : (
@@ -362,140 +476,187 @@ export function WorklistPanel() {
                       <h3 className="mono-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-6">
                         Payment Collection
                       </h3>
-                      
+
                       <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 mb-8">
                         {/* Totals */}
                         <div className="flex-1 bg-background border border-border/60 p-6 rounded-2xl shadow-sm">
-                          <p className="text-sm text-muted-foreground mb-1">Total Amount Due</p>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Total Amount Due
+                          </p>
                           <div className="flex items-baseline gap-2">
-                             <p className="font-mono text-5xl font-bold tracking-tighter text-foreground">₹{price}</p>
-                             <p className="mono-label text-muted-foreground">.00</p>
+                            <p className="font-mono text-5xl font-bold tracking-tighter text-foreground">
+                              ₹{price}
+                            </p>
+                            <p className="mono-label text-muted-foreground">
+                              .00
+                            </p>
                           </div>
                         </div>
-                        
+
                         {/* Modes */}
                         <div className="flex-1">
-                           <p className="text-sm text-muted-foreground mb-3">Select Mode</p>
-                           <div className="grid grid-cols-2 gap-3">
-                             <button
-                               disabled={Number(price) === 0}
-                               onClick={() => setPaymentMode("CASH")}
-                               className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
-                                 paymentMode === "CASH" 
-                                   ? "bg-primary text-primary-foreground border-primary shadow-md" 
-                                   : "bg-background text-muted-foreground border-border/60 hover:bg-muted/50 disabled:opacity-50"
-                               }`}
-                             >
-                               <Banknote className="size-5" />
-                               <span className="text-xs font-bold uppercase tracking-wider">Cash</span>
-                             </button>
-                             <button
-                               disabled={Number(price) === 0}
-                               onClick={() => setPaymentMode("ONLINE")}
-                               className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
-                                 paymentMode === "ONLINE" 
-                                   ? "bg-indigo-500 text-white border-indigo-500 shadow-md shadow-indigo-500/20" 
-                                   : "bg-background text-muted-foreground border-border/60 hover:bg-muted/50 disabled:opacity-50"
-                               }`}
-                             >
-                               <Smartphone className="size-5" />
-                               <span className="text-xs font-bold uppercase tracking-wider">Online & UPI</span>
-                             </button>
-                           </div>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Select Mode
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              disabled={Number(price) === 0}
+                              onClick={() => setPaymentMode("CASH")}
+                              className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
+                                paymentMode === "CASH"
+                                  ? "bg-primary text-primary-foreground border-primary shadow-md"
+                                  : "bg-background text-muted-foreground border-border/60 hover:bg-muted/50 disabled:opacity-50"
+                              }`}
+                            >
+                              <Banknote className="size-5" />
+                              <span className="text-xs font-bold uppercase tracking-wider">
+                                Cash
+                              </span>
+                            </button>
+                            <button
+                              disabled={Number(price) === 0}
+                              onClick={() => setPaymentMode("ONLINE")}
+                              className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
+                                paymentMode === "ONLINE"
+                                  ? "bg-indigo-500 text-white border-indigo-500 shadow-md shadow-indigo-500/20"
+                                  : "bg-background text-muted-foreground border-border/60 hover:bg-muted/50 disabled:opacity-50"
+                              }`}
+                            >
+                              <Smartphone className="size-5" />
+                              <span className="text-xs font-bold uppercase tracking-wider">
+                                Online & UPI
+                              </span>
+                            </button>
+                          </div>
                         </div>
                       </div>
 
                       {/* Dynamic Payment Area */}
                       <AnimatePresence mode="popLayout">
                         {paymentMode === "ONLINE" && (
-                          <motion.div 
+                          <motion.div
                             initial={{ opacity: 0, y: 10, height: 0 }}
                             animate={{ opacity: 1, y: 0, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
                             className="bg-indigo-500/5 border border-indigo-500/20 rounded-2xl p-6 sm:p-8 mb-8 flex flex-col sm:flex-row items-center gap-8"
                           >
                             <div className="bg-white p-3 rounded-2xl shadow-md shrink-0">
-                               <img src={qrCodeUrl} alt="UPI QR Code" className="size-32 rounded-lg" />
+                              <img
+                                src={qrCodeUrl}
+                                alt="UPI QR Code"
+                                className="size-32 rounded-lg"
+                              />
                             </div>
                             <div className="text-center sm:text-left w-full">
-                               <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-lg mb-2">Scan to Pay via UPI</h4>
-                               <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                                 The patient can scan this dynamic QR code to instantly pay <strong className="text-foreground">₹{price}</strong> from their phone.
-                               </p>
-                               {paymentStatus === "IDLE" && (
-                                 <button 
-                                   type="button"
-                                   onClick={handleSendBill}
-                                   className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all bg-indigo-500 text-white hover:bg-indigo-600 shadow-md"
-                                 >
-                                   <Send className="size-4" /> Send Bill to Patient Portal
-                                 </button>
-                               )}
-                               {paymentStatus === "WAITING" && (
-                                 <div className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                                   <Loader2 className="size-4 animate-spin" /> Waiting for Payment...
-                                 </div>
-                               )}
-                               {paymentStatus === "PAID" && (
-                                 <div className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                   <Check className="size-4" /> Payment Verified
-                                 </div>
-                               )}
+                              <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-lg mb-2">
+                                Scan to Pay via UPI
+                              </h4>
+                              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                                The patient can scan this dynamic QR code to
+                                instantly pay{" "}
+                                <strong className="text-foreground">
+                                  ₹{price}
+                                </strong>{" "}
+                                from their phone.
+                              </p>
+                              {paymentStatus === "IDLE" && (
+                                <button
+                                  type="button"
+                                  onClick={handleSendBill}
+                                  className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all bg-indigo-500 text-white hover:bg-indigo-600 shadow-md"
+                                >
+                                  <Send className="size-4" /> Send Bill to
+                                  Patient Portal
+                                </button>
+                              )}
+                              {paymentStatus === "WAITING" && (
+                                <div className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                  <Loader2 className="size-4 animate-spin" />{" "}
+                                  Waiting for Payment...
+                                </div>
+                              )}
+                              {paymentStatus === "PAID" && (
+                                <div className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                  <Check className="size-4" /> Payment Verified
+                                </div>
+                              )}
                             </div>
                           </motion.div>
                         )}
-                        
+
                         {paymentMode === "CASH" && (
-                          <motion.div 
+                          <motion.div
                             initial={{ opacity: 0, y: 10, height: 0 }}
                             animate={{ opacity: 1, y: 0, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
                             className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6 sm:p-8 mb-8 flex items-center gap-6"
                           >
                             <div className="size-16 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0">
-                               <Banknote className="size-8" />
+                              <Banknote className="size-8" />
                             </div>
                             <div>
-                              <h4 className="font-bold text-emerald-600 dark:text-emerald-400 text-lg mb-1">Collect Cash: ₹{price}</h4>
-                              <p className="text-sm text-muted-foreground">Ensure exact change is received or issue balance from the float register.</p>
+                              <h4 className="font-bold text-emerald-600 dark:text-emerald-400 text-lg mb-1">
+                                Collect Cash: ₹{price}
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                Ensure exact change is received or issue balance
+                                from the float register.
+                              </p>
                             </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
 
                       <div className="fixed sm:relative bottom-16 sm:bottom-0 left-0 right-0 sm:mt-auto pt-4 sm:pt-6 border-t border-border/40 bg-background/80 sm:bg-transparent backdrop-blur-xl sm:backdrop-blur-none p-4 sm:p-0 z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] sm:shadow-none">
-                        <ActionButton 
-                          tone="solid" 
-                          onClick={handleCheckout} 
-                          disabled={isProcessing || !paymentMode || Number(price) === 0 || (paymentMode === "ONLINE" && paymentStatus !== "PAID")}
+                        <ActionButton
+                          tone="solid"
+                          onClick={handleCheckout}
+                          disabled={
+                            isProcessing ||
+                            !paymentMode ||
+                            Number(price) === 0 ||
+                            (paymentMode === "ONLINE" &&
+                              paymentStatus !== "PAID")
+                          }
                           className={`w-full py-4 sm:py-6 text-base font-bold justify-center transition-all ${
-                            paymentMode === "ONLINE" ? "bg-indigo-500 hover:bg-indigo-600 text-white" : ""
+                            paymentMode === "ONLINE"
+                              ? "bg-indigo-500 hover:bg-indigo-600 text-white"
+                              : ""
                           }`}
                         >
                           {isProcessing ? (
-                            <><Loader2 className="size-5 animate-spin mr-2" /> Processing Transaction...</>
+                            <>
+                              <Loader2 className="size-5 animate-spin mr-2" />{" "}
+                              Processing Transaction...
+                            </>
                           ) : (
-                            <>Collect & Start Scan <ArrowRight className="size-5 ml-2" /></>
+                            <>
+                              Collect & Start Scan{" "}
+                              <ArrowRight className="size-5 ml-2" />
+                            </>
                           )}
                         </ActionButton>
                       </div>
                     </>
                   )}
                 </div>
-
               </motion.div>
             </AnimatePresence>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
               <div className="size-24 rounded-full bg-muted/50 flex items-center justify-center mb-6 shadow-inner">
-                 <ShieldCheck className="size-10 text-muted-foreground/30" />
+                <ShieldCheck className="size-10 text-muted-foreground/30" />
               </div>
-              <h2 className="font-display text-2xl font-bold text-foreground mb-2">Radiology POS</h2>
-              <p className="text-muted-foreground max-w-sm leading-relaxed">Select a study from the queue on the left to set prices, collect payment, and begin the procedure.</p>
+              <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+                Radiology POS
+              </h2>
+              <p className="text-muted-foreground max-w-sm leading-relaxed">
+                Select a study from the queue on the left to set prices, collect
+                payment, and begin the procedure.
+              </p>
             </div>
           )}
         </div>
-
       </div>
     </section>
   );

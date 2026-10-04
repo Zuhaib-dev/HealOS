@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
-import { getSafeRedirectPath, getRoleDashboardPath, isPathAllowedForRole } from "@/lib/auth-navigation";
+import {
+  getSafeRedirectPath,
+  getRoleDashboardPath,
+  isPathAllowedForRole,
+} from "@/lib/auth-navigation";
 
 const RFC8288_LINK_HEADER =
   '<https://healos-theta.vercel.app/index.md>; rel="alternate"; type="text/markdown", ' +
@@ -17,13 +21,11 @@ export async function middleware(request: NextRequest) {
 
   const isAiBot =
     /GPTBot|ClaudeBot|ChatGPT-User|PerplexityBot|Google-Extended|Applebot-Extended|ora-agent|DeepSeekBot/i.test(
-      userAgent
+      userAgent,
     );
 
   const wantsMarkdown =
-    acceptHeader.includes("text/markdown") ||
-    modeParam === "agent" ||
-    isAiBot;
+    acceptHeader.includes("text/markdown") || modeParam === "agent" || isAiBot;
 
   // Root content negotiation for AI crawlers & markdown probes
   if (pathname === "/" && wantsMarkdown) {
@@ -51,7 +53,10 @@ export async function middleware(request: NextRequest) {
 
   // Universal markdown fallback for *.md requests (e.g. /.well-known/api-catalog.md, /api/v1/appointments.md)
   if (pathname.endsWith(".md") && !KNOWN_MD_ROUTES.has(pathname)) {
-    const fallbackUrl = new URL(`/api/markdown-fallback?path=${encodeURIComponent(pathname)}`, request.url);
+    const fallbackUrl = new URL(
+      `/api/markdown-fallback?path=${encodeURIComponent(pathname)}`,
+      request.url,
+    );
     const response = NextResponse.rewrite(fallbackUrl);
     response.headers.set("Content-Type", "text/markdown; charset=utf-8");
     response.headers.set("Vary", "Accept, User-Agent, Accept-Encoding");
@@ -109,7 +114,9 @@ export async function middleware(request: NextRequest) {
 
   // Verify authentication for protected paths
   const tokenCookie = request.cookies.get("healos_token")?.value;
-  const nextAuthCookie = request.cookies.get("authjs.session-token")?.value || request.cookies.get("__Secure-authjs.session-token")?.value;
+  const nextAuthCookie =
+    request.cookies.get("authjs.session-token")?.value ||
+    request.cookies.get("__Secure-authjs.session-token")?.value;
 
   if (!tokenCookie && !nextAuthCookie) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -117,7 +124,9 @@ export async function middleware(request: NextRequest) {
 
   if (tokenCookie) {
     try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "dev-jwt-secret-change-in-production");
+      const secret = new TextEncoder().encode(
+        process.env.JWT_SECRET || "dev-jwt-secret-change-in-production",
+      );
       await jwtVerify(tokenCookie, secret);
     } catch (error) {
       const response = NextResponse.redirect(new URL("/login", request.url));

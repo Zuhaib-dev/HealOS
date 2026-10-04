@@ -48,12 +48,23 @@ export function ConsultationForm({
   });
 
   const addMedicine = () => {
-    if (!newMed.name || !newMed.dosage || !newMed.frequency || !newMed.duration) {
+    if (
+      !newMed.name ||
+      !newMed.dosage ||
+      !newMed.frequency ||
+      !newMed.duration
+    ) {
       toast.error("Please fill required medicine fields");
       return;
     }
     setMedicines([...medicines, newMed]);
-    setNewMed({ name: "", dosage: "", frequency: "", duration: "", instructions: "" });
+    setNewMed({
+      name: "",
+      dosage: "",
+      frequency: "",
+      duration: "",
+      instructions: "",
+    });
   };
 
   const removeMedicine = (index: number) => {
@@ -76,9 +87,11 @@ export function ConsultationForm({
   const handleSave = async () => {
     try {
       setSaving(true);
-      const patId = appointment 
-        ? (typeof appointment.patient === "object" ? appointment.patient._id : appointment.patient)
-        : (patient?._id);
+      const patId = appointment
+        ? typeof appointment.patient === "object"
+          ? appointment.patient._id
+          : appointment.patient
+        : patient?._id;
 
       if (!patId) {
         toast.error("Cannot resolve patient ID");
@@ -107,12 +120,14 @@ export function ConsultationForm({
     }
   };
 
-  const displayPat = appointment 
-    ? (typeof appointment.patient === "object" ? appointment.patient : null)
+  const displayPat = appointment
+    ? typeof appointment.patient === "object"
+      ? appointment.patient
+      : null
     : patient;
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
@@ -121,16 +136,23 @@ export function ConsultationForm({
     >
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/40 px-4 py-3 flex items-center justify-between shadow-sm">
         <div>
-          <h2 className="font-semibold text-foreground text-lg">Consultation: {displayPat?.name || "Unknown"}</h2>
+          <h2 className="font-semibold text-foreground text-lg">
+            Consultation: {displayPat?.name || "Unknown"}
+          </h2>
           {appointment ? (
-            <p className="mono-label text-muted-foreground text-xs">{appointment.date} | {appointment.timeSlot} | {appointment.department}</p>
+            <p className="mono-label text-muted-foreground text-xs">
+              {appointment.date} | {appointment.timeSlot} |{" "}
+              {appointment.department}
+            </p>
           ) : (
-            <p className="mono-label text-muted-foreground text-xs">Ad-Hoc Consultation • Shift Board</p>
+            <p className="mono-label text-muted-foreground text-xs">
+              Ad-Hoc Consultation • Shift Board
+            </p>
           )}
         </div>
         <div className="flex items-center gap-3">
           {appointment?.type === "TELECONSULT" && !isVideoCallActive && (
-            <ActionButton 
+            <ActionButton
               onClick={() => setIsVideoCallActive(true)}
               className="bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 border-indigo-500/30 flex items-center gap-2"
             >
@@ -144,14 +166,13 @@ export function ConsultationForm({
         </div>
       </div>
       <div className="p-4 sm:p-6 lg:p-8 max-w-5xl w-full mx-auto space-y-8 pb-32">
-        
         {/* Video Call Workspace */}
         {isVideoCallActive && appointment && (
           <div className="mb-8 w-full">
-            <TelemedicineWorkbench 
-              appointmentId={appointment._id} 
-              isDoctor={true} 
-              onEndCall={() => setIsVideoCallActive(false)} 
+            <TelemedicineWorkbench
+              appointmentId={appointment._id}
+              isDoctor={true}
+              onEndCall={() => setIsVideoCallActive(false)}
             />
           </div>
         )}
@@ -159,7 +180,9 @@ export function ConsultationForm({
         {/* Vitals / Reason */}
         {appointment?.reason && (
           <div className="bg-muted/30 border border-border/60 rounded-xl p-4 shadow-sm">
-            <p className="mono-label text-muted-foreground mb-1 uppercase text-[10px] tracking-wider font-bold">Reason for Visit</p>
+            <p className="mono-label text-muted-foreground mb-1 uppercase text-[10px] tracking-wider font-bold">
+              Reason for Visit
+            </p>
             <p className="font-medium text-foreground">{appointment.reason}</p>
           </div>
         )}
@@ -168,14 +191,26 @@ export function ConsultationForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label htmlFor="chief-complaint" className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Chief Complaint</label>
+              <label
+                htmlFor="chief-complaint"
+                className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3"
+              >
+                Chief Complaint
+              </label>
               <div className="flex flex-col xl:flex-row gap-4">
                 <div className="w-full xl:w-2/5 min-w-45 flex items-center justify-center">
-                  <AnatomySelector onSelect={(part) => setChiefComplaint(prev => prev ? `${prev}, [${part}]` : `[${part}]`)} />
+                  <AnatomySelector
+                    onSelect={(part) =>
+                      setChiefComplaint((prev) =>
+                        prev ? `${prev}, [${part}]` : `[${part}]`,
+                      )
+                    }
+                  />
                 </div>
                 <textarea
                   id="chief-complaint"
-                  aria-label="Chief Complaint" title="Chief Complaint"
+                  aria-label="Chief Complaint"
+                  title="Chief Complaint"
                   value={chiefComplaint}
                   onChange={(e) => setChiefComplaint(e.target.value)}
                   className="w-full xl:w-3/5 bg-background border border-border/60 rounded-xl p-3 min-h-32 outline-none focus:border-primary/50 transition-colors resize-none"
@@ -184,10 +219,16 @@ export function ConsultationForm({
               </div>
             </div>
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label htmlFor="consultation-diagnosis" className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Diagnosis</label>
+              <label
+                htmlFor="consultation-diagnosis"
+                className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3"
+              >
+                Diagnosis
+              </label>
               <input
                 id="consultation-diagnosis"
-                aria-label="Diagnosis" title="Diagnosis"
+                aria-label="Diagnosis"
+                title="Diagnosis"
                 type="text"
                 value={diagnosis}
                 onChange={(e) => setDiagnosis(e.target.value)}
@@ -196,10 +237,16 @@ export function ConsultationForm({
               />
             </div>
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label htmlFor="consultation-advice" className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Advice & Lifestyle</label>
+              <label
+                htmlFor="consultation-advice"
+                className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3"
+              >
+                Advice & Lifestyle
+              </label>
               <textarea
                 id="consultation-advice"
-                aria-label="Advice & Lifestyle" title="Advice & Lifestyle"
+                aria-label="Advice & Lifestyle"
+                title="Advice & Lifestyle"
                 value={advice}
                 onChange={(e) => setAdvice(e.target.value)}
                 className="w-full bg-background border border-border/60 rounded-xl p-3 min-h-25 outline-none focus:border-primary/50 transition-colors"
@@ -207,10 +254,16 @@ export function ConsultationForm({
               />
             </div>
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label htmlFor="consultation-followup" className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3">Next Follow-Up Date</label>
+              <label
+                htmlFor="consultation-followup"
+                className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3"
+              >
+                Next Follow-Up Date
+              </label>
               <input
                 id="consultation-followup"
-                aria-label="Next Follow-Up Date" title="Next Follow-Up Date"
+                aria-label="Next Follow-Up Date"
+                title="Next Follow-Up Date"
                 type="date"
                 value={followUpDate}
                 onChange={(e) => setFollowUpDate(e.target.value)}
@@ -222,19 +275,37 @@ export function ConsultationForm({
 
           {/* Prescription Writer */}
           <div className="space-y-4">
-            <h3 className="font-display font-bold text-xl border-b border-border/40 pb-3">Rx: Prescription</h3>
-            
+            <h3 className="font-display font-bold text-xl border-b border-border/40 pb-3">
+              Rx: Prescription
+            </h3>
+
             {/* Added Medicines */}
             <div className="space-y-3 mb-4">
               {medicines.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic bg-muted/20 p-4 rounded-xl border border-dashed border-border/60 text-center">No medicines added.</p>
+                <p className="text-sm text-muted-foreground italic bg-muted/20 p-4 rounded-xl border border-dashed border-border/60 text-center">
+                  No medicines added.
+                </p>
               ) : (
                 medicines.map((m, i) => (
-                  <div key={i} className="flex items-start justify-between bg-card p-4 border border-border/60 shadow-sm rounded-xl">
+                  <div
+                    key={i}
+                    className="flex items-start justify-between bg-card p-4 border border-border/60 shadow-sm rounded-xl"
+                  >
                     <div>
-                      <p className="font-bold text-base text-foreground">{m.name} <span className="text-muted-foreground text-sm font-normal">— {m.dosage}</span></p>
-                      <p className="text-xs font-semibold text-muted-foreground mt-1 uppercase tracking-wider">{m.frequency} x {m.duration}</p>
-                      {m.instructions && <p className="text-xs text-emerald-500 mt-2 bg-emerald-500/10 px-2 py-1 rounded inline-block">{m.instructions}</p>}
+                      <p className="font-bold text-base text-foreground">
+                        {m.name}{" "}
+                        <span className="text-muted-foreground text-sm font-normal">
+                          — {m.dosage}
+                        </span>
+                      </p>
+                      <p className="text-xs font-semibold text-muted-foreground mt-1 uppercase tracking-wider">
+                        {m.frequency} x {m.duration}
+                      </p>
+                      {m.instructions && (
+                        <p className="text-xs text-emerald-500 mt-2 bg-emerald-500/10 px-2 py-1 rounded inline-block">
+                          {m.instructions}
+                        </p>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -251,15 +322,23 @@ export function ConsultationForm({
 
             {/* Add New Medicine */}
             <div className="border border-border/60 p-5 rounded-2xl bg-card shadow-sm">
-              <label htmlFor="new-med-name" className="text-xs uppercase tracking-wider font-bold text-primary mb-4 block">Add Medicine (Free Text / Search)</label>
+              <label
+                htmlFor="new-med-name"
+                className="text-xs uppercase tracking-wider font-bold text-primary mb-4 block"
+              >
+                Add Medicine (Free Text / Search)
+              </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <input
                   id="new-med-name"
-                  aria-label="Drug Name" title="Drug Name"
+                  aria-label="Drug Name"
+                  title="Drug Name"
                   type="text"
                   placeholder="Drug Name (e.g. Paracetamol)"
                   value={newMed.name}
-                  onChange={(e) => setNewMed({ ...newMed, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewMed({ ...newMed, name: e.target.value })
+                  }
                   className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
                   list="common-drugs"
                 />
@@ -273,41 +352,57 @@ export function ConsultationForm({
                   <option value="Metformin" />
                   <option value="Amlodipine" />
                 </datalist>
-                
+
                 <input
-                  aria-label="Dosage" title="Dosage"
+                  aria-label="Dosage"
+                  title="Dosage"
                   type="text"
                   placeholder="Dosage (e.g. 500mg)"
                   value={newMed.dosage}
-                  onChange={(e) => setNewMed({ ...newMed, dosage: e.target.value })}
+                  onChange={(e) =>
+                    setNewMed({ ...newMed, dosage: e.target.value })
+                  }
                   className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
                 />
                 <input
-                  aria-label="Frequency" title="Frequency"
+                  aria-label="Frequency"
+                  title="Frequency"
                   type="text"
                   placeholder="Freq (e.g. 1-0-1)"
                   value={newMed.frequency}
-                  onChange={(e) => setNewMed({ ...newMed, frequency: e.target.value })}
+                  onChange={(e) =>
+                    setNewMed({ ...newMed, frequency: e.target.value })
+                  }
                   className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
                 />
                 <input
-                  aria-label="Duration" title="Duration"
+                  aria-label="Duration"
+                  title="Duration"
                   type="text"
                   placeholder="Duration (e.g. 5 days)"
                   value={newMed.duration}
-                  onChange={(e) => setNewMed({ ...newMed, duration: e.target.value })}
+                  onChange={(e) =>
+                    setNewMed({ ...newMed, duration: e.target.value })
+                  }
                   className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
                 />
               </div>
               <input
-                aria-label="Instructions" title="Instructions"
+                aria-label="Instructions"
+                title="Instructions"
                 type="text"
                 placeholder="Instructions (e.g. After food) [Optional]"
                 value={newMed.instructions}
-                onChange={(e) => setNewMed({ ...newMed, instructions: e.target.value })}
+                onChange={(e) =>
+                  setNewMed({ ...newMed, instructions: e.target.value })
+                }
                 className="w-full bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50 mb-4"
               />
-              <button type="button" onClick={addMedicine} className="w-full bg-primary/10 text-primary font-bold py-3 rounded-xl text-sm hover:bg-primary/20 transition-colors">
+              <button
+                type="button"
+                onClick={addMedicine}
+                className="w-full bg-primary/10 text-primary font-bold py-3 rounded-xl text-sm hover:bg-primary/20 transition-colors"
+              >
                 + Add to Prescription
               </button>
             </div>
@@ -316,19 +411,32 @@ export function ConsultationForm({
 
         {/* Diagnostic Orders */}
         <div className="bg-card border border-border/60 rounded-2xl p-6 mt-8 shadow-sm">
-          <h3 className="font-display font-bold text-xl border-b border-border/40 pb-3 mb-5">Diagnostic Orders (Labs / Scans)</h3>
-          
+          <h3 className="font-display font-bold text-xl border-b border-border/40 pb-3 mb-5">
+            Diagnostic Orders (Labs / Scans)
+          </h3>
+
           {/* Added Orders */}
           <div className="space-y-3 mb-5">
             {diagnosticOrders.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic bg-muted/20 p-4 rounded-xl border border-dashed border-border/60 text-center">No diagnostics ordered.</p>
+              <p className="text-sm text-muted-foreground italic bg-muted/20 p-4 rounded-xl border border-dashed border-border/60 text-center">
+                No diagnostics ordered.
+              </p>
             ) : (
               diagnosticOrders.map((o, i) => (
-                <div key={i} className="flex items-start justify-between bg-background p-4 border border-border/60 shadow-sm rounded-xl">
+                <div
+                  key={i}
+                  className="flex items-start justify-between bg-background p-4 border border-border/60 shadow-sm rounded-xl"
+                >
                   <div>
-                    <span className="text-[10px] uppercase font-bold bg-muted px-2 py-1 rounded-md mr-3">{o.testType}</span>
+                    <span className="text-[10px] uppercase font-bold bg-muted px-2 py-1 rounded-md mr-3">
+                      {o.testType}
+                    </span>
                     <span className="font-bold text-base">{o.testName}</span>
-                    {o.clinicalNotes && <p className="text-sm text-muted-foreground mt-2 border-l-2 border-primary/30 pl-2">{o.clinicalNotes}</p>}
+                    {o.clinicalNotes && (
+                      <p className="text-sm text-muted-foreground mt-2 border-l-2 border-primary/30 pl-2">
+                        {o.clinicalNotes}
+                      </p>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -345,39 +453,52 @@ export function ConsultationForm({
 
           {/* Add New Order */}
           <div className="border border-border/60 p-5 rounded-2xl bg-background/50">
-             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-               <select
-                 id="diagnostic-order-type"
-                 aria-label="Test Type" title="Test Type"
-                 value={newOrder.testType}
-                 onChange={(e) => setNewOrder({ ...newOrder, testType: e.target.value as any })}
-                 className="bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50"
-               >
-                 <option value="PATHOLOGY">Pathology (Lab Test)</option>
-                 <option value="RADIOLOGY">Radiology (Scan/Imaging)</option>
-               </select>
-               <input
-                 id="diagnostic-order-name"
-                 aria-label="Test Name" title="Test Name"
-                 type="text"
-                 placeholder="Test Name (e.g. CBC, MRI Brain)"
-                 value={newOrder.testName}
-                 onChange={(e) => setNewOrder({ ...newOrder, testName: e.target.value })}
-                 className="sm:col-span-2 bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50"
-               />
-             </div>
-             <input
-               id="diagnostic-order-notes"
-               aria-label="Clinical Notes or Indications" title="Clinical Notes or Indications"
-               type="text"
-               placeholder="Clinical Notes / Indications [Optional]"
-               value={newOrder.clinicalNotes}
-               onChange={(e) => setNewOrder({ ...newOrder, clinicalNotes: e.target.value })}
-               className="w-full bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50 mb-4"
-             />
-             <button type="button" onClick={addOrder} className="w-full bg-indigo-500/10 text-indigo-500 font-bold py-3 rounded-xl text-sm hover:bg-indigo-500/20 transition-colors">
-                + Add Diagnostic Order
-             </button>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <select
+                id="diagnostic-order-type"
+                aria-label="Test Type"
+                title="Test Type"
+                value={newOrder.testType}
+                onChange={(e) =>
+                  setNewOrder({ ...newOrder, testType: e.target.value as any })
+                }
+                className="bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50"
+              >
+                <option value="PATHOLOGY">Pathology (Lab Test)</option>
+                <option value="RADIOLOGY">Radiology (Scan/Imaging)</option>
+              </select>
+              <input
+                id="diagnostic-order-name"
+                aria-label="Test Name"
+                title="Test Name"
+                type="text"
+                placeholder="Test Name (e.g. CBC, MRI Brain)"
+                value={newOrder.testName}
+                onChange={(e) =>
+                  setNewOrder({ ...newOrder, testName: e.target.value })
+                }
+                className="sm:col-span-2 bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50"
+              />
+            </div>
+            <input
+              id="diagnostic-order-notes"
+              aria-label="Clinical Notes or Indications"
+              title="Clinical Notes or Indications"
+              type="text"
+              placeholder="Clinical Notes / Indications [Optional]"
+              value={newOrder.clinicalNotes}
+              onChange={(e) =>
+                setNewOrder({ ...newOrder, clinicalNotes: e.target.value })
+              }
+              className="w-full bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50 mb-4"
+            />
+            <button
+              type="button"
+              onClick={addOrder}
+              className="w-full bg-indigo-500/10 text-indigo-500 font-bold py-3 rounded-xl text-sm hover:bg-indigo-500/20 transition-colors"
+            >
+              + Add Diagnostic Order
+            </button>
           </div>
         </div>
       </div>

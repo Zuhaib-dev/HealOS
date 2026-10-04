@@ -1,5 +1,10 @@
 import express from "express";
-import { generateBio, explainReport, chatReport, generateVitalsSummary } from "../controllers/ai.controller";
+import {
+  generateBio,
+  explainReport,
+  chatReport,
+  generateVitalsSummary,
+} from "../controllers/ai.controller";
 import { verifyToken } from "../middleware/auth.middleware";
 
 const router = express.Router();

@@ -43,15 +43,22 @@ const paginationMeta = (page: number, limit: number, total: number) => ({
  * GET /api/v1/admin/users
  * Returns list of all system users
  */
-export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
+export const getAllUsers = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { page, limit, skip } = getPagination(req);
     const queryText = typeof req.query.q === "string" ? req.query.q.trim() : "";
-    const role = typeof req.query.role === "string" ? req.query.role.trim() : "";
+    const role =
+      typeof req.query.role === "string" ? req.query.role.trim() : "";
     const query: Record<string, any> = {};
 
     if (queryText) {
-      const sanitizedRegex = queryText.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&");
+      const sanitizedRegex = queryText.replace(
+        /[-[\]{}()*+?.,\\^$|#]/g,
+        "\\$&",
+      );
       const flexibleRolePattern = sanitizedRegex.replace(/\s+/g, "[_\\s]?");
       query.$or = [
         { name: { $regex: sanitizedRegex, $options: "i" } },
@@ -66,7 +73,11 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
     }
 
     const [users, total] = await Promise.all([
-      User.find(query).select("-passwordHash").sort({ createdAt: -1 }).skip(skip).limit(limit),
+      User.find(query)
+        .select("-passwordHash")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
       User.countDocuments(query),
     ]);
 
@@ -89,11 +100,16 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
  * GET /api/v1/admin/patients
  * Returns list of all patient profiles
  */
-export const getAllPatients = async (req: Request, res: Response): Promise<void> => {
+export const getAllPatients = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { page, limit, skip } = getPagination(req);
     const queryText = typeof req.query.q === "string" ? req.query.q.trim() : "";
-    const sanitizedRegex = queryText ? queryText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&") : "";
+    const sanitizedRegex = queryText
+      ? queryText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")
+      : "";
 
     const matchingUsers = sanitizedRegex
       ? await User.find({
@@ -143,13 +159,22 @@ export const getAllPatients = async (req: Request, res: Response): Promise<void>
  * GET /api/v1/admin/stats
  * Returns overall facility statistics
  */
-export const getFacilityStats = async (_req: Request, res: Response): Promise<void> => {
+export const getFacilityStats = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const totalUsers = await User.countDocuments();
-    const totalPatients = await PatientProfile.countDocuments({ isComplete: true });
-    const totalClinicians = await ProfessionalProfile.countDocuments({ status: "APPROVED" });
+    const totalPatients = await PatientProfile.countDocuments({
+      isComplete: true,
+    });
+    const totalClinicians = await ProfessionalProfile.countDocuments({
+      status: "APPROVED",
+    });
     const totalAppointments = await Appointment.countDocuments();
-    const pendingApprovals = await ProfessionalProfile.countDocuments({ status: "PENDING" });
+    const pendingApprovals = await ProfessionalProfile.countDocuments({
+      status: "PENDING",
+    });
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -174,7 +199,10 @@ export const getFacilityStats = async (_req: Request, res: Response): Promise<vo
  * PATCH /api/v1/admin/users/:id/role
  * Updates a user's role directly (e.g. promoting to RADIOLOGIST or DOCTOR)
  */
-export const updateUserRole = async (req: Request, res: Response): Promise<void> => {
+export const updateUserRole = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { id } = req.params;
     const { role } = req.body;
@@ -202,11 +230,19 @@ export const updateUserRole = async (req: Request, res: Response): Promise<void>
 
     // Emit socket event for real-time role promotion in client browser
     emitUserRoleUpdated(user._id.toString(), role);
-    emitAdminDataChanged(["users", "staff", "roles", "audit"], "admin_role_update");
+    emitAdminDataChanged(
+      ["users", "staff", "roles", "audit"],
+      "admin_role_update",
+    );
 
     // Write immutable audit log
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
-    await logAudit(actor, `Elevated user role to ${role}`, `user:${user._id.toString().slice(-6)}`, "warn");
+    await logAudit(
+      actor,
+      `Elevated user role to ${role}`,
+      `user:${user._id.toString().slice(-6)}`,
+      "warn",
+    );
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -261,17 +297,90 @@ export const getRoles = async (_req: Request, res: Response): Promise<void> => {
       return acc;
     }, {});
 
-    const scopesByRole: Record<string, Record<string, "full" | "read" | "none">> = {
-      ADMIN: { Records: "full", Orders: "full", Prescribe: "none", Billing: "full", Admin: "full", Audit: "full" },
-      DOCTOR: { Records: "full", Orders: "full", Prescribe: "full", Billing: "read", Admin: "none", Audit: "none" },
-      RADIOLOGIST: { Records: "read", Orders: "read", Prescribe: "none", Billing: "none", Admin: "none", Audit: "none" },
-      NURSE: { Records: "read", Orders: "read", Prescribe: "none", Billing: "none", Admin: "none", Audit: "none" },
-      PATIENT: { Records: "read", Orders: "none", Prescribe: "none", Billing: "read", Admin: "none", Audit: "none" },
-      RECEPTIONIST: { Records: "read", Orders: "read", Prescribe: "none", Billing: "read", Admin: "none", Audit: "none" },
-      PHARMACIST: { Records: "read", Orders: "read", Prescribe: "none", Billing: "none", Admin: "none", Audit: "none" },
-      EMERGENCY_DOCTOR: { Records: "full", Orders: "full", Prescribe: "full", Billing: "none", Admin: "none", Audit: "none" },
-      LAB_TECHNICIAN: { Records: "read", Orders: "read", Prescribe: "none", Billing: "none", Admin: "none", Audit: "none" },
-      USER: { Records: "none", Orders: "none", Prescribe: "none", Billing: "none", Admin: "none", Audit: "none" },
+    const scopesByRole: Record<
+      string,
+      Record<string, "full" | "read" | "none">
+    > = {
+      ADMIN: {
+        Records: "full",
+        Orders: "full",
+        Prescribe: "none",
+        Billing: "full",
+        Admin: "full",
+        Audit: "full",
+      },
+      DOCTOR: {
+        Records: "full",
+        Orders: "full",
+        Prescribe: "full",
+        Billing: "read",
+        Admin: "none",
+        Audit: "none",
+      },
+      RADIOLOGIST: {
+        Records: "read",
+        Orders: "read",
+        Prescribe: "none",
+        Billing: "none",
+        Admin: "none",
+        Audit: "none",
+      },
+      NURSE: {
+        Records: "read",
+        Orders: "read",
+        Prescribe: "none",
+        Billing: "none",
+        Admin: "none",
+        Audit: "none",
+      },
+      PATIENT: {
+        Records: "read",
+        Orders: "none",
+        Prescribe: "none",
+        Billing: "read",
+        Admin: "none",
+        Audit: "none",
+      },
+      RECEPTIONIST: {
+        Records: "read",
+        Orders: "read",
+        Prescribe: "none",
+        Billing: "read",
+        Admin: "none",
+        Audit: "none",
+      },
+      PHARMACIST: {
+        Records: "read",
+        Orders: "read",
+        Prescribe: "none",
+        Billing: "none",
+        Admin: "none",
+        Audit: "none",
+      },
+      EMERGENCY_DOCTOR: {
+        Records: "full",
+        Orders: "full",
+        Prescribe: "full",
+        Billing: "none",
+        Admin: "none",
+        Audit: "none",
+      },
+      LAB_TECHNICIAN: {
+        Records: "read",
+        Orders: "read",
+        Prescribe: "none",
+        Billing: "none",
+        Admin: "none",
+        Audit: "none",
+      },
+      USER: {
+        Records: "none",
+        Orders: "none",
+        Prescribe: "none",
+        Billing: "none",
+        Admin: "none",
+        Audit: "none",
+      },
     };
 
     const roles = Object.values(UserRole).map((role) => ({
@@ -282,12 +391,21 @@ export const getRoles = async (_req: Request, res: Response): Promise<void> => {
 
     res.status(StatusCodes.OK).json({
       success: true,
-      permissionScopes: ["Records", "Orders", "Prescribe", "Billing", "Admin", "Audit"],
+      permissionScopes: [
+        "Records",
+        "Orders",
+        "Prescribe",
+        "Billing",
+        "Admin",
+        "Audit",
+      ],
       roles,
     });
   } catch (error) {
     console.error("Error in getRoles:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching roles" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Server error fetching roles" });
   }
 };
 
@@ -295,13 +413,18 @@ export const getRoles = async (_req: Request, res: Response): Promise<void> => {
  * GET /api/v1/admin/schedule
  * Returns today's appointments and schedules
  */
-export const getSchedule = async (req: Request, res: Response): Promise<void> => {
+export const getSchedule = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const dateQuery = req.query.date ? new Date(req.query.date as string) : new Date();
+    const dateQuery = req.query.date
+      ? new Date(req.query.date as string)
+      : new Date();
     dateQuery.setHours(0, 0, 0, 0);
     const tomorrow = new Date(dateQuery);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     // Convert to YYYY-MM-DD for Schedule string dates
     const dateStr = dateQuery.toISOString().split("T")[0];
 
@@ -341,11 +464,16 @@ const scheduleSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const createSchedule = async (req: Request, res: Response): Promise<void> => {
+export const createSchedule = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const parsed = scheduleSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(StatusCodes.BAD_REQUEST).json({ success: false, errors: parsed.error.format() });
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, errors: parsed.error.format() });
       return;
     }
     const { Schedule } = await import("../models/schedule.model.js");
@@ -354,38 +482,68 @@ export const createSchedule = async (req: Request, res: Response): Promise<void>
     res.status(StatusCodes.CREATED).json({ success: true, schedule });
   } catch (error) {
     console.error("Error creating schedule:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error creating schedule" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Server error creating schedule" });
   }
 };
 
-export const updateSchedule = async (req: Request, res: Response): Promise<void> => {
+export const updateSchedule = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const parsed = scheduleSchema.partial().safeParse(req.body);
     if (!parsed.success) {
-      res.status(StatusCodes.BAD_REQUEST).json({ success: false, errors: parsed.error.format() });
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, errors: parsed.error.format() });
       return;
     }
     const { Schedule } = await import("../models/schedule.model.js");
-    const schedule = await Schedule.findByIdAndUpdate(req.params.id, parsed.data, { new: true });
-    if (!schedule) { res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Schedule not found" }); return; }
+    const schedule = await Schedule.findByIdAndUpdate(
+      req.params.id,
+      parsed.data,
+      { new: true },
+    );
+    if (!schedule) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Schedule not found" });
+      return;
+    }
     emitAdminDataChanged(["schedule"], "schedule_updated");
     res.status(StatusCodes.OK).json({ success: true, schedule });
   } catch (error) {
     console.error("Error updating schedule:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error updating schedule" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Server error updating schedule" });
   }
 };
 
-export const deleteSchedule = async (req: Request, res: Response): Promise<void> => {
+export const deleteSchedule = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { Schedule } = await import("../models/schedule.model.js");
     const schedule = await Schedule.findByIdAndDelete(req.params.id);
-    if (!schedule) { res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Schedule not found" }); return; }
+    if (!schedule) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Schedule not found" });
+      return;
+    }
     emitAdminDataChanged(["schedule"], "schedule_deleted");
-    res.status(StatusCodes.OK).json({ success: true, message: "Schedule deleted" });
+    res
+      .status(StatusCodes.OK)
+      .json({ success: true, message: "Schedule deleted" });
   } catch (error) {
     console.error("Error deleting schedule:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error deleting schedule" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Server error deleting schedule" });
   }
 };
 
@@ -393,7 +551,10 @@ export const deleteSchedule = async (req: Request, res: Response): Promise<void>
  * GET /api/v1/admin/invoices
  * Returns all invoices
  */
-export const getInvoices = async (_req: Request, res: Response): Promise<void> => {
+export const getInvoices = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     // Dynamic import to avoid undefined if Invoice model is not imported at top
     const { Invoice } = await import("../models/invoice.model.js");
@@ -426,7 +587,9 @@ export const getWards = async (_req: Request, res: Response): Promise<void> => {
     res.status(StatusCodes.OK).json({ success: true, wards });
   } catch (error) {
     console.error("Error in getWards:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching wards" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Server error fetching wards" });
   }
 };
 
@@ -434,14 +597,19 @@ export const getWards = async (_req: Request, res: Response): Promise<void> => {
  * GET /api/v1/admin/inventory
  * Returns all inventory supplies
  */
-export const getInventory = async (_req: Request, res: Response): Promise<void> => {
+export const getInventory = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { Inventory } = await import("../models/inventory.model.js");
     const inventory = await Inventory.find().sort({ itemName: 1 });
     res.status(StatusCodes.OK).json({ success: true, inventory });
   } catch (error) {
     console.error("Error in getInventory:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching inventory" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Server error fetching inventory" });
   }
 };
 
@@ -449,14 +617,19 @@ export const getInventory = async (_req: Request, res: Response): Promise<void> 
  * GET /api/v1/admin/audit-logs
  * Returns audit logs
  */
-export const getAuditLogs = async (_req: Request, res: Response): Promise<void> => {
+export const getAuditLogs = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { AuditLog } = await import("../models/audit-log.model.js");
     const logs = await AuditLog.find().sort({ timestamp: -1 }).limit(100);
     res.status(StatusCodes.OK).json({ success: true, logs });
   } catch (error) {
     console.error("Error in getAuditLogs:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching audit logs" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Server error fetching audit logs" });
   }
 };
 
@@ -464,121 +637,233 @@ export const getAuditLogs = async (_req: Request, res: Response): Promise<void> 
  * GET /api/v1/admin/integrations
  * Returns integrations and API keys
  */
-export const getIntegrations = async (_req: Request, res: Response): Promise<void> => {
+export const getIntegrations = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { Integration } = await import("../models/integration.model.js");
-    const integrations = await Integration.find().sort({ type: -1, name: 1, label: 1 });
+    const integrations = await Integration.find().sort({
+      type: -1,
+      name: 1,
+      label: 1,
+    });
     res.status(StatusCodes.OK).json({ success: true, integrations });
   } catch (error) {
     console.error("Error in getIntegrations:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error fetching integrations" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Server error fetching integrations" });
   }
 };
 
-export const createWard = async (req: Request, res: Response): Promise<void> => {
+export const createWard = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const parsed = wardSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid ward data", errors: parsed.error.format() });
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid ward data",
+        errors: parsed.error.format(),
+      });
       return;
     }
     const { Ward } = await import("../models/ward.model.js");
     const ward = await Ward.create(parsed.data);
     emitAdminDataChanged(["wards"], "ward_created");
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
-    await logAudit(actor, `Created ward ${ward.name}`, `ward:${ward._id.toString().slice(-6)}`, "info");
+    await logAudit(
+      actor,
+      `Created ward ${ward.name}`,
+      `ward:${ward._id.toString().slice(-6)}`,
+      "info",
+    );
     res.status(StatusCodes.CREATED).json({ success: true, ward });
   } catch (error) {
     console.error("Error creating ward:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error creating ward" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Server error creating ward" });
   }
 };
 
-export const updateWard = async (req: Request, res: Response): Promise<void> => {
+export const updateWard = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const parsed = wardSchema.partial().safeParse(req.body);
     if (!parsed.success) {
-      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid ward data", errors: parsed.error.format() });
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid ward data",
+        errors: parsed.error.format(),
+      });
       return;
     }
     const { Ward } = await import("../models/ward.model.js");
-    const ward = await Ward.findByIdAndUpdate(req.params.id, parsed.data, { new: true });
-    if (!ward) { res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Ward not found" }); return; }
+    const ward = await Ward.findByIdAndUpdate(req.params.id, parsed.data, {
+      new: true,
+    });
+    if (!ward) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Ward not found" });
+      return;
+    }
     emitAdminDataChanged(["wards"], "ward_updated");
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
-    await logAudit(actor, `Updated ward ${ward.name}`, `ward:${ward._id.toString().slice(-6)}`, "info");
+    await logAudit(
+      actor,
+      `Updated ward ${ward.name}`,
+      `ward:${ward._id.toString().slice(-6)}`,
+      "info",
+    );
     res.status(StatusCodes.OK).json({ success: true, ward });
   } catch (error) {
     console.error("Error updating ward:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error updating ward" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Server error updating ward" });
   }
 };
 
-export const deleteWard = async (req: Request, res: Response): Promise<void> => {
+export const deleteWard = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { Ward } = await import("../models/ward.model.js");
     const ward = await Ward.findByIdAndDelete(req.params.id);
-    if (!ward) { res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Ward not found" }); return; }
+    if (!ward) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Ward not found" });
+      return;
+    }
     emitAdminDataChanged(["wards"], "ward_deleted");
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
-    await logAudit(actor, `Deleted ward ${ward.name}`, `ward:${ward._id.toString().slice(-6)}`, "warn");
+    await logAudit(
+      actor,
+      `Deleted ward ${ward.name}`,
+      `ward:${ward._id.toString().slice(-6)}`,
+      "warn",
+    );
     res.status(StatusCodes.OK).json({ success: true, message: "Ward deleted" });
   } catch (error) {
     console.error("Error deleting ward:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error deleting ward" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Server error deleting ward" });
   }
 };
 
-export const createInventoryItem = async (req: Request, res: Response): Promise<void> => {
+export const createInventoryItem = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const parsed = inventorySchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid inventory data", errors: parsed.error.format() });
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid inventory data",
+        errors: parsed.error.format(),
+      });
       return;
     }
     const { Inventory } = await import("../models/inventory.model.js");
     const item = await Inventory.create(parsed.data);
     emitAdminDataChanged(["inventory"], "inventory_created");
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
-    await logAudit(actor, `Created inventory item ${item.itemName}`, `inventory:${item._id.toString().slice(-6)}`, "info");
+    await logAudit(
+      actor,
+      `Created inventory item ${item.itemName}`,
+      `inventory:${item._id.toString().slice(-6)}`,
+      "info",
+    );
     res.status(StatusCodes.CREATED).json({ success: true, item });
   } catch (error) {
     console.error("Error creating inventory item:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error creating inventory item" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error creating inventory item",
+    });
   }
 };
 
-export const updateInventoryItem = async (req: Request, res: Response): Promise<void> => {
+export const updateInventoryItem = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const parsed = inventorySchema.partial().safeParse(req.body);
     if (!parsed.success) {
-      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid inventory data", errors: parsed.error.format() });
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid inventory data",
+        errors: parsed.error.format(),
+      });
       return;
     }
     const { Inventory } = await import("../models/inventory.model.js");
-    const item = await Inventory.findByIdAndUpdate(req.params.id, parsed.data, { new: true });
-    if (!item) { res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Item not found" }); return; }
+    const item = await Inventory.findByIdAndUpdate(req.params.id, parsed.data, {
+      new: true,
+    });
+    if (!item) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Item not found" });
+      return;
+    }
     emitAdminDataChanged(["inventory"], "inventory_updated");
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
-    await logAudit(actor, `Updated inventory item ${item.itemName}`, `inventory:${item._id.toString().slice(-6)}`, "info");
+    await logAudit(
+      actor,
+      `Updated inventory item ${item.itemName}`,
+      `inventory:${item._id.toString().slice(-6)}`,
+      "info",
+    );
     res.status(StatusCodes.OK).json({ success: true, item });
   } catch (error) {
     console.error("Error updating inventory item:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error updating inventory item" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error updating inventory item",
+    });
   }
 };
 
-export const deleteInventoryItem = async (req: Request, res: Response): Promise<void> => {
+export const deleteInventoryItem = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { Inventory } = await import("../models/inventory.model.js");
     const item = await Inventory.findByIdAndDelete(req.params.id);
-    if (!item) { res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Item not found" }); return; }
+    if (!item) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Item not found" });
+      return;
+    }
     emitAdminDataChanged(["inventory"], "inventory_deleted");
     const actor = req.user?.id ? `admin:${req.user.id.slice(-6)}` : "system";
-    await logAudit(actor, `Deleted inventory item ${item.itemName}`, `inventory:${item._id.toString().slice(-6)}`, "warn");
+    await logAudit(
+      actor,
+      `Deleted inventory item ${item.itemName}`,
+      `inventory:${item._id.toString().slice(-6)}`,
+      "warn",
+    );
     res.status(StatusCodes.OK).json({ success: true, message: "Item deleted" });
   } catch (error) {
     console.error("Error deleting inventory item:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error deleting inventory item" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error deleting inventory item",
+    });
   }
 };

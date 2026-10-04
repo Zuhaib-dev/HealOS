@@ -21,10 +21,18 @@ export interface IPatientProfile extends Document {
 
 const patientProfileSchema = new Schema<IPatientProfile>(
   {
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+    },
     dob: { type: String },
     gender: { type: String, enum: ["MALE", "FEMALE"] },
-    bloodGroup: { type: String, enum: ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"] },
+    bloodGroup: {
+      type: String,
+      enum: ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"],
+    },
     emergencyPhone: { type: String },
     emergencyContactName: { type: String },
     allergies: [{ type: String }],
@@ -36,7 +44,10 @@ const patientProfileSchema = new Schema<IPatientProfile>(
     weight: { type: Number },
     isComplete: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const PatientProfile = mongoose.model<IPatientProfile>("PatientProfile", patientProfileSchema);
+export const PatientProfile = mongoose.model<IPatientProfile>(
+  "PatientProfile",
+  patientProfileSchema,
+);

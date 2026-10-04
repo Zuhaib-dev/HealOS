@@ -21,7 +21,22 @@ router.get("/patient", verifyToken, getPatientAppointments);
 router.patch("/:id/cancel", verifyToken, cancelAppointmentByPatient);
 
 // Doctor & Admin routes
-router.get("/doctor", verifyToken, requireRole([UserRole.DOCTOR, UserRole.RADIOLOGIST, UserRole.ADMIN]), getDoctorAppointments);
-router.put("/:id/status", verifyToken, requireRole([UserRole.DOCTOR, UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.RADIOLOGIST]), updateAppointmentStatus);
+router.get(
+  "/doctor",
+  verifyToken,
+  requireRole([UserRole.DOCTOR, UserRole.RADIOLOGIST, UserRole.ADMIN]),
+  getDoctorAppointments,
+);
+router.put(
+  "/:id/status",
+  verifyToken,
+  requireRole([
+    UserRole.DOCTOR,
+    UserRole.ADMIN,
+    UserRole.RECEPTIONIST,
+    UserRole.RADIOLOGIST,
+  ]),
+  updateAppointmentStatus,
+);
 
 export default router;

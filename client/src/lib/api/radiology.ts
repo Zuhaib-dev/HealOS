@@ -69,11 +69,16 @@ export interface ReportTemplateRecord {
 
 export interface StudyDocRecord {
   _id: string;
-  order?: { accessionNumber: string, testName: string };
-  patient?: { firstName: string, lastName: string };
-  radiologist?: { firstName: string, lastName: string };
+  order?: { accessionNumber: string; testName: string };
+  patient?: { firstName: string; lastName: string };
+  radiologist?: { firstName: string; lastName: string };
   uploadedBy?: string;
-  kind: "PDF report" | "DICOM series" | "Scanned request" | "Prior report" | "Consent";
+  kind:
+    | "PDF report"
+    | "DICOM series"
+    | "Scanned request"
+    | "Prior report"
+    | "Consent";
   fileName: string;
   fileSize: string;
   pages: number;
@@ -89,7 +94,12 @@ export const fetchPendingOrdersApi = async () => {
   return response.data;
 };
 
-export const updateOrderStatusApi = async (id: string, status: "IN_PROGRESS" | "REPORTED" | "CANCELLED", paymentMethod?: string, price?: number) => {
+export const updateOrderStatusApi = async (
+  id: string,
+  status: "IN_PROGRESS" | "REPORTED" | "CANCELLED",
+  paymentMethod?: string,
+  price?: number,
+) => {
   const response = await apiClient.put<{
     status: string;
     data: { order: DiagnosticOrderRecord };
@@ -105,7 +115,10 @@ export const createRadiologyBillApi = async (id: string, price: number) => {
   return response.data;
 };
 
-export const uploadDiagnosticReportApi = async (id: string, formData: FormData) => {
+export const uploadDiagnosticReportApi = async (
+  id: string,
+  formData: FormData,
+) => {
   const response = await apiClient.post<{
     status: string;
     data: { report: any; order: DiagnosticOrderRecord };
@@ -118,31 +131,49 @@ export const uploadDiagnosticReportApi = async (id: string, formData: FormData) 
 };
 
 export const fetchDocumentsApi = async () => {
-  const response = await apiClient.get<{ status: string; data: { documents: StudyDocRecord[] } }>("/radiology/documents");
+  const response = await apiClient.get<{
+    status: string;
+    data: { documents: StudyDocRecord[] };
+  }>("/radiology/documents");
   return response.data;
 };
 
 export const fetchTemplatesApi = async () => {
-  const response = await apiClient.get<{ status: string; data: { templates: ReportTemplateRecord[] } }>("/radiology/templates");
+  const response = await apiClient.get<{
+    status: string;
+    data: { templates: ReportTemplateRecord[] };
+  }>("/radiology/templates");
   return response.data;
 };
 
 export const fetchModalitiesApi = async () => {
-  const response = await apiClient.get<{ status: string; data: { modalities: ModalityMachineRecord[] } }>("/radiology/modalities");
+  const response = await apiClient.get<{
+    status: string;
+    data: { modalities: ModalityMachineRecord[] };
+  }>("/radiology/modalities");
   return response.data;
 };
 
 export const fetchCriticalFindingsApi = async () => {
-  const response = await apiClient.get<{ status: string; data: { findings: CriticalFindingRecord[] } }>("/radiology/critical-findings");
+  const response = await apiClient.get<{
+    status: string;
+    data: { findings: CriticalFindingRecord[] };
+  }>("/radiology/critical-findings");
   return response.data;
 };
 
 export const fetchBookingsApi = async () => {
-  const response = await apiClient.get<{ status: string; data: { bookings: RadiologyBookingRecord[] } }>("/radiology/bookings");
+  const response = await apiClient.get<{
+    status: string;
+    data: { bookings: RadiologyBookingRecord[] };
+  }>("/radiology/bookings");
   return response.data;
 };
 
 export const fetchStatsApi = async () => {
-  const response = await apiClient.get<{ status: string; data: { stats: { label: string, value: string, note: string }[] } }>("/radiology/stats");
+  const response = await apiClient.get<{
+    status: string;
+    data: { stats: { label: string; value: string; note: string }[] };
+  }>("/radiology/stats");
   return response.data;
 };

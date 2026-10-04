@@ -20,7 +20,8 @@ export async function GET() {
       headers: {
         "WWW-Authenticate": {
           schema: { type: "string" },
-          example: 'Bearer realm="HealOS", resource_metadata="https://healos-theta.vercel.app/.well-known/oauth-protected-resource"',
+          example:
+            'Bearer realm="HealOS", resource_metadata="https://healos-theta.vercel.app/.well-known/oauth-protected-resource"',
         },
       },
       content: {
@@ -94,21 +95,53 @@ export async function GET() {
       },
     ],
     tags: [
-      { name: "System", description: "Health probes, metadata, and service discovery" },
-      { name: "Sandbox", description: "Instant zero-friction test environment for agent evaluations" },
-      { name: "Appointments", description: "Clinical booking, consultation scheduling, and calendar management" },
-      { name: "Patients", description: "Demographic profiles, longitudinal EHR records, and allergy indices" },
-      { name: "Vitals", description: "Continuous and episodic physiological vital signs observation" },
-      { name: "Radiology", description: "DICOM image orders, modality worklists, and radiologist reporting" },
-      { name: "Laboratory", description: "Specimen accession, analyzer validation, and critical callback feeds" },
-      { name: "Emergency", description: "Emergency department triage board, ambulance inbound, and resus bay allocation" },
+      {
+        name: "System",
+        description: "Health probes, metadata, and service discovery",
+      },
+      {
+        name: "Sandbox",
+        description:
+          "Instant zero-friction test environment for agent evaluations",
+      },
+      {
+        name: "Appointments",
+        description:
+          "Clinical booking, consultation scheduling, and calendar management",
+      },
+      {
+        name: "Patients",
+        description:
+          "Demographic profiles, longitudinal EHR records, and allergy indices",
+      },
+      {
+        name: "Vitals",
+        description:
+          "Continuous and episodic physiological vital signs observation",
+      },
+      {
+        name: "Radiology",
+        description:
+          "DICOM image orders, modality worklists, and radiologist reporting",
+      },
+      {
+        name: "Laboratory",
+        description:
+          "Specimen accession, analyzer validation, and critical callback feeds",
+      },
+      {
+        name: "Emergency",
+        description:
+          "Emergency department triage board, ambulance inbound, and resus bay allocation",
+      },
     ],
     paths: {
       "/health": {
         get: {
           tags: ["System"],
           summary: "System Health Status",
-          description: "Returns operational health status, database connectivity, and uptime metrics.",
+          description:
+            "Returns operational health status, database connectivity, and uptime metrics.",
           operationId: "checkSystemHealth",
           responses: {
             "200": {
@@ -120,7 +153,11 @@ export async function GET() {
                     required: ["status", "timestamp", "version"],
                     properties: {
                       status: { type: "string", example: "healthy" },
-                      timestamp: { type: "string", format: "date-time", example: "2026-09-04T22:00:00Z" },
+                      timestamp: {
+                        type: "string",
+                        format: "date-time",
+                        example: "2026-09-04T22:00:00Z",
+                      },
                       version: { type: "string", example: "1.0.0" },
                       services: {
                         type: "object",
@@ -142,7 +179,8 @@ export async function GET() {
         get: {
           tags: ["System"],
           summary: "API Endpoint Catalog",
-          description: "Lists all public and authenticated clinical routes with capability metadata.",
+          description:
+            "Lists all public and authenticated clinical routes with capability metadata.",
           operationId: "getApiCatalog",
           responses: {
             "200": {
@@ -158,14 +196,27 @@ export async function GET() {
                         items: {
                           type: "object",
                           properties: {
-                            path: { type: "string", example: "/api/v1/appointments" },
+                            path: {
+                              type: "string",
+                              example: "/api/v1/appointments",
+                            },
                             method: { type: "string", example: "GET" },
-                            scope: { type: "string", example: "read:appointments" },
+                            scope: {
+                              type: "string",
+                              example: "read:appointments",
+                            },
                           },
                         },
                       },
-                      mcpUrl: { type: "string", example: "https://healos-theta.vercel.app/.well-known/mcp" },
-                      docsUrl: { type: "string", example: "https://healos-theta.vercel.app/developers" },
+                      mcpUrl: {
+                        type: "string",
+                        example:
+                          "https://healos-theta.vercel.app/.well-known/mcp",
+                      },
+                      docsUrl: {
+                        type: "string",
+                        example: "https://healos-theta.vercel.app/developers",
+                      },
                     },
                   },
                 },
@@ -179,7 +230,8 @@ export async function GET() {
         get: {
           tags: ["Sandbox"],
           summary: "Instant Agent Sandbox Probe",
-          description: "Returns an instant zero-friction agent test token and synthetic hospital state. Requires no authentication headers or credit card.",
+          description:
+            "Returns an instant zero-friction agent test token and synthetic hospital state. Requires no authentication headers or credit card.",
           operationId: "getSandboxState",
           security: [],
           responses: {
@@ -197,7 +249,8 @@ export async function GET() {
         post: {
           tags: ["Sandbox"],
           summary: "Issue Immediate Sandbox Token",
-          description: "Issues a rate-limited evaluation token for autonomous AI agents testing clinical toolcalls.",
+          description:
+            "Issues a rate-limited evaluation token for autonomous AI agents testing clinical toolcalls.",
           operationId: "createSandboxToken",
           security: [],
           responses: {
@@ -217,7 +270,8 @@ export async function GET() {
         get: {
           tags: ["Appointments"],
           summary: "List Appointments",
-          description: "Retrieves a paginated list of scheduled patient appointments filtered by date or provider.",
+          description:
+            "Retrieves a paginated list of scheduled patient appointments filtered by date or provider.",
           operationId: "listAppointments",
           security: [{ OAuth2: ["read:appointments"] }, { BearerAuth: [] }],
           parameters: [
@@ -233,7 +287,16 @@ export async function GET() {
               in: "query",
               required: false,
               description: "Filter by status",
-              schema: { type: "string", enum: ["SCHEDULED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] },
+              schema: {
+                type: "string",
+                enum: [
+                  "SCHEDULED",
+                  "CONFIRMED",
+                  "IN_PROGRESS",
+                  "COMPLETED",
+                  "CANCELLED",
+                ],
+              },
             },
             {
               name: "cursor",
@@ -247,7 +310,12 @@ export async function GET() {
               in: "query",
               required: false,
               description: "Maximum number of records to return",
-              schema: { type: "integer", default: 20, minimum: 1, maximum: 100 },
+              schema: {
+                type: "integer",
+                default: 20,
+                minimum: 1,
+                maximum: 100,
+              },
             },
           ],
           responses: {
@@ -268,7 +336,11 @@ export async function GET() {
                         required: ["cursor", "has_more", "total"],
                         properties: {
                           cursor: { type: "string", example: "cur_next_98124" },
-                          next_cursor: { type: "string", nullable: true, example: null },
+                          next_cursor: {
+                            type: "string",
+                            nullable: true,
+                            example: null,
+                          },
                           has_more: { type: "boolean", example: false },
                           total: { type: "integer", example: 42 },
                         },
@@ -284,7 +356,8 @@ export async function GET() {
         post: {
           tags: ["Appointments"],
           summary: "Book Appointment",
-          description: "Creates and confirms a new patient appointment with an assigned practitioner. Supports Idempotency-Key header.",
+          description:
+            "Creates and confirms a new patient appointment with an assigned practitioner. Supports Idempotency-Key header.",
           operationId: "createAppointment",
           security: [{ OAuth2: ["write:appointments"] }, { BearerAuth: [] }],
           parameters: [
@@ -292,7 +365,8 @@ export async function GET() {
               name: "Idempotency-Key",
               in: "header",
               required: false,
-              description: "Unique UUID v4 key guaranteeing idempotent execution",
+              description:
+                "Unique UUID v4 key guaranteeing idempotent execution",
               schema: { type: "string", format: "uuid" },
             },
           ],
@@ -306,9 +380,20 @@ export async function GET() {
                   properties: {
                     patientId: { type: "string", example: "pat_94821" },
                     doctorId: { type: "string", example: "doc_31204" },
-                    date: { type: "string", format: "date-time", example: "2026-09-05T09:30:00Z" },
-                    reason: { type: "string", example: "Routine hypertension follow-up" },
-                    type: { type: "string", enum: ["IN_PERSON", "TELEHEALTH"], default: "IN_PERSON" },
+                    date: {
+                      type: "string",
+                      format: "date-time",
+                      example: "2026-09-05T09:30:00Z",
+                    },
+                    reason: {
+                      type: "string",
+                      example: "Routine hypertension follow-up",
+                    },
+                    type: {
+                      type: "string",
+                      enum: ["IN_PERSON", "TELEHEALTH"],
+                      default: "IN_PERSON",
+                    },
                   },
                 },
               },
@@ -337,7 +422,8 @@ export async function GET() {
         post: {
           tags: ["System"],
           summary: "Submit Asynchronous Clinical Job",
-          description: "Enqueues long-running clinical analytics, DICOM reconstruction, or lab report generation. Returns 202 Accepted with a polling Location header.",
+          description:
+            "Enqueues long-running clinical analytics, DICOM reconstruction, or lab report generation. Returns 202 Accepted with a polling Location header.",
           operationId: "createAsyncJob",
           security: [{ OAuth2: ["write:appointments"] }, { BearerAuth: [] }],
           parameters: [
@@ -356,7 +442,10 @@ export async function GET() {
                   type: "object",
                   required: ["task"],
                   properties: {
-                    task: { type: "string", example: "batch_telemetry_analysis" },
+                    task: {
+                      type: "string",
+                      example: "batch_telemetry_analysis",
+                    },
                     payload: { type: "object" },
                   },
                 },
@@ -379,8 +468,16 @@ export async function GET() {
                     required: ["jobId", "status", "statusUrl"],
                     properties: {
                       jobId: { type: "string", example: "job_9841a" },
-                      status: { type: "string", enum: ["pending", "processing", "completed", "failed"], example: "processing" },
-                      statusUrl: { type: "string", example: "https://healos-theta.vercel.app/api/v1/jobs/job_9841a" },
+                      status: {
+                        type: "string",
+                        enum: ["pending", "processing", "completed", "failed"],
+                        example: "processing",
+                      },
+                      statusUrl: {
+                        type: "string",
+                        example:
+                          "https://healos-theta.vercel.app/api/v1/jobs/job_9841a",
+                      },
                     },
                   },
                 },
@@ -394,7 +491,8 @@ export async function GET() {
         get: {
           tags: ["System"],
           summary: "Check Asynchronous Job Status",
-          description: "Polls completion progress and retrieves output results for an asynchronous workload.",
+          description:
+            "Polls completion progress and retrieves output results for an asynchronous workload.",
           operationId: "getJobStatus",
           parameters: [
             {
@@ -414,7 +512,10 @@ export async function GET() {
                     required: ["jobId", "status", "progress"],
                     properties: {
                       jobId: { type: "string", example: "job_9841a" },
-                      status: { type: "string", enum: ["pending", "processing", "completed", "failed"] },
+                      status: {
+                        type: "string",
+                        enum: ["pending", "processing", "completed", "failed"],
+                      },
                       progress: { type: "integer", example: 100 },
                       result: { type: "object" },
                     },
@@ -430,7 +531,8 @@ export async function GET() {
         post: {
           tags: ["System"],
           summary: "Execute Bulk Operations",
-          description: "Executes multiple atomic clinical read or mutation operations within a single request context.",
+          description:
+            "Executes multiple atomic clinical read or mutation operations within a single request context.",
           operationId: "executeBatchOperations",
           security: [{ OAuth2: ["write:appointments"] }, { BearerAuth: [] }],
           parameters: [
@@ -455,7 +557,10 @@ export async function GET() {
                         type: "object",
                         required: ["method", "path"],
                         properties: {
-                          method: { type: "string", enum: ["GET", "POST", "PUT", "DELETE"] },
+                          method: {
+                            type: "string",
+                            enum: ["GET", "POST", "PUT", "DELETE"],
+                          },
                           path: { type: "string", example: "/appointments" },
                           body: { type: "object" },
                         },
@@ -491,7 +596,8 @@ export async function GET() {
         get: {
           tags: ["Patients"],
           summary: "Search Patients",
-          description: "Finds patient master demographic records matching name, MRN, or phone number.",
+          description:
+            "Finds patient master demographic records matching name, MRN, or phone number.",
           operationId: "listPatients",
           security: [{ OAuth2: ["read:patients"] }, { BearerAuth: [] }],
           parameters: [
@@ -529,7 +635,8 @@ export async function GET() {
         get: {
           tags: ["Vitals"],
           summary: "Get Patient Vitals",
-          description: "Returns recent telemetry and vitals observations for an admitted or outpatient individual.",
+          description:
+            "Returns recent telemetry and vitals observations for an admitted or outpatient individual.",
           operationId: "getPatientVitals",
           security: [{ OAuth2: ["read:vitals"] }, { BearerAuth: [] }],
           parameters: [
@@ -565,7 +672,8 @@ export async function GET() {
         post: {
           tags: ["Vitals"],
           summary: "Record Vital Signs",
-          description: "Records a vital signs observation during clinical nurse rounds.",
+          description:
+            "Records a vital signs observation during clinical nurse rounds.",
           operationId: "recordPatientVitals",
           security: [{ OAuth2: ["write:vitals"] }, { BearerAuth: [] }],
           parameters: [
@@ -602,7 +710,8 @@ export async function GET() {
         get: {
           tags: ["Emergency"],
           summary: "Get ED Triage Board",
-          description: "Fetches active Emergency Department triage board entries sorted by acuity (ESI 1-5).",
+          description:
+            "Fetches active Emergency Department triage board entries sorted by acuity (ESI 1-5).",
           operationId: "getTriageBoard",
           security: [{ OAuth2: ["read:patients"] }, { BearerAuth: [] }],
           responses: {
@@ -618,11 +727,24 @@ export async function GET() {
                         type: "array",
                         items: {
                           type: "object",
-                          required: ["id", "chiefComplaint", "esiLevel", "minutesWaiting"],
+                          required: [
+                            "id",
+                            "chiefComplaint",
+                            "esiLevel",
+                            "minutesWaiting",
+                          ],
                           properties: {
                             id: { type: "string", example: "ed_9182" },
-                            chiefComplaint: { type: "string", example: "Acute chest pain radiating to left jaw" },
-                            esiLevel: { type: "integer", minimum: 1, maximum: 5, example: 2 },
+                            chiefComplaint: {
+                              type: "string",
+                              example: "Acute chest pain radiating to left jaw",
+                            },
+                            esiLevel: {
+                              type: "integer",
+                              minimum: 1,
+                              maximum: 5,
+                              example: 2,
+                            },
                             minutesWaiting: { type: "integer", example: 14 },
                           },
                         },
@@ -645,16 +767,21 @@ export async function GET() {
           description: "OAuth 2.0 authorization with scoped access tokens",
           flows: {
             authorizationCode: {
-              authorizationUrl: "https://healos-theta.vercel.app/api/auth/oauth2/authorize",
+              authorizationUrl:
+                "https://healos-theta.vercel.app/api/auth/oauth2/authorize",
               tokenUrl: "https://healos-theta.vercel.app/api/auth/oauth2/token",
               scopes: {
-                "read:patients": "Read patient medical records and demographic data",
+                "read:patients":
+                  "Read patient medical records and demographic data",
                 "write:patients": "Register and modify patient profiles",
                 "read:appointments": "List scheduled clinical appointments",
-                "write:appointments": "Book, reschedule, or cancel appointments",
-                "read:vitals": "Access patient physiological vitals observations",
+                "write:appointments":
+                  "Book, reschedule, or cancel appointments",
+                "read:vitals":
+                  "Access patient physiological vitals observations",
                 "write:vitals": "Record new vital sign rounds",
-                "read:reports": "View diagnostic laboratory and radiology reports",
+                "read:reports":
+                  "View diagnostic laboratory and radiology reports",
               },
             },
             clientCredentials: {
@@ -682,9 +809,26 @@ export async function GET() {
             id: { type: "string", example: "apt_77810" },
             patientId: { type: "string", example: "pat_94821" },
             doctorId: { type: "string", example: "doc_31204" },
-            date: { type: "string", format: "date-time", example: "2026-09-05T09:30:00Z" },
-            status: { type: "string", enum: ["SCHEDULED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"], example: "CONFIRMED" },
-            reason: { type: "string", example: "Routine hypertension follow-up" },
+            date: {
+              type: "string",
+              format: "date-time",
+              example: "2026-09-05T09:30:00Z",
+            },
+            status: {
+              type: "string",
+              enum: [
+                "SCHEDULED",
+                "CONFIRMED",
+                "IN_PROGRESS",
+                "COMPLETED",
+                "CANCELLED",
+              ],
+              example: "CONFIRMED",
+            },
+            reason: {
+              type: "string",
+              example: "Routine hypertension follow-up",
+            },
             room: { type: "string", example: "Room 402, East Wing" },
           },
         },
@@ -694,8 +838,16 @@ export async function GET() {
           properties: {
             id: { type: "string", example: "pat_94821" },
             fullName: { type: "string", example: "Elena Rostova" },
-            dateOfBirth: { type: "string", format: "date", example: "1988-04-12" },
-            gender: { type: "string", enum: ["MALE", "FEMALE", "OTHER"], example: "FEMALE" },
+            dateOfBirth: {
+              type: "string",
+              format: "date",
+              example: "1988-04-12",
+            },
+            gender: {
+              type: "string",
+              enum: ["MALE", "FEMALE", "OTHER"],
+              example: "FEMALE",
+            },
             mrn: { type: "string", example: "MRN-84729" },
             allergies: {
               type: "array",
@@ -706,41 +858,78 @@ export async function GET() {
         },
         VitalsRecord: {
           type: "object",
-          required: ["heartRate", "systolicBp", "diastolicBp", "spo2", "temperature", "recordedAt"],
+          required: [
+            "heartRate",
+            "systolicBp",
+            "diastolicBp",
+            "spo2",
+            "temperature",
+            "recordedAt",
+          ],
           properties: {
             heartRate: { type: "integer", example: 74 },
             systolicBp: { type: "integer", example: 120 },
             diastolicBp: { type: "integer", example: 80 },
             spo2: { type: "number", example: 98.5 },
             temperature: { type: "number", example: 36.8 },
-            recordedAt: { type: "string", format: "date-time", example: "2026-09-04T18:45:00Z" },
+            recordedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2026-09-04T18:45:00Z",
+            },
           },
         },
         SandboxTokenResponse: {
           type: "object",
-          required: ["status", "environment", "sandbox_token", "expires_in", "capabilities", "message"],
+          required: [
+            "status",
+            "environment",
+            "sandbox_token",
+            "expires_in",
+            "capabilities",
+            "message",
+          ],
           properties: {
             status: { type: "string", example: "active" },
             environment: { type: "string", example: "sandbox" },
-            sandbox_token: { type: "string", example: "healos_test_token_agent_eval_sandbox" },
+            sandbox_token: {
+              type: "string",
+              example: "healos_test_token_agent_eval_sandbox",
+            },
             token_type: { type: "string", example: "Bearer" },
             expires_in: { type: "integer", example: 86400 },
             capabilities: {
               type: "array",
               items: { type: "string" },
-              example: ["search_patients", "get_patient_vitals", "book_appointment", "get_emergency_triage"],
+              example: [
+                "search_patients",
+                "get_patient_vitals",
+                "book_appointment",
+                "get_emergency_triage",
+              ],
             },
-            message: { type: "string", example: "Zero-friction agent testing sandbox active. No credit card or registration required." },
+            message: {
+              type: "string",
+              example:
+                "Zero-friction agent testing sandbox active. No credit card or registration required.",
+            },
           },
         },
         ProblemDetails: {
           type: "object",
           required: ["type", "title", "status", "detail"],
           properties: {
-            type: { type: "string", format: "uri", example: "https://healos-theta.vercel.app/errors/bad-request" },
+            type: {
+              type: "string",
+              format: "uri",
+              example: "https://healos-theta.vercel.app/errors/bad-request",
+            },
             title: { type: "string", example: "Bad Request" },
             status: { type: "integer", example: 400 },
-            detail: { type: "string", example: "Invalid request payload or parameter." },
+            detail: {
+              type: "string",
+              example: "Invalid request payload or parameter.",
+            },
             instance: { type: "string", example: "/api/v1/appointments" },
           },
         },
@@ -748,10 +937,17 @@ export async function GET() {
           type: "object",
           required: ["type", "title", "status", "detail"],
           properties: {
-            type: { type: "string", format: "uri", example: "https://healos-theta.vercel.app/errors/bad-request" },
+            type: {
+              type: "string",
+              format: "uri",
+              example: "https://healos-theta.vercel.app/errors/bad-request",
+            },
             title: { type: "string", example: "Bad Request" },
             status: { type: "integer", example: 400 },
-            detail: { type: "string", example: "Field 'patientId' is required." },
+            detail: {
+              type: "string",
+              example: "Field 'patientId' is required.",
+            },
             instance: { type: "string", example: "/api/v1/appointments" },
           },
         },
@@ -767,7 +963,8 @@ export async function GET() {
       },
       responses: {
         BadRequestError: {
-          description: "Invalid request payload or validation failure (RFC 7807 Problem Details)",
+          description:
+            "Invalid request payload or validation failure (RFC 7807 Problem Details)",
           content: {
             "application/problem+json": {
               schema: { $ref: "#/components/schemas/ProblemDetails" },
@@ -778,11 +975,13 @@ export async function GET() {
           },
         },
         UnauthorizedError: {
-          description: "Authentication token missing, expired, or lacking required scope (RFC 7807 Problem Details)",
+          description:
+            "Authentication token missing, expired, or lacking required scope (RFC 7807 Problem Details)",
           headers: {
             "WWW-Authenticate": {
               schema: { type: "string" },
-              example: 'Bearer realm="HealOS", resource_metadata="https://healos-theta.vercel.app/.well-known/oauth-protected-resource"',
+              example:
+                'Bearer realm="HealOS", resource_metadata="https://healos-theta.vercel.app/.well-known/oauth-protected-resource"',
             },
           },
           content: {

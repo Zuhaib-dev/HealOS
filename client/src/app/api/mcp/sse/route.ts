@@ -7,10 +7,14 @@ export async function GET(request: NextRequest) {
   const readable = new ReadableStream({
     start(controller) {
       controller.enqueue(
-        encoder.encode(`event: endpoint\ndata: ${JSON.stringify({ url: "https://healos-theta.vercel.app/.well-known/mcp" })}\n\n`)
+        encoder.encode(
+          `event: endpoint\ndata: ${JSON.stringify({ url: "https://healos-theta.vercel.app/.well-known/mcp" })}\n\n`,
+        ),
       );
       controller.enqueue(
-        encoder.encode(`event: message\ndata: ${JSON.stringify({ jsonrpc: "2.0", method: "server/ready", params: { server: "HealOS-Core", version: "1.0.0" } })}\n\n`)
+        encoder.encode(
+          `event: message\ndata: ${JSON.stringify({ jsonrpc: "2.0", method: "server/ready", params: { server: "HealOS-Core", version: "1.0.0" } })}\n\n`,
+        ),
       );
       controller.close();
     },

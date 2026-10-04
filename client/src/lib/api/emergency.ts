@@ -114,7 +114,9 @@ export async function fetchEmergencyStatsApi() {
 /**
  * Fetch live triage cases (supports filters: 'all', 'esi12', 'waiting')
  */
-export async function fetchTriageCasesApi(filter?: "all" | "esi12" | "waiting") {
+export async function fetchTriageCasesApi(
+  filter?: "all" | "esi12" | "waiting",
+) {
   const response = await apiClient.get<{
     success: boolean;
     cases: EmergencyCaseData[];
@@ -128,7 +130,9 @@ export async function fetchTriageCasesApi(filter?: "all" | "esi12" | "waiting") 
 /**
  * Intake a new emergency patient into the triage system
  */
-export async function createEmergencyCaseApi(payload: CreateEmergencyCasePayload) {
+export async function createEmergencyCaseApi(
+  payload: CreateEmergencyCasePayload,
+) {
   const response = await apiClient.post<{
     success: boolean;
     message: string;
@@ -142,7 +146,9 @@ export async function createEmergencyCaseApi(payload: CreateEmergencyCasePayload
  */
 export async function updateEmergencyCaseApi(
   id: string,
-  payload: Partial<CreateEmergencyCasePayload> & { disposition?: EmergencyDisposition }
+  payload: Partial<CreateEmergencyCasePayload> & {
+    disposition?: EmergencyDisposition;
+  },
 ) {
   const response = await apiClient.patch<{
     success: boolean;
@@ -180,7 +186,7 @@ export async function fetchResusBaysApi() {
  */
 export async function updateResusBayApi(
   id: string,
-  payload: Partial<ResusBayData>
+  payload: Partial<ResusBayData>,
 ) {
   const response = await apiClient.patch<{
     success: boolean;
@@ -262,7 +268,10 @@ export async function toggleMajorIncidentApi(armed: boolean) {
 /**
  * Check/uncheck an action cascade checklist item
  */
-export async function toggleCascadeStepApi(stepIndex: number, completed?: boolean) {
+export async function toggleCascadeStepApi(
+  stepIndex: number,
+  completed?: boolean,
+) {
   const response = await apiClient.patch<{
     success: boolean;
     step: CascadeStepData;

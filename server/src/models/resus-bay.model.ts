@@ -64,7 +64,7 @@ const resusBaySchema = new Schema<IResusBay>(
       trim: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const ResusBay = mongoose.model<IResusBay>("ResusBay", resusBaySchema);

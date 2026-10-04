@@ -16,19 +16,28 @@ import {
   ChevronLeft,
   Star,
   Activity,
-  BriefcaseMedical
+  BriefcaseMedical,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   fetchAvailableDoctorsApi,
   bookAppointmentApi,
   DoctorListItem,
   AppointmentRecord,
 } from "@/lib/api/appointment";
-import { createRazorpayOrderApi, verifyRazorpayPaymentApi } from "@/lib/api/payment";
+import {
+  createRazorpayOrderApi,
+  verifyRazorpayPaymentApi,
+} from "@/lib/api/payment";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/use-auth-store";
 import Image from "next/image";
@@ -42,9 +51,18 @@ const departments = [
 ];
 
 const slotTimes = [
-  "09:00", "09:30", "10:00", "10:30",
-  "11:00", "11:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00", "16:30"
+  "09:00",
+  "09:30",
+  "10:00",
+  "10:30",
+  "11:00",
+  "11:30",
+  "14:00",
+  "14:30",
+  "15:00",
+  "15:30",
+  "16:00",
+  "16:30",
 ];
 
 declare global {
@@ -75,10 +93,14 @@ export function BookPanel() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState<string | null>(null);
   const [mode, setMode] = useState<"IN_PERSON" | "TELECONSULT">("IN_PERSON");
-  const [paymentMethod, setPaymentMethod] = useState<"ONLINE" | "CASH">("ONLINE");
+  const [paymentMethod, setPaymentMethod] = useState<"ONLINE" | "CASH">(
+    "ONLINE",
+  );
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [bookedRecord, setBookedRecord] = useState<AppointmentRecord | null>(null);
+  const [bookedRecord, setBookedRecord] = useState<AppointmentRecord | null>(
+    null,
+  );
 
   useEffect(() => {
     const loadDoctors = async () => {
@@ -95,19 +117,28 @@ export function BookPanel() {
     loadRazorpayScript();
   }, []);
 
-  const filteredDoctors = doctorsList.filter((d) => !dept || d.specialization === dept.label || dept.label === "General Medicine");
+  const filteredDoctors = doctorsList.filter(
+    (d) =>
+      !dept ||
+      d.specialization === dept.label ||
+      dept.label === "General Medicine",
+  );
 
   // Auto-select first doctor when department changes
   useEffect(() => {
-    if (filteredDoctors.length > 0 && !filteredDoctors.find(d => d._id === selectedDoctorId)) {
+    if (
+      filteredDoctors.length > 0 &&
+      !filteredDoctors.find((d) => d._id === selectedDoctorId)
+    ) {
       setSelectedDoctorId(filteredDoctors[0]!._id);
     }
   }, [dept, filteredDoctors, selectedDoctorId]);
 
-
   const handleBook = async () => {
     if (!date || !time || !selectedDoctorId || !reason) {
-      toast.error("Please fill all required fields (Date, Time, Doctor, Reason).");
+      toast.error(
+        "Please fill all required fields (Date, Time, Doctor, Reason).",
+      );
       return;
     }
 
@@ -120,7 +151,9 @@ export function BookPanel() {
 
         // 2. Open Razorpay Checkout
         const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_V0P16tZ8KXX30y",
+          key:
+            process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+            "rzp_test_V0P16tZ8KXX30y",
           amount: orderRes.order.amount,
           currency: "INR",
           name: "HealOS",
@@ -147,12 +180,15 @@ export function BookPanel() {
                   razorpay_signature: response.razorpay_signature,
                   appointmentId: res.appointment._id,
                 });
-                
+
                 toast.success("Payment successful & Appointment booked!");
                 setBookedRecord(res.appointment);
               }
             } catch (err: any) {
-              toast.error(err.response?.data?.message || "Booking failed after payment. Contact support.");
+              toast.error(
+                err.response?.data?.message ||
+                  "Booking failed after payment. Contact support.",
+              );
             } finally {
               setSubmitting(false);
             }
@@ -218,15 +254,32 @@ export function BookPanel() {
                     Appointment Confirmed
                   </h3>
                   <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                    Your appointment for <strong className="text-foreground">{bookedRecord.department}</strong> with{" "}
-                    <strong className="text-foreground">Dr. {bookedRecord.doctor.name}</strong> has been scheduled for{" "}
-                    <strong className="text-foreground">{bookedRecord.date}</strong> at{" "}
-                    <strong className="text-foreground">{bookedRecord.timeSlot}</strong>.
+                    Your appointment for{" "}
+                    <strong className="text-foreground">
+                      {bookedRecord.department}
+                    </strong>{" "}
+                    with{" "}
+                    <strong className="text-foreground">
+                      Dr. {bookedRecord.doctor.name}
+                    </strong>{" "}
+                    has been scheduled for{" "}
+                    <strong className="text-foreground">
+                      {bookedRecord.date}
+                    </strong>{" "}
+                    at{" "}
+                    <strong className="text-foreground">
+                      {bookedRecord.timeSlot}
+                    </strong>
+                    .
                   </p>
                   <div className="mt-4 inline-flex gap-2 items-center text-xs font-mono bg-background/50 px-3 py-1.5 rounded border border-border/50">
-                    <span className="text-amber-500 font-bold uppercase">{bookedRecord.status}</span>
+                    <span className="text-amber-500 font-bold uppercase">
+                      {bookedRecord.status}
+                    </span>
                     <span className="text-muted-foreground/40">•</span>
-                    <span className="text-muted-foreground">{bookedRecord.type}</span>
+                    <span className="text-muted-foreground">
+                      {bookedRecord.type}
+                    </span>
                   </div>
                   <div className="mt-6">
                     <ActionButton
@@ -251,7 +304,9 @@ export function BookPanel() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Activity className="size-4 text-primary" />
-              <h2 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">Select Department</h2>
+              <h2 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+                Select Department
+              </h2>
             </div>
             <div className="flex overflow-x-auto gap-3 pb-4 snap-x snap-mandatory hide-scrollbar">
               {departments.map((d) => (
@@ -265,8 +320,12 @@ export function BookPanel() {
                       : "border-border/60 bg-card hover:bg-muted hover:border-border"
                   }`}
                 >
-                  <BriefcaseMedical className={`size-5 ${dept.id === d.id ? "text-primary-foreground" : "text-primary"}`} />
-                  <span className="font-semibold text-sm leading-tight">{d.label}</span>
+                  <BriefcaseMedical
+                    className={`size-5 ${dept.id === d.id ? "text-primary-foreground" : "text-primary"}`}
+                  />
+                  <span className="font-semibold text-sm leading-tight">
+                    {d.label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -276,12 +335,16 @@ export function BookPanel() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Stethoscope className="size-4 text-primary" />
-              <h2 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">Select Clinician</h2>
+              <h2 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+                Select Clinician
+              </h2>
             </div>
-            
+
             {filteredDoctors.length === 0 ? (
               <div className="p-8 text-center border border-dashed rounded-xl border-border/60">
-                <p className="text-muted-foreground text-sm">No clinicians available for {dept.label} right now.</p>
+                <p className="text-muted-foreground text-sm">
+                  No clinicians available for {dept.label} right now.
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -298,7 +361,13 @@ export function BookPanel() {
                   >
                     <div className="size-14 rounded-full bg-muted border border-border/50 shrink-0 overflow-hidden relative">
                       {doc.avatarUrl ? (
-                        <Image src={doc.avatarUrl} alt={doc.name || "Doctor profile picture"} fill sizes="56px" className="object-cover" />
+                        <Image
+                          src={doc.avatarUrl}
+                          alt={doc.name || "Doctor profile picture"}
+                          fill
+                          sizes="56px"
+                          className="object-cover"
+                        />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary font-bold">
                           {doc.name.charAt(0)}
@@ -307,7 +376,9 @@ export function BookPanel() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
-                        <h3 className={`font-bold truncate text-sm ${selectedDoctorId === doc._id ? "text-primary" : "text-foreground"}`}>
+                        <h3
+                          className={`font-bold truncate text-sm ${selectedDoctorId === doc._id ? "text-primary" : "text-foreground"}`}
+                        >
                           Dr. {doc.name}
                         </h3>
                         <div className="flex items-center gap-0.5 text-amber-500">
@@ -315,19 +386,26 @@ export function BookPanel() {
                           <span className="text-[10px] font-bold">4.9</span>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{doc.specialization}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {doc.specialization}
+                      </p>
                       <div className="flex items-center gap-3 mt-2 text-[11px] font-mono text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Clock className="size-3" /> {doc.degree ? "10+ Yrs" : "8 Yrs"}
+                          <Clock className="size-3" />{" "}
+                          {doc.degree ? "10+ Yrs" : "8 Yrs"}
                         </span>
                         <span className="flex items-center gap-1">
                           <CreditCard className="size-3" /> ₹400
                         </span>
                       </div>
                     </div>
-                    <div className={`shrink-0 mt-3 size-5 rounded-full border flex items-center justify-center transition-colors ${
-                      selectedDoctorId === doc._id ? "bg-primary border-primary text-primary-foreground" : "border-border/60 text-transparent"
-                    }`}>
+                    <div
+                      className={`shrink-0 mt-3 size-5 rounded-full border flex items-center justify-center transition-colors ${
+                        selectedDoctorId === doc._id
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "border-border/60 text-transparent"
+                      }`}
+                    >
                       <Check className="size-3" strokeWidth={3} />
                     </div>
                   </button>
@@ -363,7 +441,11 @@ export function BookPanel() {
                               : "bg-background text-foreground hover:bg-muted border-border/60"
                           }`}
                         >
-                          {m === "IN_PERSON" ? <MapPin className="size-3.5" /> : <Video className="size-3.5" />}
+                          {m === "IN_PERSON" ? (
+                            <MapPin className="size-3.5" />
+                          ) : (
+                            <Video className="size-3.5" />
+                          )}
                           {m === "IN_PERSON" ? "In Person" : "Video"}
                         </button>
                       ))}
@@ -386,8 +468,16 @@ export function BookPanel() {
                               : "bg-background text-foreground hover:bg-muted border-border/60"
                           }`}
                         >
-                          <span>{p === "ONLINE" ? "Pay Online" : "Pay at Desk"}</span>
-                          <span className={paymentMethod === p ? "text-background/70 font-mono text-[10px]" : "text-muted-foreground font-mono text-[10px]"}>
+                          <span>
+                            {p === "ONLINE" ? "Pay Online" : "Pay at Desk"}
+                          </span>
+                          <span
+                            className={
+                              paymentMethod === p
+                                ? "text-background/70 font-mono text-[10px]"
+                                : "text-muted-foreground font-mono text-[10px]"
+                            }
+                          >
                             ₹400
                           </span>
                         </button>
@@ -418,7 +508,9 @@ export function BookPanel() {
                         mode="single"
                         selected={date}
                         onSelect={setDate}
-                        disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                        disabled={(d) =>
+                          d < new Date(new Date().setHours(0, 0, 0, 0))
+                        }
                         className="rounded-xl border shadow-sm mx-auto sm:mx-0 p-3 bg-card"
                       />
                     </div>
@@ -446,13 +538,17 @@ export function BookPanel() {
                         ))}
                       </div>
 
-                      <label htmlFor="appointment-visit-reason" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
+                      <label
+                        htmlFor="appointment-visit-reason"
+                        className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2"
+                      >
                         <FileText className="size-3.5" />
                         Visit Reason
                       </label>
                       <textarea
                         id="appointment-visit-reason"
-                        aria-label="Visit Reason" title="Visit Reason"
+                        aria-label="Visit Reason"
+                        title="Visit Reason"
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         rows={3}
@@ -462,7 +558,7 @@ export function BookPanel() {
                     </div>
                   </div>
                 </CardContent>
-                
+
                 {/* Action Footer */}
                 <div className="border-t border-border/40 bg-muted/30 p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -475,24 +571,43 @@ export function BookPanel() {
                           Booking Summary
                         </p>
                         <p className="text-sm font-medium truncate text-foreground mt-0.5">
-                          {date ? format(date, "MMM do") : "No Date"} {time ? `at ${time}` : ""} 
-                          <span className="text-muted-foreground mx-1.5">•</span> 
-                          {selectedDoctorObj ? `Dr. ${selectedDoctorObj.name}` : "No Doctor"}
+                          {date ? format(date, "MMM do") : "No Date"}{" "}
+                          {time ? `at ${time}` : ""}
+                          <span className="text-muted-foreground mx-1.5">
+                            •
+                          </span>
+                          {selectedDoctorObj
+                            ? `Dr. ${selectedDoctorObj.name}`
+                            : "No Doctor"}
                         </p>
                       </div>
                     </div>
-                    
+
                     <button
                       type="button"
-                      disabled={!time || !date || !selectedDoctorId || !reason || submitting}
+                      disabled={
+                        !time ||
+                        !date ||
+                        !selectedDoctorId ||
+                        !reason ||
+                        submitting
+                      }
                       onClick={handleBook}
                       className={`shrink-0 w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 ${
-                        time && date && reason && selectedDoctorId && !submitting
+                        time &&
+                        date &&
+                        reason &&
+                        selectedDoctorId &&
+                        !submitting
                           ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
                           : "bg-muted text-muted-foreground cursor-not-allowed border border-border/60"
                       }`}
                     >
-                      {submitting ? "Processing..." : paymentMethod === "ONLINE" ? "Pay & Book" : "Confirm Booking"}
+                      {submitting
+                        ? "Processing..."
+                        : paymentMethod === "ONLINE"
+                          ? "Pay & Book"
+                          : "Confirm Booking"}
                       {!submitting && <ChevronRight className="size-4" />}
                     </button>
                   </div>

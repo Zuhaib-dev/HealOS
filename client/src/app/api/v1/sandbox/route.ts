@@ -14,12 +14,13 @@ export async function GET() {
       scope: "read:patients write:appointments read:vitals",
       rate_limit: "1000 requests/day",
       docs: "https://healos-theta.vercel.app/developers",
-      message: "Zero-friction agent testing sandbox active. No credit card or registration required.",
+      message:
+        "Zero-friction agent testing sandbox active. No credit card or registration required.",
     },
     {
       status: 200,
       headers: getStandardApiHeaders(),
-    }
+    },
   );
 }
 

@@ -12,7 +12,12 @@ const auditLogSchema = new Schema({
   actor: { type: String, required: true },
   action: { type: String, required: true },
   target: { type: String },
-  level: { type: String, enum: ["info", "warn", "crit"], required: true, default: "info" },
+  level: {
+    type: String,
+    enum: ["info", "warn", "crit"],
+    required: true,
+    default: "info",
+  },
   timestamp: { type: Date, default: Date.now },
 });
 

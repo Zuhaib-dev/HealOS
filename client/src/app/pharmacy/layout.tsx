@@ -10,7 +10,11 @@ const sections = [
   { id: "history", label: "Past Orders", icon: CheckCircle },
 ];
 
-export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
+export default function WorkspaceLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <RoleGuard allowedRoles={["PHARMACIST"]}>
       <WorkspaceShell
@@ -18,8 +22,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
         breadcrumb="Medicines management / Pharmacy"
         searchPlaceholder="Search script, drug, SKU"
         sections={sections}
-        
-        
+
         statusTitle="Dispensary"
         statusLine="Main pharmacy open"
         statusNote="Connected to backend"

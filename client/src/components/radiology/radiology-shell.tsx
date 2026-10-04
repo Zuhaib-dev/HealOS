@@ -45,11 +45,7 @@ export const radiologySections = [
 
 export type RadiologySectionId = (typeof radiologySections)[number]["id"];
 
-export function RadiologyShell({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function RadiologyShell({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const { user } = useAuthStore();
@@ -58,13 +54,18 @@ export function RadiologyShell({
   const mainMobileTabs = radiologySections.slice(0, 4);
   const moreMobileTabs = radiologySections.slice(4);
 
-  const currentSection = radiologySections.find((s) =>
-    s.id === "worklist" ? pathname === "/radiology" : pathname.startsWith(`/radiology/${s.id}`)
-  ) || radiologySections[0];
+  const currentSection =
+    radiologySections.find((s) =>
+      s.id === "worklist"
+        ? pathname === "/radiology"
+        : pathname.startsWith(`/radiology/${s.id}`),
+    ) || radiologySections[0];
 
   // Helper to check if a section is active
   const isSectionActive = (id: string) => {
-    return id === "worklist" ? pathname === "/radiology" : pathname.startsWith(`/radiology/${id}`);
+    return id === "worklist"
+      ? pathname === "/radiology"
+      : pathname.startsWith(`/radiology/${id}`);
   };
 
   return (
@@ -73,7 +74,12 @@ export function RadiologyShell({
       <header className="bg-background/90 border-b border-border/60 sticky top-0 z-40 backdrop-blur-md transition-all">
         <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-8">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-3 group" aria-label="HealOS home" title="HealOS home">
+            <Link
+              href="/"
+              className="flex items-center gap-3 group"
+              aria-label="HealOS home"
+              title="HealOS home"
+            >
               <HealOSLogo size={30} />
             </Link>
 
@@ -92,8 +98,11 @@ export function RadiologyShell({
           {/* Search bar instrument */}
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("open-command-menu"))}
-            aria-label="Search accession number, MRN, X-Ray or CT scans" title="Search accession number, MRN, X-Ray or CT scans"
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("open-command-menu"))
+            }
+            aria-label="Search accession number, MRN, X-Ray or CT scans"
+            title="Search accession number, MRN, X-Ray or CT scans"
             className="hidden lg:flex w-80 items-center gap-2.5 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:border-primary/50 transition-all text-left cursor-pointer"
           >
             <Search className="text-muted-foreground size-3.5 shrink-0" />
@@ -134,11 +143,16 @@ export function RadiologyShell({
             </div>
           </div>
 
-          <nav aria-label="Radiology portal sidebar navigation" title="Radiology portal sidebar navigation" className="flex flex-col gap-1">
+          <nav
+            aria-label="Radiology portal sidebar navigation"
+            title="Radiology portal sidebar navigation"
+            className="flex flex-col gap-1"
+          >
             {radiologySections.map((s) => {
               const Icon = s.icon;
               const isActive = isSectionActive(s.id);
-              const href = s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
+              const href =
+                s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
               return (
                 <Link
                   key={s.id}
@@ -149,7 +163,9 @@ export function RadiologyShell({
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                   }`}
                 >
-                  <Icon className={`size-4 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === 'settings' ? 'group-hover:rotate-90' : 'group-hover:scale-[1.15]'}`}`} />
+                  <Icon
+                    className={`size-4 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === "settings" ? "group-hover:rotate-90" : "group-hover:scale-[1.15]"}`}`}
+                  />
                   <span>{s.label}</span>
                 </Link>
               );
@@ -163,7 +179,9 @@ export function RadiologyShell({
               </span>
               <span className="size-2 rounded-full bg-cyan-500 animate-pulse" />
             </div>
-            <p className="font-semibold text-xs mt-1.5 text-foreground">DICOM Store Online</p>
+            <p className="font-semibold text-xs mt-1.5 text-foreground">
+              DICOM Store Online
+            </p>
             <p className="mono-label text-[10px] text-muted-foreground mt-0.5 font-mono">
               MongoDB Atlas Live Sync
             </p>
@@ -171,18 +189,21 @@ export function RadiologyShell({
         </aside>
 
         {/* Main Content Area */}
-        <main className="min-w-0 flex-1 pb-24 md:pb-0">
-          {children}
-        </main>
+        <main className="min-w-0 flex-1 pb-24 md:pb-0">{children}</main>
       </div>
 
       {/* Persistent Bottom Navigation Bar - Mobile Only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
-        <nav aria-label="Radiology portal mobile navigation" title="Radiology portal mobile navigation" className="flex justify-around items-center px-2 py-1.5">
+        <nav
+          aria-label="Radiology portal mobile navigation"
+          title="Radiology portal mobile navigation"
+          className="flex justify-around items-center px-2 py-1.5"
+        >
           {mainMobileTabs.map((s) => {
             const Icon = s.icon;
             const isActive = isSectionActive(s.id);
-            const href = s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
+            const href =
+              s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
             return (
               <Link
                 key={s.id}
@@ -190,18 +211,27 @@ export function RadiologyShell({
                 onClick={() => setIsMoreOpen(false)}
                 className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
               >
-                <motion.div 
-                  animate={isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }}
+                <motion.div
+                  animate={
+                    isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }
+                  }
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
-                  <Icon className={`size-5 ${isActive ? "fill-primary/20" : ""}`} strokeWidth={isActive ? 2.5 : 2} />
+                  <Icon
+                    className={`size-5 ${isActive ? "fill-primary/20" : ""}`}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
                 </motion.div>
-                <span 
+                <span
                   className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                    isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                    isActive
+                      ? "text-primary font-semibold"
+                      : "text-muted-foreground"
                   }`}
                 >
                   {s.label}
@@ -218,14 +248,29 @@ export function RadiologyShell({
                   type="button"
                   className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
                 >
-                  <div className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                    moreMobileTabs.some(s => isSectionActive(s.id)) ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-                  }`}>
-                    <Menu className={`size-5 ${moreMobileTabs.some(s => isSectionActive(s.id)) ? "fill-primary/20" : ""}`} strokeWidth={moreMobileTabs.some(s => isSectionActive(s.id)) ? 2.5 : 2} />
+                  <div
+                    className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                      moreMobileTabs.some((s) => isSectionActive(s.id))
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground"
+                    }`}
+                  >
+                    <Menu
+                      className={`size-5 ${moreMobileTabs.some((s) => isSectionActive(s.id)) ? "fill-primary/20" : ""}`}
+                      strokeWidth={
+                        moreMobileTabs.some((s) => isSectionActive(s.id))
+                          ? 2.5
+                          : 2
+                      }
+                    />
                   </div>
-                  <span className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                    moreMobileTabs.some(s => isSectionActive(s.id)) ? "text-primary font-semibold" : "text-muted-foreground"
-                  }`}>
+                  <span
+                    className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                      moreMobileTabs.some((s) => isSectionActive(s.id))
+                        ? "text-primary font-semibold"
+                        : "text-muted-foreground"
+                    }`}
+                  >
                     More
                   </span>
                 </button>
@@ -242,7 +287,8 @@ export function RadiologyShell({
                   {moreMobileTabs.map((s) => {
                     const Icon = s.icon;
                     const isActive = isSectionActive(s.id);
-                    const href = s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
+                    const href =
+                      s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
                     return (
                       <Link
                         key={s.id}
@@ -254,8 +300,13 @@ export function RadiologyShell({
                             : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
                         }`}
                       >
-                        <Icon className="size-6" strokeWidth={isActive ? 2.5 : 2} />
-                        <span className="text-[10px] font-semibold tracking-wide text-center leading-tight">{s.label}</span>
+                        <Icon
+                          className="size-6"
+                          strokeWidth={isActive ? 2.5 : 2}
+                        />
+                        <span className="text-[10px] font-semibold tracking-wide text-center leading-tight">
+                          {s.label}
+                        </span>
                       </Link>
                     );
                   })}

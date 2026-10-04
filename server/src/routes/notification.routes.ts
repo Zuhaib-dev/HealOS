@@ -1,5 +1,11 @@
 import express from "express";
-import { broadcastNotification, getBroadcastHistory, getUserNotifications, markAsRead, markAllAsRead } from "../controllers/notification.controller.js";
+import {
+  broadcastNotification,
+  getBroadcastHistory,
+  getUserNotifications,
+  markAsRead,
+  markAllAsRead,
+} from "../controllers/notification.controller.js";
 import { verifyToken, requireRole } from "../middleware/auth.middleware.js";
 import { UserRole } from "../models/user.model.js";
 

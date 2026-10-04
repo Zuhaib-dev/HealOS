@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2, Eye } from "lucide-react";
+import {
+  Check,
+  TriangleAlert,
+  PenLine,
+  Send,
+  X,
+  CheckCircle2,
+  Eye,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
 import {
@@ -31,12 +39,16 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
@@ -57,7 +69,11 @@ function Vitals({ series }: { series: number[] }) {
     .join(" ");
 
   return (
-    <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-8 w-24 shrink-0">
+    <svg
+      viewBox="0 0 100 32"
+      preserveAspectRatio="none"
+      className="h-8 w-24 shrink-0"
+    >
       <motion.polyline
         points={pts}
         fill="none"
@@ -92,7 +108,7 @@ export function ResultsPanel() {
 
   const loadResults = () => {
     getDiagnosticResultsApi()
-      .then(res => setResults(res.data.results || []))
+      .then((res) => setResults(res.data.results || []))
       .catch(() => toast.error("Failed to load results"))
       .finally(() => setLoading(false));
   };
@@ -123,7 +139,10 @@ export function ResultsPanel() {
         title="Results inbox"
         note="Labs, imaging and pathology waiting on your signature — criticals surface at the top."
         actions={
-          <ActionButton tone="solid" onClick={() => setSigned(results.map((r) => r._id))}>
+          <ActionButton
+            tone="solid"
+            onClick={() => setSigned(results.map((r) => r._id))}
+          >
             Sign all normal
           </ActionButton>
         }
@@ -166,29 +185,44 @@ export function ResultsPanel() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-muted-foreground">Loading results...</td>
+                <td
+                  colSpan={7}
+                  className="p-8 text-center text-muted-foreground"
+                >
+                  Loading results...
+                </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-muted-foreground">No diagnostic results found.</td>
+                <td
+                  colSpan={7}
+                  className="p-8 text-center text-muted-foreground"
+                >
+                  No diagnostic results found.
+                </td>
               </tr>
             ) : (
               rows.map((r) => {
                 const isSigned = signed.includes(r._id);
-                const patName = typeof r.patient === "object" ? r.patient?.name : "Unknown";
+                const patName =
+                  typeof r.patient === "object" ? r.patient?.name : "Unknown";
                 const testName = r.order?.testName || "Unknown Test";
                 const kind = r.order?.testType || "TEST";
                 return (
                   <motion.tr key={r._id} layout className="hairline-b">
                     <Td>
-                      <span className="mono-label">{new Date(r.createdAt).toLocaleDateString()}</span>
+                      <span className="mono-label">
+                        {new Date(r.createdAt).toLocaleDateString()}
+                      </span>
                     </Td>
                     <Td>
                       <span className="block font-medium">{patName}</span>
                     </Td>
                     <Td>{testName}</Td>
                     <Td>
-                      <span className="mono-label text-muted-foreground">{kind}</span>
+                      <span className="mono-label text-muted-foreground">
+                        {kind}
+                      </span>
                     </Td>
                     <Td>
                       <span
@@ -208,17 +242,17 @@ export function ResultsPanel() {
                     </Td>
                     <Td>
                       <div className="flex items-center gap-2">
-                            {r.fileUrl && (
-                              <a 
-                                href={getFileUrl(r.fileUrl)} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"
-                                title="View Document"
-                              >
-                                <Eye className="size-4" />
-                              </a>
-                            )}
+                        {r.fileUrl && (
+                          <a
+                            href={getFileUrl(r.fileUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"
+                            title="View Document"
+                          >
+                            <Eye className="size-4" />
+                          </a>
+                        )}
                         {isSigned ? (
                           <Pill tone="mute">signed</Pill>
                         ) : (

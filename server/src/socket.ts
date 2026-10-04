@@ -10,7 +10,9 @@ export const initSocketIO = (server: HttpServer): Server => {
     cors: {
       origin:
         envConfig.NODE_ENV === "production"
-          ? [envConfig.CLIENT_URL, "http://localhost:3000"].filter(Boolean) as string[]
+          ? ([envConfig.CLIENT_URL, "http://localhost:3000"].filter(
+              Boolean,
+            ) as string[])
           : ["http://localhost:3000", "http://127.0.0.1:3000"],
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
@@ -25,7 +27,10 @@ export const initSocketIO = (server: HttpServer): Server => {
         const match = cookieHeader.match(/healos_token=([^;]+)/);
         if (match && match[1]) {
           const token = decodeURIComponent(match[1]);
-          const decoded = jwt.verify(token, envConfig.JWT_SECRET as string) as any;
+          const decoded = jwt.verify(
+            token,
+            envConfig.JWT_SECRET as string,
+          ) as any;
           socket.data.user = decoded;
         }
       }
@@ -36,7 +41,9 @@ export const initSocketIO = (server: HttpServer): Server => {
   });
 
   io.on("connection", (socket: Socket) => {
-    console.log(`⚡ Realtime socket connected: ${socket.id} (Auth: ${!!socket.data.user})`);
+    console.log(
+      `⚡ Realtime socket connected: ${socket.id} (Auth: ${!!socket.data.user})`,
+    );
 
     // Join user-specific room
     socket.on("join:user", (userId: string) => {
@@ -44,30 +51,51 @@ export const initSocketIO = (server: HttpServer): Server => {
         socket.join(`user:${userId}`);
         console.log(`👤 Socket ${socket.id} joined room user:${userId}`);
       } else {
-        console.warn(`⚠️ Unauthorized attempt by socket ${socket.id} to join user:${userId}`);
+        console.warn(
+          `⚠️ Unauthorized attempt by socket ${socket.id} to join user:${userId}`,
+        );
       }
     });
 
     // Join role-specific rooms
     socket.on("join:role", (role: string) => {
-      if (role && socket.data.user && socket.data.user.role.toUpperCase() === role.toUpperCase()) {
+      if (
+        role &&
+        socket.data.user &&
+        socket.data.user.role.toUpperCase() === role.toUpperCase()
+      ) {
         const roomName = role.toLowerCase();
         socket.join(roomName);
         console.log(`🛡️ Socket ${socket.id} joined role room: ${roomName}`);
       } else {
-        console.warn(`⚠️ Unauthorized attempt by socket ${socket.id} to join role room ${role}`);
+        console.warn(
+          `⚠️ Unauthorized attempt by socket ${socket.id} to join role room ${role}`,
+        );
       }
     });
 
-    socket.on("chat:send_message", (messageData: { senderId: string, text: string, senderName: string, role: string, timestamp: string }) => {
-      if (!socket.data.user) {
-        console.warn(`⚠️ Unauthenticated chat message attempt from socket ${socket.id}`);
-        return;
-      }
-      // Broadcast to the care team (doctors, nurses, etc) and back to the patient's room so all their devices sync
-      socket.broadcast.emit("chat:receive_message", messageData);
-      console.log(`💬 Chat message from ${messageData.senderName}: ${messageData.text}`);
-    });
+    socket.on(
+      "chat:send_message",
+      (messageData: {
+        senderId: string;
+        text: string;
+        senderName: string;
+        role: string;
+        timestamp: string;
+      }) => {
+        if (!socket.data.user) {
+          console.warn(
+            `⚠️ Unauthenticated chat message attempt from socket ${socket.id}`,
+          );
+          return;
+        }
+        // Broadcast to the care team (doctors, nurses, etc) and back to the patient's room so all their devices sync
+        socket.broadcast.emit("chat:receive_message", messageData);
+        console.log(
+          `💬 Chat message from ${messageData.senderName}: ${messageData.text}`,
+        );
+      },
+    );
 
     // ============================================
     // WebRTC Signaling Events
@@ -82,20 +110,42 @@ export const initSocketIO = (server: HttpServer): Server => {
       socket.to(room).emit("webrtc:user_joined", socket.data.user.id);
     });
 
-    socket.on("webrtc:offer", ({ appointmentId, offer }: { appointmentId: string, offer: any }) => {
-      if (!socket.data.user) return;
-      socket.to(`call:${appointmentId}`).emit("webrtc:offer", { offer, senderId: socket.data.user.id });
-    });
+    socket.on(
+      "webrtc:offer",
+      ({ appointmentId, offer }: { appointmentId: string; offer: any }) => {
+        if (!socket.data.user) return;
+        socket
+          .to(`call:${appointmentId}`)
+          .emit("webrtc:offer", { offer, senderId: socket.data.user.id });
+      },
+    );
 
-    socket.on("webrtc:answer", ({ appointmentId, answer }: { appointmentId: string, answer: any }) => {
-      if (!socket.data.user) return;
-      socket.to(`call:${appointmentId}`).emit("webrtc:answer", { answer, senderId: socket.data.user.id });
-    });
+    socket.on(
+      "webrtc:answer",
+      ({ appointmentId, answer }: { appointmentId: string; answer: any }) => {
+        if (!socket.data.user) return;
+        socket
+          .to(`call:${appointmentId}`)
+          .emit("webrtc:answer", { answer, senderId: socket.data.user.id });
+      },
+    );
 
-    socket.on("webrtc:ice_candidate", ({ appointmentId, candidate }: { appointmentId: string, candidate: any }) => {
-      if (!socket.data.user) return;
-      socket.to(`call:${appointmentId}`).emit("webrtc:ice_candidate", { candidate, senderId: socket.data.user.id });
-    });
+    socket.on(
+      "webrtc:ice_candidate",
+      ({
+        appointmentId,
+        candidate,
+      }: {
+        appointmentId: string;
+        candidate: any;
+      }) => {
+        if (!socket.data.user) return;
+        socket.to(`call:${appointmentId}`).emit("webrtc:ice_candidate", {
+          candidate,
+          senderId: socket.data.user.id,
+        });
+      },
+    );
 
     socket.on("webrtc:leave_call", (appointmentId: string) => {
       if (!socket.data.user) return;
@@ -143,7 +193,10 @@ export const emitAppointmentUpdated = (appointmentData: any) => {
   if (io) {
     io.to("doctor").emit("appointment:updated", appointmentData);
     if (appointmentData.patient) {
-      const patientId = typeof appointmentData.patient === "object" ? appointmentData.patient._id : appointmentData.patient;
+      const patientId =
+        typeof appointmentData.patient === "object"
+          ? appointmentData.patient._id
+          : appointmentData.patient;
       io.to(`user:${patientId}`).emit("appointment:updated", appointmentData);
     }
   }

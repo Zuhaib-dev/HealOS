@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, UserRound } from "lucide-react";
+import {
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  PhoneOff,
+  UserRound,
+} from "lucide-react";
 
 export function TelemedicineWorkbench({
   appointmentId,
@@ -28,7 +35,10 @@ export function TelemedicineWorkbench({
 
     const startCall = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
         localStreamRef.current = stream;
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
@@ -57,15 +67,22 @@ export function TelemedicineWorkbench({
         };
 
         let makingOffer = false;
-        
+
         const sendOffer = async () => {
           if (!peerConnectionRef.current) return;
-          if (makingOffer || peerConnectionRef.current.signalingState !== "stable") return;
+          if (
+            makingOffer ||
+            peerConnectionRef.current.signalingState !== "stable"
+          )
+            return;
           try {
             makingOffer = true;
             const offer = await peerConnectionRef.current.createOffer();
             await peerConnectionRef.current.setLocalDescription(offer);
-            socket.emit("webrtc:offer", { appointmentId, offer: peerConnectionRef.current.localDescription });
+            socket.emit("webrtc:offer", {
+              appointmentId,
+              offer: peerConnectionRef.current.localDescription,
+            });
           } catch (e) {
             console.error("Error creating offer", e);
           } finally {
@@ -89,7 +106,10 @@ export function TelemedicineWorkbench({
         // Handle ICE candidates
         pc.onicecandidate = (event) => {
           if (event.candidate) {
-            socket.emit("webrtc:ice_candidate", { appointmentId, candidate: event.candidate });
+            socket.emit("webrtc:ice_candidate", {
+              appointmentId,
+              candidate: event.candidate,
+            });
           }
         };
 
@@ -107,8 +127,11 @@ export function TelemedicineWorkbench({
             await pc.setRemoteDescription(new RTCSessionDescription(offer));
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
-            socket.emit("webrtc:answer", { appointmentId, answer: pc.localDescription });
-            
+            socket.emit("webrtc:answer", {
+              appointmentId,
+              answer: pc.localDescription,
+            });
+
             // Process queued ICE candidates
             for (const c of iceCandidateQueue) {
               await pc.addIceCandidate(new RTCIceCandidate(c));
@@ -133,7 +156,7 @@ export function TelemedicineWorkbench({
           try {
             processingAnswer = true;
             await pc.setRemoteDescription(new RTCSessionDescription(answer));
-            
+
             // Process queued ICE candidates
             for (const c of iceCandidateQueue) {
               await pc.addIceCandidate(new RTCIceCandidate(c));
@@ -176,7 +199,6 @@ export function TelemedicineWorkbench({
 
         // Join the room
         socket.emit("webrtc:join_call", appointmentId);
-
       } catch (err) {
         console.error("Error accessing media devices.", err);
       }
@@ -190,14 +212,14 @@ export function TelemedicineWorkbench({
       socket.off("webrtc:answer");
       socket.off("webrtc:ice_candidate");
       socket.off("webrtc:user_left");
-      
+
       socket.emit("webrtc:leave_call", appointmentId);
 
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close();
       }
       if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
   }, [appointmentId]);
@@ -220,7 +242,8 @@ export function TelemedicineWorkbench({
     const socket = getSocket();
     socket.emit("webrtc:leave_call", appointmentId);
     if (peerConnectionRef.current) peerConnectionRef.current.close();
-    if (localStreamRef.current) localStreamRef.current.getTracks().forEach(track => track.stop());
+    if (localStreamRef.current)
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
     onEndCall();
   };
 
@@ -228,32 +251,33 @@ export function TelemedicineWorkbench({
     <div className="flex flex-col h-full w-full bg-background relative overflow-hidden rounded-2xl border border-border/40 shadow-sm min-h-125">
       {/* Video Grid */}
       <div className="flex-1 relative bg-black/5 flex items-center justify-center p-4">
-        
         {/* Remote Video (Main) */}
-        <video 
-          ref={remoteVideoRef} 
-          autoPlay 
-          playsInline 
-          className={`w-full h-full object-cover rounded-xl shadow-lg border border-border/20 ${isConnected ? 'block' : 'hidden'}`}
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className={`w-full h-full object-cover rounded-xl shadow-lg border border-border/20 ${isConnected ? "block" : "hidden"}`}
         />
-        
+
         {!isConnected && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground animate-pulse z-0 bg-background/50 backdrop-blur-sm">
             <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mb-4 border border-border/50">
-               <UserRound className="size-10 text-muted-foreground/60" />
+              <UserRound className="size-10 text-muted-foreground/60" />
             </div>
-            <p className="font-mono text-sm tracking-wider uppercase font-semibold">Waiting for {isDoctor ? "patient" : "doctor"}...</p>
+            <p className="font-mono text-sm tracking-wider uppercase font-semibold">
+              Waiting for {isDoctor ? "patient" : "doctor"}...
+            </p>
           </div>
         )}
 
         {/* Local Video (PiP) */}
         <div className="absolute bottom-6 right-6 w-32 md:w-48 aspect-3/4 bg-card border-2 border-border/50 rounded-xl overflow-hidden shadow-2xl z-10 transition-transform hover:scale-105">
-          <video 
-            ref={localVideoRef} 
-            autoPlay 
-            playsInline 
-            muted 
-            className={`w-full h-full object-cover ${isVideoOff ? 'opacity-0' : 'opacity-100'}`} 
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`w-full h-full object-cover ${isVideoOff ? "opacity-0" : "opacity-100"}`}
           />
           {isVideoOff && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted">
@@ -265,19 +289,23 @@ export function TelemedicineWorkbench({
 
       {/* Control Bar */}
       <div className="h-20 bg-card/80 backdrop-blur-md border-t border-border/40 flex items-center justify-center gap-4 px-6 z-20">
-        <button 
+        <button
           onClick={toggleMute}
-          className={`p-4 rounded-full transition-all ${isMuted ? 'bg-destructive/10 text-destructive hover:bg-destructive/20' : 'bg-muted hover:bg-muted/80 text-foreground'}`}
+          className={`p-4 rounded-full transition-all ${isMuted ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-muted hover:bg-muted/80 text-foreground"}`}
         >
           {isMuted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
         </button>
-        <button 
+        <button
           onClick={toggleVideo}
-          className={`p-4 rounded-full transition-all ${isVideoOff ? 'bg-destructive/10 text-destructive hover:bg-destructive/20' : 'bg-muted hover:bg-muted/80 text-foreground'}`}
+          className={`p-4 rounded-full transition-all ${isVideoOff ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-muted hover:bg-muted/80 text-foreground"}`}
         >
-          {isVideoOff ? <VideoOff className="size-5" /> : <Video className="size-5" />}
+          {isVideoOff ? (
+            <VideoOff className="size-5" />
+          ) : (
+            <Video className="size-5" />
+          )}
         </button>
-        <button 
+        <button
           onClick={handleEndCall}
           className="p-4 px-8 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold shadow-lg transition-transform hover:scale-105 flex items-center gap-2"
         >

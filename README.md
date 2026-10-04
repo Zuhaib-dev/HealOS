@@ -69,22 +69,24 @@ HealOS provides tailored dashboards and tools for 7 different user roles:
 ## 🚀 Comprehensive Tech Stack
 
 ### Frontend (Client)
+
 - **Core Framework**: [Next.js 15 (App Router)](https://nextjs.org/) & [React 19](https://react.dev/)
-- **Styling & UI**: 
+- **Styling & UI**:
   - [Tailwind CSS v4](https://tailwindcss.com/) (using modern logical properties and zero-config CSS variables)
-  - Custom *Emerald Prestige* Design System (clinical interface focus)
+  - Custom _Emerald Prestige_ Design System (clinical interface focus)
   - [Framer Motion](https://www.framer.com/motion/) (Silky-smooth microinteractions and structural page transitions)
   - [Lucide React](https://lucide.dev/) (Consistent, clean iconography)
-- **State Management & Data Fetching**: 
+- **State Management & Data Fetching**:
   - [Zustand](https://zustand-demo.pmnd.rs/) (Lightweight global state for Auth & UI)
   - [TanStack React Query](https://tanstack.com/query) (Server state caching and synchronization)
 - **Forms & Validation**: React Hook Form, Zod
 - **Typography**: `next/font` (JetBrains Mono for data/UI, Work Sans for prose)
-- **SEO & Performance**: 
+- **SEO & Performance**:
   - Next.js Metadata API, dynamic `sitemap.xml`, and JSON-LD Structured Data
   - Strict Client Component separation (`"use client"`) to maximize Server Components
 
 ### Backend (Server)
+
 - **Runtime & Framework**: [Node.js](https://nodejs.org/) & [Express.js](https://expressjs.com/)
 - **Language**: TypeScript (Strict typing across API borders)
 - **Database**: [MongoDB](https://www.mongodb.com/) & [Mongoose](https://mongoosejs.com/) (NoSQL ODM)
@@ -93,6 +95,7 @@ HealOS provides tailored dashboards and tools for 7 different user roles:
 - **Payments**: [Razorpay API](https://razorpay.com/) (For patient invoices and online billing)
 
 ### Architecture & Patterns
+
 - **Decoupled Monorepo**: Separate `/client` and `/server` environments
 - **Role Guards**: Custom Higher-Order Components ensuring strict URL routing for 9 different user types
 - **Hallmark Protocol**: Structural variety and anti-slop design in public landing pages (Marquee Heroes, Workbenches, Long Documents)
@@ -102,6 +105,7 @@ HealOS provides tailored dashboards and tools for 7 different user roles:
 ## 🏁 Getting Started
 
 ### Prerequisites
+
 - Node.js (v18 or higher)
 - MongoDB Atlas account / Local MongoDB instance
 - Razorpay Account (for payment integration)
@@ -109,19 +113,22 @@ HealOS provides tailored dashboards and tools for 7 different user roles:
 ### Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/yourusername/healos.git
    cd healos
    ```
 
 2. **Setup Backend:**
+
    ```bash
    cd server
    npm install
    # Create a .env file based on .env.example
    npm run dev
    ```
-   *See [server/README.md](./server/README.md) for detailed backend configuration.*
+
+   _See [server/README.md](./server/README.md) for detailed backend configuration._
 
 3. **Setup Frontend:**
    ```bash
@@ -130,14 +137,16 @@ HealOS provides tailored dashboards and tools for 7 different user roles:
    # Create a .env.local file
    npm run dev
    ```
-   *See [client/README.md](./client/README.md) for detailed frontend configuration.*
+   _See [client/README.md](./client/README.md) for detailed frontend configuration._
 
 ---
 
 ## 🤝 Contributing
+
 Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](#).
 
 ## 📄 License
+
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
@@ -147,7 +156,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 <div align="center">
 
 **Zuhaib Rashid**  
-*Full Stack Developer & Healthcare Systems Architect*  
+_Full Stack Developer & Healthcare Systems Architect_  
 UI/UX Obsessive · Real-time Systems Engineer · Autonomous Agent Protocols
 
 [![Portfolio](https://img.shields.io/badge/Portfolio-zuhaibrashid.com-0078D4?style=for-the-badge&logo=microsoft-edge)](https://zuhaibrashid.com)
@@ -156,6 +165,6 @@ UI/UX Obsessive · Real-time Systems Engineer · Autonomous Agent Protocols
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Zuhaib_Rashid-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/zuhaib-rashid-661345318/)
 [![Twitter](https://img.shields.io/badge/Twitter-@xuhaib__x9-1DA1F2?style=for-the-badge&logo=twitter)](https://x.com/xuhaib_x9)
 
-*Built with obsessive attention to detail, real-world clinical safety patterns, and modern agentic architectures.*
+_Built with obsessive attention to detail, real-world clinical safety patterns, and modern agentic architectures._
 
 </div>

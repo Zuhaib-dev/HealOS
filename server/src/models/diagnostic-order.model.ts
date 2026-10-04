@@ -27,7 +27,7 @@ export interface IDiagnosticOrder extends Document {
   priority: DiagnosticOrderPriority;
   clinicalNotes?: string; // Reason for test, e.g. "Rule out pneumonia"
   status: DiagnosticOrderStatus;
-  
+
   // Radiology-specific fields
   accessionNumber?: string;
   modality?: "CT" | "MRI" | "X-Ray" | "US" | "Mammo" | "PET-CT";
@@ -63,17 +63,23 @@ const diagnosticOrderSchema = new Schema<IDiagnosticOrder>(
       default: DiagnosticOrderStatus.PENDING,
     },
     accessionNumber: { type: String },
-    modality: { type: String, enum: ["CT", "MRI", "X-Ray", "US", "Mammo", "PET-CT"] },
+    modality: {
+      type: String,
+      enum: ["CT", "MRI", "X-Ray", "US", "Mammo", "PET-CT"],
+    },
     room: { type: String },
     tatMin: { type: Number },
     slaMin: { type: Number },
     radiologist: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 diagnosticOrderSchema.index({ accessionNumber: 1 });
 diagnosticOrderSchema.index({ patient: 1, createdAt: -1 });
 diagnosticOrderSchema.index({ status: 1, testType: 1 }); // For radiology/lab queues
 
-export const DiagnosticOrder = mongoose.model<IDiagnosticOrder>("DiagnosticOrder", diagnosticOrderSchema);
+export const DiagnosticOrder = mongoose.model<IDiagnosticOrder>(
+  "DiagnosticOrder",
+  diagnosticOrderSchema,
+);

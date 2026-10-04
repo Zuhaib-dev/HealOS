@@ -30,7 +30,13 @@ export interface IUser extends Document {
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
     googleId: { type: String, unique: true, sparse: true },
     password: { type: String }, // Optional if logged in via Google
     phone: { type: String, trim: true },
@@ -43,7 +49,7 @@ const userSchema = new Schema<IUser>(
     avatarUrl: { type: String },
     tokenVersion: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Indexes for faster querying

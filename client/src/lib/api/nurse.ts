@@ -89,7 +89,10 @@ export interface FluidBalance {
 }
 
 export const fetchFluidBalancesApi = async () => {
-  const response = await apiClient.get<{ success: boolean; fluids: FluidBalance[] }>("/nurse/fluids");
+  const response = await apiClient.get<{
+    success: boolean;
+    fluids: FluidBalance[];
+  }>("/nurse/fluids");
   return response.data;
 };
 
@@ -105,12 +108,18 @@ export interface CallBell {
 }
 
 export const fetchCallBellsApi = async () => {
-  const response = await apiClient.get<{ success: boolean; callBells: CallBell[] }>("/nurse/call-bells");
+  const response = await apiClient.get<{
+    success: boolean;
+    callBells: CallBell[];
+  }>("/nurse/call-bells");
   return response.data;
 };
 
 export const resolveCallBellApi = async (id: string) => {
-  const response = await apiClient.patch<{ success: boolean; callBell: CallBell }>(`/nurse/call-bells/${id}/resolve`);
+  const response = await apiClient.patch<{
+    success: boolean;
+    callBell: CallBell;
+  }>(`/nurse/call-bells/${id}/resolve`);
   return response.data;
 };
 
@@ -130,12 +139,16 @@ export interface MarDose {
 }
 
 export const fetchMarDosesApi = async () => {
-  const response = await apiClient.get<{ success: boolean; doses: MarDose[] }>("/nurse/emar");
+  const response = await apiClient.get<{ success: boolean; doses: MarDose[] }>(
+    "/nurse/emar",
+  );
   return response.data;
 };
 
 export const administerMarDoseApi = async (id: string) => {
-  const response = await apiClient.patch<{ success: boolean; dose: MarDose }>(`/nurse/emar/${id}/administer`);
+  const response = await apiClient.patch<{ success: boolean; dose: MarDose }>(
+    `/nurse/emar/${id}/administer`,
+  );
   return response.data;
 };
 
@@ -157,7 +170,9 @@ export interface Wound {
 }
 
 export const fetchWoundsApi = async () => {
-  const response = await apiClient.get<{ success: boolean; wounds: Wound[] }>("/nurse/wounds");
+  const response = await apiClient.get<{ success: boolean; wounds: Wound[] }>(
+    "/nurse/wounds",
+  );
   return response.data;
 };
 
@@ -174,12 +189,19 @@ export interface NurseHandover {
 }
 
 export const fetchNurseHandoversApi = async () => {
-  const response = await apiClient.get<{ success: boolean; handovers: NurseHandover[] }>("/nurse/handovers");
+  const response = await apiClient.get<{
+    success: boolean;
+    handovers: NurseHandover[];
+  }>("/nurse/handovers");
   return response.data;
 };
 
-export const createHandoverApi = async (data: Omit<NurseHandover, "_id" | "status">) => {
-  const response = await apiClient.post<{ success: boolean; handover: NurseHandover }>("/nurse/handovers", data);
+export const createHandoverApi = async (
+  data: Omit<NurseHandover, "_id" | "status">,
+) => {
+  const response = await apiClient.post<{
+    success: boolean;
+    handover: NurseHandover;
+  }>("/nurse/handovers", data);
   return response.data;
 };
-

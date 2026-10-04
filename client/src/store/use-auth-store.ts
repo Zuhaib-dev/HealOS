@@ -29,7 +29,7 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   _hasHydrated: boolean;
-  
+
   // Actions
   setAuth: (user: AuthUser, token: string) => void;
   setUser: (user: AuthUser) => void;
@@ -80,7 +80,9 @@ export const useAuthStore = create<AuthState>()(
 
       updateUser: (partialUser) =>
         set((state) => {
-          const updatedUser = state.user ? { ...state.user, ...partialUser } : null;
+          const updatedUser = state.user
+            ? { ...state.user, ...partialUser }
+            : null;
           if (updatedUser) {
             syncAuthCookies(updatedUser.role, state.token);
           }
@@ -122,7 +124,6 @@ export const useAuthStore = create<AuthState>()(
           syncAuthCookies(null, null);
         }
       },
-    }
-  )
+    },
+  ),
 );
-

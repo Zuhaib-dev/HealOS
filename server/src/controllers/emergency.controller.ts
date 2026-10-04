@@ -208,12 +208,30 @@ export const ensureEmergencyDataSeeded = async () => {
         theatresArmed: 3,
         staffRecalled: 68,
         steps: [
-          { text: "Declare major incident to switchboard (dial 2222)", completed: false },
-          { text: "Open casualty clearing area and label triage sieve packs", completed: false },
-          { text: "Stand up second theatre and recall on-call surgical team", completed: false },
-          { text: "Discharge-to-assess sweep on wards 2, 3 and 5", completed: false },
-          { text: "Open blood bank major haemorrhage protocol", completed: false },
-          { text: "Notify regional control and press office", completed: false },
+          {
+            text: "Declare major incident to switchboard (dial 2222)",
+            completed: false,
+          },
+          {
+            text: "Open casualty clearing area and label triage sieve packs",
+            completed: false,
+          },
+          {
+            text: "Stand up second theatre and recall on-call surgical team",
+            completed: false,
+          },
+          {
+            text: "Discharge-to-assess sweep on wards 2, 3 and 5",
+            completed: false,
+          },
+          {
+            text: "Open blood bank major haemorrhage protocol",
+            completed: false,
+          },
+          {
+            text: "Notify regional control and press office",
+            completed: false,
+          },
         ],
       });
       console.log("🛡️ Default Major Incident protocols seeded successfully.");
@@ -227,19 +245,22 @@ export const ensureEmergencyDataSeeded = async () => {
 // 1. Triage Board Operations
 // ============================================
 
-export const getEmergencyStats = async (_req: Request, res: Response): Promise<void> => {
+export const getEmergencyStats = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     await ensureEmergencyDataSeeded();
 
     const activeCases = await EmergencyCase.find({ isArchived: false });
     const totalInDept = activeCases.length;
     const awaitingTriage = activeCases.filter(
-      (c) => c.disposition === "awaiting triage"
+      (c) => c.disposition === "awaiting triage",
     ).length;
 
     const now = Date.now();
     const waitTimes = activeCases.map((c) =>
-      Math.max(0, Math.floor((now - new Date(c.arrivedAt).getTime()) / 60000))
+      Math.max(0, Math.floor((now - new Date(c.arrivedAt).getTime()) / 60000)),
     );
 
     // Median wait time
@@ -273,7 +294,10 @@ export const getEmergencyStats = async (_req: Request, res: Response): Promise<v
   }
 };
 
-export const getTriageCases = async (req: Request, res: Response): Promise<void> => {
+export const getTriageCases = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     await ensureEmergencyDataSeeded();
 
@@ -286,12 +310,18 @@ export const getTriageCases = async (req: Request, res: Response): Promise<void>
       query.disposition = "awaiting triage";
     }
 
-    const cases = await EmergencyCase.find(query).sort({ esi: 1, arrivedAt: 1 });
+    const cases = await EmergencyCase.find(query).sort({
+      esi: 1,
+      arrivedAt: 1,
+    });
 
     const now = Date.now();
     const formattedCases = cases.map((c) => {
       const arrivedDate = new Date(c.arrivedAt);
-      const waitMin = Math.max(0, Math.floor((now - arrivedDate.getTime()) / 60000));
+      const waitMin = Math.max(
+        0,
+        Math.floor((now - arrivedDate.getTime()) / 60000),
+      );
       const hours = String(arrivedDate.getHours()).padStart(2, "0");
       const minutes = String(arrivedDate.getMinutes()).padStart(2, "0");
 
@@ -328,7 +358,10 @@ export const getTriageCases = async (req: Request, res: Response): Promise<void>
   }
 };
 
-export const createEmergencyCase = async (req: Request, res: Response): Promise<void> => {
+export const createEmergencyCase = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const {
       patientName,
@@ -369,13 +402,16 @@ export const createEmergencyCase = async (req: Request, res: Response): Promise<
       assignedDoctorName: req.user?.name,
     });
 
-    broadcastEmergencyEvent("emergency:triage_updated", { action: "created", case: newCase });
+    broadcastEmergencyEvent("emergency:triage_updated", {
+      action: "created",
+      case: newCase,
+    });
 
     await logAudit(
       req.user?.name || "emergency_staff",
       `Intake ED patient ${caseId} (${patientName}) - ESI ${newCase.esi}`,
       caseId,
-      newCase.esi <= 2 ? "warn" : "info"
+      newCase.esi <= 2 ? "warn" : "info",
     );
 
     res.status(StatusCodes.CREATED).json({
@@ -392,21 +428,30 @@ export const createEmergencyCase = async (req: Request, res: Response): Promise<
   }
 };
 
-export const updateEmergencyCase = async (req: Request, res: Response): Promise<void> => {
+export const updateEmergencyCase = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const idParam = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
     if (!idParam) {
-      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "ID is required" });
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "ID is required" });
       return;
     }
     const updateData = req.body;
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(idParam);
-    const filterQuery = isObjectId ? { $or: [{ _id: idParam }, { caseId: idParam }] } : { caseId: idParam };
+    const filterQuery = isObjectId
+      ? { $or: [{ _id: idParam }, { caseId: idParam }] }
+      : { caseId: idParam };
 
     const updated = await EmergencyCase.findOneAndUpdate(
       filterQuery,
       { $set: updateData },
-      { new: true }
+      { new: true },
     );
 
     if (!updated) {
@@ -417,7 +462,10 @@ export const updateEmergencyCase = async (req: Request, res: Response): Promise<
       return;
     }
 
-    broadcastEmergencyEvent("emergency:triage_updated", { action: "updated", case: updated });
+    broadcastEmergencyEvent("emergency:triage_updated", {
+      action: "updated",
+      case: updated,
+    });
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -433,20 +481,29 @@ export const updateEmergencyCase = async (req: Request, res: Response): Promise<
   }
 };
 
-export const dischargeEmergencyCase = async (req: Request, res: Response): Promise<void> => {
+export const dischargeEmergencyCase = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const idParam = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
     if (!idParam) {
-      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "ID is required" });
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "ID is required" });
       return;
     }
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(idParam);
-    const filterQuery = isObjectId ? { $or: [{ _id: idParam }, { caseId: idParam }] } : { caseId: idParam };
+    const filterQuery = isObjectId
+      ? { $or: [{ _id: idParam }, { caseId: idParam }] }
+      : { caseId: idParam };
 
     const discharged = await EmergencyCase.findOneAndUpdate(
       filterQuery,
       { $set: { disposition: "for discharge", isArchived: true } },
-      { new: true }
+      { new: true },
     );
 
     if (!discharged) {
@@ -457,7 +514,10 @@ export const dischargeEmergencyCase = async (req: Request, res: Response): Promi
       return;
     }
 
-    broadcastEmergencyEvent("emergency:triage_updated", { action: "discharged", case: discharged });
+    broadcastEmergencyEvent("emergency:triage_updated", {
+      action: "discharged",
+      case: discharged,
+    });
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -477,7 +537,10 @@ export const dischargeEmergencyCase = async (req: Request, res: Response): Promi
 // 2. Resus Bay Operations
 // ============================================
 
-export const getResusBays = async (_req: Request, res: Response): Promise<void> => {
+export const getResusBays = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     await ensureEmergencyDataSeeded();
 
@@ -487,7 +550,10 @@ export const getResusBays = async (_req: Request, res: Response): Promise<void> 
     const formattedBays = bays.map((b) => {
       let clock = b.clockDisplay || "—";
       if (b.state === "occupied" && b.occupiedAt) {
-        const diffMin = Math.max(0, Math.floor((now - new Date(b.occupiedAt).getTime()) / 60000));
+        const diffMin = Math.max(
+          0,
+          Math.floor((now - new Date(b.occupiedAt).getTime()) / 60000),
+        );
         clock = `${diffMin} min`;
       }
 
@@ -517,13 +583,19 @@ export const getResusBays = async (_req: Request, res: Response): Promise<void> 
   }
 };
 
-export const updateResusBay = async (req: Request, res: Response): Promise<void> => {
+export const updateResusBay = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const updateData = req.body;
 
     if (updateData.state === "occupied" && !updateData.occupiedAt) {
       updateData.occupiedAt = new Date();
-    } else if (updateData.state === "ready" || updateData.state === "cleaning") {
+    } else if (
+      updateData.state === "ready" ||
+      updateData.state === "cleaning"
+    ) {
       updateData.occupiedAt = null;
       if (updateData.state === "ready") {
         updateData.patientSummary = "—";
@@ -532,18 +604,24 @@ export const updateResusBay = async (req: Request, res: Response): Promise<void>
       }
     }
 
-    const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const idParam = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
     if (!idParam) {
-      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "ID is required" });
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "ID is required" });
       return;
     }
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(idParam);
-    const filterQuery = isObjectId ? { $or: [{ _id: idParam }, { bayId: idParam }] } : { bayId: idParam };
+    const filterQuery = isObjectId
+      ? { $or: [{ _id: idParam }, { bayId: idParam }] }
+      : { bayId: idParam };
 
     const bay = await ResusBay.findOneAndUpdate(
       filterQuery,
       { $set: updateData },
-      { new: true }
+      { new: true },
     );
 
     if (!bay) {
@@ -570,9 +648,14 @@ export const updateResusBay = async (req: Request, res: Response): Promise<void>
   }
 };
 
-export const callResusTeam = async (req: Request, res: Response): Promise<void> => {
+export const callResusTeam = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const idParam = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
     const bayId = idParam || "Resus 1";
 
     broadcastEmergencyEvent("emergency:resus_alert", {
@@ -586,7 +669,7 @@ export const callResusTeam = async (req: Request, res: Response): Promise<void> 
       req.user?.name || "Clinical Lead",
       `Triggered emergency resus team callout for ${bayId}`,
       bayId,
-      "crit"
+      "crit",
     );
 
     res.status(StatusCodes.OK).json({
@@ -602,15 +685,24 @@ export const callResusTeam = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const handoverToIcu = async (req: Request, res: Response): Promise<void> => {
+export const handoverToIcu = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const idParam = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
     if (!idParam) {
-      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "ID is required" });
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "ID is required" });
       return;
     }
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(idParam);
-    const filterQuery = isObjectId ? { $or: [{ _id: idParam }, { bayId: idParam }] } : { bayId: idParam };
+    const filterQuery = isObjectId
+      ? { $or: [{ _id: idParam }, { bayId: idParam }] }
+      : { bayId: idParam };
 
     const bay = await ResusBay.findOneAndUpdate(
       filterQuery,
@@ -623,7 +715,7 @@ export const handoverToIcu = async (req: Request, res: Response): Promise<void> 
           nextIntervention: "Cleaning & Restocking",
         },
       },
-      { new: true }
+      { new: true },
     );
 
     if (!bay) {
@@ -640,7 +732,7 @@ export const handoverToIcu = async (req: Request, res: Response): Promise<void> 
       req.user?.name || "ED Team",
       `Handover completed from ${bay.bayId} to Intensive Care Unit (ICU)`,
       bay.bayId,
-      "info"
+      "info",
     );
 
     res.status(StatusCodes.OK).json({
@@ -661,11 +753,16 @@ export const handoverToIcu = async (req: Request, res: Response): Promise<void> 
 // 3. Inbound Ambulance Operations
 // ============================================
 
-export const getInboundAmbulances = async (_req: Request, res: Response): Promise<void> => {
+export const getInboundAmbulances = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     await ensureEmergencyDataSeeded();
 
-    const units = await InboundAmbulance.find({ status: "en_route" }).sort({ etaMinutes: 1 });
+    const units = await InboundAmbulance.find({ status: "en_route" }).sort({
+      etaMinutes: 1,
+    });
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -680,7 +777,10 @@ export const getInboundAmbulances = async (_req: Request, res: Response): Promis
   }
 };
 
-export const assignAmbulanceBay = async (req: Request, res: Response): Promise<void> => {
+export const assignAmbulanceBay = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { unit } = req.params;
     const { bay } = req.body;
@@ -688,7 +788,7 @@ export const assignAmbulanceBay = async (req: Request, res: Response): Promise<v
     const assigned = await InboundAmbulance.findOneAndUpdate(
       { unit },
       { $set: { assignedBay: bay || "Resus 1" } },
-      { new: true }
+      { new: true },
     );
 
     if (!assigned) {
@@ -719,7 +819,10 @@ export const assignAmbulanceBay = async (req: Request, res: Response): Promise<v
 // 4. Major Incident / Disaster Operations
 // ============================================
 
-export const getMajorIncident = async (_req: Request, res: Response): Promise<void> => {
+export const getMajorIncident = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     await ensureEmergencyDataSeeded();
 
@@ -741,7 +844,10 @@ export const getMajorIncident = async (_req: Request, res: Response): Promise<vo
   }
 };
 
-export const toggleMajorIncident = async (req: Request, res: Response): Promise<void> => {
+export const toggleMajorIncident = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { armed } = req.body;
 
@@ -769,7 +875,7 @@ export const toggleMajorIncident = async (req: Request, res: Response): Promise<
         ? "🚨 MASS CASUALTY / MAJOR INCIDENT PROTOCOL ARMED"
         : "Stand down: Major Incident protocol disarmed",
       "DISASTER_MODE",
-      incident.isArmed ? "crit" : "warn"
+      incident.isArmed ? "crit" : "warn",
     );
 
     res.status(StatusCodes.OK).json({
@@ -788,9 +894,14 @@ export const toggleMajorIncident = async (req: Request, res: Response): Promise<
   }
 };
 
-export const toggleCascadeStep = async (req: Request, res: Response): Promise<void> => {
+export const toggleCascadeStep = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const indexParam = Array.isArray(req.params.index) ? req.params.index[0] : req.params.index;
+    const indexParam = Array.isArray(req.params.index)
+      ? req.params.index[0]
+      : req.params.index;
     const { completed } = req.body;
     const stepIdx = parseInt(indexParam || "0", 10);
 
@@ -804,7 +915,9 @@ export const toggleCascadeStep = async (req: Request, res: Response): Promise<vo
     }
 
     incident.steps[stepIdx].completed =
-      typeof completed === "boolean" ? completed : !incident.steps[stepIdx].completed;
+      typeof completed === "boolean"
+        ? completed
+        : !incident.steps[stepIdx].completed;
     if (incident.steps[stepIdx].completed) {
       incident.steps[stepIdx].completedAt = new Date();
       incident.steps[stepIdx].completedBy = req.user?.name || "ED Clinician";

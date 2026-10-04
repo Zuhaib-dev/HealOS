@@ -41,7 +41,14 @@ export function SwitchboardGlyph({ className }: { className?: string }) {
       ))}
 
       {/* inbound trunk */}
-      <line x1="0" y1="110" x2="40" y2="110" stroke="var(--hairline-strong)" strokeWidth="1.5" />
+      <line
+        x1="0"
+        y1="110"
+        x2="40"
+        y2="110"
+        stroke="var(--hairline-strong)"
+        strokeWidth="1.5"
+      />
       <motion.circle
         cx="40"
         cy="110"
@@ -71,7 +78,12 @@ export function SwitchboardGlyph({ className }: { className?: string }) {
             strokeDasharray="34 400"
             initial={{ strokeDashoffset: 400 }}
             animate={{ strokeDashoffset: [400, 0] }}
-            transition={{ duration: 2.7, repeat: Infinity, ease: "linear", delay: l.delay }}
+            transition={{
+              duration: 2.7,
+              repeat: Infinity,
+              ease: "linear",
+              delay: l.delay,
+            }}
           />
           {/* department port */}
           <rect
@@ -89,7 +101,11 @@ export function SwitchboardGlyph({ className }: { className?: string }) {
             height="12"
             fill="var(--accent)"
             animate={{ opacity: [0.15, 0.9, 0.15] }}
-            transition={{ duration: 2.7, repeat: Infinity, delay: l.delay + 1.2 }}
+            transition={{
+              duration: 2.7,
+              repeat: Infinity,
+              delay: l.delay + 1.2,
+            }}
           />
         </g>
       ))}
@@ -107,12 +123,32 @@ export function SiteMapGlyph({ className }: { className?: string }) {
   ];
 
   return (
-    <svg viewBox="0 0 360 180" className={className} fill="none" role="img" aria-label="Global deployment sites">
+    <svg
+      viewBox="0 0 360 180"
+      className={className}
+      fill="none"
+      role="img"
+      aria-label="Global deployment sites"
+    >
       {Array.from({ length: 9 }).map((_, i) => (
-        <line key={`v${i}`} x1={i * 45} y1="0" x2={i * 45} y2="180" stroke="var(--hairline)" />
+        <line
+          key={`v${i}`}
+          x1={i * 45}
+          y1="0"
+          x2={i * 45}
+          y2="180"
+          stroke="var(--hairline)"
+        />
       ))}
       {Array.from({ length: 5 }).map((_, i) => (
-        <line key={`h${i}`} x1="0" y1={i * 45} x2="360" y2={i * 45} stroke="var(--hairline)" />
+        <line
+          key={`h${i}`}
+          x1="0"
+          y1={i * 45}
+          x2="360"
+          y2={i * 45}
+          stroke="var(--hairline)"
+        />
       ))}
 
       {nodes.slice(0, -1).map((n, i) => (
@@ -147,7 +183,12 @@ export function SiteMapGlyph({ className }: { className?: string }) {
             stroke="var(--accent)"
             fill="none"
             animate={{ r: [4, 18], opacity: [0.5, 0] }}
-            transition={{ duration: 2.2, repeat: Infinity, delay: i * 0.4, ease: "easeOut" }}
+            transition={{
+              duration: 2.2,
+              repeat: Infinity,
+              delay: i * 0.4,
+              ease: "easeOut",
+            }}
           />
           <text
             x={n.x + 10}

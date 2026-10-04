@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { LogOut, KeyRound, ShieldCheck, ShieldOff, Copy, Plus, UserCog, HeartPulse } from "lucide-react";
+import {
+  LogOut,
+  KeyRound,
+  ShieldCheck,
+  ShieldOff,
+  Copy,
+  Plus,
+  UserCog,
+  HeartPulse,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 import {
   fetchAdminUsersApi,
@@ -25,7 +34,15 @@ import {
 import { toast } from "sonner";
 import { useAdminRealtime } from "../use-admin-realtime";
 
-import { getApiErrorMessage, Th, Td, Pill, PaginationControls, initials, Avatar } from "./shared";
+import {
+  getApiErrorMessage,
+  Th,
+  Td,
+  Pill,
+  PaginationControls,
+  initials,
+  Avatar,
+} from "./shared";
 
 export function SchedulePanel() {
   const [loading, setLoading] = useState(true);
@@ -38,7 +55,12 @@ export function SchedulePanel() {
 
   // Form state for creating a new shift
   const [formData, setFormData] = useState({
-    user: "", date: new Date().toISOString().split("T")[0], startTime: "08:00", endTime: "16:00", shiftType: "REGULAR", department: "General"
+    user: "",
+    date: new Date().toISOString().split("T")[0],
+    startTime: "08:00",
+    endTime: "16:00",
+    shiftType: "REGULAR",
+    department: "General",
   });
 
   const loadSchedule = useCallback(async () => {
@@ -73,7 +95,11 @@ export function SchedulePanel() {
     if (!formData.date) errors.date = "Shift date is required.";
     if (!formData.startTime) errors.startTime = "Start time is required.";
     if (!formData.endTime) errors.endTime = "End time is required.";
-    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
+    if (
+      formData.startTime &&
+      formData.endTime &&
+      formData.startTime >= formData.endTime
+    ) {
       errors.endTime = "End time must be after start time.";
     }
 
@@ -99,7 +125,10 @@ export function SchedulePanel() {
 
   const scheduleWindow = { from: 7, to: 20 };
   const span = scheduleWindow.to - scheduleWindow.from;
-  const hours = Array.from({ length: span + 1 }, (_, i) => scheduleWindow.from + i);
+  const hours = Array.from(
+    { length: span + 1 },
+    (_, i) => scheduleWindow.from + i,
+  );
 
   // Map appointments
   const mappedApts = appointments.map((apt) => {
@@ -112,7 +141,12 @@ export function SchedulePanel() {
       subLabel: "Case: " + (apt.doctor?.user?.name || "Doctor"),
       start: startHour,
       end: startHour + 1, // Assume 1 hr
-      state: apt.status === "COMPLETED" ? "in-theatre" : apt.status === "CANCELLED" ? "delayed" : "scheduled",
+      state:
+        apt.status === "COMPLETED"
+          ? "in-theatre"
+          : apt.status === "CANCELLED"
+            ? "delayed"
+            : "scheduled",
     };
   });
 
@@ -145,7 +179,9 @@ export function SchedulePanel() {
         actions={
           <>
             <ActionButton>Print list</ActionButton>
-            <ActionButton tone="solid" onClick={() => setIsFormOpen(true)}>Add Shift</ActionButton>
+            <ActionButton tone="solid" onClick={() => setIsFormOpen(true)}>
+              Add Shift
+            </ActionButton>
           </>
         }
       />
@@ -153,49 +189,78 @@ export function SchedulePanel() {
       {isFormOpen && (
         <div className="hairline-b bg-muted/30 p-5 sm:px-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="mono-label font-bold text-foreground">Add Staff Shift</h3>
+            <h3 className="mono-label font-bold text-foreground">
+              Add Staff Shift
+            </h3>
             <button
               type="button"
               onClick={() => {
                 setIsFormOpen(false);
                 setFormErrors({});
               }}
-              aria-label="Close add shift form" title="Close add shift form"
+              aria-label="Close add shift form"
+              title="Close add shift form"
               className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
             >
               <LogOut className="size-4 rotate-45" />
               <span className="sr-only">Close add shift form</span>
             </button>
           </div>
-          <form onSubmit={handleCreateShift} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+          <form
+            onSubmit={handleCreateShift}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4"
+          >
             <div className="lg:col-span-2">
-              <label htmlFor="shift-user" className="mono-label text-xs text-muted-foreground block mb-1">
+              <label
+                htmlFor="shift-user"
+                className="mono-label text-xs text-muted-foreground block mb-1"
+              >
                 Staff Member
               </label>
               <select
                 id="shift-user"
                 required={true}
                 aria-invalid={Boolean(formErrors.user)}
-                aria-describedby={formErrors.user ? "shift-user-error" : undefined}
+                aria-describedby={
+                  formErrors.user ? "shift-user-error" : undefined
+                }
                 value={formData.user}
-                onChange={e => {
-                  const s = staffList.find(x => x.user._id === e.target.value);
-                  setFormData(d => ({ ...d, user: e.target.value, department: s?.department || "General" }));
-                  if (formErrors.user) setFormErrors(prev => ({ ...prev, user: "" }));
+                onChange={(e) => {
+                  const s = staffList.find(
+                    (x) => x.user._id === e.target.value,
+                  );
+                  setFormData((d) => ({
+                    ...d,
+                    user: e.target.value,
+                    department: s?.department || "General",
+                  }));
+                  if (formErrors.user)
+                    setFormErrors((prev) => ({ ...prev, user: "" }));
                 }}
                 className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.user ? "border-destructive" : ""}`}
               >
                 <option value="">Select staff...</option>
-                {staffList.map(s => <option key={s._id} value={s.user._id}>{s.user.name} ({s.user.role})</option>)}
+                {staffList.map((s) => (
+                  <option key={s._id} value={s.user._id}>
+                    {s.user.name} ({s.user.role})
+                  </option>
+                ))}
               </select>
               {formErrors.user && (
-                <span id="shift-user-error" role="alert" className="mono-label text-[10px] text-destructive block mt-1">
+                <span
+                  id="shift-user-error"
+                  role="alert"
+                  className="mono-label text-[10px] text-destructive block mt-1"
+                >
                   {formErrors.user}
                 </span>
               )}
             </div>
             <div>
-              <label htmlFor="shift-date" className="mono-label text-xs text-muted-foreground block mb-1">
+              <label
+                htmlFor="shift-date"
+                className="mono-label text-xs text-muted-foreground block mb-1"
+              >
                 Date
               </label>
               <input
@@ -203,22 +268,32 @@ export function SchedulePanel() {
                 type="date"
                 required={true}
                 aria-invalid={Boolean(formErrors.date)}
-                aria-describedby={formErrors.date ? "shift-date-error" : undefined}
+                aria-describedby={
+                  formErrors.date ? "shift-date-error" : undefined
+                }
                 value={formData.date}
-                onChange={e => {
-                  setFormData(d => ({ ...d, date: e.target.value }));
-                  if (formErrors.date) setFormErrors(prev => ({ ...prev, date: "" }));
+                onChange={(e) => {
+                  setFormData((d) => ({ ...d, date: e.target.value }));
+                  if (formErrors.date)
+                    setFormErrors((prev) => ({ ...prev, date: "" }));
                 }}
                 className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.date ? "border-destructive" : ""}`}
               />
               {formErrors.date && (
-                <span id="shift-date-error" role="alert" className="mono-label text-[10px] text-destructive block mt-1">
+                <span
+                  id="shift-date-error"
+                  role="alert"
+                  className="mono-label text-[10px] text-destructive block mt-1"
+                >
                   {formErrors.date}
                 </span>
               )}
             </div>
             <div>
-              <label htmlFor="shift-start-time" className="mono-label text-xs text-muted-foreground block mb-1">
+              <label
+                htmlFor="shift-start-time"
+                className="mono-label text-xs text-muted-foreground block mb-1"
+              >
                 Start Time
               </label>
               <input
@@ -226,22 +301,32 @@ export function SchedulePanel() {
                 type="time"
                 required={true}
                 aria-invalid={Boolean(formErrors.startTime)}
-                aria-describedby={formErrors.startTime ? "shift-start-time-error" : undefined}
+                aria-describedby={
+                  formErrors.startTime ? "shift-start-time-error" : undefined
+                }
                 value={formData.startTime}
-                onChange={e => {
-                  setFormData(d => ({ ...d, startTime: e.target.value }));
-                  if (formErrors.startTime) setFormErrors(prev => ({ ...prev, startTime: "" }));
+                onChange={(e) => {
+                  setFormData((d) => ({ ...d, startTime: e.target.value }));
+                  if (formErrors.startTime)
+                    setFormErrors((prev) => ({ ...prev, startTime: "" }));
                 }}
                 className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.startTime ? "border-destructive" : ""}`}
               />
               {formErrors.startTime && (
-                <span id="shift-start-time-error" role="alert" className="mono-label text-[10px] text-destructive block mt-1">
+                <span
+                  id="shift-start-time-error"
+                  role="alert"
+                  className="mono-label text-[10px] text-destructive block mt-1"
+                >
                   {formErrors.startTime}
                 </span>
               )}
             </div>
             <div>
-              <label htmlFor="shift-end-time" className="mono-label text-xs text-muted-foreground block mb-1">
+              <label
+                htmlFor="shift-end-time"
+                className="mono-label text-xs text-muted-foreground block mb-1"
+              >
                 End Time
               </label>
               <input
@@ -249,29 +334,41 @@ export function SchedulePanel() {
                 type="time"
                 required={true}
                 aria-invalid={Boolean(formErrors.endTime)}
-                aria-describedby={formErrors.endTime ? "shift-end-time-error" : undefined}
+                aria-describedby={
+                  formErrors.endTime ? "shift-end-time-error" : undefined
+                }
                 value={formData.endTime}
-                onChange={e => {
-                  setFormData(d => ({ ...d, endTime: e.target.value }));
-                  if (formErrors.endTime) setFormErrors(prev => ({ ...prev, endTime: "" }));
+                onChange={(e) => {
+                  setFormData((d) => ({ ...d, endTime: e.target.value }));
+                  if (formErrors.endTime)
+                    setFormErrors((prev) => ({ ...prev, endTime: "" }));
                 }}
                 className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.endTime ? "border-destructive" : ""}`}
               />
               {formErrors.endTime && (
-                <span id="shift-end-time-error" role="alert" className="mono-label text-[10px] text-destructive block mt-1">
+                <span
+                  id="shift-end-time-error"
+                  role="alert"
+                  className="mono-label text-[10px] text-destructive block mt-1"
+                >
                   {formErrors.endTime}
                 </span>
               )}
             </div>
             <div>
-              <label htmlFor="shift-type" className="mono-label text-xs text-muted-foreground block mb-1">
+              <label
+                htmlFor="shift-type"
+                className="mono-label text-xs text-muted-foreground block mb-1"
+              >
                 Shift Type
               </label>
               <select
                 id="shift-type"
                 required
                 value={formData.shiftType}
-                onChange={e => setFormData(d => ({ ...d, shiftType: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((d) => ({ ...d, shiftType: e.target.value }))
+                }
                 className="hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent"
               >
                 <option value="REGULAR">REGULAR</option>
@@ -304,7 +401,9 @@ export function SchedulePanel() {
 
       <div className="overflow-x-auto px-5 py-6 sm:px-8">
         {loading ? (
-          <p className="mono-label text-muted-foreground animate-pulse text-center p-8">Loading schedule from database...</p>
+          <p className="mono-label text-muted-foreground animate-pulse text-center p-8">
+            Loading schedule from database...
+          </p>
         ) : (
           <div className="min-w-200">
             <div className="mono-label text-muted-foreground flex pl-28">
@@ -315,68 +414,88 @@ export function SchedulePanel() {
               ))}
             </div>
             <div className="mt-3 space-y-4">
-              {rooms.length > 0 ? rooms.map((room) => {
-                const roomEvents = mappedSchedule.filter((s) => s.room === room);
-                return (
-                  <div key={room} className="flex items-stretch">
-                    <span className="mono-label w-28 shrink-0 py-1">{room}</span>
-                    <div className="hairline relative min-h-16 flex-1 bg-graph-paper">
-                      {roomEvents.map((s, idx) => {
-                        const left = ((s.start - scheduleWindow.from) / span) * 100;
-                        const width = ((s.end - s.start) / span) * 100;
-                        const tone =
-                          s.state === "in-theatre"
-                            ? "bg-accent/25 text-brass border-l-2 border-l-[var(--color-accent)] z-20"
-                            : s.state === "shift"
-                              ? "bg-primary/10 text-primary border-l-2 border-l-primary z-10"
-                              : s.state === "delayed"
-                                ? "bg-destructive/15 text-destructive border-l-2 border-l-current z-20"
-                                : "bg-foreground/[0.06] text-foreground border-l-2 border-l-[var(--hairline)] z-20";
-                        
-                        const topOffset = s.state === "shift" ? 0 : 36;
-                        
-                        return (
-                          <motion.div
-                            key={s.id + idx}
-                            initial={{ opacity: 0, scaleX: 0.4 }}
-                            animate={{ opacity: 1, scaleX: 1 }}
-                            transition={{ duration: 0.6, ease: "easeOut" }}
-                            style={{ left: `${Math.max(0, left)}%`, width: `${width}%`, originX: 0, top: `${topOffset}px` }}
-                            className={`absolute h-8 overflow-hidden px-2 py-1 ${tone}`}
-                          >
-                            <span className="mono-label block truncate leading-tight">{s.label}</span>
-                            <span className="mono-label text-muted-foreground block truncate leading-tight text-[10px]">
-                              {s.subLabel}
-                            </span>
-                            {s.state === "in-theatre" && (
-                              <motion.span
-                                className="bg-accent absolute top-0 right-0 h-full w-0.5"
-                                animate={{ opacity: [0.2, 1, 0.2] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                              />
-                            )}
-                          </motion.div>
-                        );
-                      })}
+              {rooms.length > 0 ? (
+                rooms.map((room) => {
+                  const roomEvents = mappedSchedule.filter(
+                    (s) => s.room === room,
+                  );
+                  return (
+                    <div key={room} className="flex items-stretch">
+                      <span className="mono-label w-28 shrink-0 py-1">
+                        {room}
+                      </span>
+                      <div className="hairline relative min-h-16 flex-1 bg-graph-paper">
+                        {roomEvents.map((s, idx) => {
+                          const left =
+                            ((s.start - scheduleWindow.from) / span) * 100;
+                          const width = ((s.end - s.start) / span) * 100;
+                          const tone =
+                            s.state === "in-theatre"
+                              ? "bg-accent/25 text-brass border-l-2 border-l-[var(--color-accent)] z-20"
+                              : s.state === "shift"
+                                ? "bg-primary/10 text-primary border-l-2 border-l-primary z-10"
+                                : s.state === "delayed"
+                                  ? "bg-destructive/15 text-destructive border-l-2 border-l-current z-20"
+                                  : "bg-foreground/[0.06] text-foreground border-l-2 border-l-[var(--hairline)] z-20";
+
+                          const topOffset = s.state === "shift" ? 0 : 36;
+
+                          return (
+                            <motion.div
+                              key={s.id + idx}
+                              initial={{ opacity: 0, scaleX: 0.4 }}
+                              animate={{ opacity: 1, scaleX: 1 }}
+                              transition={{ duration: 0.6, ease: "easeOut" }}
+                              style={{
+                                left: `${Math.max(0, left)}%`,
+                                width: `${width}%`,
+                                originX: 0,
+                                top: `${topOffset}px`,
+                              }}
+                              className={`absolute h-8 overflow-hidden px-2 py-1 ${tone}`}
+                            >
+                              <span className="mono-label block truncate leading-tight">
+                                {s.label}
+                              </span>
+                              <span className="mono-label text-muted-foreground block truncate leading-tight text-[10px]">
+                                {s.subLabel}
+                              </span>
+                              {s.state === "in-theatre" && (
+                                <motion.span
+                                  className="bg-accent absolute top-0 right-0 h-full w-0.5"
+                                  animate={{ opacity: [0.2, 1, 0.2] }}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                />
+                              )}
+                            </motion.div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              }) : (
-                <p className="mono-label text-muted-foreground text-center p-8 border border-dashed border-border/60">No appointments or shifts scheduled for today.</p>
+                  );
+                })
+              ) : (
+                <p className="mono-label text-muted-foreground text-center p-8 border border-dashed border-border/60">
+                  No appointments or shifts scheduled for today.
+                </p>
               )}
             </div>
             <div className="mono-label text-muted-foreground mt-8 flex gap-5">
               <span className="flex items-center gap-2">
-                <span className="bg-primary/20 inline-block size-2.5" /> Staff Shift
+                <span className="bg-primary/20 inline-block size-2.5" /> Staff
+                Shift
               </span>
               <span className="flex items-center gap-2">
-                <span className="bg-accent/40 inline-block size-2.5" /> Case in-session
+                <span className="bg-accent/40 inline-block size-2.5" /> Case
+                in-session
               </span>
               <span className="flex items-center gap-2">
-                <span className="bg-foreground/20 inline-block size-2.5" /> Case scheduled
+                <span className="bg-foreground/20 inline-block size-2.5" /> Case
+                scheduled
               </span>
               <span className="flex items-center gap-2">
-                <span className="bg-destructive/40 inline-block size-2.5" /> cancelled/leave
+                <span className="bg-destructive/40 inline-block size-2.5" />{" "}
+                cancelled/leave
               </span>
             </div>
           </div>
@@ -385,6 +504,5 @@ export function SchedulePanel() {
     </div>
   );
 }
-
 
 /* ---------- 07 · Roles & permissions ---------- */

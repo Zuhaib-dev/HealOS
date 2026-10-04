@@ -6,7 +6,10 @@ import { Consultation } from "../models/consultation.model.js";
  * GET /api/v1/pharmacy/prescriptions/pending
  * Get all consultations that have medicines where at least one is NOT dispensed
  */
-export const getPendingPrescriptions = async (_req: Request, res: Response): Promise<void> => {
+export const getPendingPrescriptions = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const consultations = await Consultation.find({
       medicines: { $exists: true, $not: { $size: 0 } },
@@ -29,7 +32,10 @@ export const getPendingPrescriptions = async (_req: Request, res: Response): Pro
   }
 };
 
-export const getPrescriptionHistory = async (_req: Request, res: Response): Promise<void> => {
+export const getPrescriptionHistory = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const consultations = await Consultation.find({
       "medicines.isDispensed": true,
@@ -55,7 +61,10 @@ export const getPrescriptionHistory = async (_req: Request, res: Response): Prom
  * PATCH /api/v1/pharmacy/prescriptions/:consultationId/dispense
  * Mark a specific medicine as dispensed in a consultation
  */
-export const dispenseMedicine = async (req: Request, res: Response): Promise<void> => {
+export const dispenseMedicine = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { consultationId } = req.params;
     const { medicineId } = req.body; // _id of the medicine subdocument
@@ -71,7 +80,7 @@ export const dispenseMedicine = async (req: Request, res: Response): Promise<voi
     const consultation = await Consultation.findOneAndUpdate(
       { _id: consultationId, "medicines._id": medicineId },
       { $set: { "medicines.$.isDispensed": true } },
-      { new: true }
+      { new: true },
     );
 
     if (!consultation) {
@@ -100,7 +109,10 @@ export const dispenseMedicine = async (req: Request, res: Response): Promise<voi
  * POST /api/v1/pharmacy/prescriptions/:consultationId/bill
  * Generate a pending invoice for the patient's portal
  */
-export const createPharmacyBill = async (req: Request, res: Response): Promise<void> => {
+export const createPharmacyBill = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { consultationId } = req.params;
     const { cartItems, totalAmount } = req.body;
@@ -130,7 +142,7 @@ export const createPharmacyBill = async (req: Request, res: Response): Promise<v
       appointment: consultation.appointment,
       items: cartItems.map((item: any) => ({
         description: item.name,
-        amount: item.price * item.quantity
+        amount: item.price * item.quantity,
       })),
       totalAmount,
       status: "PENDING",

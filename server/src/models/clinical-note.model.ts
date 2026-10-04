@@ -20,10 +20,13 @@ const clinicalNoteSchema = new Schema<IClinicalNote>(
     content: { type: String, required: true },
     tags: { type: [String], default: [] },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 clinicalNoteSchema.index({ patient: 1, createdAt: -1 });
 clinicalNoteSchema.index({ doctor: 1, createdAt: -1 });
 
-export const ClinicalNote = mongoose.model<IClinicalNote>("ClinicalNote", clinicalNoteSchema);
+export const ClinicalNote = mongoose.model<IClinicalNote>(
+  "ClinicalNote",
+  clinicalNoteSchema,
+);

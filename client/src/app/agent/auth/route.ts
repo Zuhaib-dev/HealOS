@@ -11,16 +11,18 @@ export async function GET(request: NextRequest) {
         type: "https://healos-theta.vercel.app/errors/unauthorized",
         title: "Unauthorized",
         status: 401,
-        detail: "Bearer token required. See https://healos-theta.vercel.app/auth.md",
+        detail:
+          "Bearer token required. See https://healos-theta.vercel.app/auth.md",
       },
       {
         status: 401,
         headers: {
           "Content-Type": "application/json",
-          "WWW-Authenticate": 'Bearer realm="healos", resource_metadata="https://healos-theta.vercel.app/.well-known/oauth-protected-resource"',
+          "WWW-Authenticate":
+            'Bearer realm="healos", resource_metadata="https://healos-theta.vercel.app/.well-known/oauth-protected-resource"',
           "Access-Control-Allow-Origin": "*",
         },
-      }
+      },
     );
   }
 
@@ -37,7 +39,7 @@ export async function GET(request: NextRequest) {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
       },
-    }
+    },
   );
 }
 

@@ -22,7 +22,9 @@ function Metric({
       <p className="mono-label text-muted-foreground">{label}</p>
       <p className="mt-3 font-mono text-3xl font-bold tracking-tight">
         {value}
-        {suffix ? <span className="text-muted-foreground text-base"> {suffix}</span> : null}
+        {suffix ? (
+          <span className="text-muted-foreground text-base"> {suffix}</span>
+        ) : null}
       </p>
       {delta ? (
         <p className="mono-label text-brass mt-2 flex items-center gap-1">
@@ -64,8 +66,12 @@ export function AuditPanel() {
   useAdminRealtime(["audit"], loadLogs);
 
   const totalEvents = dbLogs.length;
-  const privActions = dbLogs.filter(l => l.action.includes("Elevated") || l.action.includes("Role")).length;
-  const blockedAttempts = dbLogs.filter(l => l.level === "crit" && l.action.includes("Failed")).length;
+  const privActions = dbLogs.filter(
+    (l) => l.action.includes("Elevated") || l.action.includes("Role"),
+  ).length;
+  const blockedAttempts = dbLogs.filter(
+    (l) => l.level === "crit" && l.action.includes("Failed"),
+  ).length;
 
   return (
     <section>
@@ -88,9 +94,16 @@ export function AuditPanel() {
       ) : dbLogs.length > 0 ? (
         <ol className="px-5 py-6 sm:px-8">
           {dbLogs.map((e) => (
-            <li key={e._id} className="hairline-b flex flex-wrap items-center gap-4 py-4">
+            <li
+              key={e._id}
+              className="hairline-b flex flex-wrap items-center gap-4 py-4"
+            >
               <span className="mono-label text-muted-foreground w-20">
-                {new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                {new Date(e.timestamp).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })}
               </span>
               <span
                 className={`size-1.5 rounded-full ${
@@ -102,7 +115,9 @@ export function AuditPanel() {
                 }`}
               />
               <span className="min-w-0 flex-1 text-sm">{e.action}</span>
-              <span className="mono-label text-muted-foreground">{e.actor}</span>
+              <span className="mono-label text-muted-foreground">
+                {e.actor}
+              </span>
               <span className="mono-label">{e.target || "system"}</span>
             </li>
           ))}

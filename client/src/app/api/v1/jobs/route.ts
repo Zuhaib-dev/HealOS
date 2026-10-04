@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       {
         status: 202,
         headers: responseHeaders,
-      }
+      },
     );
   } catch {
     return NextResponse.json(
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       {
         status: 400,
         headers: getStandardApiHeaders(idempotencyKey),
-      }
+      },
     );
   }
 }

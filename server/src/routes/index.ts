@@ -40,7 +40,7 @@ apiRouter.get("/", (_req, res) => {
       lab: "/api/v1/lab",
     },
   });
-}); 
+});
 
 // ---------------------------
 // Mount Feature Routers

@@ -17,7 +17,11 @@ export function useAdminRealtime(resources: string[], onChange: () => void) {
     const subscribedResources = resourcesKey.split("|");
 
     const handleChange = (event: AdminDataChangedEvent) => {
-      if (event.resources.some((resource) => subscribedResources.includes(resource))) {
+      if (
+        event.resources.some((resource) =>
+          subscribedResources.includes(resource),
+        )
+      ) {
         onChange();
       }
     };

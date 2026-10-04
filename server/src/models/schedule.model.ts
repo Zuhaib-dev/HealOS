@@ -18,15 +18,15 @@ const scheduleSchema = new Schema<ISchedule>(
     date: { type: String, required: true },
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
-    shiftType: { 
-      type: String, 
+    shiftType: {
+      type: String,
       enum: ["REGULAR", "ON_CALL", "LEAVE"],
-      default: "REGULAR"
+      default: "REGULAR",
     },
     department: { type: String },
     notes: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 scheduleSchema.index({ user: 1, date: 1 });

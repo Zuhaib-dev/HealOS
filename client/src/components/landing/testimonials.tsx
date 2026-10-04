@@ -51,13 +51,23 @@ export function Testimonials() {
               className="hairline-b hairline-l -ml-px flex flex-col justify-between p-7 lg:p-9"
             >
               <div>
-                <span className="font-display text-accent block text-4xl leading-none">“</span>
-                <blockquote className="mt-5 text-[1.0625rem] leading-relaxed">{n.quote}</blockquote>
+                <span className="font-display text-accent block text-4xl leading-none">
+                  “
+                </span>
+                <blockquote className="mt-5 text-[1.0625rem] leading-relaxed">
+                  {n.quote}
+                </blockquote>
               </div>
               <figcaption className="hairline-t mt-8 pt-5">
-                <span className="font-display block text-sm font-bold tracking-tight">{n.who}</span>
-                <span className="mono-label text-muted-foreground mt-2 block">{n.role}</span>
-                <span className="mono-label text-brass mt-3 block">{n.stat}</span>
+                <span className="font-display block text-sm font-bold tracking-tight">
+                  {n.who}
+                </span>
+                <span className="mono-label text-muted-foreground mt-2 block">
+                  {n.role}
+                </span>
+                <span className="mono-label text-brass mt-3 block">
+                  {n.stat}
+                </span>
               </figcaption>
             </motion.figure>
           ))}

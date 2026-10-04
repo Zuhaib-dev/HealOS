@@ -3,14 +3,16 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const reqPath = request.nextUrl.searchParams.get("path") || request.nextUrl.pathname;
+  const reqPath =
+    request.nextUrl.searchParams.get("path") || request.nextUrl.pathname;
   const cleanPath = reqPath.replace(/\.md$/, "");
-  const pageTitle = cleanPath
-    .split("/")
-    .filter(Boolean)
-    .pop()
-    ?.replace(/-/g, " ")
-    ?.replace(/\b\w/g, (c) => c.toUpperCase()) || "Resource";
+  const pageTitle =
+    cleanPath
+      .split("/")
+      .filter(Boolean)
+      .pop()
+      ?.replace(/-/g, " ")
+      ?.replace(/\b\w/g, (c) => c.toUpperCase()) || "Resource";
 
   const markdownContent = `# HealOS: ${pageTitle}
 

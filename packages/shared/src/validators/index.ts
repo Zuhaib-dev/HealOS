@@ -2,7 +2,10 @@
 // HealOS — Shared Validation Schemas (Zod)
 // ============================================
 import { z } from "zod";
-import { PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "../constants/index.js";
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_MAX_LENGTH,
+} from "../constants/index.js";
 
 // ---------------------------
 // Auth Validators
@@ -15,12 +18,21 @@ export const emailSchema = z
 
 export const passwordSchema = z
   .string()
-  .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
-  .max(PASSWORD_MAX_LENGTH, `Password must be at most ${PASSWORD_MAX_LENGTH} characters`)
+  .min(
+    PASSWORD_MIN_LENGTH,
+    `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+  )
+  .max(
+    PASSWORD_MAX_LENGTH,
+    `Password must be at most ${PASSWORD_MAX_LENGTH} characters`,
+  )
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
   .regex(/[a-z]/, "Password must contain at least one lowercase letter")
   .regex(/[0-9]/, "Password must contain at least one number")
-  .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
+  .regex(
+    /[^A-Za-z0-9]/,
+    "Password must contain at least one special character",
+  );
 
 export const phoneSchema = z
   .string()

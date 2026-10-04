@@ -6,7 +6,15 @@ describe("Appointment Booking Flow", () => {
     // Mock initial dashboard call so it doesn't fail
     cy.intercept("GET", "**/api/v1/patient/dashboard**", {
       statusCode: 200,
-      body: { success: true, data: { upcomingAppointments: [], recentPrescriptions: [], recentLabResults: [], stats: {} } }
+      body: {
+        success: true,
+        data: {
+          upcomingAppointments: [],
+          recentPrescriptions: [],
+          recentLabResults: [],
+          stats: {},
+        },
+      },
     }).as("getPatientDashboard");
 
     // Mock Doctors List API
@@ -23,10 +31,10 @@ describe("Appointment Booking Flow", () => {
             avatarUrl: "",
             role: "DOCTOR",
             specialization: "General Medicine",
-            degree: "MD"
-          }
-        ]
-      }
+            degree: "MD",
+          },
+        ],
+      },
     }).as("getDoctorsList");
 
     // Mock Booking API
@@ -42,9 +50,9 @@ describe("Appointment Booking Flow", () => {
           timeSlot: "10:00",
           status: "PENDING",
           type: "IN_PERSON",
-          doctor: { name: "Gregory House" }
-        }
-      }
+          doctor: { name: "Gregory House" },
+        },
+      },
     }).as("bookAppointment");
   });
 

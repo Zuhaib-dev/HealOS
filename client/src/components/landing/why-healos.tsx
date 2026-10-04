@@ -22,9 +22,9 @@ export function WhyHealOS() {
                 the old way.
               </h2>
               <p className="text-muted-foreground mt-6 max-w-md leading-relaxed">
-                Grey bar is the workflow HealOS replaced. Brass bar is the same workflow after
-                twelve weeks. Figures are medians across 37 deployed sites, self-reported and
-                independently sampled.
+                Grey bar is the workflow HealOS replaced. Brass bar is the same
+                workflow after twelve weeks. Figures are medians across 37
+                deployed sites, self-reported and independently sampled.
               </p>
 
               <div className="mt-10">
@@ -37,12 +37,16 @@ export function WhyHealOS() {
                     transition={{ duration: 0.5, delay: i * 0.1 }}
                     className="hairline-t flex items-baseline justify-between gap-6 py-5"
                   >
-                    <span className="mono-label text-muted-foreground">{p.k}</span>
+                    <span className="mono-label text-muted-foreground">
+                      {p.k}
+                    </span>
                     <span className="text-right">
                       <span className="font-display block text-3xl font-bold tracking-tight">
                         {p.v}
                       </span>
-                      <span className="mono-label text-muted-foreground">{p.d}</span>
+                      <span className="mono-label text-muted-foreground">
+                        {p.d}
+                      </span>
                     </span>
                   </motion.div>
                 ))}
@@ -56,10 +60,12 @@ export function WhyHealOS() {
                 <span>Workflow load index</span>
                 <span className="flex items-center gap-4">
                   <span className="flex items-center gap-2">
-                    <span className="bg-foreground/25 inline-block h-0.75 w-4" /> before
+                    <span className="bg-foreground/25 inline-block h-0.75 w-4" />{" "}
+                    before
                   </span>
                   <span className="text-brass flex items-center gap-2">
-                    <span className="bg-accent inline-block h-0.75 w-4" /> HealOS
+                    <span className="bg-accent inline-block h-0.75 w-4" />{" "}
+                    HealOS
                   </span>
                 </span>
               </div>

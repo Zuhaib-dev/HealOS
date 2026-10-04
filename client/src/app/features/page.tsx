@@ -5,7 +5,8 @@ import { WorkbenchFeatures } from "@/components/landing/workbench-features";
 
 export const metadata: Metadata = {
   title: "Platform Features | HealOS",
-  description: "Explore the comprehensive modules of the HealOS hospital management system, from Radiology to Pharmacy.",
+  description:
+    "Explore the comprehensive modules of the HealOS hospital management system, from Radiology to Pharmacy.",
   alternates: {
     canonical: "/features",
   },

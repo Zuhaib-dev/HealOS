@@ -43,7 +43,9 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { isAuthenticated, user, updateUser } = useAuthStore();
 
-  const [activeTab, setActiveTab] = useState<"patient" | "clinician">("patient");
+  const [activeTab, setActiveTab] = useState<"patient" | "clinician">(
+    "patient",
+  );
 
   // Loading States
   const [loadingStatus, setLoadingStatus] = useState(true);
@@ -51,8 +53,11 @@ export default function OnboardingPage() {
   const [submittingClinician, setSubmittingClinician] = useState(false);
 
   // Clinician Application State
-  const [clinicianProfile, setClinicianProfile] = useState<ProfessionalProfileData | null>(null);
-  const [requestedRole, setRequestedRole] = useState<"DOCTOR" | "RADIOLOGIST">("DOCTOR");
+  const [clinicianProfile, setClinicianProfile] =
+    useState<ProfessionalProfileData | null>(null);
+  const [requestedRole, setRequestedRole] = useState<"DOCTOR" | "RADIOLOGIST">(
+    "DOCTOR",
+  );
   const [degree, setDegree] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [experienceYears, setExperienceYears] = useState<number>(3);
@@ -103,7 +108,10 @@ export default function OnboardingPage() {
             address: patRes.profile.address || "",
           });
         } else if (user.phone) {
-          setPatientData((prev) => ({ ...prev, emergencyPhone: user.phone || "" }));
+          setPatientData((prev) => ({
+            ...prev,
+            emergencyPhone: user.phone || "",
+          }));
         }
       } catch (err) {
         console.error("Failed to load onboarding status", err);
@@ -122,7 +130,9 @@ export default function OnboardingPage() {
     try {
       const res = await updatePatientProfileApi(patientData);
       if (res.success) {
-        toast.success("Patient Account & Health Profile saved! Redirecting to Patient Portal...");
+        toast.success(
+          "Patient Account & Health Profile saved! Redirecting to Patient Portal...",
+        );
         setPatientData(res.profile);
         updateUser({ phone: patientData.emergencyPhone });
         setTimeout(() => {
@@ -130,7 +140,9 @@ export default function OnboardingPage() {
         }, 1000);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update patient profile");
+      toast.error(
+        err.response?.data?.message || "Failed to update patient profile",
+      );
     } finally {
       setIsPending(false);
     }
@@ -155,11 +167,15 @@ export default function OnboardingPage() {
       });
 
       if (res.success) {
-        toast.success("Clinician application submitted! Awaiting Admin verification.");
+        toast.success(
+          "Clinician application submitted! Awaiting Admin verification.",
+        );
         setClinicianProfile(res.profile);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to submit application");
+      toast.error(
+        err.response?.data?.message || "Failed to submit application",
+      );
     } finally {
       setSubmittingClinician(false);
     }
@@ -176,14 +192,19 @@ export default function OnboardingPage() {
       <main className="flex-1 max-w-4xl w-full mx-auto px-5 py-12">
         {/* Header Title */}
         <div className="text-center mb-8">
-          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 mono-label mb-3 px-3 py-1">
-            <UserCheck className="size-3.5 mr-1.5 inline" /> HealOS Onboarding Center
+          <Badge
+            variant="outline"
+            className="bg-primary/10 text-primary border-primary/20 mono-label mb-3 px-3 py-1"
+          >
+            <UserCheck className="size-3.5 mr-1.5 inline" /> HealOS Onboarding
+            Center
           </Badge>
           <h1 className="font-mono text-3xl sm:text-4xl font-bold tracking-tight">
             Account Profile & Credentials
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto mt-2">
-            Complete your personal health profile or apply for professional clinician privileges.
+            Complete your personal health profile or apply for professional
+            clinician privileges.
           </p>
         </div>
 
@@ -224,8 +245,8 @@ export default function OnboardingPage() {
                     clinicianProfile.status === "APPROVED"
                       ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
                       : clinicianProfile.status === "REJECTED"
-                      ? "bg-destructive/20 text-destructive border-destructive/30"
-                      : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                        ? "bg-destructive/20 text-destructive border-destructive/30"
+                        : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30"
                   }`}
                 >
                   {clinicianProfile.status}
@@ -250,36 +271,53 @@ export default function OnboardingPage() {
           >
             <div className="border-b border-border/60 pb-4">
               <h2 className="font-mono text-xl font-bold flex items-center gap-2">
-                <Heart className="size-5 text-rose-500" /> Patient Medical & Emergency File
+                <Heart className="size-5 text-rose-500" /> Patient Medical &
+                Emergency File
               </h2>
               <p className="text-xs text-muted-foreground mt-1">
-                This information is shared only with treating physicians and emergency responders.
+                This information is shared only with treating physicians and
+                emergency responders.
               </p>
             </div>
 
-            <form onSubmit={handlePatientSubmit} aria-busy={isPending} className="space-y-6">
+            <form
+              onSubmit={handlePatientSubmit}
+              aria-busy={isPending}
+              className="space-y-6"
+            >
               {/* DOB & Gender */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="pat-dob" className="mono-label text-xs">Date of Birth</Label>
+                  <Label htmlFor="pat-dob" className="mono-label text-xs">
+                    Date of Birth
+                  </Label>
                   <div className="relative">
                     <Calendar className="text-muted-foreground absolute left-3 top-3 size-4" />
                     <Input
                       id="pat-dob"
                       type="date"
                       value={patientData.dob}
-                      onChange={(e) => setPatientData((p) => ({ ...p, dob: e.target.value }))}
+                      onChange={(e) =>
+                        setPatientData((p) => ({ ...p, dob: e.target.value }))
+                      }
                       className="pl-9 font-sans text-sm"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pat-gender" className="mono-label text-xs">Gender</Label>
+                  <Label htmlFor="pat-gender" className="mono-label text-xs">
+                    Gender
+                  </Label>
                   <select
                     id="pat-gender"
                     value={patientData.gender}
-                    onChange={(e) => setPatientData((p) => ({ ...p, gender: e.target.value as any }))}
+                    onChange={(e) =>
+                      setPatientData((p) => ({
+                        ...p,
+                        gender: e.target.value as any,
+                      }))
+                    }
                     className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-sans focus:outline-none focus:ring-1 focus:ring-ring"
                   >
                     <option value="MALE">Male</option>
@@ -292,21 +330,34 @@ export default function OnboardingPage() {
               {/* Blood Group & Emergency Contact */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="pat-blood" className="mono-label text-xs">Blood Group</Label>
+                  <Label htmlFor="pat-blood" className="mono-label text-xs">
+                    Blood Group
+                  </Label>
                   <select
                     id="pat-blood"
                     value={patientData.bloodGroup}
-                    onChange={(e) => setPatientData((p) => ({ ...p, bloodGroup: e.target.value as any }))}
+                    onChange={(e) =>
+                      setPatientData((p) => ({
+                        ...p,
+                        bloodGroup: e.target.value as any,
+                      }))
+                    }
                     className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono focus:outline-none focus:ring-1 focus:ring-ring"
                   >
-                    {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map((bg) => (
-                      <option key={bg} value={bg}>{bg}</option>
-                    ))}
+                    {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map(
+                      (bg) => (
+                        <option key={bg} value={bg}>
+                          {bg}
+                        </option>
+                      ),
+                    )}
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pat-ephone" className="mono-label text-xs">Emergency Phone Number</Label>
+                  <Label htmlFor="pat-ephone" className="mono-label text-xs">
+                    Emergency Phone Number
+                  </Label>
                   <div className="relative">
                     <Phone className="text-muted-foreground absolute left-3 top-3 size-4" />
                     <Input
@@ -315,7 +366,12 @@ export default function OnboardingPage() {
                       autoComplete="tel"
                       placeholder="+1 (555) 019-2834"
                       value={patientData.emergencyPhone}
-                      onChange={(e) => setPatientData((p) => ({ ...p, emergencyPhone: e.target.value }))}
+                      onChange={(e) =>
+                        setPatientData((p) => ({
+                          ...p,
+                          emergencyPhone: e.target.value,
+                        }))
+                      }
                       className="pl-9 font-mono text-sm"
                       required
                     />
@@ -325,20 +381,29 @@ export default function OnboardingPage() {
 
               {/* Emergency Contact Name */}
               <div className="space-y-2">
-                <Label htmlFor="pat-ename" className="mono-label text-xs">Emergency Contact Name & Relationship</Label>
+                <Label htmlFor="pat-ename" className="mono-label text-xs">
+                  Emergency Contact Name & Relationship
+                </Label>
                 <Input
                   id="pat-ename"
                   type="text"
                   placeholder="e.g. John Doe (Spouse / Guardian)"
                   value={patientData.emergencyContactName}
-                  onChange={(e) => setPatientData((p) => ({ ...p, emergencyContactName: e.target.value }))}
+                  onChange={(e) =>
+                    setPatientData((p) => ({
+                      ...p,
+                      emergencyContactName: e.target.value,
+                    }))
+                  }
                   className="font-sans text-sm"
                 />
               </div>
 
               {/* Known Allergies */}
               <div className="space-y-2">
-                <Label htmlFor="pat-allergy" className="mono-label text-xs">Known Allergies (e.g. Penicillin, Latex, Peanuts)</Label>
+                <Label htmlFor="pat-allergy" className="mono-label text-xs">
+                  Known Allergies (e.g. Penicillin, Latex, Peanuts)
+                </Label>
                 <div className="flex gap-2">
                   <Input
                     id="pat-allergy"
@@ -350,7 +415,13 @@ export default function OnboardingPage() {
                       if (e.key === "Enter") {
                         e.preventDefault();
                         if (allergyInput.trim()) {
-                          setPatientData((p) => ({ ...p, allergies: [...(p.allergies || []), allergyInput.trim()] }));
+                          setPatientData((p) => ({
+                            ...p,
+                            allergies: [
+                              ...(p.allergies || []),
+                              allergyInput.trim(),
+                            ],
+                          }));
                           setAllergyInput("");
                         }
                       }
@@ -362,7 +433,13 @@ export default function OnboardingPage() {
                     variant="outline"
                     onClick={() => {
                       if (allergyInput.trim()) {
-                        setPatientData((p) => ({ ...p, allergies: [...(p.allergies || []), allergyInput.trim()] }));
+                        setPatientData((p) => ({
+                          ...p,
+                          allergies: [
+                            ...(p.allergies || []),
+                            allergyInput.trim(),
+                          ],
+                        }));
                         setAllergyInput("");
                       }
                     }}
@@ -386,7 +463,9 @@ export default function OnboardingPage() {
                           onClick={() =>
                             setPatientData((p) => ({
                               ...p,
-                              allergies: (p.allergies || []).filter((_, i) => i !== idx),
+                              allergies: (p.allergies || []).filter(
+                                (_, i) => i !== idx,
+                              ),
                             }))
                           }
                           className="hover:text-destructive text-muted-foreground ml-1"
@@ -401,20 +480,29 @@ export default function OnboardingPage() {
 
               {/* Medical History */}
               <div className="space-y-2">
-                <Label htmlFor="pat-history" className="mono-label text-xs">Chronic Conditions / Medical History</Label>
+                <Label htmlFor="pat-history" className="mono-label text-xs">
+                  Chronic Conditions / Medical History
+                </Label>
                 <Textarea
                   id="pat-history"
                   rows={3}
                   placeholder="e.g. Type 2 Diabetes, Hypertension, Previous Appendectomy in 2021"
                   value={patientData.medicalHistory}
-                  onChange={(e) => setPatientData((p) => ({ ...p, medicalHistory: e.target.value }))}
+                  onChange={(e) =>
+                    setPatientData((p) => ({
+                      ...p,
+                      medicalHistory: e.target.value,
+                    }))
+                  }
                   className="font-sans text-sm"
                 />
               </div>
 
               {/* Residential Address */}
               <div className="space-y-2">
-                <Label htmlFor="pat-address" className="mono-label text-xs">Residential Address</Label>
+                <Label htmlFor="pat-address" className="mono-label text-xs">
+                  Residential Address
+                </Label>
                 <div className="relative">
                   <MapPin className="text-muted-foreground absolute left-3 top-3 size-4" />
                   <Input
@@ -423,7 +511,9 @@ export default function OnboardingPage() {
                     autoComplete="street-address"
                     placeholder="124 Healthcare Blvd, Suite 400, New York, NY"
                     value={patientData.address}
-                    onChange={(e) => setPatientData((p) => ({ ...p, address: e.target.value }))}
+                    onChange={(e) =>
+                      setPatientData((p) => ({ ...p, address: e.target.value }))
+                    }
                     className="pl-9 font-sans text-sm"
                   />
                 </div>
@@ -449,7 +539,9 @@ export default function OnboardingPage() {
         ) : (
           /* TAB 2: CLINICIAN APPLICATION FORM / STATUS */
           <div>
-            {clinicianProfile && (clinicianProfile.status === "PENDING" || clinicianProfile.status === "UNDER_REVIEW") ? (
+            {clinicianProfile &&
+            (clinicianProfile.status === "PENDING" ||
+              clinicianProfile.status === "UNDER_REVIEW") ? (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -460,37 +552,62 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <Badge variant="outline" className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 mono-label px-3 py-1 text-xs">
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 mono-label px-3 py-1 text-xs"
+                  >
                     Status: {clinicianProfile.status}
                   </Badge>
                   <h2 className="font-mono text-2xl font-bold mt-3">
                     Application Under Verification
                   </h2>
                   <p className="text-muted-foreground text-sm mt-1 max-w-md mx-auto">
-                    Your medical credentials for <strong>{clinicianProfile.requestedRole}</strong> status are currently being audited by Hospital Administration.
+                    Your medical credentials for{" "}
+                    <strong>{clinicianProfile.requestedRole}</strong> status are
+                    currently being audited by Hospital Administration.
                   </p>
                 </div>
 
                 <div className="bg-muted/40 p-4 rounded-lg hairline text-left space-y-2 font-mono text-xs max-w-md mx-auto">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Requested Role:</span>
-                    <span className="font-semibold text-foreground">{clinicianProfile.requestedRole}</span>
+                    <span className="text-muted-foreground">
+                      Requested Role:
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {clinicianProfile.requestedRole}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Qualification Degree:</span>
-                    <span className="font-semibold text-foreground">{clinicianProfile.degree}</span>
+                    <span className="text-muted-foreground">
+                      Qualification Degree:
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {clinicianProfile.degree}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Specialization:</span>
-                    <span className="font-semibold text-foreground">{clinicianProfile.specialization}</span>
+                    <span className="text-muted-foreground">
+                      Specialization:
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {clinicianProfile.specialization}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Medical License #:</span>
-                    <span className="font-semibold text-foreground">{clinicianProfile.licenseNumber}</span>
+                    <span className="text-muted-foreground">
+                      Medical License #:
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {clinicianProfile.licenseNumber}
+                    </span>
                   </div>
                 </div>
 
-                <Button variant="outline" onClick={() => router.push("/patient")} className="mono-label text-xs">
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/patient")}
+                  className="mono-label text-xs"
+                >
                   Return to Patient Portal
                 </Button>
               </motion.div>
@@ -505,22 +622,31 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <Badge variant="outline" className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 mono-label px-3 py-1 text-xs">
+                  <Badge
+                    variant="outline"
+                    className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 mono-label px-3 py-1 text-xs"
+                  >
                     APPROVED & VERIFIED
                   </Badge>
                   <h2 className="font-mono text-2xl font-bold mt-3">
                     Clinician Status Active!
                   </h2>
                   <p className="text-muted-foreground text-sm mt-1">
-                    Your medical role is <strong>{user.role}</strong>. You have full clinician system access.
+                    Your medical role is <strong>{user.role}</strong>. You have
+                    full clinician system access.
                   </p>
                 </div>
 
                 <Button
-                  onClick={() => router.push(user.role === "RADIOLOGIST" ? "/radiology" : "/doctor")}
+                  onClick={() =>
+                    router.push(
+                      user.role === "RADIOLOGIST" ? "/radiology" : "/doctor",
+                    )
+                  }
                   className="bg-primary text-primary-foreground mono-label py-5 text-xs font-semibold px-6"
                 >
-                  Enter {user.role} Workspace <ArrowRight className="size-4 ml-2" />
+                  Enter {user.role} Workspace{" "}
+                  <ArrowRight className="size-4 ml-2" />
                 </Button>
               </motion.div>
             ) : (
@@ -536,7 +662,9 @@ export default function OnboardingPage() {
                       Application Rejected by Admin
                     </div>
                     <p className="text-xs text-foreground font-mono">
-                      <strong>Rejection Reason:</strong> {clinicianProfile.rejectionReason || "Credentials require validation."}
+                      <strong>Rejection Reason:</strong>{" "}
+                      {clinicianProfile.rejectionReason ||
+                        "Credentials require validation."}
                     </p>
                   </div>
                 )}
@@ -556,8 +684,12 @@ export default function OnboardingPage() {
                         }`}
                       >
                         <Stethoscope className="size-5 mb-2 text-primary" />
-                        <span className="font-mono font-bold text-sm">Doctor / Clinician</span>
-                        <span className="text-[11px] opacity-80 mt-0.5">EHR & Prescriptions</span>
+                        <span className="font-mono font-bold text-sm">
+                          Doctor / Clinician
+                        </span>
+                        <span className="text-[11px] opacity-80 mt-0.5">
+                          EHR & Prescriptions
+                        </span>
                       </button>
 
                       <button
@@ -570,15 +702,21 @@ export default function OnboardingPage() {
                         }`}
                       >
                         <Award className="size-5 mb-2 text-primary" />
-                        <span className="font-mono font-bold text-sm">Radiologist</span>
-                        <span className="text-[11px] opacity-80 mt-0.5">DICOM & Imaging Diagnostics</span>
+                        <span className="font-mono font-bold text-sm">
+                          Radiologist
+                        </span>
+                        <span className="text-[11px] opacity-80 mt-0.5">
+                          DICOM & Imaging Diagnostics
+                        </span>
                       </button>
                     </div>
                   </div>
 
                   {/* Qualification */}
                   <div className="space-y-2">
-                    <Label htmlFor="onb-degree" className="mono-label text-xs">Medical Degree / Qualification</Label>
+                    <Label htmlFor="onb-degree" className="mono-label text-xs">
+                      Medical Degree / Qualification
+                    </Label>
                     <div className="relative">
                       <BookOpen className="text-muted-foreground absolute left-3 top-3 size-4" />
                       <Input
@@ -596,7 +734,9 @@ export default function OnboardingPage() {
                   {/* Specialization & Experience */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="onb-spec" className="mono-label text-xs">Specialization Area</Label>
+                      <Label htmlFor="onb-spec" className="mono-label text-xs">
+                        Specialization Area
+                      </Label>
                       <Input
                         id="onb-spec"
                         type="text"
@@ -609,14 +749,18 @@ export default function OnboardingPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="onb-exp" className="mono-label text-xs">Years of Clinical Experience</Label>
+                      <Label htmlFor="onb-exp" className="mono-label text-xs">
+                        Years of Clinical Experience
+                      </Label>
                       <Input
                         id="onb-exp"
                         type="number"
                         min={0}
                         max={50}
                         value={experienceYears}
-                        onChange={(e) => setExperienceYears(Number(e.target.value))}
+                        onChange={(e) =>
+                          setExperienceYears(Number(e.target.value))
+                        }
                         className="font-sans text-sm"
                         required
                       />
@@ -625,7 +769,9 @@ export default function OnboardingPage() {
 
                   {/* Medical License */}
                   <div className="space-y-2">
-                    <Label htmlFor="onb-license" className="mono-label text-xs">Medical Council License Number</Label>
+                    <Label htmlFor="onb-license" className="mono-label text-xs">
+                      Medical Council License Number
+                    </Label>
                     <div className="relative">
                       <ShieldCheck className="text-muted-foreground absolute left-3 top-3 size-4" />
                       <Input
@@ -642,7 +788,9 @@ export default function OnboardingPage() {
 
                   {/* Supporting Document */}
                   <div className="space-y-2">
-                    <Label htmlFor="onb-doc" className="mono-label text-xs">Supporting Credential Link (Optional)</Label>
+                    <Label htmlFor="onb-doc" className="mono-label text-xs">
+                      Supporting Credential Link (Optional)
+                    </Label>
                     <div className="relative">
                       <FileText className="text-muted-foreground absolute left-3 top-3 size-4" />
                       <Input

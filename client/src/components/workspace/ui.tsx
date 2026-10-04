@@ -11,18 +11,46 @@ const toneMap: Record<Tone, string> = {
   info: "bg-accent/8 text-foreground",
 };
 
-export function Pill({ children, tone = "mute" }: { children: ReactNode; tone?: Tone }) {
-  return <span className={`mono-label px-2 py-1 ${toneMap[tone]}`}>{children}</span>;
-}
-
-export function Th({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function Pill({
+  children,
+  tone = "mute",
+}: {
+  children: ReactNode;
+  tone?: Tone;
+}) {
   return (
-    <th className={`mono-label text-muted-foreground px-4 py-3 text-left font-normal ${className}`}>{children}</th>
+    <span className={`mono-label px-2 py-1 ${toneMap[tone]}`}>{children}</span>
   );
 }
 
-export function Td({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <td className={`px-4 py-3.5 align-middle text-sm ${className}`}>{children}</td>;
+export function Th({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <th
+      className={`mono-label text-muted-foreground px-4 py-3 text-left font-normal ${className}`}
+    >
+      {children}
+    </th>
+  );
+}
+
+export function Td({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <td className={`px-4 py-3.5 align-middle text-sm ${className}`}>
+      {children}
+    </td>
+  );
 }
 
 export function StatGrid({
@@ -32,7 +60,12 @@ export function StatGrid({
   stats: { label: string; value: string; note: string }[];
   cols?: 3 | 4 | 5;
 }) {
-  const gridCols = cols === 3 ? "lg:grid-cols-3" : cols === 5 ? "lg:grid-cols-5" : "lg:grid-cols-4";
+  const gridCols =
+    cols === 3
+      ? "lg:grid-cols-3"
+      : cols === 5
+        ? "lg:grid-cols-5"
+        : "lg:grid-cols-4";
   return (
     <div
       className={`grid gap-px sm:grid-cols-2 ${gridCols}`}
@@ -41,7 +74,9 @@ export function StatGrid({
       {stats.map((s) => (
         <div key={s.label} className="bg-background p-5">
           <p className="mono-label text-muted-foreground">{s.label}</p>
-          <p className="mt-2 font-mono text-3xl font-bold tracking-tight">{s.value}</p>
+          <p className="mt-2 font-mono text-3xl font-bold tracking-tight">
+            {s.value}
+          </p>
           <p className="mono-label text-muted-foreground mt-1">{s.note}</p>
         </div>
       ))}
@@ -68,9 +103,14 @@ export function Sparkline({
       return `${x},${y}`;
     })
     .join(" ");
-  const stroke = tone === "bad" ? "var(--color-destructive)" : "var(--color-accent)";
+  const stroke =
+    tone === "bad" ? "var(--color-destructive)" : "var(--color-accent)";
   return (
-    <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="h-8 w-full">
+    <svg
+      viewBox={`0 0 100 ${height}`}
+      preserveAspectRatio="none"
+      className="h-8 w-full"
+    >
       <motion.polyline
         points={pts}
         fill="none"
@@ -95,7 +135,13 @@ export function LiveDot({ tone = "ok" }: { tone?: "ok" | "bad" }) {
   );
 }
 
-export function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+export function Toggle({
+  on,
+  onChange,
+}: {
+  on: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <button
       type="button"
@@ -139,7 +185,14 @@ export function Gauge({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex items-center gap-3">
       <svg viewBox="0 0 64 64" className="size-16 -rotate-90">
-        <circle cx="32" cy="32" r={r} fill="none" stroke="var(--hairline)" strokeWidth="4" />
+        <circle
+          cx="32"
+          cy="32"
+          r={r}
+          fill="none"
+          stroke="var(--hairline)"
+          strokeWidth="4"
+        />
         <motion.circle
           cx="32"
           cy="32"

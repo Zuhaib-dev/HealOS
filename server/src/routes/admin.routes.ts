@@ -1,11 +1,28 @@
 import { Router } from "express";
 import { verifyToken, requireRole } from "../middleware/auth.middleware.js";
 import { UserRole } from "../models/user.model.js";
-import { 
-  getAllUsers, getAllPatients, getFacilityStats, updateUserRole, getStaff, 
-  getSchedule, getInvoices, getWards, getInventory, getAuditLogs, getIntegrations, getRoles,
-  createWard, updateWard, deleteWard, createInventoryItem, updateInventoryItem, deleteInventoryItem,
-  createSchedule, updateSchedule, deleteSchedule
+import {
+  getAllUsers,
+  getAllPatients,
+  getFacilityStats,
+  updateUserRole,
+  getStaff,
+  getSchedule,
+  getInvoices,
+  getWards,
+  getInventory,
+  getAuditLogs,
+  getIntegrations,
+  getRoles,
+  createWard,
+  updateWard,
+  deleteWard,
+  createInventoryItem,
+  updateInventoryItem,
+  deleteInventoryItem,
+  createSchedule,
+  updateSchedule,
+  deleteSchedule,
 } from "../controllers/admin.controller.js";
 
 const adminRouter = Router();

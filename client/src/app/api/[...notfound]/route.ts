@@ -37,8 +37,9 @@ function handleApiNotFound() {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
-        "WWW-Authenticate": 'Bearer realm="HealOS", resource_metadata="https://healos-theta.vercel.app/.well-known/oauth-protected-resource"',
+        "WWW-Authenticate":
+          'Bearer realm="HealOS", resource_metadata="https://healos-theta.vercel.app/.well-known/oauth-protected-resource"',
       },
-    }
+    },
   );
 }

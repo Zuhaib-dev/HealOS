@@ -16,7 +16,12 @@ import {
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
-import { fetchPendingOrdersApi, updateOrderStatusApi, uploadDiagnosticReportApi, DiagnosticOrderRecord } from "@/lib/api/radiology";
+import {
+  fetchPendingOrdersApi,
+  updateOrderStatusApi,
+  uploadDiagnosticReportApi,
+  DiagnosticOrderRecord,
+} from "@/lib/api/radiology";
 import { toast } from "sonner";
 
 /* ---------- primitives ---------- */
@@ -34,12 +39,16 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
@@ -64,8 +73,24 @@ function ScannerGlyph({ active }: { active: boolean }) {
         stroke="var(--hairline)"
         strokeWidth="1"
       />
-      <circle cx="60" cy="36" r="17" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.5" />
-      <circle cx="60" cy="36" r="8" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.8" />
+      <circle
+        cx="60"
+        cy="36"
+        r="17"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.5"
+      />
+      <circle
+        cx="60"
+        cy="36"
+        r="8"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.8"
+      />
       {active && (
         <motion.line
           x1="8"
@@ -111,13 +136,17 @@ export function UploadPanel() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchPendingOrdersApi().then(res => {
-      if (res.status === "success") {
-        const pending = res.data.orders.filter(o => o.status !== "REPORTED");
-        setOrders(pending);
-        if (pending.length > 0 && !orderId) setOrderId(pending[0]._id);
-      }
-    }).catch(console.error);
+    fetchPendingOrdersApi()
+      .then((res) => {
+        if (res.status === "success") {
+          const pending = res.data.orders.filter(
+            (o) => o.status !== "REPORTED",
+          );
+          setOrders(pending);
+          if (pending.length > 0 && !orderId) setOrderId(pending[0]._id);
+        }
+      })
+      .catch(console.error);
   }, []);
 
   function addFiles(files: FileList | null) {
@@ -147,7 +176,7 @@ export function UploadPanel() {
       toast.error("Please select an order to attach to.");
       return;
     }
-    const validItems = items.filter(i => !i.error && i.progress === 0);
+    const validItems = items.filter((i) => !i.error && i.progress === 0);
     if (validItems.length === 0) return;
 
     setUploading(true);
@@ -156,19 +185,25 @@ export function UploadPanel() {
         const formData = new FormData();
         formData.append("reportFile", (item as any).file);
         formData.append("comments", comments);
-        
+
         const res = await uploadDiagnosticReportApi(orderId, formData);
         if (res.status === "success") {
           toast.success(`${item.name} uploaded successfully!`);
-          setItems(prev => prev.map(p => p.id === item.id ? { ...p, progress: 100 } : p));
+          setItems((prev) =>
+            prev.map((p) => (p.id === item.id ? { ...p, progress: 100 } : p)),
+          );
         }
       } catch (e) {
         toast.error(`Failed to upload ${item.name}`);
-        setItems(prev => prev.map(p => p.id === item.id ? { ...p, error: "Upload failed" } : p));
+        setItems((prev) =>
+          prev.map((p) =>
+            p.id === item.id ? { ...p, error: "Upload failed" } : p,
+          ),
+        );
       }
     }
     setUploading(false);
-  }
+  };
 
   const done = items.filter((i) => !i.error && i.progress >= 100).length;
 
@@ -181,14 +216,20 @@ export function UploadPanel() {
         actions={
           <>
             <ActionButton onClick={() => setItems([])}>Clear list</ActionButton>
-            <ActionButton tone="solid" onClick={() => inputRef.current?.click()}>
+            <ActionButton
+              tone="solid"
+              onClick={() => inputRef.current?.click()}
+            >
               Choose files
             </ActionButton>
           </>
         }
       />
 
-      <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
+      <div
+        className="grid gap-px lg:grid-cols-3"
+        style={{ background: "var(--hairline)" }}
+      >
         <div className="bg-background p-5 lg:col-span-2">
           <div
             onDragOver={(e) => {
@@ -205,10 +246,13 @@ export function UploadPanel() {
               dragging ? "border-accent bg-accent/5" : "border-(--hairline)"
             }`}
           >
-            <label htmlFor="radiology-file-upload-input" className="sr-only">Upload diagnostic report files</label>
+            <label htmlFor="radiology-file-upload-input" className="sr-only">
+              Upload diagnostic report files
+            </label>
             <input
               id="radiology-file-upload-input"
-              aria-label="Upload diagnostic report files" title="Upload diagnostic report files"
+              aria-label="Upload diagnostic report files"
+              title="Upload diagnostic report files"
               ref={inputRef}
               type="file"
               multiple
@@ -218,14 +262,18 @@ export function UploadPanel() {
             />
             <motion.div
               animate={{ y: [0, -4, 0] }}
-              transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+              transition={{
+                duration: 2.6,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
             >
               <UploadCloud className="text-accent mx-auto size-8" />
             </motion.div>
             <p className="mt-4 font-mono text-lg">Drop report files here</p>
             <p className="text-muted-foreground mt-1 max-w-md text-sm">
-              PDF, DICOM (.dcm), zipped series, JPG or PNG · up to 25 MB per file. Uploads are
-              attached to the selected order and audit-logged.
+              PDF, DICOM (.dcm), zipped series, JPG or PNG · up to 25 MB per
+              file. Uploads are attached to the selected order and audit-logged.
             </p>
             <button
               type="button"
@@ -240,8 +288,8 @@ export function UploadPanel() {
             <p className="mono-label text-muted-foreground">
               {items.length} queued · {done} attached
             </p>
-            {items.some(i => !i.error && i.progress === 0) && (
-              <button 
+            {items.some((i) => !i.error && i.progress === 0) && (
+              <button
                 onClick={handleUpload}
                 disabled={uploading}
                 className="bg-accent text-accent-foreground px-4 py-1.5 rounded text-sm font-medium hover:bg-accent/90 disabled:opacity-50"
@@ -251,14 +299,21 @@ export function UploadPanel() {
             )}
           </div>
 
-          <div className="mt-3 flex flex-col gap-px" style={{ background: "var(--hairline)" }}>
+          <div
+            className="mt-3 flex flex-col gap-px"
+            style={{ background: "var(--hairline)" }}
+          >
             {items.length === 0 && (
               <p className="bg-background text-muted-foreground p-5 text-sm">
-                Nothing queued yet. Files you add appear here with live progress and validation.
+                Nothing queued yet. Files you add appear here with live progress
+                and validation.
               </p>
             )}
             {items.map((it) => (
-              <div key={it.id} className="bg-background flex items-center gap-4 p-4">
+              <div
+                key={it.id}
+                className="bg-background flex items-center gap-4 p-4"
+              >
                 <FileText
                   className={`size-4 shrink-0 ${it.error ? "text-destructive" : "text-accent"}`}
                 />
@@ -270,7 +325,9 @@ export function UploadPanel() {
                     </span>
                   </div>
                   {it.error ? (
-                    <p className="mono-label text-destructive mt-1">{it.error}</p>
+                    <p className="mono-label text-destructive mt-1">
+                      {it.error}
+                    </p>
                   ) : (
                     <div className="bg-foreground/6 mt-2 h-0.75 w-full">
                       <motion.div
@@ -293,7 +350,9 @@ export function UploadPanel() {
                 <button
                   type="button"
                   aria-label={`Remove ${it.name}`}
-                  onClick={() => setItems((prev) => prev.filter((p) => p.id !== it.id))}
+                  onClick={() =>
+                    setItems((prev) => prev.filter((p) => p.id !== it.id))
+                  }
                   className="text-muted-foreground hover:text-foreground"
                 >
                   <X className="size-4" />
@@ -305,25 +364,38 @@ export function UploadPanel() {
 
         <div className="bg-background p-5">
           <p className="mono-label text-muted-foreground">Attach to</p>
-          <label htmlFor="radiology-upload-order" className="mono-label text-muted-foreground mt-4 block">Order</label>
+          <label
+            htmlFor="radiology-upload-order"
+            className="mono-label text-muted-foreground mt-4 block"
+          >
+            Order
+          </label>
           <select
             id="radiology-upload-order"
-            aria-label="Order selection" title="Order selection"
+            aria-label="Order selection"
+            title="Order selection"
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
             className="hairline mono-label mt-2 w-full bg-transparent px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
           >
             {orders.map((w) => (
               <option key={w._id} value={w._id}>
-                {w._id.slice(-6)} — {w.patient?.firstName} {w.patient?.lastName} ({w.testName})
+                {w._id.slice(-6)} — {w.patient?.firstName} {w.patient?.lastName}{" "}
+                ({w.testName})
               </option>
             ))}
           </select>
 
-          <label htmlFor="radiology-upload-note" className="mono-label text-muted-foreground mt-4 block">Note for record</label>
+          <label
+            htmlFor="radiology-upload-note"
+            className="mono-label text-muted-foreground mt-4 block"
+          >
+            Note for record
+          </label>
           <textarea
             id="radiology-upload-note"
-            aria-label="Note for record" title="Note for record"
+            aria-label="Note for record"
+            title="Note for record"
             rows={4}
             value={comments}
             onChange={(e) => setComments(e.target.value)}

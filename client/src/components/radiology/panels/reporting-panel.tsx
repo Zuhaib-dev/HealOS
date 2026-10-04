@@ -16,7 +16,12 @@ import {
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
-import { fetchTemplatesApi, fetchPendingOrdersApi, DiagnosticOrderRecord, ReportTemplateRecord } from "@/lib/api/radiology";
+import {
+  fetchTemplatesApi,
+  fetchPendingOrdersApi,
+  DiagnosticOrderRecord,
+  ReportTemplateRecord,
+} from "@/lib/api/radiology";
 import { toast } from "sonner";
 
 /* ---------- primitives ---------- */
@@ -34,12 +39,16 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
@@ -64,8 +73,24 @@ function ScannerGlyph({ active }: { active: boolean }) {
         stroke="var(--hairline)"
         strokeWidth="1"
       />
-      <circle cx="60" cy="36" r="17" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.5" />
-      <circle cx="60" cy="36" r="8" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.8" />
+      <circle
+        cx="60"
+        cy="36"
+        r="17"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.5"
+      />
+      <circle
+        cx="60"
+        cy="36"
+        r="8"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.8"
+      />
       {active && (
         <motion.line
           x1="8"
@@ -92,29 +117,36 @@ export function ReportingPanel() {
   const [study, setStudy] = useState<DiagnosticOrderRecord | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetchTemplatesApi(),
-      fetchPendingOrdersApi()
-    ]).then(([tplRes, ordersRes]) => {
-      setTemplates(tplRes.data.templates);
-      if (tplRes.data.templates.length > 0) {
-        setTpl(tplRes.data.templates[0]);
-        setBody(tplRes.data.templates[0].body);
-      }
-      
-      const inProgress = ordersRes.data.orders.filter(o => o.status === "IN_PROGRESS");
-      setOrders(inProgress);
-      if (inProgress.length > 0) {
-        setStudy(inProgress[0]);
-      }
-    }).catch(console.error);
+    Promise.all([fetchTemplatesApi(), fetchPendingOrdersApi()])
+      .then(([tplRes, ordersRes]) => {
+        setTemplates(tplRes.data.templates);
+        if (tplRes.data.templates.length > 0) {
+          setTpl(tplRes.data.templates[0]);
+          setBody(tplRes.data.templates[0].body);
+        }
+
+        const inProgress = ordersRes.data.orders.filter(
+          (o) => o.status === "IN_PROGRESS",
+        );
+        setOrders(inProgress);
+        if (inProgress.length > 0) {
+          setStudy(inProgress[0]);
+        }
+      })
+      .catch(console.error);
   }, []);
 
   if (!study || !tpl) {
     return (
       <section>
-        <PanelHeader index="03 / reporting" title="Reporting desk" note="Loading reporting context..." />
-        <div className="p-8 text-center text-muted-foreground">Loading templates and active studies...</div>
+        <PanelHeader
+          index="03 / reporting"
+          title="Reporting desk"
+          note="Loading reporting context..."
+        />
+        <div className="p-8 text-center text-muted-foreground">
+          Loading templates and active studies...
+        </div>
       </section>
     );
   }
@@ -133,12 +165,16 @@ export function ReportingPanel() {
         }
       />
 
-      <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
+      <div
+        className="grid gap-px lg:grid-cols-3"
+        style={{ background: "var(--hairline)" }}
+      >
         <div className="bg-background p-5">
           <p className="mono-label text-muted-foreground">Current study</p>
           <p className="mt-2 font-mono text-lg">{study.testName}</p>
           <p className="mono-label text-muted-foreground mt-1">
-            {study.accessionNumber} · {study.patient?.firstName} {study.patient?.lastName}
+            {study.accessionNumber} · {study.patient?.firstName}{" "}
+            {study.patient?.lastName}
           </p>
           <div className="hairline mt-4 p-2">
             <ScannerGlyph active />
@@ -171,8 +207,15 @@ export function ReportingPanel() {
 
         <div className="bg-background p-5 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <label htmlFor="radiology-report-body" className="mono-label text-muted-foreground">Report body — {tpl.label}</label>
-            <span className="mono-label text-muted-foreground">autosaved 12s ago</span>
+            <label
+              htmlFor="radiology-report-body"
+              className="mono-label text-muted-foreground"
+            >
+              Report body — {tpl.label}
+            </label>
+            <span className="mono-label text-muted-foreground">
+              autosaved 12s ago
+            </span>
           </div>
           <textarea
             id="radiology-report-body"

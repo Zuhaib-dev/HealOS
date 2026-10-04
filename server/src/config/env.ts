@@ -6,8 +6,11 @@ import fs from "fs";
 import path from "path";
 
 const cwd = process.cwd();
-const serverRoot = path.basename(cwd) === "server" ? cwd : path.join(cwd, "server");
-const repoRoot = fs.existsSync(path.join(serverRoot, "package.json")) ? path.dirname(serverRoot) : cwd;
+const serverRoot =
+  path.basename(cwd) === "server" ? cwd : path.join(cwd, "server");
+const repoRoot = fs.existsSync(path.join(serverRoot, "package.json"))
+  ? path.dirname(serverRoot)
+  : cwd;
 const originalEnvKeys = new Set(Object.keys(process.env));
 
 dotenv.config({ path: path.join(repoRoot, ".env") });
@@ -29,7 +32,9 @@ const DEV_REFRESH_SECRET = "dev-refresh-secret-change-in-production";
 
 const envSchema = z
   .object({
-    NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+    NODE_ENV: z
+      .enum(["development", "production", "test"])
+      .default("development"),
     PORT: z.coerce.number().default(5001),
     CLIENT_URL: z.string().default("http://localhost:3000"),
 
@@ -82,11 +87,15 @@ const envSchema = z
       });
     }
 
-    if (env.JWT_REFRESH_SECRET === DEV_REFRESH_SECRET || env.JWT_REFRESH_SECRET.length < 32) {
+    if (
+      env.JWT_REFRESH_SECRET === DEV_REFRESH_SECRET ||
+      env.JWT_REFRESH_SECRET.length < 32
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["JWT_REFRESH_SECRET"],
-        message: "JWT_REFRESH_SECRET must be set to a strong production secret.",
+        message:
+          "JWT_REFRESH_SECRET must be set to a strong production secret.",
       });
     }
 
@@ -94,7 +103,8 @@ const envSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["AUTH_SYNC_SECRET"],
-        message: "AUTH_SYNC_SECRET must be set for production Google auth sync.",
+        message:
+          "AUTH_SYNC_SECRET must be set for production Google auth sync.",
       });
     }
   });

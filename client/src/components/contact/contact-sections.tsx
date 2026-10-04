@@ -7,7 +7,8 @@ const channels = [
     title: "Clinical support",
     line: "+1 (415) 555 0142",
     mail: "support@healos.health",
-    detail: "Live 24/7/365. Bedside-blocking issues get a clinician-trained engineer, not a script.",
+    detail:
+      "Live 24/7/365. Bedside-blocking issues get a clinician-trained engineer, not a script.",
     sla: "15 min",
   },
   {
@@ -15,7 +16,8 @@ const channels = [
     title: "New deployments",
     line: "+1 (415) 555 0188",
     mail: "deployments@healos.health",
-    detail: "Migration scoping, HL7/FHIR mapping, data extraction from your incumbent system.",
+    detail:
+      "Migration scoping, HL7/FHIR mapping, data extraction from your incumbent system.",
     sla: "1 day",
   },
   {
@@ -23,7 +25,8 @@ const channels = [
     title: "Security & compliance",
     line: "PGP key on request",
     mail: "security@healos.health",
-    detail: "HIPAA, DPDP and GDPR documentation, pen-test reports, vulnerability disclosure.",
+    detail:
+      "HIPAA, DPDP and GDPR documentation, pen-test reports, vulnerability disclosure.",
     sla: "4 hrs",
   },
   {
@@ -31,7 +34,8 @@ const channels = [
     title: "Press & partnerships",
     line: "Media kit available",
     mail: "press@healos.health",
-    detail: "Interviews, clinical outcome data, integration and reseller partnerships.",
+    detail:
+      "Interviews, clinical outcome data, integration and reseller partnerships.",
     sla: "3 days",
   },
 ];
@@ -59,15 +63,21 @@ export function ContactChannels() {
                 <span className="mono-label text-muted-foreground">{c.id}</span>
                 <span className="mono-label text-brass">≤ {c.sla}</span>
               </div>
-              <h3 className="font-display mt-6 text-xl font-bold tracking-[-0.02em]">{c.title}</h3>
-              <p className="text-muted-foreground mt-4 text-sm leading-relaxed">{c.detail}</p>
+              <h3 className="font-display mt-6 text-xl font-bold tracking-[-0.02em]">
+                {c.title}
+              </h3>
+              <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
+                {c.detail}
+              </p>
               <a
                 href={`mailto:${c.mail}`}
                 className="text-foreground hover:text-brass mt-6 block text-sm transition-colors"
               >
                 {c.mail}
               </a>
-              <p className="mono-label text-muted-foreground mt-2 pb-8">{c.line}</p>
+              <p className="mono-label text-muted-foreground mt-2 pb-8">
+                {c.line}
+              </p>
               <motion.div
                 className="bg-accent absolute bottom-0 left-0 h-px"
                 initial={{ width: 0 }}
@@ -84,10 +94,34 @@ export function ContactChannels() {
 }
 
 const escalation = [
-  { tier: "P0", label: "Care delivery stopped", ack: "15 min", update: "30 min", route: "On-call clinical engineer + duty CTO" },
-  { tier: "P1", label: "Module degraded, workaround exists", ack: "1 hr", update: "4 hrs", route: "Named deployment engineer" },
-  { tier: "P2", label: "Defect, no clinical impact", ack: "1 day", update: "Weekly", route: "Product queue with ticket ID" },
-  { tier: "P3", label: "Request or question", ack: "2 days", update: "On change", route: "Success manager" },
+  {
+    tier: "P0",
+    label: "Care delivery stopped",
+    ack: "15 min",
+    update: "30 min",
+    route: "On-call clinical engineer + duty CTO",
+  },
+  {
+    tier: "P1",
+    label: "Module degraded, workaround exists",
+    ack: "1 hr",
+    update: "4 hrs",
+    route: "Named deployment engineer",
+  },
+  {
+    tier: "P2",
+    label: "Defect, no clinical impact",
+    ack: "1 day",
+    update: "Weekly",
+    route: "Product queue with ticket ID",
+  },
+  {
+    tier: "P3",
+    label: "Request or question",
+    ack: "2 days",
+    update: "On change",
+    route: "Success manager",
+  },
 ];
 
 export function EscalationLadder() {
@@ -100,8 +134,8 @@ export function EscalationLadder() {
             What happens after you press send.
           </h2>
           <p className="text-muted-foreground mt-6 text-sm leading-relaxed">
-            Severity is set by clinical impact, not by contract tier. Every ticket carries an
-            audit trail you can export.
+            Severity is set by clinical impact, not by contract tier. Every
+            ticket carries an audit trail you can export.
           </p>
         </div>
 
@@ -125,13 +159,21 @@ export function EscalationLadder() {
                 <motion.span
                   className="bg-accent h-1.5 w-1.5 rounded-full"
                   animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.3 }}
+                  transition={{
+                    duration: 1.8,
+                    repeat: Infinity,
+                    delay: i * 0.3,
+                  }}
                 />
                 <span className="font-display font-bold">{row.tier}</span>
               </span>
               <span className="col-span-4 text-sm">{row.label}</span>
-              <span className="mono-label text-brass col-span-2">{row.ack}</span>
-              <span className="text-muted-foreground col-span-4 text-sm">{row.route}</span>
+              <span className="mono-label text-brass col-span-2">
+                {row.ack}
+              </span>
+              <span className="text-muted-foreground col-span-4 text-sm">
+                {row.route}
+              </span>
             </motion.div>
           ))}
         </div>
@@ -141,10 +183,34 @@ export function EscalationLadder() {
 }
 
 const offices = [
-  { city: "San Francisco", role: "HQ / Product", addr: "410 Townsend St, Suite 3", tz: "UTC−7", hours: "08:00 – 18:00" },
-  { city: "London", role: "EMEA clinical", addr: "22 Bishopsgate, Level 14", tz: "UTC+1", hours: "08:00 – 18:00" },
-  { city: "Bengaluru", role: "Engineering / 24h desk", addr: "Prestige Tech Park, Block C", tz: "UTC+5:30", hours: "Always on" },
-  { city: "Singapore", role: "APAC deployments", addr: "1 Raffles Place, #33-02", tz: "UTC+8", hours: "09:00 – 19:00" },
+  {
+    city: "San Francisco",
+    role: "HQ / Product",
+    addr: "410 Townsend St, Suite 3",
+    tz: "UTC−7",
+    hours: "08:00 – 18:00",
+  },
+  {
+    city: "London",
+    role: "EMEA clinical",
+    addr: "22 Bishopsgate, Level 14",
+    tz: "UTC+1",
+    hours: "08:00 – 18:00",
+  },
+  {
+    city: "Bengaluru",
+    role: "Engineering / 24h desk",
+    addr: "Prestige Tech Park, Block C",
+    tz: "UTC+5:30",
+    hours: "Always on",
+  },
+  {
+    city: "Singapore",
+    role: "APAC deployments",
+    addr: "1 Raffles Place, #33-02",
+    tz: "UTC+8",
+    hours: "09:00 – 19:00",
+  },
 ];
 
 export function OfficesSection() {
@@ -170,7 +236,9 @@ export function OfficesSection() {
               className="hairline-b flex flex-wrap items-baseline justify-between gap-4 py-6 first:pt-0"
             >
               <div>
-                <h3 className="font-display text-lg font-bold tracking-[-0.02em]">{o.city}</h3>
+                <h3 className="font-display text-lg font-bold tracking-[-0.02em]">
+                  {o.city}
+                </h3>
                 <p className="text-muted-foreground mt-2 text-sm">{o.addr}</p>
               </div>
               <div className="text-right">
@@ -223,8 +291,12 @@ export function ContactFaq() {
               transition={{ duration: 0.45, delay: i * 0.06 }}
               className="hairline-b py-6 first:pt-0"
             >
-              <h3 className="font-display text-lg font-bold tracking-[-0.02em]">{f.q}</h3>
-              <p className="text-muted-foreground mt-3 max-w-2xl text-sm leading-relaxed">{f.a}</p>
+              <h3 className="font-display text-lg font-bold tracking-[-0.02em]">
+                {f.q}
+              </h3>
+              <p className="text-muted-foreground mt-3 max-w-2xl text-sm leading-relaxed">
+                {f.a}
+              </p>
             </motion.div>
           ))}
         </div>

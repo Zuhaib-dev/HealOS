@@ -1,6 +1,12 @@
 "use client";
 
-import { TestTube, ListChecks, Activity, CheckCircle, Siren } from "lucide-react";
+import {
+  TestTube,
+  ListChecks,
+  Activity,
+  CheckCircle,
+  Siren,
+} from "lucide-react";
 
 import { RoleGuard } from "@/components/auth/role-guard";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
@@ -12,7 +18,11 @@ const sections = [
   { id: "critical", label: "Critical Results", icon: Siren },
 ];
 
-export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
+export default function WorkspaceLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <RoleGuard allowedRoles={["LAB_TECHNICIAN"]}>
       <WorkspaceShell
@@ -20,8 +30,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
         breadcrumb="Diagnostics / Laboratory (LIS)"
         searchPlaceholder="Search accession, MRN, panel"
         sections={sections}
-        
-        
+
         statusTitle="Bench"
         statusLine="LIS ↔ analysers linked"
         statusNote="128 samples in lab · 2 critical open"

@@ -7,7 +7,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export const generateBio = async (req: Request, res: Response) => {
   try {
     const { role, keywords } = req.body;
-    
+
     if (!keywords || typeof keywords !== "string") {
       throw new AppError("Keywords are required for bio generation", 400);
     }
@@ -23,8 +23,8 @@ Write a very brief, engaging bio (maximum 2 short sentences) based on the follow
 Keep it extremely concise. Do not use any formatting like bolding or bullet points. Just output the plain text bio.`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: prompt,
+      model: "gemini-3.6-flash",
+      contents: prompt,
     });
 
     res.status(200).json({
@@ -45,21 +45,21 @@ export const explainReport = async (req: Request, res: Response) => {
     }
 
     // Determine mimeType from extension
-    let ext = fileUrl.split('.').pop()?.toLowerCase() || '';
-    let mimeType = 'application/pdf';
-    if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
-    if (ext === 'png') mimeType = 'image/png';
+    let ext = fileUrl.split(".").pop()?.toLowerCase() || "";
+    let mimeType = "application/pdf";
+    if (ext === "jpg" || ext === "jpeg") mimeType = "image/jpeg";
+    if (ext === "png") mimeType = "image/png";
 
     let base64Data = "";
 
     try {
       let localPath = "";
-      if (fileUrl.startsWith('/uploads')) {
+      if (fileUrl.startsWith("/uploads")) {
         localPath = fileUrl;
-      } else if (fileUrl.includes('/uploads/')) {
+      } else if (fileUrl.includes("/uploads/")) {
         try {
           const urlObj = new URL(fileUrl);
-          if (urlObj.pathname.startsWith('/uploads')) {
+          if (urlObj.pathname.startsWith("/uploads")) {
             localPath = urlObj.pathname;
           }
         } catch (e) {
@@ -69,20 +69,26 @@ export const explainReport = async (req: Request, res: Response) => {
 
       if (localPath) {
         // Read local file directly from filesystem
-        const fs = await import('fs');
-        const path = await import('path');
+        const fs = await import("fs");
+        const path = await import("path");
         const fullLocalPath = path.join(process.cwd(), localPath);
         if (!fs.existsSync(fullLocalPath)) {
-          throw new AppError("Report file no longer exists on the server (ephemeral storage wiped). Please re-upload.", 404);
+          throw new AppError(
+            "Report file no longer exists on the server (ephemeral storage wiped). Please re-upload.",
+            404,
+          );
         }
         const fileBuffer = await fs.promises.readFile(fullLocalPath);
-        base64Data = fileBuffer.toString('base64');
+        base64Data = fileBuffer.toString("base64");
       } else {
         // Fetch remote file (e.g. ImageKit)
         try {
           const urlObj = new URL(fileUrl);
           if (urlObj.hostname !== "ik.imagekit.io") {
-            throw new AppError("Invalid file URL domain. Only trusted storage providers are allowed.", 403);
+            throw new AppError(
+              "Invalid file URL domain. Only trusted storage providers are allowed.",
+              403,
+            );
           }
         } catch (e: any) {
           throw new AppError(e.message || "Invalid file URL", 400);
@@ -91,16 +97,25 @@ export const explainReport = async (req: Request, res: Response) => {
         const fileRes = await fetch(fileUrl);
         if (!fileRes.ok) {
           if (fileRes.status === 404) {
-             throw new AppError("Remote report file no longer exists. Please re-upload.", 404);
+            throw new AppError(
+              "Remote report file no longer exists. Please re-upload.",
+              404,
+            );
           }
-          throw new AppError(`Failed to fetch report file (Status: ${fileRes.status})`, 400);
+          throw new AppError(
+            `Failed to fetch report file (Status: ${fileRes.status})`,
+            400,
+          );
         }
         const arrayBuffer = await fileRes.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        base64Data = buffer.toString('base64');
+        base64Data = buffer.toString("base64");
       }
     } catch (err: any) {
-      throw new AppError(err.message || "Failed to process report file", err.statusCode || 500);
+      throw new AppError(
+        err.message || "Failed to process report file",
+        err.statusCode || 500,
+      );
     }
 
     const prompt = `You are an empathetic, expert medical AI. Review this lab report or medical document. Explain the findings to the patient in simple, non-jargon terms.
@@ -113,21 +128,21 @@ CRITICAL FORMATTING RULES:
 5. Always end by advising them to discuss these results with their doctor for clinical decisions.`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: [
+      model: "gemini-3.6-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
             {
-                role: 'user',
-                parts: [
-                    {
-                        inlineData: {
-                            data: base64Data,
-                            mimeType: mimeType
-                        }
-                    },
-                    { text: prompt }
-                ]
-            }
-        ]
+              inlineData: {
+                data: base64Data,
+                mimeType: mimeType,
+              },
+            },
+            { text: prompt },
+          ],
+        },
+      ],
     });
 
     res.status(200).json({
@@ -136,7 +151,10 @@ CRITICAL FORMATTING RULES:
     });
   } catch (error: any) {
     console.error("AI Report Explanation Error:", error);
-    res.status(500).json({ success: false, message: error.stack || error.message || "Failed to explain report" });
+    res.status(500).json({
+      success: false,
+      message: error.stack || error.message || "Failed to explain report",
+    });
   }
 };
 
@@ -148,21 +166,28 @@ export const chatReport = async (req: Request, res: Response) => {
     }
 
     const contents: any[] = [];
-    
+
     // Process the file if provided
     let filePart = null;
     if (fileUrl) {
-      let ext = fileUrl.split('.').pop()?.toLowerCase() || '';
-      let mimeType = 'application/pdf';
-      if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
-      if (ext === 'png') mimeType = 'image/png';
+      let ext = fileUrl.split(".").pop()?.toLowerCase() || "";
+      let mimeType = "application/pdf";
+      if (ext === "jpg" || ext === "jpeg") mimeType = "image/jpeg";
+      if (ext === "png") mimeType = "image/png";
 
       try {
         const urlObj = new URL(fileUrl);
-        if (process.env.NODE_ENV === 'development' && (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1')) {
-          if (!urlObj.pathname.startsWith('/uploads/')) throw new AppError("Invalid local file path.", 403);
+        if (
+          process.env.NODE_ENV === "development" &&
+          (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1")
+        ) {
+          if (!urlObj.pathname.startsWith("/uploads/"))
+            throw new AppError("Invalid local file path.", 403);
         } else if (urlObj.hostname !== "ik.imagekit.io") {
-          throw new AppError("Invalid file URL domain. Only trusted storage providers are allowed.", 403);
+          throw new AppError(
+            "Invalid file URL domain. Only trusted storage providers are allowed.",
+            403,
+          );
         }
       } catch (e: any) {
         throw new AppError(e.message || "Invalid file URL", 400);
@@ -174,9 +199,9 @@ export const chatReport = async (req: Request, res: Response) => {
         const buffer = Buffer.from(arrayBuffer);
         filePart = {
           inlineData: {
-            data: buffer.toString('base64'),
-            mimeType: mimeType
-          }
+            data: buffer.toString("base64"),
+            mimeType: mimeType,
+          },
         };
       }
     }
@@ -185,15 +210,15 @@ export const chatReport = async (req: Request, res: Response) => {
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i];
       const parts: any[] = [{ text: msg.text }];
-      
+
       // Attach the file to the very first user message
-      if (i === 0 && msg.role === 'user' && filePart) {
+      if (i === 0 && msg.role === "user" && filePart) {
         parts.unshift(filePart);
       }
-      
+
       contents.push({
-        role: msg.role === 'ai' || msg.role === 'model' ? 'model' : 'user',
-        parts: parts
+        role: msg.role === "ai" || msg.role === "model" ? "model" : "user",
+        parts: parts,
       });
     }
 
@@ -206,11 +231,11 @@ CRITICAL RULES:
 5. Always end with a disclaimer that your advice is for informational purposes and they should consult their doctor.`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: contents,
-        config: {
-          systemInstruction: systemInstruction
-        }
+      model: "gemini-3.6-flash",
+      contents: contents,
+      config: {
+        systemInstruction: systemInstruction,
+      },
     });
 
     res.status(200).json({
@@ -219,14 +244,17 @@ CRITICAL RULES:
     });
   } catch (error: any) {
     console.error("AI Chat Error:", error);
-    res.status(500).json({ success: false, message: error.stack || error.message || "Failed to process chat" });
+    res.status(500).json({
+      success: false,
+      message: error.stack || error.message || "Failed to process chat",
+    });
   }
 };
 
 export const generateVitalsSummary = async (req: Request, res: Response) => {
   try {
     const { vitals, profile } = req.body;
-    
+
     if (!vitals || !Array.isArray(vitals) || vitals.length === 0) {
       throw new AppError("No vitals data provided for analysis", 400);
     }
@@ -234,11 +262,17 @@ export const generateVitalsSummary = async (req: Request, res: Response) => {
     const prompt = `You are an empathetic, expert medical AI assistant.
 Review the following recent vitals and profile for a patient.
 Profile:
-- Age/DOB: ${profile?.dob ? new Date().getFullYear() - new Date(profile.dob).getFullYear() : 'Unknown'}
-- BMI: ${profile?.bmi || 'Unknown'}
+- Age/DOB: ${profile?.dob ? new Date().getFullYear() - new Date(profile.dob).getFullYear() : "Unknown"}
+- BMI: ${profile?.bmi || "Unknown"}
 
 Recent Vitals (latest first):
-${vitals.slice(0, 10).map((v: any) => `- Date: ${new Date(v.date).toLocaleDateString()}, BP: ${v.bloodPressure}, HR: ${v.heartRate} bpm, Temp: ${v.temperature}°F, SpO2: ${v.spO2}%, Weight: ${v.weight} kg`).join('\n')}
+${vitals
+  .slice(0, 10)
+  .map(
+    (v: any) =>
+      `- Date: ${new Date(v.date).toLocaleDateString()}, BP: ${v.bloodPressure}, HR: ${v.heartRate} bpm, Temp: ${v.temperature}°F, SpO2: ${v.spO2}%, Weight: ${v.weight} kg`,
+  )
+  .join("\n")}
 
 Provide a short, structured predictive health summary highlighting any concerning trends or reassuring stability.
 CRITICAL FORMATTING RULES:
@@ -249,13 +283,13 @@ CRITICAL FORMATTING RULES:
 5. Always end by advising them to discuss these results with their doctor for clinical decisions.`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: [
-            {
-                role: 'user',
-                parts: [{ text: prompt }]
-            }
-        ]
+      model: "gemini-3.6-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }],
+        },
+      ],
     });
 
     res.status(200).json({
@@ -264,6 +298,9 @@ CRITICAL FORMATTING RULES:
     });
   } catch (error: any) {
     console.error("AI Vitals Summary Error:", error);
-    res.status(500).json({ success: false, message: error.message || "Failed to generate health summary" });
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to generate health summary",
+    });
   }
 };

@@ -1,6 +1,18 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { Appointment, AppointmentStatus, AppointmentType, PaymentMethod as ApptPaymentMethod, PaymentStatus as ApptPaymentStatus, User, UserRole, ProfessionalProfile, Invoice, InvoiceStatus, InvoicePaymentMethod } from "../models/index.js";
+import {
+  Appointment,
+  AppointmentStatus,
+  AppointmentType,
+  PaymentMethod as ApptPaymentMethod,
+  PaymentStatus as ApptPaymentStatus,
+  User,
+  UserRole,
+  ProfessionalProfile,
+  Invoice,
+  InvoiceStatus,
+  InvoicePaymentMethod,
+} from "../models/index.js";
 import { z } from "zod";
 import { getIO } from "../socket.js";
 import NodeCache from "node-cache";
@@ -13,17 +25,33 @@ const bookAppointmentSchema = z.object({
   date: z.string().min(1, "Appointment date is required"),
   timeSlot: z.string().min(1, "Time slot is required"),
   reason: z.string().min(3, "Reason for visit is required"),
-  type: z.enum([AppointmentType.IN_PERSON, AppointmentType.TELECONSULT, AppointmentType.EMERGENCY]).default(AppointmentType.IN_PERSON),
-  paymentMethod: z.enum([ApptPaymentMethod.ONLINE, ApptPaymentMethod.CASH]).default(ApptPaymentMethod.CASH),
+  type: z
+    .enum([
+      AppointmentType.IN_PERSON,
+      AppointmentType.TELECONSULT,
+      AppointmentType.EMERGENCY,
+    ])
+    .default(AppointmentType.IN_PERSON),
+  paymentMethod: z
+    .enum([ApptPaymentMethod.ONLINE, ApptPaymentMethod.CASH])
+    .default(ApptPaymentMethod.CASH),
 });
 
 const updateStatusSchema = z.object({
-  status: z.enum([AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED]),
+  status: z.enum([
+    AppointmentStatus.PENDING,
+    AppointmentStatus.CONFIRMED,
+    AppointmentStatus.COMPLETED,
+    AppointmentStatus.CANCELLED,
+  ]),
   notes: z.string().optional(),
 });
 
 // 1. Patient Books Appointment
-export const bookAppointment = async (req: Request, res: Response): Promise<void> => {
+export const bookAppointment = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const patientId = req.user?._id;
 
@@ -37,11 +65,24 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const { doctorId, department, date, timeSlot, reason, type, paymentMethod } = parsed.data;
+    const {
+      doctorId,
+      department,
+      date,
+      timeSlot,
+      reason,
+      type,
+      paymentMethod,
+    } = parsed.data;
 
     // Verify doctor exists
     const doctorObj = await User.findById(doctorId);
-    if (!doctorObj || (doctorObj.role !== UserRole.DOCTOR && doctorObj.role !== UserRole.RADIOLOGIST && doctorObj.role !== UserRole.ADMIN)) {
+    if (
+      !doctorObj ||
+      (doctorObj.role !== UserRole.DOCTOR &&
+        doctorObj.role !== UserRole.RADIOLOGIST &&
+        doctorObj.role !== UserRole.ADMIN)
+    ) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: "Selected physician not found or unavailable",
@@ -62,12 +103,16 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
       if (existingBooking) {
         res.status(StatusCodes.CONFLICT).json({
           success: false,
-          message: "This doctor is already booked for the selected time slot. Please select another slot.",
+          message:
+            "This doctor is already booked for the selected time slot. Please select another slot.",
         });
         return;
       }
 
-      const paymentStatus = paymentMethod === ApptPaymentMethod.ONLINE ? ApptPaymentStatus.PENDING_ONLINE : ApptPaymentStatus.PENDING_CASH;
+      const paymentStatus =
+        paymentMethod === ApptPaymentMethod.ONLINE
+          ? ApptPaymentStatus.PENDING_ONLINE
+          : ApptPaymentStatus.PENDING_CASH;
 
       const apptCreated = await Appointment.create({
         patient: patientId,
@@ -92,16 +137,19 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
         items: [{ description: "OPD Consultation Fee", amount: 400 }],
         totalAmount: 400,
         status: InvoiceStatus.PENDING,
-        paymentMethod: paymentMethod === ApptPaymentMethod.ONLINE ? InvoicePaymentMethod.CARD : undefined,
+        paymentMethod:
+          paymentMethod === ApptPaymentMethod.ONLINE
+            ? InvoicePaymentMethod.CARD
+            : undefined,
         payer: "self",
         paidAt: undefined,
       });
-
     } catch (error: any) {
       if (error.code === 11000) {
         res.status(StatusCodes.CONFLICT).json({
           success: false,
-          message: "This doctor is already booked for the selected time slot. Please select another slot.",
+          message:
+            "This doctor is already booked for the selected time slot. Please select another slot.",
         });
         return;
       }
@@ -114,7 +162,10 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
 
     const io = getIO();
     if (io) {
-      io.emit("appointment_created", { appointmentId: appointment._id, doctorId });
+      io.emit("appointment_created", {
+        appointmentId: appointment._id,
+        doctorId,
+      });
     }
 
     res.status(StatusCodes.CREATED).json({
@@ -132,7 +183,10 @@ export const bookAppointment = async (req: Request, res: Response): Promise<void
 };
 
 // 2. Fetch Patient's Appointments
-export const getPatientAppointments = async (req: Request, res: Response): Promise<void> => {
+export const getPatientAppointments = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const patientId = req.user?._id;
 
@@ -155,7 +209,10 @@ export const getPatientAppointments = async (req: Request, res: Response): Promi
 };
 
 // 3. Fetch Doctor's Assigned Appointments (with Pagination and Sort)
-export const getDoctorAppointments = async (req: Request, res: Response): Promise<void> => {
+export const getDoctorAppointments = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const doctorId = req.user?._id;
     const page = parseInt(req.query.page as string) || 1;
@@ -188,7 +245,10 @@ export const getDoctorAppointments = async (req: Request, res: Response): Promis
 };
 
 // 4. Update Appointment Status & Add Notes (Doctor / Admin / Patient Cancel)
-export const updateAppointmentStatus = async (req: Request, res: Response): Promise<void> => {
+export const updateAppointmentStatus = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { id } = req.params;
     const parsed = updateStatusSchema.safeParse(req.body);
@@ -212,11 +272,15 @@ export const updateAppointmentStatus = async (req: Request, res: Response): Prom
     }
 
     // IDOR Check
-    if (req.user?.role !== UserRole.ADMIN && req.user?.role !== UserRole.RECEPTIONIST) {
+    if (
+      req.user?.role !== UserRole.ADMIN &&
+      req.user?.role !== UserRole.RECEPTIONIST
+    ) {
       if (appointment.doctor.toString() !== req.user?._id?.toString()) {
         res.status(StatusCodes.FORBIDDEN).json({
           success: false,
-          message: "You do not have permission to update this appointment's status.",
+          message:
+            "You do not have permission to update this appointment's status.",
         });
         return;
       }
@@ -235,7 +299,10 @@ export const updateAppointmentStatus = async (req: Request, res: Response): Prom
 
     const io = getIO();
     if (io) {
-      io.emit("appointment_updated", { appointmentId: id, status: parsed.data.status });
+      io.emit("appointment_updated", {
+        appointmentId: id,
+        status: parsed.data.status,
+      });
     }
 
     res.status(StatusCodes.OK).json({
@@ -253,7 +320,10 @@ export const updateAppointmentStatus = async (req: Request, res: Response): Prom
 };
 
 // 5. Get List of Available Doctors for Booking
-export const getAvailableDoctors = async (_req: Request, res: Response): Promise<void> => {
+export const getAvailableDoctors = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const cachedDoctors = doctorCache.get("available_doctors");
     if (cachedDoctors) {
@@ -306,12 +376,18 @@ export const getAvailableDoctors = async (_req: Request, res: Response): Promise
 };
 
 // 6. Patient Cancels Appointment
-export const cancelAppointmentByPatient = async (req: Request, res: Response): Promise<void> => {
+export const cancelAppointmentByPatient = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { id } = req.params;
     const patientId = req.user?._id;
 
-    const appointment = await Appointment.findOne({ _id: id, patient: patientId });
+    const appointment = await Appointment.findOne({
+      _id: id,
+      patient: patientId,
+    });
     if (!appointment) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
@@ -321,14 +397,17 @@ export const cancelAppointmentByPatient = async (req: Request, res: Response): P
     }
 
     if (appointment.status === AppointmentStatus.CANCELLED) {
-      res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Appointment is already cancelled" });
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "Appointment is already cancelled" });
       return;
     }
 
     if (appointment.paymentMethod === ApptPaymentMethod.CASH) {
       res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: "Cash appointments cannot be self-cancelled online. Please contact the reception desk.",
+        message:
+          "Cash appointments cannot be self-cancelled online. Please contact the reception desk.",
       });
       return;
     }
@@ -343,7 +422,8 @@ export const cancelAppointmentByPatient = async (req: Request, res: Response): P
       if (diffMins > 30) {
         res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
-          message: "The 30-minute free cancellation window has passed. Please contact the reception desk.",
+          message:
+            "The 30-minute free cancellation window has passed. Please contact the reception desk.",
         });
         return;
       }

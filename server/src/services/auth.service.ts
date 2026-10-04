@@ -14,10 +14,18 @@ export const normalizeUserRole = (role: string): UserRole => {
   return UserRole.USER;
 };
 
-export const generateToken = (userId: string, role: UserRole, tokenVersion: number = 0): string => {
-  return jwt.sign({ userId, role: normalizeUserRole(role), tokenVersion }, envConfig.JWT_SECRET, {
-    expiresIn: envConfig.JWT_EXPIRES_IN as any,
-  });
+export const generateToken = (
+  userId: string,
+  role: UserRole,
+  tokenVersion: number = 0,
+): string => {
+  return jwt.sign(
+    { userId, role: normalizeUserRole(role), tokenVersion },
+    envConfig.JWT_SECRET,
+    {
+      expiresIn: envConfig.JWT_EXPIRES_IN as any,
+    },
+  );
 };
 
 export const generate6DigitOtp = (): string => {
@@ -27,7 +35,7 @@ export const generate6DigitOtp = (): string => {
 export const sendOtpOrRespond = async (
   email: string,
   otp: string,
-  purpose: "email_verification" | "password_reset" = "email_verification"
+  purpose: "email_verification" | "password_reset" = "email_verification",
 ): Promise<{ success: boolean; message?: string }> => {
   const emailSent = await sendOtpEmail(email, otp, purpose);
   if (emailSent) return { success: true };

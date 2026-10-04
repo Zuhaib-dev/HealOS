@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { generateBioApi } from "@/lib/api/ai";
 import { toast } from "sonner";
 
@@ -55,14 +62,18 @@ export function AIWriterButton({ role, onBioGenerated }: AIWriterButtonProps) {
               <Sparkles className="size-5" /> AI Bio Writer
             </DialogTitle>
             <DialogDescription>
-              Enter a few keywords about yourself, and AI will craft a professional bio.
+              Enter a few keywords about yourself, and AI will craft a
+              professional bio.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <label htmlFor="ai-writer-keywords" className="sr-only">Keywords for bio generation</label>
+            <label htmlFor="ai-writer-keywords" className="sr-only">
+              Keywords for bio generation
+            </label>
             <textarea
               id="ai-writer-keywords"
-              aria-label="Keywords for bio generation" title="Keywords for bio generation"
+              aria-label="Keywords for bio generation"
+              title="Keywords for bio generation"
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
               placeholder="e.g. Cardiologist, 15 years experience, loves tennis, holistic care..."
@@ -84,9 +95,13 @@ export function AIWriterButton({ role, onBioGenerated }: AIWriterButtonProps) {
               className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               {loading ? (
-                <><Loader2 className="size-4 animate-spin" /> Generating...</>
+                <>
+                  <Loader2 className="size-4 animate-spin" /> Generating...
+                </>
               ) : (
-                <><Sparkles className="size-4" /> Generate Bio</>
+                <>
+                  <Sparkles className="size-4" /> Generate Bio
+                </>
               )}
             </button>
           </DialogFooter>

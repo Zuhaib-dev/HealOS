@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { User, UserRole, PatientProfile } from "../models/index.js";
 import { Appointment, AppointmentStatus } from "../models/appointment.model.js";
-import { Invoice, InvoiceStatus, InvoicePaymentMethod } from "../models/invoice.model.js";
+import {
+  Invoice,
+  InvoiceStatus,
+  InvoicePaymentMethod,
+} from "../models/invoice.model.js";
 import { AppError } from "../middleware/error-handler.js";
 import { getIO } from "../socket.js";
 import crypto from "crypto";
@@ -9,19 +13,27 @@ import crypto from "crypto";
 // ==========================================
 // 1. Get Reception Overview Stats
 // ==========================================
-export const getReceptionOverview = async (_req: Request, res: Response): Promise<void> => {
+export const getReceptionOverview = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     // 1. Registrations Today
-    const [appointmentsToday, totalPatients, newPatientsToday] = await Promise.all([
-      Appointment.countDocuments({ date: { $gte: today } }),
-      User.countDocuments({ role: UserRole.PATIENT }),
-      User.countDocuments({ role: UserRole.PATIENT, createdAt: { $gte: today } }),
-    ]);
+    const [appointmentsToday, totalPatients, newPatientsToday] =
+      await Promise.all([
+        Appointment.countDocuments({ date: { $gte: today } }),
+        User.countDocuments({ role: UserRole.PATIENT }),
+        User.countDocuments({
+          role: UserRole.PATIENT,
+          createdAt: { $gte: today },
+        }),
+      ]);
 
-    const totalRegDisplay = appointmentsToday > 0 ? appointmentsToday : Math.max(totalPatients, 1);
+    const totalRegDisplay =
+      appointmentsToday > 0 ? appointmentsToday : Math.max(totalPatients, 1);
     const repeatPatientsToday = Math.max(totalRegDisplay - newPatientsToday, 0);
 
     // 2. Tokens Waiting
@@ -38,10 +50,15 @@ export const getReceptionOverview = async (_req: Request, res: Response): Promis
     if (waitingAppointments.length > 0) {
       const now = Date.now();
       const totalWaitMs = waitingAppointments.reduce((acc, appt) => {
-        const created = appt.createdAt ? new Date(appt.createdAt).getTime() : now - 14 * 60000;
+        const created = appt.createdAt
+          ? new Date(appt.createdAt).getTime()
+          : now - 14 * 60000;
         return acc + Math.max(0, now - created);
       }, 0);
-      avgWaitMin = Math.max(1, Math.round(totalWaitMs / waitingAppointments.length / 60000));
+      avgWaitMin = Math.max(
+        1,
+        Math.round(totalWaitMs / waitingAppointments.length / 60000),
+      );
     }
 
     // 3. Collections Today
@@ -52,14 +69,22 @@ export const getReceptionOverview = async (_req: Request, res: Response): Promis
 
     const totalCollectionsToday = paidInvoicesToday.reduce(
       (sum, inv) => sum + (inv.totalAmount || 0),
-      0
+      0,
     );
-    const cashCount = paidInvoicesToday.filter((i) => i.paymentMethod === InvoicePaymentMethod.CASH).length;
-    const cardCount = paidInvoicesToday.filter((i) => i.paymentMethod === InvoicePaymentMethod.CARD).length;
-    const upiCount = paidInvoicesToday.filter((i) => i.paymentMethod === InvoicePaymentMethod.UPI).length;
+    const cashCount = paidInvoicesToday.filter(
+      (i) => i.paymentMethod === InvoicePaymentMethod.CASH,
+    ).length;
+    const cardCount = paidInvoicesToday.filter(
+      (i) => i.paymentMethod === InvoicePaymentMethod.CARD,
+    ).length;
+    const upiCount = paidInvoicesToday.filter(
+      (i) => i.paymentMethod === InvoicePaymentMethod.UPI,
+    ).length;
 
     // 4. Insurance Captured
-    const totalInvoicesToday = await Invoice.countDocuments({ createdAt: { $gte: today } });
+    const totalInvoicesToday = await Invoice.countDocuments({
+      createdAt: { $gte: today },
+    });
     const insuranceInvoicesToday = await Invoice.countDocuments({
       createdAt: { $gte: today },
       $or: [{ payer: "insurance" }, { insuranceCoverage: { $gt: 0 } }],
@@ -70,16 +95,21 @@ export const getReceptionOverview = async (_req: Request, res: Response): Promis
         : "96.4";
 
     // 5. Recent Queue Snapshot
-    const recentQueue = waitingAppointments.slice(0, 8).map((a: any, idx: number) => ({
-      id: a._id.toString(),
-      tokenNumber: `${(a.department || "OPD").charAt(0).toUpperCase()}-${String(idx + 10).padStart(2, "0")}`,
-      patientName: a.patient?.name || "Walk-in Patient",
-      department: a.department || "General OPD",
-      doctorName: a.doctor?.name || "On-Duty Clinician",
-      timeSlot: a.timeSlot || "Walk-in",
-      status: a.status,
-      waitMinutes: Math.max(1, Math.round((Date.now() - new Date(a.createdAt).getTime()) / 60000)),
-    }));
+    const recentQueue = waitingAppointments
+      .slice(0, 8)
+      .map((a: any, idx: number) => ({
+        id: a._id.toString(),
+        tokenNumber: `${(a.department || "OPD").charAt(0).toUpperCase()}-${String(idx + 10).padStart(2, "0")}`,
+        patientName: a.patient?.name || "Walk-in Patient",
+        department: a.department || "General OPD",
+        doctorName: a.doctor?.name || "On-Duty Clinician",
+        timeSlot: a.timeSlot || "Walk-in",
+        status: a.status,
+        waitMinutes: Math.max(
+          1,
+          Math.round((Date.now() - new Date(a.createdAt).getTime()) / 60000),
+        ),
+      }));
 
     res.status(200).json({
       success: true,
@@ -127,9 +157,21 @@ export const getReceptionOverview = async (_req: Request, res: Response): Promis
 // ==========================================
 // 2. Register Patient & Issue Token
 // ==========================================
-export const registerPatientAndCreateToken = async (req: Request, res: Response) => {
+export const registerPatientAndCreateToken = async (
+  req: Request,
+  res: Response,
+) => {
   try {
-    const { firstName, lastName, phone, dateOfBirth, gender, address, department, payer } = req.body;
+    const {
+      firstName,
+      lastName,
+      phone,
+      dateOfBirth,
+      gender,
+      address,
+      department,
+      payer,
+    } = req.body;
 
     if (!firstName || !phone || !department) {
       throw new AppError("First name, phone, and department are required", 400);
@@ -197,7 +239,10 @@ export const registerPatientAndCreateToken = async (req: Request, res: Response)
     await appointment.save();
 
     // Generate Invoice for OPD Consult
-    const issuedById = (req as any).user?._id || (req as any).user?.id || (await User.findOne({ role: UserRole.ADMIN }))?._id;
+    const issuedById =
+      (req as any).user?._id ||
+      (req as any).user?.id ||
+      (await User.findOne({ role: UserRole.ADMIN }))?._id;
     const invoice = new Invoice({
       patient: patient._id,
       issuedBy: issuedById,
@@ -214,7 +259,11 @@ export const registerPatientAndCreateToken = async (req: Request, res: Response)
     try {
       const io = getIO();
       io.emit("reception:overview_updated");
-      io.emit("reception:token_created", { token, patientName: name, department });
+      io.emit("reception:token_created", {
+        token,
+        patientName: name,
+        department,
+      });
     } catch {}
 
     res.status(201).json({
@@ -259,7 +308,10 @@ export const getQueue = async (_req: Request, res: Response): Promise<void> => {
 // ==========================================
 // 4. Get Pending Invoices
 // ==========================================
-export const getPendingBills = async (_req: Request, res: Response): Promise<void> => {
+export const getPendingBills = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const invoices = await Invoice.find({ status: InvoiceStatus.PENDING })
       .populate("patient", "name firstName lastName phone")
@@ -298,7 +350,10 @@ export const payBill = async (req: Request, res: Response) => {
     try {
       const io = getIO();
       io.emit("reception:overview_updated");
-      io.emit("reception:bill_paid", { invoiceId: invoice._id, amount: invoice.totalAmount });
+      io.emit("reception:bill_paid", {
+        invoiceId: invoice._id,
+        amount: invoice.totalAmount,
+      });
     } catch {}
 
     res.status(200).json({

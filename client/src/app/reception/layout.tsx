@@ -12,23 +12,26 @@ const sections = [
   { id: "counter", label: "Front Counter", icon: Monitor },
 ];
 
-export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
+export default function WorkspaceLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <RoleGuard allowedRoles={["RECEPTIONIST"]}>
       <WorkspaceShell
-      navId="reception"
-      breadcrumb="Access & flow / Front desk (OPD)"
-      searchPlaceholder="Search MRN, mobile, ABHA"
-      sections={sections}
-      
-      
-      user={{ name: "Front Desk", role: "Front desk", initials: "FD" }}
-      statusTitle="Counter"
-      statusLine="Counter 2 open"
-      statusNote="23 tokens waiting · float balanced"
-    >
-      {children}
-    </WorkspaceShell>
+        navId="reception"
+        breadcrumb="Access & flow / Front desk (OPD)"
+        searchPlaceholder="Search MRN, mobile, ABHA"
+        sections={sections}
+
+        user={{ name: "Front Desk", role: "Front desk", initials: "FD" }}
+        statusTitle="Counter"
+        statusLine="Counter 2 open"
+        statusNote="23 tokens waiting · float balanced"
+      >
+        {children}
+      </WorkspaceShell>
     </RoleGuard>
   );
 }

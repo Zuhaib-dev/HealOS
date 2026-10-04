@@ -30,11 +30,19 @@ export interface VerifyPaymentPayload {
 }
 
 export const createRazorpayOrderApi = async (payload: CreateOrderPayload) => {
-  const response = await apiClient.post<CreateOrderResponse>("/payment/create-order", payload);
+  const response = await apiClient.post<CreateOrderResponse>(
+    "/payment/create-order",
+    payload,
+  );
   return response.data;
 };
 
-export const verifyRazorpayPaymentApi = async (payload: VerifyPaymentPayload) => {
-  const response = await apiClient.post<{ success: boolean; message: string }>("/payment/verify", payload);
+export const verifyRazorpayPaymentApi = async (
+  payload: VerifyPaymentPayload,
+) => {
+  const response = await apiClient.post<{ success: boolean; message: string }>(
+    "/payment/verify",
+    payload,
+  );
   return response.data;
 };

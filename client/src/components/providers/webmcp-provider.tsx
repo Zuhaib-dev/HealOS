@@ -18,7 +18,8 @@ export function WebMcpProvider() {
       tools: [
         {
           name: "search_clinical_records",
-          description: "Search patient directory, clinical orders, and medical charts.",
+          description:
+            "Search patient directory, clinical orders, and medical charts.",
           parameters: {
             type: "object",
             required: ["query"],
@@ -43,7 +44,9 @@ export function WebMcpProvider() {
       ],
       invokeTool: async (toolName: string, args: Record<string, unknown>) => {
         if (toolName === "search_clinical_records") {
-          const res = await fetch(`/api/v1/patients?query=${encodeURIComponent(String(args.query || ""))}`);
+          const res = await fetch(
+            `/api/v1/patients?query=${encodeURIComponent(String(args.query || ""))}`,
+          );
           return res.json();
         }
         if (toolName === "book_clinic_appointment") {
@@ -60,10 +63,13 @@ export function WebMcpProvider() {
 
     // Register on both navigator and window/document for agent detection
     try {
-      (window as unknown as Record<string, unknown>).modelContext = modelContext;
-      (document as unknown as Record<string, unknown>).modelContext = modelContext;
+      (window as unknown as Record<string, unknown>).modelContext =
+        modelContext;
+      (document as unknown as Record<string, unknown>).modelContext =
+        modelContext;
       if (typeof navigator !== "undefined") {
-        (navigator as unknown as Record<string, unknown>).modelContext = modelContext;
+        (navigator as unknown as Record<string, unknown>).modelContext =
+          modelContext;
       }
     } catch {
       // Ignore if navigator is frozen

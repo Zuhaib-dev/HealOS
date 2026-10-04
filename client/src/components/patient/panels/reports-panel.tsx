@@ -35,7 +35,11 @@ import {
 } from "@/lib/api/onboarding";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import { fetchPatientDashboardApi, PatientDashboardData, payInvoiceApi } from "@/lib/api/patient";
+import {
+  fetchPatientDashboardApi,
+  PatientDashboardData,
+  payInvoiceApi,
+} from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
 
@@ -54,12 +58,16 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
@@ -79,7 +87,11 @@ function Trend({ series }: { series: number[] }) {
     })
     .join(" ");
   return (
-    <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="h-10 w-full">
+    <svg
+      viewBox="0 0 100 30"
+      preserveAspectRatio="none"
+      className="h-10 w-full"
+    >
       <motion.polyline
         points={pts}
         fill="none"
@@ -104,12 +116,17 @@ export function ReportsPanel() {
 
   // AI Explainer State
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-  const [selectedReportForAi, setSelectedReportForAi] = useState<{name: string, url: string} | null>(null);
+  const [selectedReportForAi, setSelectedReportForAi] = useState<{
+    name: string;
+    url: string;
+  } | null>(null);
   const [aiExplanation, setAiExplanation] = useState<string>("");
   const [isExplaining, setIsExplaining] = useState(false);
-  
+
   // Chat State
-  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
+  const [chatMessages, setChatMessages] = useState<
+    { role: "user" | "model"; text: string }[]
+  >([]);
   const [chatInput, setChatInput] = useState("");
   const [isChatting, setIsChatting] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -134,7 +151,8 @@ export function ReportsPanel() {
 
     try {
       const token = useAuthStore.getState().token;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
       const res = await fetch(`${apiUrl}/ai/explain-report`, {
         method: "POST",
         headers: {
@@ -164,19 +182,20 @@ export function ReportsPanel() {
 
     const userMessage = chatInput.trim();
     setChatInput("");
-    setChatMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setChatMessages((prev) => [...prev, { role: "user", text: userMessage }]);
     setIsChatting(true);
 
     try {
       const token = useAuthStore.getState().token;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
-      
-      // We pass the initial prompt implicitly as history to Gemini if we wanted to, 
-      // but to keep it simple, we just pass the user's explicit chat questions 
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+
+      // We pass the initial prompt implicitly as history to Gemini if we wanted to,
+      // but to keep it simple, we just pass the user's explicit chat questions
       // + the file URL so Gemini can re-read the file in the new context.
       const apiMessages = [
         ...chatMessages,
-        { role: 'user', text: userMessage }
+        { role: "user", text: userMessage },
       ];
 
       const res = await fetch(`${apiUrl}/ai/chat-report`, {
@@ -185,21 +204,30 @@ export function ReportsPanel() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           messages: apiMessages,
-          fileUrl: selectedReportForAi.url
+          fileUrl: selectedReportForAi.url,
         }),
       });
 
       const json = await res.json();
       if (res.ok && json.success) {
-        setChatMessages(prev => [...prev, { role: 'model', text: json.text }]);
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "model", text: json.text },
+        ]);
       } else {
         throw new Error(json.message || "Failed to get response");
       }
     } catch (err: any) {
       toast.error(err.message || "Chat error occurred");
-      setChatMessages(prev => [...prev, { role: 'model', text: "Sorry, I encountered an error. Please try again." }]);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "model",
+          text: "Sorry, I encountered an error. Please try again.",
+        },
+      ]);
     } finally {
       setIsChatting(false);
     }
@@ -223,7 +251,8 @@ export function ReportsPanel() {
       }
 
       const token = useAuthStore.getState().token;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
       const res = await fetch(`${apiUrl}/patient/upload`, {
         method: "POST",
         headers: {
@@ -254,35 +283,43 @@ export function ReportsPanel() {
   const getFullFileUrl = (url: string | null | undefined) => {
     if (!url) return null;
     if (url.startsWith("http")) return url;
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:5001";
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") ||
+      "http://localhost:5001";
     return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
   };
 
   const allRecords = [
-    ...orders.filter((o: any) => o.status !== "REPORTED").map((o: any) => ({
-      id: o._id,
-      name: o.testName,
-      kind: o.testType,
-      dept: o.doctor?.name ? `Dr. ${o.doctor.name}` : "Doctor",
-      date: o.createdAt ? new Date(o.createdAt).toISOString().split("T")[0] : "N/A",
-      status: "pending",
-      flagged: false,
-      pages: 0,
-      size: "",
-      fileUrl: getFullFileUrl(o.fileUrl)
-    })),
+    ...orders
+      .filter((o: any) => o.status !== "REPORTED")
+      .map((o: any) => ({
+        id: o._id,
+        name: o.testName,
+        kind: o.testType,
+        dept: o.doctor?.name ? `Dr. ${o.doctor.name}` : "Doctor",
+        date: o.createdAt
+          ? new Date(o.createdAt).toISOString().split("T")[0]
+          : "N/A",
+        status: "pending",
+        flagged: false,
+        pages: 0,
+        size: "",
+        fileUrl: getFullFileUrl(o.fileUrl),
+      })),
     ...reports.map((r: any) => ({
       id: r._id,
       name: r.order?.testName || r.title || "Uploaded Report",
       kind: r.order?.testType || "REPORT",
       dept: r.uploadedBy?.name ? r.uploadedBy.name : "Lab / Radiology",
-      date: r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "N/A",
+      date: r.createdAt
+        ? new Date(r.createdAt).toISOString().split("T")[0]
+        : "N/A",
       status: "ready",
       flagged: false, // We could add logic for flags later
       pages: 1,
       size: "PDF",
-      fileUrl: getFullFileUrl(r.fileUrl)
-    }))
+      fileUrl: getFullFileUrl(r.fileUrl),
+    })),
   ];
 
   const rows = allRecords.filter((r) =>
@@ -299,10 +336,13 @@ export function ReportsPanel() {
       />
 
       <div className="hairline-b flex flex-wrap items-center gap-3 px-5 py-4 sm:px-8">
-        <label htmlFor="patient-reports-filter" className="sr-only">Filter reports</label>
+        <label htmlFor="patient-reports-filter" className="sr-only">
+          Filter reports
+        </label>
         <input
           id="patient-reports-filter"
-          aria-label="Filter reports" title="Filter reports"
+          aria-label="Filter reports"
+          title="Filter reports"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Filter reports"
@@ -333,7 +373,9 @@ export function ReportsPanel() {
                     <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
                       <FileText className="size-6 text-muted-foreground/60" />
                     </div>
-                    <p className="mono-label text-muted-foreground">No records found.</p>
+                    <p className="mono-label text-muted-foreground">
+                      No records found.
+                    </p>
                   </div>
                 </td>
               </tr>
@@ -353,7 +395,9 @@ export function ReportsPanel() {
                     )}
                   </Td>
                   <Td>
-                    <span className="mono-label text-muted-foreground">{r.kind}</span>
+                    <span className="mono-label text-muted-foreground">
+                      {r.kind}
+                    </span>
                   </Td>
                   <Td>
                     <span className="mono-label">{r.dept}</span>
@@ -362,9 +406,7 @@ export function ReportsPanel() {
                     <span className="mono-label">{r.date}</span>
                   </Td>
                   <Td>
-                    <Pill
-                      tone={r.status === "ready" ? "ok" : "warn"}
-                    >
+                    <Pill tone={r.status === "ready" ? "ok" : "warn"}>
                       {r.status}
                     </Pill>
                   </Td>
@@ -372,36 +414,68 @@ export function ReportsPanel() {
                     <div className="text-muted-foreground flex items-center gap-3">
                       {r.fileUrl ? (
                         <>
-                          <a href={r.fileUrl} target="_blank" rel="noopener noreferrer" aria-label="View" title="View Report" className="hover:text-foreground">
+                          <a
+                            href={r.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="View"
+                            title="View Report"
+                            className="hover:text-foreground"
+                          >
                             <Eye className="size-3.5" />
                           </a>
-                          <a href={r.fileUrl} download aria-label="Download" title="Download Report" className="hover:text-foreground">
+                          <a
+                            href={r.fileUrl}
+                            download
+                            aria-label="Download"
+                            title="Download Report"
+                            className="hover:text-foreground"
+                          >
                             <Download className="size-3.5" />
                           </a>
                         </>
                       ) : (
                         <>
-                          <button type="button" aria-label="View" title="View Report" className="hover:text-foreground opacity-50 cursor-not-allowed">
+                          <button
+                            type="button"
+                            aria-label="View"
+                            title="View Report"
+                            className="hover:text-foreground opacity-50 cursor-not-allowed"
+                          >
                             <Eye className="size-3.5" />
                           </button>
-                          <button type="button" aria-label="Download" title="Download Report" className="hover:text-foreground opacity-50 cursor-not-allowed">
+                          <button
+                            type="button"
+                            aria-label="Download"
+                            title="Download Report"
+                            className="hover:text-foreground opacity-50 cursor-not-allowed"
+                          >
                             <Download className="size-3.5" />
                           </button>
                         </>
                       )}
                       {r.fileUrl && (
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           aria-label="Explain with AI"
                           title="Explain with AI"
                           className="hover:text-amber-500 text-amber-500/70 transition-colors flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-full"
-                          onClick={() => handleExplainReport(r.name, r.fileUrl!)}
+                          onClick={() =>
+                            handleExplainReport(r.name, r.fileUrl!)
+                          }
                         >
                           <Sparkles className="size-3.5" />
-                          <span className="text-[10px] uppercase font-bold tracking-wider">Explain</span>
+                          <span className="text-[10px] uppercase font-bold tracking-wider">
+                            Explain
+                          </span>
                         </button>
                       )}
-                      <button type="button" aria-label="Share" title="Share Report" className="hover:text-foreground">
+                      <button
+                        type="button"
+                        aria-label="Share"
+                        title="Share Report"
+                        className="hover:text-foreground"
+                      >
                         <Share2 className="size-3.5" />
                       </button>
                     </div>
@@ -419,27 +493,35 @@ export function ReportsPanel() {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">Bring your own documents</p>
             <p className="text-muted-foreground mt-1 text-sm">
-              Outside reports, old prescriptions or insurance papers — add them so your team sees
-              them before the visit. PDF or photo, up to 25 MB.
+              Outside reports, old prescriptions or insurance papers — add them
+              so your team sees them before the visit. PDF or photo, up to 25
+              MB.
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <label htmlFor="patient-upload-report-title" className="sr-only">Report name</label>
-            <input 
+            <label htmlFor="patient-upload-report-title" className="sr-only">
+              Report name
+            </label>
+            <input
               id="patient-upload-report-title"
-              aria-label="Report name (optional)" title="Report name (optional)"
-              type="text" 
-              placeholder="Report name (optional)" 
+              aria-label="Report name (optional)"
+              title="Report name (optional)"
+              type="text"
+              placeholder="Report name (optional)"
               value={uploadTitle}
-              onChange={e => setUploadTitle(e.target.value)}
+              onChange={(e) => setUploadTitle(e.target.value)}
               disabled={isUploading}
               className="hairline mono-label placeholder:text-muted-foreground bg-transparent px-3 py-2 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm w-48 text-xs"
             />
-            <label htmlFor="patient-report-file-input" className={`relative overflow-hidden cursor-pointer flex items-center justify-center px-4 py-2 bg-foreground text-background font-bold text-xs uppercase tracking-wider rounded-lg transition-all ${isUploading ? "opacity-70 cursor-wait" : "hover:bg-foreground/90"}`}>
+            <label
+              htmlFor="patient-report-file-input"
+              className={`relative overflow-hidden cursor-pointer flex items-center justify-center px-4 py-2 bg-foreground text-background font-bold text-xs uppercase tracking-wider rounded-lg transition-all ${isUploading ? "opacity-70 cursor-wait" : "hover:bg-foreground/90"}`}
+            >
               {isUploading ? "Uploading..." : "Upload"}
               <input
                 id="patient-report-file-input"
-                aria-label="Upload document file" title="Upload document file"
+                aria-label="Upload document file"
+                title="Upload document file"
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png,.dcm"
                 className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
@@ -463,11 +545,12 @@ export function ReportsPanel() {
             <div className="flex min-h-full items-center justify-center p-4 sm:p-6 text-center">
               <button
                 type="button"
-                aria-label="Close dialog backdrop" title="Close dialog backdrop"
+                aria-label="Close dialog backdrop"
+                title="Close dialog backdrop"
                 onClick={() => setIsAiModalOpen(false)}
                 className="fixed inset-0 w-full h-full bg-transparent border-0 cursor-default outline-none"
               />
-              
+
               <motion.div
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -485,7 +568,10 @@ export function ReportsPanel() {
                         AI Lab Report Explainer
                       </h2>
                       <p className="text-sm text-muted-foreground mt-0.5">
-                        Simplifying: <span className="font-medium text-foreground">{selectedReportForAi.name}</span>
+                        Simplifying:{" "}
+                        <span className="font-medium text-foreground">
+                          {selectedReportForAi.name}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -505,46 +591,100 @@ export function ReportsPanel() {
                         <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl animate-pulse" />
                         <Loader2 className="size-10 animate-spin text-amber-500 relative z-10" />
                       </div>
-                      <p className="text-sm font-medium text-foreground/80 animate-pulse">Gemini is translating medical jargon...</p>
+                      <p className="text-sm font-medium text-foreground/80 animate-pulse">
+                        Gemini is translating medical jargon...
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-4 max-w-none text-foreground/90 leading-relaxed">
-                      {aiExplanation.split('\\n').map((line, i) => {
+                      {aiExplanation.split("\\n").map((line, i) => {
                         const trimmedLine = line.trim();
-                        if (trimmedLine === '' || trimmedLine.match(/^[-_*]{3,}$/)) return null; // Skip empty lines and horizontal rules
-                        
-                        if (trimmedLine.startsWith('### ')) {
-                          return <h3 key={i} className="text-lg font-display font-semibold text-foreground mt-8 mb-3 flex items-center gap-2">{trimmedLine.replace('### ', '')}</h3>;
+                        if (
+                          trimmedLine === "" ||
+                          trimmedLine.match(/^[-_*]{3,}$/)
+                        )
+                          return null; // Skip empty lines and horizontal rules
+
+                        if (trimmedLine.startsWith("### ")) {
+                          return (
+                            <h3
+                              key={i}
+                              className="text-lg font-display font-semibold text-foreground mt-8 mb-3 flex items-center gap-2"
+                            >
+                              {trimmedLine.replace("### ", "")}
+                            </h3>
+                          );
                         }
-                        if (trimmedLine.startsWith('## ')) {
-                          return <h2 key={i} className="text-xl font-display font-bold text-foreground mt-8 mb-4 pb-2 border-b border-border/50">{trimmedLine.replace('## ', '')}</h2>;
+                        if (trimmedLine.startsWith("## ")) {
+                          return (
+                            <h2
+                              key={i}
+                              className="text-xl font-display font-bold text-foreground mt-8 mb-4 pb-2 border-b border-border/50"
+                            >
+                              {trimmedLine.replace("## ", "")}
+                            </h2>
+                          );
                         }
-                        if (trimmedLine.startsWith('# ')) {
-                          return <h1 key={i} className="text-2xl font-display font-bold text-foreground mt-8 mb-4">{trimmedLine.replace('# ', '')}</h1>;
+                        if (trimmedLine.startsWith("# ")) {
+                          return (
+                            <h1
+                              key={i}
+                              className="text-2xl font-display font-bold text-foreground mt-8 mb-4"
+                            >
+                              {trimmedLine.replace("# ", "")}
+                            </h1>
+                          );
                         }
-                        if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
+                        if (
+                          trimmedLine.startsWith("* ") ||
+                          trimmedLine.startsWith("- ")
+                        ) {
                           const listItemText = trimmedLine.substring(2);
                           // Parse bold in lists
-                          const parts = listItemText.split(/(\\*\\*.*?\\*\\*)/g);
+                          const parts =
+                            listItemText.split(/(\\*\\*.*?\\*\\*)/g);
                           return (
-                            <li key={i} className="ml-6 mb-2 list-disc pl-1 marker:text-amber-500">
+                            <li
+                              key={i}
+                              className="ml-6 mb-2 list-disc pl-1 marker:text-amber-500"
+                            >
                               {parts.map((part, j) => {
-                                if (part.startsWith('**') && part.endsWith('**')) {
-                                  return <strong key={j} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
+                                if (
+                                  part.startsWith("**") &&
+                                  part.endsWith("**")
+                                ) {
+                                  return (
+                                    <strong
+                                      key={j}
+                                      className="text-foreground font-semibold"
+                                    >
+                                      {part.slice(2, -2)}
+                                    </strong>
+                                  );
                                 }
                                 return part;
                               })}
                             </li>
                           );
                         }
-                        
+
                         // Basic bold parsing for paragraphs
                         const parts = trimmedLine.split(/(\\*\\*.*?\\*\\*)/g);
                         return (
                           <p key={i} className="mb-3 text-[15px]">
                             {parts.map((part, j) => {
-                              if (part.startsWith('**') && part.endsWith('**')) {
-                                return <strong key={j} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
+                              if (
+                                part.startsWith("**") &&
+                                part.endsWith("**")
+                              ) {
+                                return (
+                                  <strong
+                                    key={j}
+                                    className="text-foreground font-semibold"
+                                  >
+                                    {part.slice(2, -2)}
+                                  </strong>
+                                );
                               }
                               return part;
                             })}
@@ -553,49 +693,61 @@ export function ReportsPanel() {
                       })}
                     </div>
                   )}
-                  
+
                   {/* Chat History */}
-                  {!isExplaining && aiExplanation && chatMessages.length > 0 && (
-                    <div className="mt-8 space-y-4 border-t border-border/50 pt-6">
-                      {chatMessages.map((msg, idx) => (
-                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                            msg.role === 'user' 
-                              ? 'bg-foreground text-background rounded-br-sm' 
-                              : 'bg-muted border border-border/50 text-foreground/90 rounded-bl-sm'
-                          }`}>
-                            <p className="text-[15px] leading-relaxed">{msg.text}</p>
+                  {!isExplaining &&
+                    aiExplanation &&
+                    chatMessages.length > 0 && (
+                      <div className="mt-8 space-y-4 border-t border-border/50 pt-6">
+                        {chatMessages.map((msg, idx) => (
+                          <div
+                            key={idx}
+                            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                          >
+                            <div
+                              className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                                msg.role === "user"
+                                  ? "bg-foreground text-background rounded-br-sm"
+                                  : "bg-muted border border-border/50 text-foreground/90 rounded-bl-sm"
+                              }`}
+                            >
+                              <p className="text-[15px] leading-relaxed">
+                                {msg.text}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                      {isChatting && (
-                        <div className="flex justify-start">
-                          <div className="bg-muted border border-border/50 rounded-2xl rounded-bl-sm px-4 py-4 flex items-center gap-2">
-                            <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                            <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                            <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce" />
+                        ))}
+                        {isChatting && (
+                          <div className="flex justify-start">
+                            <div className="bg-muted border border-border/50 rounded-2xl rounded-bl-sm px-4 py-4 flex items-center gap-2">
+                              <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                              <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                              <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce" />
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      <div ref={chatEndRef} />
-                    </div>
-                  )}
+                        )}
+                        <div ref={chatEndRef} />
+                      </div>
+                    )}
                 </div>
 
                 {/* Chat Input */}
                 {!isExplaining && aiExplanation && (
                   <div className="p-4 sm:p-5 border-t border-border/50 bg-background/50 backdrop-blur-sm">
-                    <form onSubmit={handleSendChatMessage} className="flex items-center gap-3">
-                      <input 
-                        type="text" 
+                    <form
+                      onSubmit={handleSendChatMessage}
+                      className="flex items-center gap-3"
+                    >
+                      <input
+                        type="text"
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         placeholder="Ask a follow-up question..."
                         className="flex-1 bg-muted/50 border border-border/50 rounded-full px-5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-shadow placeholder:text-muted-foreground/70"
                         disabled={isChatting}
                       />
-                      <button 
-                        type="submit" 
+                      <button
+                        type="submit"
                         disabled={!chatInput.trim() || isChatting}
                         className="size-10 shrink-0 rounded-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:hover:bg-amber-500 text-white flex items-center justify-center transition-colors"
                       >
@@ -609,7 +761,8 @@ export function ReportsPanel() {
                 <div className="bg-muted/50 border-t border-border p-4 sm:p-5 flex items-center justify-center gap-2">
                   <TriangleAlert className="size-4 text-amber-500/70" />
                   <p className="text-xs text-muted-foreground font-medium">
-                    This explanation was generated by AI and is not medical advice. Always consult your doctor.
+                    This explanation was generated by AI and is not medical
+                    advice. Always consult your doctor.
                   </p>
                 </div>
               </motion.div>

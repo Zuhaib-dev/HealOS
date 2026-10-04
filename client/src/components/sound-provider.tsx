@@ -9,7 +9,9 @@ export function SoundProvider() {
     const playBeep = () => {
       try {
         if (!audioCtx) {
-          audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          audioCtx = new (
+            window.AudioContext || (window as any).webkitAudioContext
+          )();
         }
 
         if (audioCtx.state === "suspended") {
@@ -27,7 +29,7 @@ export function SoundProvider() {
 
         // 2. Create gain node for volume
         const gainNode = audioCtx.createGain();
-        gainNode.gain.value = 0.80; // Increased by ~30% for a much louder click (was 0.25)
+        gainNode.gain.value = 0.8; // Increased by ~30% for a much louder click (was 0.25)
 
         // 3. Connect: buffer -> filter -> gain -> speakers
         filter.connect(gainNode);
@@ -35,7 +37,11 @@ export function SoundProvider() {
 
         // 4. Create a very short noise buffer (4ms of audio)
         const bufferSize = Math.floor(0.004 * audioCtx.sampleRate);
-        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const noiseBuffer = audioCtx.createBuffer(
+          1,
+          bufferSize,
+          audioCtx.sampleRate,
+        );
         const channelData = noiseBuffer.getChannelData(0);
 
         // 5. Fill with exponentially decaying white noise (the secret sauce!)
@@ -56,7 +62,7 @@ export function SoundProvider() {
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      
+
       // We only want to play the beep if a button, link, or clickable element is clicked
       if (
         target.closest("button") ||

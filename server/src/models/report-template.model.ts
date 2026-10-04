@@ -12,7 +12,10 @@ const reportTemplateSchema = new Schema<IReportTemplate>(
     label: { type: String, required: true },
     body: { type: String, required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const ReportTemplate = mongoose.model<IReportTemplate>("ReportTemplate", reportTemplateSchema);
+export const ReportTemplate = mongoose.model<IReportTemplate>(
+  "ReportTemplate",
+  reportTemplateSchema,
+);

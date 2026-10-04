@@ -16,13 +16,21 @@ const callBellSchema = new Schema(
   {
     patient: { type: String, required: true },
     bed: { type: String, required: true },
-    type: { type: String, enum: ["call bell", "bathroom", "pain", "IV alarm", "emergency"], required: true },
+    type: {
+      type: String,
+      enum: ["call bell", "bathroom", "pain", "IV alarm", "emergency"],
+      required: true,
+    },
     raised: { type: String, required: true },
     waitedSec: { type: Number, default: 0 },
-    state: { type: String, enum: ["waiting", "accepted", "closed"], default: "waiting" },
+    state: {
+      type: String,
+      enum: ["waiting", "accepted", "closed"],
+      default: "waiting",
+    },
     acceptedBy: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const CallBell = mongoose.model<ICallBell>("CallBell", callBellSchema);

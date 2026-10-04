@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useState, useEffect } from "react";
-import { ProfessionalProfileData, fetchPendingOnboardingRequestsApi, approveOnboardingRequestApi, rejectOnboardingRequestApi } from "@/lib/api/onboarding";
+import {
+  ProfessionalProfileData,
+  fetchPendingOnboardingRequestsApi,
+  approveOnboardingRequestApi,
+  rejectOnboardingRequestApi,
+} from "@/lib/api/onboarding";
 import { toast } from "sonner";
 import { Check, X, ClipboardCheck } from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
@@ -15,11 +20,25 @@ function getApiErrorMessage(error: unknown, fallback: string) {
 }
 
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="mono-label text-muted-foreground bg-muted/40 px-5 py-4 text-left font-semibold border-b border-border/60 backdrop-blur-md sticky top-0">{children}</th>;
+  return (
+    <th className="mono-label text-muted-foreground bg-muted/40 px-5 py-4 text-left font-semibold border-b border-border/60 backdrop-blur-md sticky top-0">
+      {children}
+    </th>
+  );
 }
 
-function Td({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <td className={`px-5 py-4 align-middle text-sm ${className}`}>{children}</td>;
+function Td({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <td className={`px-5 py-4 align-middle text-sm ${className}`}>
+      {children}
+    </td>
+  );
 }
 
 function TablePanel({ children }: { children: React.ReactNode }) {
@@ -31,7 +50,6 @@ function TablePanel({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
 
 /* ---------- 02 approvals ---------- */
 
@@ -65,7 +83,9 @@ export function ApprovalsPanel() {
       setActionId(id);
       const res = await approveOnboardingRequestApi(id);
       if (res.success) {
-        toast.success(res.message || "Clinician request approved! Role upgraded.");
+        toast.success(
+          res.message || "Clinician request approved! Role upgraded.",
+        );
         await loadRequests();
       }
     } catch (err: unknown) {
@@ -78,7 +98,9 @@ export function ApprovalsPanel() {
   const handleReject = async (id: string) => {
     const reason = window.prompt("Enter rejection reason for this applicant:");
     if (!reason || reason.trim().length < 5) {
-      toast.error("Please enter a valid rejection reason (at least 5 characters).");
+      toast.error(
+        "Please enter a valid rejection reason (at least 5 characters).",
+      );
       return;
     }
 
@@ -117,57 +139,78 @@ export function ApprovalsPanel() {
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={5} className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse">
+              <td
+                colSpan={5}
+                className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse"
+              >
                 Loading credential queue...
               </td>
             </tr>
           ) : requests.length > 0 ? (
             requests.map((reqItem) => {
-                const userObj = typeof reqItem.user === "object" ? reqItem.user : null;
-                const applicantName = userObj?.name || "Applicant";
-                const applicantEmail = userObj?.email || "";
-                const isBusy = actionId === reqItem._id;
+              const userObj =
+                typeof reqItem.user === "object" ? reqItem.user : null;
+              const applicantName = userObj?.name || "Applicant";
+              const applicantEmail = userObj?.email || "";
+              const isBusy = actionId === reqItem._id;
 
-                return (
-                  <tr key={reqItem._id} className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
-                    <Td>
-                      <span className="font-mono text-muted-foreground">{reqItem._id.slice(-6).toUpperCase()}</span>
-                    </Td>
-                    <Td>
-                      <p className="font-medium group-hover:text-primary transition-colors">{applicantName}</p>
-                      <p className="mono-label text-muted-foreground">{reqItem.requestedRole} · {reqItem.degree}</p>
-                      <p className="text-[11px] text-muted-foreground font-mono">{applicantEmail}</p>
-                    </Td>
-                    <Td>
-                      <span className="mono-label font-bold text-primary">{reqItem.licenseNumber}</span>
-                      <p className="text-[11px] text-muted-foreground">{reqItem.specialization} ({reqItem.experienceYears}y exp)</p>
-                    </Td>
-                    <Td>
-                      <span className="mono-label text-muted-foreground">{new Date(reqItem.createdAt).toLocaleDateString()}</span>
-                    </Td>
-                    <Td>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => handleApprove(reqItem._id)}
-                          className="hairline mono-label bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 flex items-center gap-1.5 px-3 py-1.5 hover:opacity-75 hover:-translate-y-0.5 cursor-pointer rounded-md transition-all disabled:opacity-50"
-                        >
-                          <Check className="size-3" /> Approve
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => handleReject(reqItem._id)}
-                          className="hairline mono-label text-destructive bg-destructive/10 border-destructive/30 flex items-center gap-1.5 px-3 py-1.5 hover:opacity-75 hover:-translate-y-0.5 cursor-pointer rounded-md transition-all disabled:opacity-50"
-                        >
-                          <X className="size-3" /> Reject
-                        </button>
-                      </div>
-                    </Td>
-                  </tr>
-                );
-              })
+              return (
+                <tr
+                  key={reqItem._id}
+                  className="border-b border-border/40 hover:bg-muted/30 transition-colors group"
+                >
+                  <Td>
+                    <span className="font-mono text-muted-foreground">
+                      {reqItem._id.slice(-6).toUpperCase()}
+                    </span>
+                  </Td>
+                  <Td>
+                    <p className="font-medium group-hover:text-primary transition-colors">
+                      {applicantName}
+                    </p>
+                    <p className="mono-label text-muted-foreground">
+                      {reqItem.requestedRole} · {reqItem.degree}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground font-mono">
+                      {applicantEmail}
+                    </p>
+                  </Td>
+                  <Td>
+                    <span className="mono-label font-bold text-primary">
+                      {reqItem.licenseNumber}
+                    </span>
+                    <p className="text-[11px] text-muted-foreground">
+                      {reqItem.specialization} ({reqItem.experienceYears}y exp)
+                    </p>
+                  </Td>
+                  <Td>
+                    <span className="mono-label text-muted-foreground">
+                      {new Date(reqItem.createdAt).toLocaleDateString()}
+                    </span>
+                  </Td>
+                  <Td>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => handleApprove(reqItem._id)}
+                        className="hairline mono-label bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 flex items-center gap-1.5 px-3 py-1.5 hover:opacity-75 hover:-translate-y-0.5 cursor-pointer rounded-md transition-all disabled:opacity-50"
+                      >
+                        <Check className="size-3" /> Approve
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => handleReject(reqItem._id)}
+                        className="hairline mono-label text-destructive bg-destructive/10 border-destructive/30 flex items-center gap-1.5 px-3 py-1.5 hover:opacity-75 hover:-translate-y-0.5 cursor-pointer rounded-md transition-all disabled:opacity-50"
+                      >
+                        <X className="size-3" /> Reject
+                      </button>
+                    </div>
+                  </Td>
+                </tr>
+              );
+            })
           ) : (
             <tr>
               <td colSpan={5} className="p-16 text-center">
@@ -175,7 +218,9 @@ export function ApprovalsPanel() {
                   <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
                     <ClipboardCheck className="size-6 text-muted-foreground/60" />
                   </div>
-                  <p className="mono-label text-muted-foreground">No pending credential requests.</p>
+                  <p className="mono-label text-muted-foreground">
+                    No pending credential requests.
+                  </p>
                 </div>
               </td>
             </tr>

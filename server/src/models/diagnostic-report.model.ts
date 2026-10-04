@@ -13,9 +13,14 @@ export interface IDiagnosticReport extends Document {
   comments?: string;
   findings?: string; // Summary of results
   isCritical?: boolean; // Flag to alert doctor immediately
-  
+
   // Radiology specific fields for documents
-  kind?: "PDF report" | "DICOM series" | "Scanned request" | "Prior report" | "Consent";
+  kind?:
+    | "PDF report"
+    | "DICOM series"
+    | "Scanned request"
+    | "Prior report"
+    | "Consent";
   state?: "verified" | "pending sign" | "quarantined";
   pages?: number;
 
@@ -37,13 +42,29 @@ const diagnosticReportSchema = new Schema<IDiagnosticReport>(
     comments: { type: String },
     findings: { type: String },
     isCritical: { type: Boolean, default: false },
-    kind: { type: String, enum: ["PDF report", "DICOM series", "Scanned request", "Prior report", "Consent"] },
-    state: { type: String, enum: ["verified", "pending sign", "quarantined"], default: "pending sign" },
+    kind: {
+      type: String,
+      enum: [
+        "PDF report",
+        "DICOM series",
+        "Scanned request",
+        "Prior report",
+        "Consent",
+      ],
+    },
+    state: {
+      type: String,
+      enum: ["verified", "pending sign", "quarantined"],
+      default: "pending sign",
+    },
     pages: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 diagnosticReportSchema.index({ patient: 1, createdAt: -1 });
 
-export const DiagnosticReport = mongoose.model<IDiagnosticReport>("DiagnosticReport", diagnosticReportSchema);
+export const DiagnosticReport = mongoose.model<IDiagnosticReport>(
+  "DiagnosticReport",
+  diagnosticReportSchema,
+);

@@ -24,7 +24,7 @@ import {
   CalendarClock,
   Pill,
   Sparkles,
-  X
+  X,
 } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
@@ -33,7 +33,7 @@ import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 
 /** Animated trend line — drawn, never an image. */
-function Trend({ series, color }: { series: number[], color?: string }) {
+function Trend({ series, color }: { series: number[]; color?: string }) {
   const max = Math.max(...series, 1);
   const min = Math.min(...series, 0);
   const pts = series
@@ -44,7 +44,11 @@ function Trend({ series, color }: { series: number[], color?: string }) {
     })
     .join(" ");
   return (
-    <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="h-12 w-full">
+    <svg
+      viewBox="0 0 100 30"
+      preserveAspectRatio="none"
+      className="h-12 w-full"
+    >
       <motion.polyline
         points={pts}
         fill="none"
@@ -66,7 +70,7 @@ function CellShell({
   children,
   className = "",
   delay = 0,
-  icon: Icon
+  icon: Icon,
 }: {
   id: string;
   title: string;
@@ -87,7 +91,9 @@ function CellShell({
         <span className="mono-label text-muted-foreground flex items-center gap-2 text-xs uppercase tracking-wider font-semibold">
           <span className="text-primary">{id}</span> · {title}
         </span>
-        {Icon && <Icon className="size-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />}
+        {Icon && (
+          <Icon className="size-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+        )}
       </div>
       <div className="relative z-10 flex flex-1 flex-col">{children}</div>
     </motion.div>
@@ -121,32 +127,85 @@ export function OverviewPanel() {
   const profile = data.profile;
   const userName = user?.name || "Patient";
   const bloodGroup = profile?.bloodGroup || "O+";
-  const allergiesList = profile?.allergies?.length ? profile.allergies : ["No known allergies"];
-  
-  const conditions = data.consultations.map(c => c.diagnosis).filter(Boolean);
-  const uniqueConditions = conditions.length ? Array.from(new Set(conditions)) : ["No active conditions"];
+  const allergiesList = profile?.allergies?.length
+    ? profile.allergies
+    : ["No known allergies"];
+
+  const conditions = data.consultations.map((c) => c.diagnosis).filter(Boolean);
+  const uniqueConditions = conditions.length
+    ? Array.from(new Set(conditions))
+    : ["No active conditions"];
 
   // Vitals logic
-  const vitalsToUse = data.vitals && data.vitals.length > 0 ? data.vitals : [
-    { bloodPressure: "120/80", heartRate: 72, temperature: 98.6, spO2: 98, weight: profile?.weight || 70, date: new Date().toISOString() },
-    { bloodPressure: "118/79", heartRate: 70, temperature: 98.4, spO2: 99, weight: profile?.weight || 70, date: new Date(Date.now() - 86400000).toISOString() },
-    { bloodPressure: "122/82", heartRate: 75, temperature: 98.8, spO2: 97, weight: profile?.weight || 70, date: new Date(Date.now() - 86400000 * 2).toISOString() },
-  ];
+  const vitalsToUse =
+    data.vitals && data.vitals.length > 0
+      ? data.vitals
+      : [
+          {
+            bloodPressure: "120/80",
+            heartRate: 72,
+            temperature: 98.6,
+            spO2: 98,
+            weight: profile?.weight || 70,
+            date: new Date().toISOString(),
+          },
+          {
+            bloodPressure: "118/79",
+            heartRate: 70,
+            temperature: 98.4,
+            spO2: 99,
+            weight: profile?.weight || 70,
+            date: new Date(Date.now() - 86400000).toISOString(),
+          },
+          {
+            bloodPressure: "122/82",
+            heartRate: 75,
+            temperature: 98.8,
+            spO2: 97,
+            weight: profile?.weight || 70,
+            date: new Date(Date.now() - 86400000 * 2).toISOString(),
+          },
+        ];
 
   const displayVitals = [];
   if (vitalsToUse.length > 0) {
     const latest = vitalsToUse[0];
     if (latest.bloodPressure) {
-      displayVitals.push({ id: "BP", label: "Blood Pressure", value: latest.bloodPressure, unit: "mmHg", series: vitalsToUse.map(v => parseInt(v.bloodPressure.split('/')[0]) || 0).reverse(), color: "#f43f5e" });
+      displayVitals.push({
+        id: "BP",
+        label: "Blood Pressure",
+        value: latest.bloodPressure,
+        unit: "mmHg",
+        series: vitalsToUse
+          .map((v) => parseInt(v.bloodPressure.split("/")[0]) || 0)
+          .reverse(),
+        color: "#f43f5e",
+      });
     }
     if (latest.heartRate) {
-      displayVitals.push({ id: "HR", label: "Heart Rate", value: latest.heartRate.toString(), unit: "bpm", series: vitalsToUse.map(v => v.heartRate).reverse(), color: "#f59e0b" });
+      displayVitals.push({
+        id: "HR",
+        label: "Heart Rate",
+        value: latest.heartRate.toString(),
+        unit: "bpm",
+        series: vitalsToUse.map((v) => v.heartRate).reverse(),
+        color: "#f59e0b",
+      });
     }
   }
 
-  const bmi = (profile?.height && profile?.weight) 
-    ? (profile.weight / Math.pow(profile.heightUnit === "ft" ? profile.height * 0.3048 : profile.height / 100, 2)).toFixed(1)
-    : "--";
+  const bmi =
+    profile?.height && profile?.weight
+      ? (
+          profile.weight /
+          Math.pow(
+            profile.heightUnit === "ft"
+              ? profile.height * 0.3048
+              : profile.height / 100,
+            2,
+          )
+        ).toFixed(1)
+      : "--";
 
   const handleGenerateSummary = async () => {
     setIsVitalsModalOpen(true);
@@ -155,7 +214,8 @@ export function OverviewPanel() {
 
     try {
       const token = useAuthStore.getState().token;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
       const res = await fetch(`${apiUrl}/ai/vitals-summary`, {
         method: "POST",
         headers: {
@@ -179,23 +239,30 @@ export function OverviewPanel() {
     }
   };
 
-  const upcomingAppointments = data.appointments
-    ?.filter(a => a.status === "PENDING" || a.status === "CONFIRMED")
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) || [];
+  const upcomingAppointments =
+    data.appointments
+      ?.filter((a) => a.status === "PENDING" || a.status === "CONFIRMED")
+      .sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      ) || [];
 
-  const activeMedicines = data.consultations
-    ?.flatMap(c => c.medicines || [])
-    .filter(m => !m.isDispensed) || [];
+  const activeMedicines =
+    data.consultations
+      ?.flatMap((c) => c.medicines || [])
+      .filter((m) => !m.isDispensed) || [];
 
   const nextFollowUp = data.consultations
-    ?.filter(c => c.followUpDate && new Date(c.followUpDate) >= new Date())
-    .sort((a, b) => new Date(a.followUpDate!).getTime() - new Date(b.followUpDate!).getTime())[0];
+    ?.filter((c) => c.followUpDate && new Date(c.followUpDate) >= new Date())
+    .sort(
+      (a, b) =>
+        new Date(a.followUpDate!).getTime() -
+        new Date(b.followUpDate!).getTime(),
+    )[0];
 
   return (
     <section className="pb-12 max-w-350 mx-auto pt-6 px-4 sm:px-6">
-      
       {/* Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4"
@@ -209,13 +276,21 @@ export function OverviewPanel() {
               <ShieldCheck className="size-3.5" /> Verified
             </span>
             <span>·</span>
-            <span>ID: HOS-{user?.id?.substring(0, 6).toUpperCase() || "000000"}</span>
+            <span>
+              ID: HOS-{user?.id?.substring(0, 6).toUpperCase() || "000000"}
+            </span>
             <span>·</span>
-            <span>DOB: {profile?.dob ? new Date(profile.dob).toLocaleDateString() : "--"}</span>
+            <span>
+              DOB:{" "}
+              {profile?.dob ? new Date(profile.dob).toLocaleDateString() : "--"}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/patient/book" className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-xs font-semibold hover:bg-primary/90 transition-colors">
+          <Link
+            href="/patient/book"
+            className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-xs font-semibold hover:bg-primary/90 transition-colors"
+          >
             Book Appointment <ChevronRight className="size-3.5" />
           </Link>
         </div>
@@ -233,9 +308,18 @@ export function OverviewPanel() {
               <Calendar className="size-5" />
             </div>
             <div>
-              <p className="font-bold text-sm uppercase tracking-wider">Confirmed Follow-Up</p>
+              <p className="font-bold text-sm uppercase tracking-wider">
+                Confirmed Follow-Up
+              </p>
               <p className="text-sm opacity-80 mt-0.5">
-                Your doctor requested a follow-up on <span className="font-bold">{new Date(nextFollowUp.followUpDate!).toLocaleDateString()}</span> for {nextFollowUp.diagnosis || "your previous consultation"}. <span className="font-semibold italic">Walk-in on this date, no new booking required.</span>
+                Your doctor requested a follow-up on{" "}
+                <span className="font-bold">
+                  {new Date(nextFollowUp.followUpDate!).toLocaleDateString()}
+                </span>{" "}
+                for {nextFollowUp.diagnosis || "your previous consultation"}.{" "}
+                <span className="font-semibold italic">
+                  Walk-in on this date, no new booking required.
+                </span>
               </p>
             </div>
           </div>
@@ -244,43 +328,71 @@ export function OverviewPanel() {
 
       {/* Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-[minmax(180px,auto)]">
-        
         {/* Tile A: Core Vitals (Large Square) */}
-        <CellShell id="A" title="Telemetry" className="lg:col-span-5 lg:row-span-2" delay={0.1} icon={Activity}>
+        <CellShell
+          id="A"
+          title="Telemetry"
+          className="lg:col-span-5 lg:row-span-2"
+          delay={0.1}
+          icon={Activity}
+        >
           <div className="flex flex-col gap-6 flex-1 justify-between">
             {displayVitals.map((v, i) => (
               <div key={v.id} className="relative">
                 <div className="flex justify-between items-baseline mb-2">
-                  <span className="text-muted-foreground text-sm font-medium">{v.label}</span>
+                  <span className="text-muted-foreground text-sm font-medium">
+                    {v.label}
+                  </span>
                   <div className="flex items-baseline gap-1">
-                    <span className="font-mono text-3xl font-bold tracking-tight">{v.value}</span>
-                    <span className="font-mono text-xs text-muted-foreground">{v.unit}</span>
+                    <span className="font-mono text-3xl font-bold tracking-tight">
+                      {v.value}
+                    </span>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {v.unit}
+                    </span>
                   </div>
                 </div>
                 <div className="bg-background/50 rounded-lg p-2 border border-border/40">
-                   <Trend series={v.series.length > 0 ? v.series : [0]} color={v.color} />
+                  <Trend
+                    series={v.series.length > 0 ? v.series : [0]}
+                    color={v.color}
+                  />
                 </div>
               </div>
             ))}
-            
+
             {/* Morphometrics Mini-Grid */}
             <div className="grid grid-cols-3 gap-2 mt-2 pt-4 border-t border-border/40">
               <div>
-                <p className="mono-label text-[10px] text-muted-foreground uppercase">Height</p>
-                <p className="font-mono text-sm mt-1">{profile?.height || "--"} <span className="text-xs text-muted-foreground">{profile?.heightUnit}</span></p>
+                <p className="mono-label text-[10px] text-muted-foreground uppercase">
+                  Height
+                </p>
+                <p className="font-mono text-sm mt-1">
+                  {profile?.height || "--"}{" "}
+                  <span className="text-xs text-muted-foreground">
+                    {profile?.heightUnit}
+                  </span>
+                </p>
               </div>
               <div>
-                <p className="mono-label text-[10px] text-muted-foreground uppercase">Weight</p>
-                <p className="font-mono text-sm mt-1">{profile?.weight || "--"} <span className="text-xs text-muted-foreground">kg</span></p>
+                <p className="mono-label text-[10px] text-muted-foreground uppercase">
+                  Weight
+                </p>
+                <p className="font-mono text-sm mt-1">
+                  {profile?.weight || "--"}{" "}
+                  <span className="text-xs text-muted-foreground">kg</span>
+                </p>
               </div>
               <div>
-                <p className="mono-label text-[10px] text-muted-foreground uppercase">BMI</p>
+                <p className="mono-label text-[10px] text-muted-foreground uppercase">
+                  BMI
+                </p>
                 <p className="font-mono text-sm mt-1 text-indigo-500">{bmi}</p>
               </div>
             </div>
 
             {vitalsToUse && vitalsToUse.length > 0 && (
-              <button 
+              <button
                 onClick={handleGenerateSummary}
                 className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 py-2.5 text-xs font-bold uppercase tracking-wider transition-all"
               >
@@ -291,10 +403,19 @@ export function OverviewPanel() {
         </CellShell>
 
         {/* Tile B: Active Conditions (Wide) */}
-        <CellShell id="B" title="Conditions" className="lg:col-span-7" delay={0.2} icon={HeartPulse}>
-           <div className="flex flex-wrap gap-2 mt-2">
+        <CellShell
+          id="B"
+          title="Conditions"
+          className="lg:col-span-7"
+          delay={0.2}
+          icon={HeartPulse}
+        >
+          <div className="flex flex-wrap gap-2 mt-2">
             {uniqueConditions.map((c) => (
-              <span key={c} className="inline-flex items-center gap-1.5 bg-background border border-border/60 text-foreground px-3 py-1.5 rounded-full text-xs font-medium hover:border-primary/50 transition-colors cursor-default">
+              <span
+                key={c}
+                className="inline-flex items-center gap-1.5 bg-background border border-border/60 text-foreground px-3 py-1.5 rounded-full text-xs font-medium hover:border-primary/50 transition-colors cursor-default"
+              >
                 <span className="size-1.5 rounded-full bg-primary animate-pulse" />
                 {c}
               </span>
@@ -306,108 +427,191 @@ export function OverviewPanel() {
         </CellShell>
 
         {/* Tile C: Blood & Allergies (Square) */}
-        <CellShell id="C" title="Alerts & Blood" className="lg:col-span-3" delay={0.3} icon={AlertCircle}>
+        <CellShell
+          id="C"
+          title="Alerts & Blood"
+          className="lg:col-span-3"
+          delay={0.3}
+          icon={AlertCircle}
+        >
           <div className="flex flex-col h-full justify-between gap-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Blood Type</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                Blood Type
+              </span>
               <span className="font-mono text-4xl font-bold text-rose-500 tracking-tighter">
                 {bloodGroup}
               </span>
             </div>
-            
+
             <div className="border-t border-border/40 pt-4">
-               <span className="mono-label text-[10px] text-muted-foreground uppercase block mb-2">Known Allergies</span>
-               <div className="flex flex-wrap gap-1.5">
-                  {allergiesList.map((a) => (
-                    <span key={a} className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-1 rounded text-[11px] font-semibold">
-                      <TriangleAlert className="size-3" />
-                      {a}
-                    </span>
-                  ))}
-               </div>
+              <span className="mono-label text-[10px] text-muted-foreground uppercase block mb-2">
+                Known Allergies
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {allergiesList.map((a) => (
+                  <span
+                    key={a}
+                    className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-1 rounded text-[11px] font-semibold"
+                  >
+                    <TriangleAlert className="size-3" />
+                    {a}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </CellShell>
 
         {/* Tile D: Care Team (Wide) */}
-        <CellShell id="D" title="Care Team" className="lg:col-span-4" delay={0.4} icon={Users}>
+        <CellShell
+          id="D"
+          title="Care Team"
+          className="lg:col-span-4"
+          delay={0.4}
+          icon={Users}
+        >
           <div className="flex flex-col gap-2 flex-1">
             {data.consultations.length > 0 ? (
-              Array.from(new Map(data.consultations.map(c => [c.doctor.name, c.doctor])).values()).slice(0, 3).map((doctor) => (
-                <div key={doctor.name} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-background border border-transparent hover:border-border/60 transition-all cursor-pointer group">
-                  <div className="bg-muted text-muted-foreground font-bold font-mono text-sm grid size-9 rounded-full shrink-0 place-items-center group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                    {doctor.name[0]}
+              Array.from(
+                new Map(
+                  data.consultations.map((c) => [c.doctor.name, c.doctor]),
+                ).values(),
+              )
+                .slice(0, 3)
+                .map((doctor) => (
+                  <div
+                    key={doctor.name}
+                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-background border border-transparent hover:border-border/60 transition-all cursor-pointer group"
+                  >
+                    <div className="bg-muted text-muted-foreground font-bold font-mono text-sm grid size-9 rounded-full shrink-0 place-items-center group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      {doctor.name[0]}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                        Dr. {doctor.name}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono truncate mt-0.5">
+                        {doctor.role}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">Dr. {doctor.name}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono truncate mt-0.5">
-                      {doctor.role}
-                    </p>
-                  </div>
-                </div>
-              ))
+                ))
             ) : (
-              <p className="text-sm font-mono text-muted-foreground py-4">No care team assigned.</p>
+              <p className="text-sm font-mono text-muted-foreground py-4">
+                No care team assigned.
+              </p>
             )}
           </div>
-          <Link href="/patient/appointments" className="mono-label text-xs text-primary mt-auto pt-4 hover:underline">
+          <Link
+            href="/patient/appointments"
+            className="mono-label text-xs text-primary mt-auto pt-4 hover:underline"
+          >
             View all encounters →
           </Link>
         </CellShell>
 
         {/* Tile E: Upcoming Appointments (Square/Wide) */}
-        <CellShell id="E" title="Next Visit" className="lg:col-span-5" delay={0.5} icon={CalendarClock}>
+        <CellShell
+          id="E"
+          title="Next Visit"
+          className="lg:col-span-5"
+          delay={0.5}
+          icon={CalendarClock}
+        >
           <div className="flex flex-col gap-3 flex-1 justify-center h-full">
             {upcomingAppointments.length > 0 ? (
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-                <p className="text-[10px] mono-label text-primary uppercase tracking-wider mb-2">Upcoming</p>
+                <p className="text-[10px] mono-label text-primary uppercase tracking-wider mb-2">
+                  Upcoming
+                </p>
                 <div className="flex justify-between items-start gap-4">
                   <div>
-                    <p className="font-semibold text-foreground">Dr. {upcomingAppointments[0].doctor.name}</p>
-                    <p className="text-sm text-muted-foreground">{upcomingAppointments[0].department}</p>
+                    <p className="font-semibold text-foreground">
+                      Dr. {upcomingAppointments[0].doctor.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {upcomingAppointments[0].department}
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-foreground font-bold">{upcomingAppointments[0].timeSlot}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(upcomingAppointments[0].date).toLocaleDateString()}</p>
+                    <p className="font-mono text-foreground font-bold">
+                      {upcomingAppointments[0].timeSlot}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(
+                        upcomingAppointments[0].date,
+                      ).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
               </div>
             ) : nextFollowUp ? (
               <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-4">
-                <p className="text-[10px] mono-label text-indigo-500 uppercase tracking-wider mb-2">Walk-in Follow-up</p>
+                <p className="text-[10px] mono-label text-indigo-500 uppercase tracking-wider mb-2">
+                  Walk-in Follow-up
+                </p>
                 <div className="flex justify-between items-start gap-4">
                   <div>
-                    <p className="font-semibold text-foreground">Dr. {nextFollowUp.doctor.name}</p>
-                    <p className="text-sm text-muted-foreground">{nextFollowUp.diagnosis || "Consultation"}</p>
+                    <p className="font-semibold text-foreground">
+                      Dr. {nextFollowUp.doctor.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {nextFollowUp.diagnosis || "Consultation"}
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-foreground font-bold">Any time</p>
-                    <p className="text-xs text-muted-foreground">{new Date(nextFollowUp.followUpDate!).toLocaleDateString()}</p>
+                    <p className="font-mono text-foreground font-bold">
+                      Any time
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(
+                        nextFollowUp.followUpDate!,
+                      ).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="text-center p-4">
                 <CalendarClock className="size-8 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground font-medium">No upcoming visits</p>
-                <Link href="/patient/book" className="text-xs text-primary hover:underline mt-1 inline-block">Book an appointment</Link>
+                <p className="text-sm text-muted-foreground font-medium">
+                  No upcoming visits
+                </p>
+                <Link
+                  href="/patient/book"
+                  className="text-xs text-primary hover:underline mt-1 inline-block"
+                >
+                  Book an appointment
+                </Link>
               </div>
             )}
           </div>
         </CellShell>
 
         {/* Tile F: Active Medicines (Wide) */}
-        <CellShell id="F" title="Prescriptions" className="lg:col-span-7" delay={0.6} icon={Pill}>
+        <CellShell
+          id="F"
+          title="Prescriptions"
+          className="lg:col-span-7"
+          delay={0.6}
+          icon={Pill}
+        >
           <div className="flex flex-col gap-2 flex-1">
             {activeMedicines.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                 {activeMedicines.slice(0, 4).map((med, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-background border border-border/60">
+                  <div
+                    key={idx}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-background border border-border/60"
+                  >
                     <div className="bg-amber-500/10 text-amber-500 p-2 rounded-lg">
                       <Pill className="size-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground truncate">{med.name}</p>
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {med.name}
+                      </p>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono truncate mt-0.5">
                         {med.dosage} · {med.frequency}
                       </p>
@@ -424,7 +628,6 @@ export function OverviewPanel() {
             )}
           </div>
         </CellShell>
-
       </div>
 
       <AnimatePresence>
@@ -446,7 +649,9 @@ export function OverviewPanel() {
               <div className="px-6 py-4 border-b border-border/60 flex items-center justify-between bg-card">
                 <div className="flex items-center gap-2 text-amber-500">
                   <Sparkles className="size-5" />
-                  <h2 className="font-display text-xl font-bold tracking-tight text-foreground">AI Health Summary</h2>
+                  <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
+                    AI Health Summary
+                  </h2>
                 </div>
                 <button
                   onClick={() => setIsVitalsModalOpen(false)}
@@ -460,7 +665,9 @@ export function OverviewPanel() {
                 {isGeneratingSummary ? (
                   <div className="flex flex-col items-center justify-center py-12">
                     <Loader2 className="size-8 animate-spin text-amber-500 mb-4" />
-                    <p className="text-sm font-medium animate-pulse text-muted-foreground">Analyzing vitals history...</p>
+                    <p className="text-sm font-medium animate-pulse text-muted-foreground">
+                      Analyzing vitals history...
+                    </p>
                   </div>
                 ) : (
                   <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-primary prose-ul:list-disc">
@@ -470,14 +677,14 @@ export function OverviewPanel() {
               </div>
               <div className="p-4 border-t border-border/60 bg-muted/30">
                 <p className="text-xs text-muted-foreground text-center">
-                  This summary is generated by AI and is for informational purposes only. Always consult your doctor for medical advice.
+                  This summary is generated by AI and is for informational
+                  purposes only. Always consult your doctor for medical advice.
                 </p>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-
     </section>
   );
 }

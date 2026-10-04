@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2 } from "lucide-react";
+import {
+  Check,
+  TriangleAlert,
+  PenLine,
+  Send,
+  X,
+  CheckCircle2,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
 import {
@@ -29,12 +36,16 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
@@ -55,7 +66,11 @@ function Vitals({ series }: { series: number[] }) {
     .join(" ");
 
   return (
-    <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-8 w-24 shrink-0">
+    <svg
+      viewBox="0 0 100 32"
+      preserveAspectRatio="none"
+      className="h-8 w-24 shrink-0"
+    >
       <motion.polyline
         points={pts}
         fill="none"
@@ -88,7 +103,7 @@ export function RotaPanel() {
 
   useEffect(() => {
     getScheduleApi()
-      .then(res => setScheduleList(res.data.schedule || []))
+      .then((res) => setScheduleList(res.data.schedule || []))
       .catch(() => toast.error("Failed to load schedule"))
       .finally(() => setLoading(false));
   }, []);
@@ -103,9 +118,13 @@ export function RotaPanel() {
       />
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7">
         {loading ? (
-          <div className="p-8 text-center text-muted-foreground col-span-full">Loading schedule...</div>
+          <div className="p-8 text-center text-muted-foreground col-span-full">
+            Loading schedule...
+          </div>
         ) : scheduleList.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground col-span-full">No scheduled shifts found.</div>
+          <div className="p-8 text-center text-muted-foreground col-span-full">
+            No scheduled shifts found.
+          </div>
         ) : (
           scheduleList.map((d) => {
             const tone =
@@ -117,12 +136,23 @@ export function RotaPanel() {
                     ? "bg-accent/10"
                     : "";
             return (
-              <div key={d._id} className={`hairline-l hairline-b px-5 py-6 ${tone}`}>
+              <div
+                key={d._id}
+                className={`hairline-l hairline-b px-5 py-6 ${tone}`}
+              >
                 <p className="mono-label text-muted-foreground">
-                  {new Date(d.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {new Date(d.date).toLocaleDateString(undefined, {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </p>
-                <p className="mt-3 font-mono text-lg font-bold">{d.shiftType}</p>
-                <p className="mono-label text-muted-foreground mt-2">{d.department}</p>
+                <p className="mt-3 font-mono text-lg font-bold">
+                  {d.shiftType}
+                </p>
+                <p className="mono-label text-muted-foreground mt-2">
+                  {d.department}
+                </p>
               </div>
             );
           })

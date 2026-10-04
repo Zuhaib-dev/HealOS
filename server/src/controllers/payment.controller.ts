@@ -25,7 +25,7 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
     };
 
     const order = await razorpay.orders.create(options);
-    
+
     res.status(200).json({
       success: true,
       order,
@@ -41,9 +41,16 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
 
 export const verifyPayment = async (req: Request, res: Response) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, appointmentId, invoiceId } = req.body;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      appointmentId,
+      invoiceId,
+    } = req.body;
 
-    const secret = process.env.RAZORPAY_KEY_SECRET || "8xU95oYtK0O058J5N1O8T72P";
+    const secret =
+      process.env.RAZORPAY_KEY_SECRET || "8xU95oYtK0O058J5N1O8T72P";
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
@@ -54,7 +61,9 @@ export const verifyPayment = async (req: Request, res: Response) => {
     const isAuthentic = expectedSignature === razorpay_signature;
 
     if (!isAuthentic) {
-      return res.status(400).json({ success: false, message: "Invalid payment signature" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid payment signature" });
     }
 
     // Update Appointment
@@ -78,7 +87,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
         invoice.razorpayOrderId = razorpay_order_id;
         invoice.razorpayPaymentId = razorpay_payment_id;
         invoice.razorpaySignature = razorpay_signature;
-        
+
         // Also update appointment if linked to invoice and not passed explicitly
         if (invoice.appointment && !appointmentId) {
           const appt = await Appointment.findById(invoice.appointment);
@@ -91,7 +100,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
           }
         }
         await invoice.save();
-        
+
         const io = getIO();
         if (io) {
           io.emit("invoice_paid", { invoiceId: invoice._id });

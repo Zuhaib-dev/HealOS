@@ -31,7 +31,7 @@ emergencyRouter.use(
     UserRole.ADMIN,
     UserRole.DOCTOR,
     UserRole.NURSE,
-  ])
+  ]),
 );
 
 // ---------------------------

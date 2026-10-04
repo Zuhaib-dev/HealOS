@@ -9,7 +9,9 @@ import { toast } from "sonner";
 export default function SandboxPage() {
   const [token, setToken] = useState("healos_test_token_agent_eval_sandbox");
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"token" | "patients" | "vitals">("token");
+  const [activeTab, setActiveTab] = useState<"token" | "patients" | "vitals">(
+    "token",
+  );
 
   const handleGenerateToken = async () => {
     setIsLoading(true);
@@ -47,7 +49,9 @@ export default function SandboxPage() {
               HealOS Agent Sandbox
             </h1>
             <p className="mt-4 max-w-3xl text-lg text-muted-foreground leading-relaxed">
-              Safe, isolated hospital simulation environment designed for autonomous AI agents, clinical copilots, and developer integration tests without live Protected Health Information (PHI).
+              Safe, isolated hospital simulation environment designed for
+              autonomous AI agents, clinical copilots, and developer integration
+              tests without live Protected Health Information (PHI).
             </p>
 
             <div className="mt-8 flex flex-wrap gap-4">
@@ -57,7 +61,9 @@ export default function SandboxPage() {
                 disabled={isLoading}
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 font-mono text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {isLoading ? "Generating Key…" : "⚡ Issue Instant Sandbox Token"}
+                {isLoading
+                  ? "Generating Key…"
+                  : "⚡ Issue Instant Sandbox Token"}
               </button>
               <Link
                 href="/openapi.json"
@@ -128,7 +134,8 @@ export default function SandboxPage() {
                       <input
                         type="text"
                         readOnly
-                        aria-label="Active Sandbox Bearer Token" title="Active Sandbox Bearer Token"
+                        aria-label="Active Sandbox Bearer Token"
+                        title="Active Sandbox Bearer Token"
                         value={token}
                         className="flex-1 rounded-md border border-border bg-muted/50 px-4 py-2 font-mono text-sm text-foreground focus:outline-none"
                       />
@@ -143,9 +150,11 @@ export default function SandboxPage() {
                   </div>
 
                   <div className="rounded-lg border border-border bg-muted/20 p-4 font-mono text-xs">
-                    <span className="text-muted-foreground block select-none"># Authenticated cURL call to the sandbox environment:</span>
+                    <span className="text-muted-foreground block select-none">
+                      # Authenticated cURL call to the sandbox environment:
+                    </span>
                     <pre className="mt-2 text-primary select-all whitespace-pre-wrap">
-{`curl -H "Authorization: Bearer ${token}" \\
+                      {`curl -H "Authorization: Bearer ${token}" \\
   https://healos-theta.vercel.app/api/v1/appointments`}
                     </pre>
                   </div>
@@ -155,18 +164,31 @@ export default function SandboxPage() {
               {activeTab === "patients" && (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Pre-seeded synthetic patient EHR identities available in the sandbox:
+                    Pre-seeded synthetic patient EHR identities available in the
+                    sandbox:
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs">
                     <div className="p-3 rounded-lg border border-border bg-background">
-                      <div className="font-semibold text-primary">pat_94821 — Elena Rostova</div>
-                      <div className="text-muted-foreground mt-1">MRN: MRN-84729 · DOB: 1988-04-12</div>
-                      <div className="text-amber-500 mt-1">Allergies: Penicillin, Latex</div>
+                      <div className="font-semibold text-primary">
+                        pat_94821 — Elena Rostova
+                      </div>
+                      <div className="text-muted-foreground mt-1">
+                        MRN: MRN-84729 · DOB: 1988-04-12
+                      </div>
+                      <div className="text-amber-500 mt-1">
+                        Allergies: Penicillin, Latex
+                      </div>
                     </div>
                     <div className="p-3 rounded-lg border border-border bg-background">
-                      <div className="font-semibold text-primary">pat_31204 — Marcus Vance</div>
-                      <div className="text-muted-foreground mt-1">MRN: MRN-10293 · DOB: 1974-11-23</div>
-                      <div className="text-amber-500 mt-1">Allergies: Sulfa drugs</div>
+                      <div className="font-semibold text-primary">
+                        pat_31204 — Marcus Vance
+                      </div>
+                      <div className="text-muted-foreground mt-1">
+                        MRN: MRN-10293 · DOB: 1974-11-23
+                      </div>
+                      <div className="text-amber-500 mt-1">
+                        Allergies: Sulfa drugs
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -175,24 +197,41 @@ export default function SandboxPage() {
               {activeTab === "vitals" && (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Live synthetic bedside telemetry stream for patient pat_94821:
+                    Live synthetic bedside telemetry stream for patient
+                    pat_94821:
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-center">
                     <div className="p-3 rounded-lg border border-border bg-background">
-                      <div className="text-muted-foreground text-[11px]">Heart Rate</div>
-                      <div className="text-xl font-bold text-emerald-500 mt-1">74 bpm</div>
+                      <div className="text-muted-foreground text-[11px]">
+                        Heart Rate
+                      </div>
+                      <div className="text-xl font-bold text-emerald-500 mt-1">
+                        74 bpm
+                      </div>
                     </div>
                     <div className="p-3 rounded-lg border border-border bg-background">
-                      <div className="text-muted-foreground text-[11px]">Blood Pressure</div>
-                      <div className="text-xl font-bold text-primary mt-1">120/80</div>
+                      <div className="text-muted-foreground text-[11px]">
+                        Blood Pressure
+                      </div>
+                      <div className="text-xl font-bold text-primary mt-1">
+                        120/80
+                      </div>
                     </div>
                     <div className="p-3 rounded-lg border border-border bg-background">
-                      <div className="text-muted-foreground text-[11px]">SpO2</div>
-                      <div className="text-xl font-bold text-cyan-500 mt-1">98.5%</div>
+                      <div className="text-muted-foreground text-[11px]">
+                        SpO2
+                      </div>
+                      <div className="text-xl font-bold text-cyan-500 mt-1">
+                        98.5%
+                      </div>
                     </div>
                     <div className="p-3 rounded-lg border border-border bg-background">
-                      <div className="text-muted-foreground text-[11px]">Temperature</div>
-                      <div className="text-xl font-bold text-amber-500 mt-1">36.8 °C</div>
+                      <div className="text-muted-foreground text-[11px]">
+                        Temperature
+                      </div>
+                      <div className="text-xl font-bold text-amber-500 mt-1">
+                        36.8 °C
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -202,22 +241,45 @@ export default function SandboxPage() {
 
           {/* Sandbox Architecture & Developer Details */}
           <div className="mt-12 rounded-xl border border-border bg-card/60 p-6">
-            <h2 className="font-display text-xl font-bold">HealOS Sandbox Guarantees</h2>
+            <h2 className="font-display text-xl font-bold">
+              HealOS Sandbox Guarantees
+            </h2>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-              <li>✓ <strong>100% Synthetic Data</strong>: Generated according to HL7 FHIR US Core profiles.</li>
-              <li>✓ <strong>Zero Auth Required for Evaluation</strong>: Immediate evaluation without account creation.</li>
-              <li>✓ <strong>Full Tool Coverage</strong>: Supports appointments, vitals, triage boards, and MCP SSE streaming.</li>
+              <li>
+                ✓ <strong>100% Synthetic Data</strong>: Generated according to
+                HL7 FHIR US Core profiles.
+              </li>
+              <li>
+                ✓ <strong>Zero Auth Required for Evaluation</strong>: Immediate
+                evaluation without account creation.
+              </li>
+              <li>
+                ✓ <strong>Full Tool Coverage</strong>: Supports appointments,
+                vitals, triage boards, and MCP SSE streaming.
+              </li>
             </ul>
 
             <div className="mt-6 pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-mono text-xs text-muted-foreground">
               <div>
-                Maintained by <span className="text-foreground font-semibold">Zuhaib Rashid</span> (Full Stack Developer)
+                Maintained by{" "}
+                <span className="text-foreground font-semibold">
+                  Zuhaib Rashid
+                </span>{" "}
+                (Full Stack Developer)
               </div>
               <div className="flex gap-4">
-                <a href="https://zuhaibrashid.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                <a
+                  href="https://zuhaibrashid.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline"
+                >
                   zuhaibrashid.com
                 </a>
-                <a href="mailto:zuhaibrashid01@gmail.com" className="text-primary hover:underline">
+                <a
+                  href="mailto:zuhaibrashid01@gmail.com"
+                  className="text-primary hover:underline"
+                >
                   zuhaibrashid01@gmail.com
                 </a>
               </div>

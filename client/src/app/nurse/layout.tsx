@@ -1,6 +1,13 @@
 "use client";
 
-import { ClipboardList, Pill, Bandage, Droplet, Bell, MessagesSquare } from "lucide-react";
+import {
+  ClipboardList,
+  Pill,
+  Bandage,
+  Droplet,
+  Bell,
+  MessagesSquare,
+} from "lucide-react";
 
 import { RoleGuard } from "@/components/auth/role-guard";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
@@ -14,7 +21,11 @@ const sections = [
   { id: "handover", label: "Handover", icon: MessagesSquare },
 ];
 
-export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
+export default function WorkspaceLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <RoleGuard allowedRoles={["NURSE"]}>
       <WorkspaceShell
@@ -22,8 +33,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
         breadcrumb="Ward operations / Nursing station"
         searchPlaceholder="Search bed, MRN, patient"
         sections={sections}
-        
-        
+
         statusTitle="Shift"
         statusLine="Day shift · 07:00–19:00"
         statusNote="5 patients · 1 obs overdue · 2 bells waiting"

@@ -16,7 +16,10 @@ import {
 } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
-import { fetchCriticalFindingsApi, CriticalFindingRecord } from "@/lib/api/radiology";
+import {
+  fetchCriticalFindingsApi,
+  CriticalFindingRecord,
+} from "@/lib/api/radiology";
 import { toast } from "sonner";
 
 /* ---------- primitives ---------- */
@@ -34,17 +37,36 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
-function Td({ children, colSpan, className }: { children?: React.ReactNode, colSpan?: number, className?: string }) {
-  return <td colSpan={colSpan} className={`px-4 py-3.5 align-middle text-sm ${className || ""}`}>{children}</td>;
+function Td({
+  children,
+  colSpan,
+  className,
+}: {
+  children?: React.ReactNode;
+  colSpan?: number;
+  className?: string;
+}) {
+  return (
+    <td
+      colSpan={colSpan}
+      className={`px-4 py-3.5 align-middle text-sm ${className || ""}`}
+    >
+      {children}
+    </td>
+  );
 }
 
 /** Animated scanner glyph — hand-drawn SVG, no raster assets. */
@@ -60,8 +82,24 @@ function ScannerGlyph({ active }: { active: boolean }) {
         stroke="var(--hairline)"
         strokeWidth="1"
       />
-      <circle cx="60" cy="36" r="17" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.5" />
-      <circle cx="60" cy="36" r="8" fill="none" stroke="var(--color-accent)" strokeWidth="1" opacity="0.8" />
+      <circle
+        cx="60"
+        cy="36"
+        r="17"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.5"
+      />
+      <circle
+        cx="60"
+        cy="36"
+        r="8"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1"
+        opacity="0.8"
+      />
       {active && (
         <motion.line
           x1="8"
@@ -85,10 +123,16 @@ export function CriticalPanel() {
   const [called, setCalled] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    fetchCriticalFindingsApi().then(res => {
-      setFindings(res.data.findings);
-      setCalled(Object.fromEntries(res.data.findings.map(c => [c.accession, c.called])));
-    }).catch(console.error);
+    fetchCriticalFindingsApi()
+      .then((res) => {
+        setFindings(res.data.findings);
+        setCalled(
+          Object.fromEntries(
+            res.data.findings.map((c) => [c.accession, c.called]),
+          ),
+        );
+      })
+      .catch(console.error);
   }, []);
 
   return (
@@ -99,44 +143,54 @@ export function CriticalPanel() {
         note="Closed-loop communication: a critical result is not done until a named clinician has acknowledged it by voice."
       />
 
-      <div className="flex flex-col gap-px" style={{ background: "var(--hairline)" }}>
+      <div
+        className="flex flex-col gap-px"
+        style={{ background: "var(--hairline)" }}
+      >
         {findings.length === 0 ? (
-          <div className="bg-background p-8 text-center text-muted-foreground">No critical findings to display.</div>
-        ) : findings.map((c) => {
-          const ack = called[c.accession];
-          return (
-            <div
-              key={c._id}
-              className="bg-background flex flex-wrap items-center gap-4 p-5 sm:px-8"
-            >
-              <span
-                className={`size-2 shrink-0 rounded-full ${
-                  ack ? "bg-accent" : "bg-destructive animate-pulse"
-                }`}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{c.finding}</p>
-                <p className="mono-label text-muted-foreground mt-1">
-                  {c.accession} · {c.patientName} · flagged {c.atTime} · to {c.clinician}
-                </p>
-              </div>
-              <Pill tone={ack ? "ok" : "bad"}>{ack ? "acknowledged" : "callback pending"}</Pill>
-              <ActionButton
-                tone={ack ? "ghost" : "solid"}
-                onClick={() => {
-                  setCalled((p) => ({ ...p, [c.accession]: true }));
-                  toast.success(`Marked as called: ${c.accession}`);
-                  // Note: In a real app we would call a PUT endpoint here to update `called: true`
-                }}
+          <div className="bg-background p-8 text-center text-muted-foreground">
+            No critical findings to display.
+          </div>
+        ) : (
+          findings.map((c) => {
+            const ack = called[c.accession];
+            return (
+              <div
+                key={c._id}
+                className="bg-background flex flex-wrap items-center gap-4 p-5 sm:px-8"
               >
-                <span className="inline-flex items-center gap-2">
-                  <PhoneCall className="size-3.5" />
-                  {ack ? "Log repeat call" : "Mark called"}
-                </span>
-              </ActionButton>
-            </div>
-          );
-        })}
+                <span
+                  className={`size-2 shrink-0 rounded-full ${
+                    ack ? "bg-accent" : "bg-destructive animate-pulse"
+                  }`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{c.finding}</p>
+                  <p className="mono-label text-muted-foreground mt-1">
+                    {c.accession} · {c.patientName} · flagged {c.atTime} · to{" "}
+                    {c.clinician}
+                  </p>
+                </div>
+                <Pill tone={ack ? "ok" : "bad"}>
+                  {ack ? "acknowledged" : "callback pending"}
+                </Pill>
+                <ActionButton
+                  tone={ack ? "ghost" : "solid"}
+                  onClick={() => {
+                    setCalled((p) => ({ ...p, [c.accession]: true }));
+                    toast.success(`Marked as called: ${c.accession}`);
+                    // Note: In a real app we would call a PUT endpoint here to update `called: true`
+                  }}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <PhoneCall className="size-3.5" />
+                    {ack ? "Log repeat call" : "Mark called"}
+                  </span>
+                </ActionButton>
+              </div>
+            );
+          })
+        )}
       </div>
     </section>
   );

@@ -5,7 +5,11 @@ import { getSocket } from "@/lib/socket";
 import { useAuthStore, UserRole } from "@/store/use-auth-store";
 import { toast } from "sonner";
 
-export function RealtimeSocketProvider({ children }: { children: React.ReactNode }) {
+export function RealtimeSocketProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, updateUser, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
@@ -21,9 +25,12 @@ export function RealtimeSocketProvider({ children }: { children: React.ReactNode
     const handleRoleUpdate = (data: { userId: string; newRole: UserRole }) => {
       if (data.userId === user.id && data.newRole !== user.role) {
         updateUser({ role: data.newRole });
-        toast.success(`⚡ Your account role has been updated in real-time to ${data.newRole}!`, {
-          duration: 6000,
-        });
+        toast.success(
+          `⚡ Your account role has been updated in real-time to ${data.newRole}!`,
+          {
+            duration: 6000,
+          },
+        );
       }
     };
 

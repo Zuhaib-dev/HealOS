@@ -53,24 +53,25 @@ export type PatientSectionId = (typeof patientSections)[number]["id"];
 const mainMobileTabs = ["overview", "book", "appointments", "messages"];
 const moreMobileTabs = ["reports", "meds", "billing", "profile"];
 
-export function PatientShell({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function PatientShell({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const { user } = useAuthStore();
   const { isSidebarCollapsed, toggleSidebar } = useUIStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const pathname = usePathname();
 
-  const currentSection = patientSections.find((s) =>
-    s.id === "overview" ? pathname === "/patient" : pathname.startsWith(`/patient/${s.id}`)
-  ) || patientSections[0];
+  const currentSection =
+    patientSections.find((s) =>
+      s.id === "overview"
+        ? pathname === "/patient"
+        : pathname.startsWith(`/patient/${s.id}`),
+    ) || patientSections[0];
 
   // Helper to check if a section is active
   const isSectionActive = (id: string) => {
-    return id === "overview" ? pathname === "/patient" : pathname.startsWith(`/patient/${id}`);
+    return id === "overview"
+      ? pathname === "/patient"
+      : pathname.startsWith(`/patient/${id}`);
   };
 
   return (
@@ -79,7 +80,12 @@ export function PatientShell({
       <header className="bg-background/90 border-b border-border/60 sticky top-0 z-40 backdrop-blur-md transition-all">
         <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-8">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-3 group" aria-label="HealOS home" title="HealOS home">
+            <Link
+              href="/"
+              className="flex items-center gap-3 group"
+              aria-label="HealOS home"
+              title="HealOS home"
+            >
               <HealOSLogo size={30} />
             </Link>
 
@@ -98,8 +104,11 @@ export function PatientShell({
           {/* Search bar instrument */}
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("open-command-menu"))}
-            aria-label="Search health records, doctors, prescriptions" title="Search health records, doctors, prescriptions"
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("open-command-menu"))
+            }
+            aria-label="Search health records, doctors, prescriptions"
+            title="Search health records, doctors, prescriptions"
             className="hidden lg:flex w-80 items-center gap-2.5 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:border-primary/50 transition-all text-left cursor-pointer"
           >
             <Search className="text-muted-foreground size-3.5 shrink-0" />
@@ -127,7 +136,7 @@ export function PatientShell({
       {/* Main Layout Container */}
       <div className="flex">
         {/* Sidebar Navigation - Desktop Only */}
-        <aside 
+        <aside
           className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? "w-18 items-center px-2" : "w-64"}`}
         >
           {isSidebarCollapsed ? (
@@ -150,11 +159,16 @@ export function PatientShell({
             </div>
           )}
 
-          <nav aria-label="Patient portal sidebar navigation" title="Patient portal sidebar navigation" className="flex flex-col gap-1 w-full">
+          <nav
+            aria-label="Patient portal sidebar navigation"
+            title="Patient portal sidebar navigation"
+            className="flex flex-col gap-1 w-full"
+          >
             {patientSections.map((s) => {
               const Icon = s.icon;
               const isActive = isSectionActive(s.id);
-              const href = s.id === "overview" ? "/patient" : `/patient/${s.id}`;
+              const href =
+                s.id === "overview" ? "/patient" : `/patient/${s.id}`;
               return (
                 <Link
                   key={s.id}
@@ -166,16 +180,23 @@ export function PatientShell({
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                   }`}
                 >
-                  <Icon className={`size-4 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === 'settings' ? 'group-hover:rotate-90' : 'group-hover:scale-[1.15]'}`}`} />
+                  <Icon
+                    className={`size-4 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === "settings" ? "group-hover:rotate-90" : "group-hover:scale-[1.15]"}`}`}
+                  />
                   {!isSidebarCollapsed && <span>{s.label}</span>}
                 </Link>
               );
             })}
           </nav>
 
-          <div className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-4"}`}>
+          <div
+            className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-4"}`}
+          >
             {isSidebarCollapsed ? (
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" title="Next Appointment Available" />
+              <span
+                className="size-2 rounded-full bg-emerald-500 animate-pulse"
+                title="Next Appointment Available"
+              />
             ) : (
               <>
                 <div className="flex items-center justify-between">
@@ -184,20 +205,27 @@ export function PatientShell({
                   </span>
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
-                <p className="font-semibold text-xs mt-2 text-foreground">Doctor Consultation</p>
+                <p className="font-semibold text-xs mt-2 text-foreground">
+                  Doctor Consultation
+                </p>
                 <p className="mono-label text-[11px] text-muted-foreground mt-1 font-mono">
                   Available 24/7 in Book Tab
                 </p>
               </>
             )}
           </div>
-          
+
           <button
             onClick={toggleSidebar}
             className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 ${isSidebarCollapsed ? "" : "w-full"}`}
-            aria-label="Toggle sidebar" title="Toggle sidebar"
+            aria-label="Toggle sidebar"
+            title="Toggle sidebar"
           >
-            {isSidebarCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen className="size-4.5" />
+            ) : (
+              <PanelLeftClose className="size-4.5" />
+            )}
           </button>
         </aside>
 
@@ -206,12 +234,14 @@ export function PatientShell({
           {/* Mobile "Header" - just the title of the current section */}
           <div className="md:hidden border-b border-border/60 bg-card/40 p-3 px-4 sticky top-0 z-30 backdrop-blur-md flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {currentSection && <currentSection.icon className="size-4 text-primary" />}
+              {currentSection && (
+                <currentSection.icon className="size-4 text-primary" />
+              )}
               <h1 className="font-semibold text-sm">{currentSection?.label}</h1>
             </div>
             <UserProfileMenu />
           </div>
-          
+
           <div className="mx-auto w-full max-w-5xl">
             <AnimatePresence mode="wait">
               <motion.div
@@ -230,13 +260,18 @@ export function PatientShell({
 
       {/* Persistent Bottom Navigation Bar - Mobile Only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
-        <nav aria-label="Patient portal mobile navigation" title="Patient portal mobile navigation" className="flex justify-around items-center px-2 py-1.5">
+        <nav
+          aria-label="Patient portal mobile navigation"
+          title="Patient portal mobile navigation"
+          className="flex justify-around items-center px-2 py-1.5"
+        >
           {patientSections
             .filter((s) => mainMobileTabs.includes(s.id))
             .map((s) => {
               const Icon = s.icon;
               const isActive = isSectionActive(s.id);
-              const href = s.id === "overview" ? "/patient" : `/patient/${s.id}`;
+              const href =
+                s.id === "overview" ? "/patient" : `/patient/${s.id}`;
               return (
                 <Link
                   key={s.id}
@@ -244,18 +279,27 @@ export function PatientShell({
                   onClick={() => setIsMoreOpen(false)}
                   className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
                 >
-                  <motion.div 
-                    animate={isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }}
+                  <motion.div
+                    animate={
+                      isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }
+                    }
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                      isActive
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground"
                     }`}
                   >
-                    <Icon className={`size-5 ${isActive ? "fill-primary/20" : ""}`} strokeWidth={isActive ? 2.5 : 2} />
+                    <Icon
+                      className={`size-5 ${isActive ? "fill-primary/20" : ""}`}
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
                   </motion.div>
-                  <span 
+                  <span
                     className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                      isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                      isActive
+                        ? "text-primary font-semibold"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {s.label}
@@ -271,14 +315,27 @@ export function PatientShell({
                 type="button"
                 className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
               >
-                <div className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                  moreMobileTabs.some(id => isSectionActive(id)) ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-                }`}>
-                  <Menu className={`size-5 ${moreMobileTabs.some(id => isSectionActive(id)) ? "fill-primary/20" : ""}`} strokeWidth={moreMobileTabs.some(id => isSectionActive(id)) ? 2.5 : 2} />
+                <div
+                  className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                    moreMobileTabs.some((id) => isSectionActive(id))
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground"
+                  }`}
+                >
+                  <Menu
+                    className={`size-5 ${moreMobileTabs.some((id) => isSectionActive(id)) ? "fill-primary/20" : ""}`}
+                    strokeWidth={
+                      moreMobileTabs.some((id) => isSectionActive(id)) ? 2.5 : 2
+                    }
+                  />
                 </div>
-                <span className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                  moreMobileTabs.some(id => isSectionActive(id)) ? "text-primary font-semibold" : "text-muted-foreground"
-                }`}>
+                <span
+                  className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                    moreMobileTabs.some((id) => isSectionActive(id))
+                      ? "text-primary font-semibold"
+                      : "text-muted-foreground"
+                  }`}
+                >
                   More
                 </span>
               </button>
@@ -297,7 +354,8 @@ export function PatientShell({
                   .map((s) => {
                     const Icon = s.icon;
                     const isActive = isSectionActive(s.id);
-                    const href = s.id === "overview" ? "/patient" : `/patient/${s.id}`;
+                    const href =
+                      s.id === "overview" ? "/patient" : `/patient/${s.id}`;
                     return (
                       <Link
                         key={s.id}
@@ -309,8 +367,13 @@ export function PatientShell({
                             : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
                         }`}
                       >
-                        <Icon className="size-6" strokeWidth={isActive ? 2.5 : 2} />
-                        <span className="text-[11px] font-semibold tracking-wide">{s.label}</span>
+                        <Icon
+                          className="size-6"
+                          strokeWidth={isActive ? 2.5 : 2}
+                        />
+                        <span className="text-[11px] font-semibold tracking-wide">
+                          {s.label}
+                        </span>
                       </Link>
                     );
                   })}

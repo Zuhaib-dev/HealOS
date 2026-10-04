@@ -22,7 +22,7 @@ interface JwtPayload {
 export const verifyToken = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     let token: string | undefined;
@@ -57,7 +57,8 @@ export const verifyToken = async (
     if (user.tokenVersion !== decoded.tokenVersion) {
       res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
-        message: "Your session has expired or your role was changed. Please log in again.",
+        message:
+          "Your session has expired or your role was changed. Please log in again.",
       });
       return;
     }

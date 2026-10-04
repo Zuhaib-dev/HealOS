@@ -17,9 +17,26 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
 
-  --font-sans: var(--font-work-sans, "Work Sans", ui-sans-serif, system-ui, sans-serif);
-  --font-mono: var(--font-jetbrains-mono, "JetBrains Mono", ui-monospace, SFMono-Regular, monospace);
-  --font-display: var(--font-jetbrains-mono, "JetBrains Mono", ui-monospace, monospace);
+  --font-sans: var(
+    --font-work-sans,
+    "Work Sans",
+    ui-sans-serif,
+    system-ui,
+    sans-serif
+  );
+  --font-mono: var(
+    --font-jetbrains-mono,
+    "JetBrains Mono",
+    ui-monospace,
+    SFMono-Regular,
+    monospace
+  );
+  --font-display: var(
+    --font-jetbrains-mono,
+    "JetBrains Mono",
+    ui-monospace,
+    monospace
+  );
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -117,7 +134,9 @@
 
   --hairline: oklch(0.22 0.035 165 / 16%);
   --hairline-strong: oklch(0.22 0.035 165 / 34%);
-  --shadow-plate: 0 1px 0 oklch(0.22 0.035 165 / 6%), 0 18px 50px -34px oklch(0.22 0.035 165 / 40%);
+  --shadow-plate:
+    0 1px 0 oklch(0.22 0.035 165 / 6%),
+    0 18px 50px -34px oklch(0.22 0.035 165 / 40%);
   --shadow-brass: 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent);
 }
 
@@ -173,7 +192,8 @@
 
   --hairline: oklch(0.955 0.014 100 / 13%);
   --hairline-strong: oklch(0.955 0.014 100 / 30%);
-  --shadow-plate: 0 1px 0 oklch(0.955 0.014 100 / 5%), 0 30px 70px -40px oklch(0 0 0 / 80%);
+  --shadow-plate:
+    0 1px 0 oklch(0.955 0.014 100 / 5%), 0 30px 70px -40px oklch(0 0 0 / 80%);
   --shadow-brass: 0 0 0 1px color-mix(in oklab, var(--accent) 40%, transparent);
 }
 
@@ -236,7 +256,8 @@
 }
 
 @utility bg-graph-paper {
-  background-image: linear-gradient(
+  background-image:
+    linear-gradient(
       to right,
       color-mix(in oklab, var(--foreground) 5%, transparent) 1px,
       transparent 1px
@@ -324,7 +345,11 @@
     transform: translate3d(0, -10px, 0);
   }
 }
-@keyframes shimmer { 100% { transform: translateX(100%); } }
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
 
 /* Universal Icon Micro-animations for premium UX */
 @layer utilities {

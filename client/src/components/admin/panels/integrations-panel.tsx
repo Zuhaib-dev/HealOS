@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { LogOut, KeyRound, ShieldCheck, ShieldOff, Copy, Plus, UserCog, HeartPulse } from "lucide-react";
+import {
+  LogOut,
+  KeyRound,
+  ShieldCheck,
+  ShieldOff,
+  Copy,
+  Plus,
+  UserCog,
+  HeartPulse,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "../admin-shell";
 import {
   fetchAdminUsersApi,
@@ -25,12 +34,22 @@ import {
 import { toast } from "sonner";
 import { useAdminRealtime } from "../use-admin-realtime";
 
-import { getApiErrorMessage, Th, Td, Pill, PaginationControls, initials, Avatar } from "./shared";
+import {
+  getApiErrorMessage,
+  Th,
+  Td,
+  Pill,
+  PaginationControls,
+  initials,
+  Avatar,
+} from "./shared";
 
 export function IntegrationsPanel() {
   const [copied, setCopied] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [dbIntegrations, setDbIntegrations] = useState<AdminIntegrationData[]>([]);
+  const [dbIntegrations, setDbIntegrations] = useState<AdminIntegrationData[]>(
+    [],
+  );
 
   const loadIntegrations = useCallback(async () => {
     try {
@@ -52,8 +71,8 @@ export function IntegrationsPanel() {
 
   useAdminRealtime(["integrations"], loadIntegrations);
 
-  const services = dbIntegrations.filter(i => i.type === "SERVICE");
-  const apiKeysList = dbIntegrations.filter(i => i.type === "API_KEY");
+  const services = dbIntegrations.filter((i) => i.type === "SERVICE");
+  const apiKeysList = dbIntegrations.filter((i) => i.type === "API_KEY");
 
   return (
     <div>
@@ -81,7 +100,9 @@ export function IntegrationsPanel() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-mono text-base font-bold">{i.name}</p>
-                  <p className="mono-label text-muted-foreground mt-1">{i.category}</p>
+                  <p className="mono-label text-muted-foreground mt-1">
+                    {i.category}
+                  </p>
                 </div>
                 {i.status === "connected" ? (
                   <Pill tone="ok">connected</Pill>
@@ -91,7 +112,9 @@ export function IntegrationsPanel() {
                   <Pill tone="mute">off</Pill>
                 )}
               </div>
-              <p className="mono-label text-muted-foreground mt-4">{i.detail}</p>
+              <p className="mono-label text-muted-foreground mt-4">
+                {i.detail}
+              </p>
               <div className="mt-4 flex items-center gap-2">
                 <span
                   className={`size-1.5 rounded-full ${
@@ -131,17 +154,24 @@ export function IntegrationsPanel() {
                 className="hairline-b flex flex-wrap items-center gap-4 px-4 py-3.5 last:border-b-0"
               >
                 <span className="w-44 font-medium">{k.name}</span>
-                <span className="mono-label text-brass">{k.keyPrefix}••••••••</span>
-                <span className="mono-label text-muted-foreground">{k.scope}</span>
+                <span className="mono-label text-brass">
+                  {k.keyPrefix}••••••••
+                </span>
+                <span className="mono-label text-muted-foreground">
+                  {k.scope}
+                </span>
                 <span className="mono-label text-muted-foreground ml-auto">
-                  {k.lastUsed ? `used ${new Date(k.lastUsed).toLocaleDateString()}` : "never used"}
+                  {k.lastUsed
+                    ? `used ${new Date(k.lastUsed).toLocaleDateString()}`
+                    : "never used"}
                 </span>
                 <button
                   type="button"
                   onClick={() => setCopied(k.keyPrefix || null)}
                   className="mono-label text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
                 >
-                  <Copy className="size-3" /> {copied === k.keyPrefix ? "copied" : "copy"}
+                  <Copy className="size-3" />{" "}
+                  {copied === k.keyPrefix ? "copied" : "copy"}
                 </button>
               </div>
             ))

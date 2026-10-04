@@ -17,7 +17,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GazeBlobatar as Blobatar } from "@/components/ui/gaze-blobatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/use-auth-store";
-import { fetchPatientProfileApi, PatientProfileData } from "@/lib/api/onboarding";
+import {
+  fetchPatientProfileApi,
+  PatientProfileData,
+} from "@/lib/api/onboarding";
 import {
   LogOut,
   ChevronDown,
@@ -37,7 +40,8 @@ export function UserProfileMenu() {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuthStore();
 
-  const [patientProfile, setPatientProfile] = useState<PatientProfileData | null>(null);
+  const [patientProfile, setPatientProfile] =
+    useState<PatientProfileData | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -146,7 +150,8 @@ export function UserProfileMenu() {
         <button
           type="button"
           className="group flex items-center gap-2.5 rounded-full p-1 pr-3 border border-border/70 hover:border-primary/40 bg-card/60 hover:bg-muted/50 transition-all cursor-pointer outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          aria-label="Open user profile menu" title="Open user profile menu"
+          aria-label="Open user profile menu"
+          title="Open user profile menu"
         >
           <Avatar className="size-8 border border-border/60">
             {user.avatarUrl ? (
@@ -209,7 +214,7 @@ export function UserProfileMenu() {
             <Badge
               variant="outline"
               className={`mono-label text-[10px] px-2 py-0.5 font-bold uppercase ${getRoleBadgeStyle(
-                user.role
+                user.role,
               )}`}
             >
               {getRoleLabel(user.role)}
@@ -228,13 +233,20 @@ export function UserProfileMenu() {
             >
               <LayoutDashboard className="size-4 text-primary" />
               <span>
-                Go to {user.role === "USER" || user.role === "PATIENT" || user.role === "patient" ? "Patient Portal" : `${user.role} Console`}
+                Go to{" "}
+                {user.role === "USER" ||
+                user.role === "PATIENT" ||
+                user.role === "patient"
+                  ? "Patient Portal"
+                  : `${user.role} Console`}
               </span>
             </Link>
           </DropdownMenuItem>
 
           {/* Conditional Onboarding Prompts - ONLY for standard users/patients */}
-          {(user.role === "USER" || user.role === "PATIENT" || user.role === "patient") && (
+          {(user.role === "USER" ||
+            user.role === "PATIENT" ||
+            user.role === "patient") && (
             <>
               {!isPatientComplete ? (
                 <DropdownMenuItem asChild>
@@ -244,9 +256,14 @@ export function UserProfileMenu() {
                   >
                     <div className="flex items-center gap-2.5">
                       <Heart className="size-4 text-rose-500 animate-pulse" />
-                      <span className="font-semibold">Complete Patient Setup</span>
+                      <span className="font-semibold">
+                        Complete Patient Setup
+                      </span>
                     </div>
-                    <Badge variant="outline" className="text-[9px] bg-rose-500/20 border-rose-500/30 px-1.5 py-0">
+                    <Badge
+                      variant="outline"
+                      className="text-[9px] bg-rose-500/20 border-rose-500/30 px-1.5 py-0"
+                    >
                       Action Required
                     </Badge>
                   </Link>
@@ -280,9 +297,7 @@ export function UserProfileMenu() {
 
         {/* Section 2: Contact Info & Settings */}
         <DropdownMenuGroup>
-          <DropdownMenuItem
-            className="flex items-center justify-between p-2 text-xs font-medium cursor-default rounded-md"
-          >
+          <DropdownMenuItem className="flex items-center justify-between p-2 text-xs font-medium cursor-default rounded-md">
             <div className="flex items-center gap-2.5 text-muted-foreground">
               <Phone className="size-4" />
               <span>Contact Phone</span>

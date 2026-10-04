@@ -39,11 +39,19 @@ function CellShell({
   );
 }
 
-function Key({ children, active }: { children: React.ReactNode; active?: boolean }) {
+function Key({
+  children,
+  active,
+}: {
+  children: React.ReactNode;
+  active?: boolean;
+}) {
   return (
     <kbd
       className={`mono-label hairline inline-flex h-6 min-w-6 items-center justify-center px-1.5 text-[0.6rem] transition-all duration-150 ${
-        active ? "bg-accent/20 text-brass translate-y-px" : "text-muted-foreground"
+        active
+          ? "bg-accent/20 text-brass translate-y-px"
+          : "text-muted-foreground"
       }`}
     >
       {children}
@@ -55,7 +63,11 @@ function Key({ children, active }: { children: React.ReactNode; active?: boolean
 /* A · Live command palette — type, arrow, enter. Really works.        */
 /* ------------------------------------------------------------------ */
 const paletteActions = [
-  { tag: "chart", label: "Open chart — Meera Krishnan · HOS-88214", hint: "G P" },
+  {
+    tag: "chart",
+    label: "Open chart — Meera Krishnan · HOS-88214",
+    hint: "G P",
+  },
   { tag: "order", label: "Order CBC + electrolytes — Bed 7A", hint: "O L" },
   { tag: "theatre", label: "Book OT-2 · ortho · 14:30 slot", hint: "G T" },
   { tag: "meds", label: "eMAR due — Ward C · 6 administrations", hint: "G M" },
@@ -70,7 +82,7 @@ function CommandPaletteCell() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filtered = paletteActions.filter((a) =>
-    a.label.toLowerCase().includes(query.trim().toLowerCase())
+    a.label.toLowerCase().includes(query.trim().toLowerCase()),
   );
   const clamped = Math.min(index, Math.max(filtered.length - 1, 0));
 
@@ -80,7 +92,10 @@ function CommandPaletteCell() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         inputRef.current?.focus();
-        inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        inputRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
       }
     };
     window.addEventListener("keydown", onKey);
@@ -105,8 +120,8 @@ function CommandPaletteCell() {
       }
     >
       <p className="text-muted-foreground max-w-md text-sm leading-relaxed">
-        Every action in HealOS is one keystroke away. Try it — this palette is live. Type to
-        filter, arrows to move, enter to run.
+        Every action in HealOS is one keystroke away. Try it — this palette is
+        live. Type to filter, arrows to move, enter to run.
       </p>
 
       <div className="plate mt-5 flex flex-1 flex-col">
@@ -118,8 +133,21 @@ function CommandPaletteCell() {
           className="hairline-b flex items-center gap-3 px-4 py-3"
         >
           <svg viewBox="0 0 16 16" className="text-brass size-3.5" fill="none">
-            <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.25" />
-            <line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" strokeWidth="1.25" />
+            <circle
+              cx="7"
+              cy="7"
+              r="4.5"
+              stroke="currentColor"
+              strokeWidth="1.25"
+            />
+            <line
+              x1="10.5"
+              y1="10.5"
+              x2="14"
+              y2="14"
+              stroke="currentColor"
+              strokeWidth="1.25"
+            />
           </svg>
           <input
             ref={inputRef}
@@ -145,7 +173,8 @@ function CommandPaletteCell() {
               }
             }}
             placeholder="Type a command or search the record…"
-            aria-label="Type a command or search the record" title="Type a command or search the record"
+            aria-label="Type a command or search the record"
+            title="Type a command or search the record"
             className="text-foreground placeholder:text-muted-foreground/60 w-full bg-transparent font-mono text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
           />
           <span className="mono-label text-muted-foreground hidden sm:inline">
@@ -179,7 +208,9 @@ function CommandPaletteCell() {
                     {a.label}
                   </span>
                 </span>
-                <span className="mono-label text-muted-foreground hidden sm:inline">{a.hint}</span>
+                <span className="mono-label text-muted-foreground hidden sm:inline">
+                  {a.hint}
+                </span>
               </button>
             </li>
           ))}
@@ -194,7 +225,9 @@ function CommandPaletteCell() {
               >
                 <span className="bg-accent size-1.5 animate-pulse rounded-full" />
                 <span className="mono-label text-brass">executed</span>
-                <span className="text-muted-foreground truncate font-mono text-xs">{flash}</span>
+                <span className="text-muted-foreground truncate font-mono text-xs">
+                  {flash}
+                </span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -204,11 +237,15 @@ function CommandPaletteCell() {
           <span className="flex items-center gap-1.5">
             <Key>↑</Key>
             <Key>↓</Key>
-            <span className="mono-label text-muted-foreground ml-1">navigate</span>
+            <span className="mono-label text-muted-foreground ml-1">
+              navigate
+            </span>
           </span>
           <span className="flex items-center gap-1.5">
             <Key>↵</Key>
-            <span className="mono-label text-muted-foreground ml-1">execute</span>
+            <span className="mono-label text-muted-foreground ml-1">
+              execute
+            </span>
           </span>
           <span className="flex items-center gap-1.5">
             <Key>esc</Key>
@@ -245,15 +282,19 @@ function AuditStreamCell() {
   const reduce = useReducedMotion() ?? false;
   const [paused, setPaused] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  
+
   const [lines, setLines] = useState(() =>
-    auditPool.slice(0, 4).map((text, i) => ({ id: i, t: "--:--:--", text }))
+    auditPool.slice(0, 4).map((text, i) => ({ id: i, t: "--:--:--", text })),
   );
   const next = useRef(4);
 
   useEffect(() => {
     setIsMounted(true);
-    setLines(auditPool.slice(0, 4).map((text, i) => ({ id: i, t: stamp((4 - i) * 2), text })));
+    setLines(
+      auditPool
+        .slice(0, 4)
+        .map((text, i) => ({ id: i, t: stamp((4 - i) * 2), text })),
+    );
   }, []);
 
   useEffect(() => {
@@ -283,7 +324,9 @@ function AuditStreamCell() {
           <span
             className={`size-1.5 rounded-full ${paused ? "bg-muted-foreground" : "bg-accent animate-pulse"}`}
           />
-          <span className={paused ? "" : "text-brass"}>{paused ? "paused" : "live"}</span>
+          <span className={paused ? "" : "text-brass"}>
+            {paused ? "paused" : "live"}
+          </span>
         </span>
       }
     >
@@ -365,8 +408,8 @@ function BreakGlassCell() {
       status={<span className="text-muted-foreground">hold 0.9s</span>}
     >
       <p className="text-muted-foreground text-sm leading-relaxed">
-        Emergency access is possible — never silent. Hold the seal to feel how a deliberate action
-        resists accidental taps.
+        Emergency access is possible — never silent. Hold the seal to feel how a
+        deliberate action resists accidental taps.
       </p>
 
       <div className="mt-5 flex items-center gap-5">
@@ -376,9 +419,13 @@ function BreakGlassCell() {
           onPointerUp={cancel}
           onPointerLeave={cancel}
           className="relative grid size-16 shrink-0 cursor-pointer place-items-center select-none"
-          aria-label="Hold to authorize break-glass access" title="Hold to authorize break-glass access"
+          aria-label="Hold to authorize break-glass access"
+          title="Hold to authorize break-glass access"
         >
-          <svg viewBox="0 0 40 40" className="absolute inset-0 size-16 -rotate-90">
+          <svg
+            viewBox="0 0 40 40"
+            className="absolute inset-0 size-16 -rotate-90"
+          >
             <circle
               cx="20"
               cy="20"
@@ -402,15 +449,22 @@ function BreakGlassCell() {
               strokeDashoffset={c * (1 - progress)}
             />
           </svg>
-          <span className={`mono-label text-[0.55rem] ${granted ? "text-brass" : "text-muted-foreground"}`}>
+          <span
+            className={`mono-label text-[0.55rem] ${granted ? "text-brass" : "text-muted-foreground"}`}
+          >
             {granted ? "open" : "hold"}
           </span>
         </button>
 
         <div className="min-h-10 flex-1">
           {granted ? (
-            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-              <p className="text-brass font-mono text-sm">GRANTED · OTP 4417-08</p>
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <p className="text-brass font-mono text-sm">
+                GRANTED · OTP 4417-08
+              </p>
               <p className="mono-label text-muted-foreground mt-1">
                 logged as event #8841 · supervisor paged
               </p>
@@ -424,7 +478,9 @@ function BreakGlassCell() {
                 />
               </div>
               <p className="mono-label text-muted-foreground mt-2">
-                {progress > 0 ? "authorizing…" : "sealed · field-level audit armed"}
+                {progress > 0
+                  ? "authorizing…"
+                  : "sealed · field-level audit armed"}
               </p>
             </div>
           )}
@@ -443,11 +499,17 @@ function OfflineCell() {
 
   useEffect(() => {
     if (!online) {
-      const id = window.setInterval(() => setQueued((q) => Math.min(q + 1, 24)), 700);
+      const id = window.setInterval(
+        () => setQueued((q) => Math.min(q + 1, 24)),
+        700,
+      );
       return () => window.clearInterval(id);
     }
     if (queued > 0) {
-      const id = window.setInterval(() => setQueued((q) => Math.max(q - 1, 0)), 90);
+      const id = window.setInterval(
+        () => setQueued((q) => Math.max(q - 1, 0)),
+        90,
+      );
       return () => window.clearInterval(id);
     }
     return undefined;
@@ -495,7 +557,11 @@ function OfflineCell() {
           {queued}
         </span>
         <span className="mono-label text-muted-foreground">
-          {syncing ? "draining queue" : online ? "changes queued" : "buffering locally"}
+          {syncing
+            ? "draining queue"
+            : online
+              ? "changes queued"
+              : "buffering locally"}
         </span>
       </div>
 
@@ -510,7 +576,9 @@ function OfflineCell() {
         ))}
       </div>
       <p className="mono-label text-muted-foreground mt-4">
-        {syncing ? "merging — conflict-free, in order" : "encrypted at rest · syncs in order"}
+        {syncing
+          ? "merging — conflict-free, in order"
+          : "encrypted at rest · syncs in order"}
       </p>
     </CellShell>
   );
@@ -533,7 +601,8 @@ function tzParts(tz: string, now: Date) {
     hour12: false,
     timeZone: tz,
   }).formatToParts(now);
-  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+  const get = (t: string) =>
+    Number(parts.find((p) => p.type === t)?.value ?? 0);
   return { h: get("hour") % 24, m: get("minute"), s: get("second") };
 }
 
@@ -557,7 +626,11 @@ function SiteClocksCell() {
           const { h, m, s: sec } = tzParts(s.tz, now);
           return (
             <div key={s.id} className="group/row flex items-center gap-4">
-              <svg viewBox="0 0 32 32" className="size-8 shrink-0" suppressHydrationWarning>
+              <svg
+                viewBox="0 0 32 32"
+                className="size-8 shrink-0"
+                suppressHydrationWarning
+              >
                 <circle
                   cx="16"
                   cy="16"
@@ -620,9 +693,14 @@ function SiteClocksCell() {
                   <p className="text-sm font-medium">{s.city}</p>
                   <p className="mono-label text-muted-foreground">{s.id}</p>
                 </div>
-                <p className="text-foreground font-mono text-sm tabular-nums" suppressHydrationWarning>
+                <p
+                  className="text-foreground font-mono text-sm tabular-nums"
+                  suppressHydrationWarning
+                >
                   {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}
-                  <span className="text-brass" suppressHydrationWarning>:{String(sec).padStart(2, "0")}</span>
+                  <span className="text-brass" suppressHydrationWarning>
+                    :{String(sec).padStart(2, "0")}
+                  </span>
                 </p>
               </div>
             </div>
@@ -658,7 +736,7 @@ function LatencyCell() {
         ps.map((p, i) => {
           const target = links[i]!.base + (Math.random() - 0.5) * 10;
           return Math.round(p + (target - p) * 0.4);
-        })
+        }),
       );
     }, 900);
     return () => window.clearInterval(id);
@@ -701,7 +779,9 @@ function LatencyCell() {
                 className={`absolute inset-y-0 left-0 ${
                   pinned === i ? "bg-brass" : "bg-accent/70"
                 }`}
-                animate={{ width: `${Math.min(((pings[i] ?? 0) / 70) * 100, 100)}%` }}
+                animate={{
+                  width: `${Math.min(((pings[i] ?? 0) / 70) * 100, 100)}%`,
+                }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
               />
             </div>
@@ -732,9 +812,9 @@ export function InstrumentBento() {
             </h2>
           </div>
           <p className="text-muted-foreground lg:col-span-5 lg:col-start-8 lg:self-end">
-            The details below are not screenshots. Every cell on this panel is alive — press,
-            hold, type and toggle them. The product behaves the same way at 3 a.m. on a night
-            shift.
+            The details below are not screenshots. Every cell on this panel is
+            alive — press, hold, type and toggle them. The product behaves the
+            same way at 3 a.m. on a night shift.
           </p>
         </div>
 
@@ -752,7 +832,8 @@ export function InstrumentBento() {
 
         <div className="hairline-t mono-label text-muted-foreground flex flex-wrap items-center justify-between gap-4 py-4">
           <span>
-            panel <span className="text-brass">005-A…F</span> · all interactions live
+            panel <span className="text-brass">005-A…F</span> · all interactions
+            live
           </span>
           <span className="flex items-center gap-1.5">
             press <Key>⌘</Key>

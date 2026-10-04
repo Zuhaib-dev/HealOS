@@ -20,7 +20,10 @@ const inventorySchema = new Schema(
     reorderThreshold: { type: Number, required: true, default: 10 },
     unit: { type: String, required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const Inventory = mongoose.model<IInventory>("Inventory", inventorySchema);
+export const Inventory = mongoose.model<IInventory>(
+  "Inventory",
+  inventorySchema,
+);

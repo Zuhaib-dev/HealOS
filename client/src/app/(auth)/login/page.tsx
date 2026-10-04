@@ -17,7 +17,13 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-sm text-muted-foreground mono-label animate-pulse">Loading secure workspace...</div>}>
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-sm text-muted-foreground mono-label animate-pulse">
+          Loading secure workspace...
+        </div>
+      }
+    >
       <LoginClient />
     </Suspense>
   );

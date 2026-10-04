@@ -33,7 +33,11 @@ import {
 } from "@/lib/api/onboarding";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import { fetchPatientDashboardApi, PatientDashboardData, payInvoiceApi } from "@/lib/api/patient";
+import {
+  fetchPatientDashboardApi,
+  PatientDashboardData,
+  payInvoiceApi,
+} from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
 
 /* ---------- primitives ---------- */
@@ -51,12 +55,16 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
@@ -82,7 +90,11 @@ function Trend({ series }: { series: number[] }) {
     })
     .join(" ");
   return (
-    <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="h-10 w-full">
+    <svg
+      viewBox="0 0 100 30"
+      preserveAspectRatio="none"
+      className="h-10 w-full"
+    >
       <motion.polyline
         points={pts}
         fill="none"
@@ -97,11 +109,19 @@ function Trend({ series }: { series: number[] }) {
   );
 }
 
-function AppointmentRow({ a, actions }: { a: AppointmentRecord; actions?: React.ReactNode }) {
+function AppointmentRow({
+  a,
+  actions,
+}: {
+  a: AppointmentRecord;
+  actions?: React.ReactNode;
+}) {
   return (
     <div className="bg-background flex flex-wrap items-center gap-4 px-5 py-4 sm:px-8">
       <div className="w-28 shrink-0">
-        <p className="mono-label text-brass">{new Date(a.date).toLocaleDateString()}</p>
+        <p className="mono-label text-brass">
+          {new Date(a.date).toLocaleDateString()}
+        </p>
         <p className="mono-label text-muted-foreground">{a.timeSlot}</p>
       </div>
       <div className="min-w-0 flex-1">
@@ -111,7 +131,11 @@ function AppointmentRow({ a, actions }: { a: AppointmentRecord; actions?: React.
         </p>
       </div>
       <span className="mono-label text-muted-foreground hidden items-center gap-1.5 sm:flex">
-        {a.type === "TELECONSULT" ? <Video className="size-3" /> : <MapPin className="size-3" />}
+        {a.type === "TELECONSULT" ? (
+          <Video className="size-3" />
+        ) : (
+          <MapPin className="size-3" />
+        )}
         {a.department}
       </span>
       <Pill tone={stateTone(a.status)}>{a.status}</Pill>
@@ -130,11 +154,11 @@ export function MessagesPanel() {
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
-    
+
     const handleReceive = (data: any) => {
       setChatMessages((prev) => [...prev, data]);
     };
-    
+
     socket.on("chat:receive_message", handleReceive);
     return () => {
       socket.off("chat:receive_message", handleReceive);
@@ -149,7 +173,7 @@ export function MessagesPanel() {
       senderName: user.name || "Patient",
       role: "PATIENT",
       text: draft.trim(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
     socket.emit("chat:send_message", msg);
     setChatMessages((prev) => [...prev, msg]);
@@ -164,21 +188,41 @@ export function MessagesPanel() {
         note="Real-time chat with the care team."
       />
 
-      <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
+      <div
+        className="grid gap-px lg:grid-cols-3"
+        style={{ background: "var(--hairline)" }}
+      >
         <div className="bg-background lg:col-span-2">
-          <div className="flex flex-col gap-px h-150 overflow-y-auto" style={{ background: "var(--hairline)" }}>
+          <div
+            className="flex flex-col gap-px h-150 overflow-y-auto"
+            style={{ background: "var(--hairline)" }}
+          >
             {chatMessages.map((m, i) => (
               <div key={i} className="bg-background p-5 sm:px-8">
                 <div className="flex items-center gap-3">
-                  <span className={m.role === "PATIENT" ? "bg-foreground/6 mono-label grid size-8 place-items-center" : "bg-accent/12 text-brass mono-label grid size-8 place-items-center"}>
-                    {m.role === "PATIENT" ? "ME" : m.senderName[0].toUpperCase()}
+                  <span
+                    className={
+                      m.role === "PATIENT"
+                        ? "bg-foreground/6 mono-label grid size-8 place-items-center"
+                        : "bg-accent/12 text-brass mono-label grid size-8 place-items-center"
+                    }
+                  >
+                    {m.role === "PATIENT"
+                      ? "ME"
+                      : m.senderName[0].toUpperCase()}
                   </span>
                   <div>
-                    <p className="text-sm font-medium">{m.role === "PATIENT" ? "You" : m.senderName}</p>
-                    <p className="mono-label text-muted-foreground">{new Date(m.timestamp).toLocaleTimeString()}</p>
+                    <p className="text-sm font-medium">
+                      {m.role === "PATIENT" ? "You" : m.senderName}
+                    </p>
+                    <p className="mono-label text-muted-foreground">
+                      {new Date(m.timestamp).toLocaleTimeString()}
+                    </p>
                   </div>
                 </div>
-                <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{m.text}</p>
+                <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
+                  {m.text}
+                </p>
               </div>
             ))}
             {chatMessages.length === 0 && (
@@ -190,10 +234,16 @@ export function MessagesPanel() {
         </div>
 
         <div className="bg-background p-5">
-          <label htmlFor="patient-new-message" className="mono-label block text-muted-foreground">New message</label>
+          <label
+            htmlFor="patient-new-message"
+            className="mono-label block text-muted-foreground"
+          >
+            New message
+          </label>
           <textarea
             id="patient-new-message"
-            aria-label="Type your message" title="Type your message"
+            aria-label="Type your message"
+            title="Type your message"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={8}

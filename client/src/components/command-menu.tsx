@@ -174,7 +174,7 @@ export function CommandMenu() {
           <CommandItem
             onSelect={() =>
               runCommand(() =>
-                setTheme(resolvedTheme === "dark" ? "light" : "dark")
+                setTheme(resolvedTheme === "dark" ? "light" : "dark"),
               )
             }
             className="cursor-pointer"
@@ -184,7 +184,9 @@ export function CommandMenu() {
             ) : (
               <Moon className="mr-2 size-4 text-indigo-500" />
             )}
-            <span>Toggle Theme ({resolvedTheme === "dark" ? "Light" : "Dark"})</span>
+            <span>
+              Toggle Theme ({resolvedTheme === "dark" ? "Light" : "Dark"})
+            </span>
           </CommandItem>
           <CommandItem
             onSelect={() => runCommand(() => router.push("/login"))}

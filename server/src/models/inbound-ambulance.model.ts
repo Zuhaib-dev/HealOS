@@ -72,10 +72,10 @@ const inboundAmbulanceSchema = new Schema<IInboundAmbulance>(
       index: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const InboundAmbulance = mongoose.model<IInboundAmbulance>(
   "InboundAmbulance",
-  inboundAmbulanceSchema
+  inboundAmbulanceSchema,
 );

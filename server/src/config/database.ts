@@ -14,7 +14,9 @@ export const connectDB = async (): Promise<void> => {
       socketTimeoutMS: 45000,
     });
 
-    console.log(`✅ MongoDB connected: ${conn.connection.host}/${conn.connection.name}`);
+    console.log(
+      `✅ MongoDB connected: ${conn.connection.host}/${conn.connection.name}`,
+    );
 
     // Connection event listeners
     mongoose.connection.on("error", (err) => {
@@ -28,9 +30,11 @@ export const connectDB = async (): Promise<void> => {
     mongoose.connection.on("reconnected", () => {
       console.log("✅ MongoDB reconnected");
     });
-
   } catch (error) {
-    console.error("⚠️ MongoDB connection failed. Will retry when database is available:", error);
+    console.error(
+      "⚠️ MongoDB connection failed. Will retry when database is available:",
+      error,
+    );
   }
 };
 

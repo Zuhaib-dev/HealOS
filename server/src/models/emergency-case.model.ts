@@ -120,10 +120,10 @@ const emergencyCaseSchema = new Schema<IEmergencyCase>(
       index: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const EmergencyCase = mongoose.model<IEmergencyCase>(
   "EmergencyCase",
-  emergencyCaseSchema
+  emergencyCaseSchema,
 );

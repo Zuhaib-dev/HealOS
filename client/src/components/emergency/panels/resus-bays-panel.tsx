@@ -2,7 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
-import { Siren, AlertTriangle, Check, RefreshCw, X, Stethoscope, ArrowRight } from "lucide-react";
+import {
+  Siren,
+  AlertTriangle,
+  Check,
+  RefreshCw,
+  X,
+  Stethoscope,
+  ArrowRight,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Pill, type Tone } from "@/components/workspace/ui";
 import { getSocket } from "@/lib/socket";
@@ -64,18 +72,23 @@ export function ResusPanel() {
     const target = bayId || "Resus 1";
     try {
       await callResusTeamApi(target);
-      setActiveAlert(`🚨 CODE RESUS ALERT BROADCAST FOR ${target}! Team dispatch in progress.`);
+      setActiveAlert(
+        `🚨 CODE RESUS ALERT BROADCAST FOR ${target}! Team dispatch in progress.`,
+      );
     } catch (err) {
       console.error("Failed to call resus team:", err);
     }
   };
 
   const handleHandoverIcu = async (bayId: string) => {
-    if (!confirm(`Handover patient in ${bayId} to Intensive Care Unit (ICU)?`)) return;
+    if (!confirm(`Handover patient in ${bayId} to Intensive Care Unit (ICU)?`))
+      return;
     try {
       const res = await handoverToIcuApi(bayId);
       if (res.success) {
-        setMessage(`Handover complete for ${bayId}. Bay transitioned to cleaning.`);
+        setMessage(
+          `Handover complete for ${bayId}. Bay transitioned to cleaning.`,
+        );
         setTimeout(() => setMessage(null), 3500);
         await loadBays();
       }
@@ -128,7 +141,10 @@ export function ResusPanel() {
               <RefreshCw className="mr-1 inline size-3" />
               Refresh
             </ActionButton>
-            <ActionButton tone="solid" onClick={() => handleCallTeam("Resus 1")}>
+            <ActionButton
+              tone="solid"
+              onClick={() => handleCallTeam("Resus 1")}
+            >
               <Siren className="mr-1 inline size-3.5" />
               Call resus team
             </ActionButton>
@@ -141,7 +157,9 @@ export function ResusPanel() {
         <div className="mb-4 flex items-center justify-between border border-destructive bg-destructive/15 p-4 text-destructive animate-pulse">
           <div className="flex items-center gap-3">
             <Siren className="size-5 shrink-0" />
-            <span className="font-mono text-sm font-bold tracking-wide">{activeAlert}</span>
+            <span className="font-mono text-sm font-bold tracking-wide">
+              {activeAlert}
+            </span>
           </div>
           <button
             type="button"
@@ -154,7 +172,11 @@ export function ResusPanel() {
       )}
 
       {message && (
-        <div role="status" aria-live="polite" className="mb-4 flex items-center gap-2 border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-500 text-xs mono-label">
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-4 flex items-center gap-2 border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-500 text-xs mono-label"
+        >
           <Check className="size-4 shrink-0" />
           <span>{message}</span>
         </div>
@@ -165,7 +187,9 @@ export function ResusPanel() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
           <div className="bg-background hairline w-full max-w-md p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="font-mono text-base font-bold">Manage {editingBay.id}</h3>
+              <h3 className="font-mono text-base font-bold">
+                Manage {editingBay.id}
+              </h3>
               <button
                 type="button"
                 onClick={() => setEditingBay(null)}
@@ -179,12 +203,22 @@ export function ResusPanel() {
 
             <form onSubmit={handleSaveBayEdit} className="mt-4 space-y-3">
               <div>
-                <label htmlFor="resus-bay-state" className="mono-label block text-muted-foreground text-xs">Bay State</label>
+                <label
+                  htmlFor="resus-bay-state"
+                  className="mono-label block text-muted-foreground text-xs"
+                >
+                  Bay State
+                </label>
                 <select
                   id="resus-bay-state"
                   required={true}
                   value={editingBay.state}
-                  onChange={(e) => setEditingBay({ ...editingBay, state: e.target.value as any })}
+                  onChange={(e) =>
+                    setEditingBay({
+                      ...editingBay,
+                      state: e.target.value as any,
+                    })
+                  }
                   className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm font-mono focus:outline-hidden"
                 >
                   <option value="occupied">Occupied</option>
@@ -195,24 +229,38 @@ export function ResusPanel() {
               </div>
 
               <div>
-                <label htmlFor="resus-bay-patient" className="mono-label block text-muted-foreground text-xs">Patient & Clinical Summary</label>
+                <label
+                  htmlFor="resus-bay-patient"
+                  className="mono-label block text-muted-foreground text-xs"
+                >
+                  Patient & Clinical Summary
+                </label>
                 <input
                   id="resus-bay-patient"
                   type="text"
                   value={editingBay.patient}
-                  onChange={(e) => setEditingBay({ ...editingBay, patient: e.target.value })}
+                  onChange={(e) =>
+                    setEditingBay({ ...editingBay, patient: e.target.value })
+                  }
                   className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm focus:outline-hidden"
                   placeholder="e.g. Unknown male · post-arrest"
                 />
               </div>
 
               <div>
-                <label htmlFor="resus-bay-team" className="mono-label block text-muted-foreground text-xs">Assigned Resus Team</label>
+                <label
+                  htmlFor="resus-bay-team"
+                  className="mono-label block text-muted-foreground text-xs"
+                >
+                  Assigned Resus Team
+                </label>
                 <input
                   id="resus-bay-team"
                   type="text"
                   value={editingBay.team}
-                  onChange={(e) => setEditingBay({ ...editingBay, team: e.target.value })}
+                  onChange={(e) =>
+                    setEditingBay({ ...editingBay, team: e.target.value })
+                  }
                   className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm focus:outline-hidden"
                   placeholder="e.g. Dr. Varma + 3"
                 />
@@ -220,23 +268,37 @@ export function ResusPanel() {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label htmlFor="resus-bay-airway" className="mono-label block text-muted-foreground text-xs">Airway Status</label>
+                  <label
+                    htmlFor="resus-bay-airway"
+                    className="mono-label block text-muted-foreground text-xs"
+                  >
+                    Airway Status
+                  </label>
                   <input
                     id="resus-bay-airway"
                     type="text"
                     value={editingBay.airway}
-                    onChange={(e) => setEditingBay({ ...editingBay, airway: e.target.value })}
+                    onChange={(e) =>
+                      setEditingBay({ ...editingBay, airway: e.target.value })
+                    }
                     className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm font-mono focus:outline-hidden"
                     placeholder="e.g. ETT 8.0 / NIV"
                   />
                 </div>
                 <div>
-                  <label htmlFor="resus-bay-lines" className="mono-label block text-muted-foreground text-xs">Vascular Access</label>
+                  <label
+                    htmlFor="resus-bay-lines"
+                    className="mono-label block text-muted-foreground text-xs"
+                  >
+                    Vascular Access
+                  </label>
                   <input
                     id="resus-bay-lines"
                     type="text"
                     value={editingBay.lines}
-                    onChange={(e) => setEditingBay({ ...editingBay, lines: e.target.value })}
+                    onChange={(e) =>
+                      setEditingBay({ ...editingBay, lines: e.target.value })
+                    }
                     className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm font-mono focus:outline-hidden"
                     placeholder="e.g. 2 x 18G, IO"
                   />
@@ -244,12 +306,19 @@ export function ResusPanel() {
               </div>
 
               <div>
-                <label htmlFor="resus-bay-next" className="mono-label block text-muted-foreground text-xs">Next Timed Intervention</label>
+                <label
+                  htmlFor="resus-bay-next"
+                  className="mono-label block text-muted-foreground text-xs"
+                >
+                  Next Timed Intervention
+                </label>
                 <input
                   id="resus-bay-next"
                   type="text"
                   value={editingBay.next}
-                  onChange={(e) => setEditingBay({ ...editingBay, next: e.target.value })}
+                  onChange={(e) =>
+                    setEditingBay({ ...editingBay, next: e.target.value })
+                  }
                   className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm font-mono focus:outline-hidden"
                   placeholder="e.g. Repeat gas 14:20"
                 />
@@ -259,7 +328,11 @@ export function ResusPanel() {
                 <ActionButton type="button" onClick={() => setEditingBay(null)}>
                   Cancel
                 </ActionButton>
-                <ActionButton type="submit" tone="solid" disabled={isSubmitting}>
+                <ActionButton
+                  type="submit"
+                  tone="solid"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? "Saving..." : "Update Bay"}
                 </ActionButton>
               </div>
@@ -274,21 +347,40 @@ export function ResusPanel() {
           Loading resus bays...
         </div>
       ) : (
-        <div className="grid gap-px lg:grid-cols-2" style={{ background: "var(--hairline)" }}>
+        <div
+          className="grid gap-px lg:grid-cols-2"
+          style={{ background: "var(--hairline)" }}
+        >
           {bays.map((b) => {
             const occupied = b.state === "occupied";
             return (
               <div key={b.id} className="bg-background p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="mono-label text-accent/80 font-bold">{b.id}</p>
-                    <p className="mt-1 font-mono text-lg font-bold">{b.patient}</p>
+                    <p className="mono-label text-accent/80 font-bold">
+                      {b.id}
+                    </p>
+                    <p className="mt-1 font-mono text-lg font-bold">
+                      {b.patient}
+                    </p>
                   </div>
-                  <Pill tone={occupied ? "bad" : b.state === "ready" ? "ok" : "warn"}>{b.state}</Pill>
+                  <Pill
+                    tone={
+                      occupied ? "bad" : b.state === "ready" ? "ok" : "warn"
+                    }
+                  >
+                    {b.state}
+                  </Pill>
                 </div>
 
                 <svg viewBox="0 0 200 44" className="mt-3 h-11 w-full">
-                  <line x1="0" y1="22" x2="200" y2="22" stroke="var(--hairline)" />
+                  <line
+                    x1="0"
+                    y1="22"
+                    x2="200"
+                    y2="22"
+                    stroke="var(--hairline)"
+                  />
                   {occupied && (
                     <motion.path
                       d="M0 22 H60 l6 -14 l6 28 l6 -14 H200"
@@ -297,7 +389,11 @@ export function ResusPanel() {
                       strokeWidth="1.4"
                       initial={{ pathLength: 0, opacity: 0.4 }}
                       animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ duration: 1.6, repeat: Infinity, ease: "linear" }}
+                      transition={{
+                        duration: 1.6,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
                     />
                   )}
                 </svg>
@@ -322,11 +418,17 @@ export function ResusPanel() {
                     Manage chart
                   </ActionButton>
                   {occupied ? (
-                    <ActionButton tone="solid" onClick={() => handleHandoverIcu(b.id)}>
+                    <ActionButton
+                      tone="solid"
+                      onClick={() => handleHandoverIcu(b.id)}
+                    >
                       Handover to ICU
                     </ActionButton>
                   ) : b.state === "cleaning" ? (
-                    <ActionButton tone="solid" onClick={() => handleMarkReady(b.id)}>
+                    <ActionButton
+                      tone="solid"
+                      onClick={() => handleMarkReady(b.id)}
+                    >
                       Mark Ready ✓
                     </ActionButton>
                   ) : (

@@ -13,11 +13,13 @@ export function QueuePanel() {
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
 
   const loadQueue = () => {
-    fetchQueueApi().then((res: any) => {
-      if (res.status === "success" && res.data?.appointments) {
-        setAppointments(res.data.appointments);
-      }
-    }).catch(console.error);
+    fetchQueueApi()
+      .then((res: any) => {
+        if (res.status === "success" && res.data?.appointments) {
+          setAppointments(res.data.appointments);
+        }
+      })
+      .catch(console.error);
   };
 
   useEffect(() => {
@@ -36,7 +38,10 @@ export function QueuePanel() {
     }
   }, []);
 
-  const handleUpdateStatus = async (id: string, status: "CONFIRMED" | "COMPLETED" | "CANCELLED" | "IN_PROGRESS" | "NO_SHOW") => {
+  const handleUpdateStatus = async (
+    id: string,
+    status: "CONFIRMED" | "COMPLETED" | "CANCELLED" | "IN_PROGRESS" | "NO_SHOW",
+  ) => {
     try {
       // @ts-ignore
       const res = await updateAppointmentStatusApi(id, status);
@@ -50,19 +55,22 @@ export function QueuePanel() {
   };
 
   // Group appointments by department/doctor
-  const queuesMap: Record<string, {
-    department: string;
-    room: string;
-    doctor: string;
-    nowServing: string;
-    nowServingId?: string;
-    nextId?: string;
-    waiting: number;
-    avgMin: number;
-    state: "in-room" | "break";
-  }> = {};
+  const queuesMap: Record<
+    string,
+    {
+      department: string;
+      room: string;
+      doctor: string;
+      nowServing: string;
+      nowServingId?: string;
+      nextId?: string;
+      waiting: number;
+      avgMin: number;
+      state: "in-room" | "break";
+    }
+  > = {};
 
-  appointments.forEach(app => {
+  appointments.forEach((app) => {
     const key = app.department;
     if (!queuesMap[key]) {
       queuesMap[key] = {
@@ -80,7 +88,8 @@ export function QueuePanel() {
       queuesMap[key].waiting++;
       if (!queuesMap[key].nextId) queuesMap[key].nextId = app._id;
     } else if (app.status === "IN_PROGRESS") {
-      queuesMap[key].nowServing = `${app.department.charAt(0)}-${app._id.slice(-4)}`;
+      queuesMap[key].nowServing =
+        `${app.department.charAt(0)}-${app._id.slice(-4)}`;
       queuesMap[key].nowServingId = app._id;
     }
   });
@@ -102,24 +111,36 @@ export function QueuePanel() {
         </div>
       )}
 
-      <div className="grid gap-px lg:grid-cols-2" style={{ background: "var(--hairline)" }}>
+      <div
+        className="grid gap-px lg:grid-cols-2"
+        style={{ background: "var(--hairline)" }}
+      >
         {serving.map((q, idx) => (
           <div key={q.room} className="bg-background p-5 sm:p-8">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="mono-label text-accent/80">{q.room}</p>
-                <p className="mono-label text-muted-foreground mt-1">{q.doctor}</p>
+                <p className="mono-label text-muted-foreground mt-1">
+                  {q.doctor}
+                </p>
               </div>
               <span className="inline-flex items-center gap-2">
                 {q.state === "in-room" && <LiveDot />}
-                <Pill tone={q.state === "in-room" ? "ok" : "warn"}>{q.state}</Pill>
+                <Pill tone={q.state === "in-room" ? "ok" : "warn"}>
+                  {q.state}
+                </Pill>
               </span>
             </div>
 
             <p className="mono-label text-muted-foreground mt-6">Now serving</p>
-            <p className="text-brass font-mono text-6xl font-bold tracking-tight">{q.nowServing}</p>
+            <p className="text-brass font-mono text-6xl font-bold tracking-tight">
+              {q.nowServing}
+            </p>
 
-            <div className="mono-label mt-5 grid grid-cols-3 gap-px" style={{ background: "var(--hairline)" }}>
+            <div
+              className="mono-label mt-5 grid grid-cols-3 gap-px"
+              style={{ background: "var(--hairline)" }}
+            >
               {[
                 ["Waiting", `${q.waiting}`],
                 ["Avg consult", `${q.avgMin}m`],
@@ -127,14 +148,16 @@ export function QueuePanel() {
               ].map(([k, v]) => (
                 <div key={k} className="bg-background px-2 py-3 text-center">
                   <p className="text-muted-foreground">{k}</p>
-                  <p className="text-foreground mt-1 font-mono text-base">{v}</p>
+                  <p className="text-foreground mt-1 font-mono text-base">
+                    {v}
+                  </p>
                 </div>
               ))}
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
-              <ActionButton 
-                tone="solid" 
+              <ActionButton
+                tone="solid"
                 onClick={() => {
                   if (q.nextId) {
                     handleUpdateStatus(q.nextId, "IN_PROGRESS");
@@ -147,12 +170,20 @@ export function QueuePanel() {
                 Call next
               </ActionButton>
               {q.nowServingId && (
-                <ActionButton onClick={() => handleUpdateStatus(q.nowServingId!, "IN_PROGRESS")}>
+                <ActionButton
+                  onClick={() =>
+                    handleUpdateStatus(q.nowServingId!, "IN_PROGRESS")
+                  }
+                >
                   Recall
                 </ActionButton>
               )}
               {q.nowServingId && (
-                <ActionButton onClick={() => handleUpdateStatus(q.nowServingId!, "CANCELLED")}>
+                <ActionButton
+                  onClick={() =>
+                    handleUpdateStatus(q.nowServingId!, "CANCELLED")
+                  }
+                >
                   Mark no-show
                 </ActionButton>
               )}

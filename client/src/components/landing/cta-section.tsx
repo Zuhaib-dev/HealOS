@@ -14,7 +14,9 @@ export function CtaSection() {
 
     setIsPending(true);
     try {
-      const res = await fetch(`/api/v1/sandbox?query=${encodeURIComponent(query.trim())}`);
+      const res = await fetch(
+        `/api/v1/sandbox?query=${encodeURIComponent(query.trim())}`,
+      );
       if (res.ok) {
         toast.success("Sandbox toolcall executed successfully.");
       } else {
@@ -51,8 +53,9 @@ export function CtaSection() {
                 <span className="text-brass">on one instrument.</span>
               </motion.h2>
               <p className="text-muted-foreground mt-7 max-w-lg leading-relaxed">
-                Bring a clinician, an administrator and your data lead. We will walk your real
-                workflow through HealOS in 45 minutes — no slideware.
+                Bring a clinician, an administrator and your data lead. We will
+                walk your real workflow through HealOS in 45 minutes — no
+                slideware.
               </p>
 
               {/* WebMCP In-Page Agent Affordance Form */}
@@ -99,7 +102,9 @@ export function CtaSection() {
                   className="bg-foreground text-background mono-label group inline-flex items-center gap-3 px-7 py-4 transition-opacity hover:opacity-85"
                 >
                   Book the walkthrough
-                  <span className="transition-transform group-hover:translate-x-1">→</span>
+                  <span className="transition-transform group-hover:translate-x-1">
+                    →
+                  </span>
                 </a>
                 <a
                   href="/developers"
@@ -109,9 +114,15 @@ export function CtaSection() {
                 </a>
               </div>
               <div className="mono-label text-muted-foreground mt-8 space-y-3">
-                <p className="rule-tick pl-4">No credit card, no procurement gate</p>
-                <p className="rule-tick pl-4">Sandbox with synthetic patient data</p>
-                <p className="rule-tick pl-4">WebMCP browser tool calling supported</p>
+                <p className="rule-tick pl-4">
+                  No credit card, no procurement gate
+                </p>
+                <p className="rule-tick pl-4">
+                  Sandbox with synthetic patient data
+                </p>
+                <p className="rule-tick pl-4">
+                  WebMCP browser tool calling supported
+                </p>
               </div>
             </div>
           </div>

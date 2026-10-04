@@ -4,16 +4,24 @@ import { envConfig } from "../config/env";
 const isSmtpConfigured = Boolean(envConfig.SMTP_USER && envConfig.SMTP_PASS);
 const isGmailApiConfigured = Boolean(
   envConfig.GMAIL_CLIENT_ID &&
-    envConfig.GMAIL_CLIENT_SECRET &&
-    envConfig.GMAIL_REFRESH_TOKEN &&
-    envConfig.GMAIL_USER
+  envConfig.GMAIL_CLIENT_SECRET &&
+  envConfig.GMAIL_REFRESH_TOKEN &&
+  envConfig.GMAIL_USER,
 );
 
 const encodeBase64Url = (value: string): string => {
-  return Buffer.from(value).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return Buffer.from(value)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 };
 
-const sendWithGmailApi = async (email: string, subject: string, html: string): Promise<void> => {
+const sendWithGmailApi = async (
+  email: string,
+  subject: string,
+  html: string,
+): Promise<void> => {
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: {
@@ -29,12 +37,16 @@ const sendWithGmailApi = async (email: string, subject: string, html: string): P
 
   if (!tokenResponse.ok) {
     const errorBody = await tokenResponse.text();
-    throw new Error(`Gmail token refresh failed with ${tokenResponse.status}: ${errorBody}`);
+    throw new Error(
+      `Gmail token refresh failed with ${tokenResponse.status}: ${errorBody}`,
+    );
   }
 
   const tokenBody = (await tokenResponse.json()) as { access_token?: string };
   if (!tokenBody.access_token) {
-    throw new Error("Gmail token refresh response did not include an access token.");
+    throw new Error(
+      "Gmail token refresh response did not include an access token.",
+    );
   }
 
   const from = envConfig.GMAIL_FROM || `HealOS <${envConfig.GMAIL_USER}>`;
@@ -48,22 +60,31 @@ const sendWithGmailApi = async (email: string, subject: string, html: string): P
     html,
   ].join("\r\n");
 
-  const sendResponse = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${tokenBody.access_token}`,
-      "Content-Type": "application/json",
+  const sendResponse = await fetch(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenBody.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ raw: encodeBase64Url(mimeMessage) }),
     },
-    body: JSON.stringify({ raw: encodeBase64Url(mimeMessage) }),
-  });
+  );
 
   if (!sendResponse.ok) {
     const errorBody = await sendResponse.text();
-    throw new Error(`Gmail API send failed with ${sendResponse.status}: ${errorBody}`);
+    throw new Error(
+      `Gmail API send failed with ${sendResponse.status}: ${errorBody}`,
+    );
   }
 };
 
-const sendWithResend = async (email: string, subject: string, html: string): Promise<void> => {
+const sendWithResend = async (
+  email: string,
+  subject: string,
+  html: string,
+): Promise<void> => {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -84,7 +105,11 @@ const sendWithResend = async (email: string, subject: string, html: string): Pro
   }
 };
 
-const sendWithSmtp = async (email: string, subject: string, html: string): Promise<void> => {
+const sendWithSmtp = async (
+  email: string,
+  subject: string,
+  html: string,
+): Promise<void> => {
   const secure = envConfig.SMTP_PORT === 465;
   const transporter = nodemailer.createTransport({
     host: envConfig.SMTP_HOST,
@@ -111,7 +136,7 @@ const sendWithSmtp = async (email: string, subject: string, html: string): Promi
 export const sendOtpEmail = async (
   email: string,
   otp: string,
-  purpose: "email_verification" | "password_reset" = "email_verification"
+  purpose: "email_verification" | "password_reset" = "email_verification",
 ): Promise<boolean> => {
   try {
     const isPasswordReset = purpose === "password_reset";
@@ -134,7 +159,9 @@ export const sendOtpEmail = async (
         </div>
       </div>
     `;
-    const logAction = isPasswordReset ? "Password reset OTP" : "Verification OTP";
+    const logAction = isPasswordReset
+      ? "Password reset OTP"
+      : "Verification OTP";
     const subject = isPasswordReset
       ? `[HealOS] Your Password Reset Code: ${otp}`
       : `[HealOS] Your Verification Code: ${otp}`;
@@ -155,7 +182,7 @@ export const sendOtpEmail = async (
     if (!isSmtpConfigured) {
       if (envConfig.NODE_ENV === "production") {
         console.error(
-          "❌ Email delivery is not configured. Set Gmail API, RESEND_API_KEY, or SMTP credentials."
+          "❌ Email delivery is not configured. Set Gmail API, RESEND_API_KEY, or SMTP credentials.",
         );
         return false;
       }

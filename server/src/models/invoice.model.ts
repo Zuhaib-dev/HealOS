@@ -68,7 +68,7 @@ const invoiceSchema = new Schema<IInvoice>(
     razorpaySignature: { type: String },
     paidAt: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 invoiceSchema.index({ patient: 1, status: 1 });

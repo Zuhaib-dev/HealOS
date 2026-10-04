@@ -59,7 +59,10 @@ export function MajorIncidentPanel() {
     }
   };
 
-  const handleToggleStep = async (stepIdx: number, currentCompleted: boolean) => {
+  const handleToggleStep = async (
+    stepIdx: number,
+    currentCompleted: boolean,
+  ) => {
     try {
       // Optimistic update
       if (incident) {
@@ -103,31 +106,52 @@ export function MajorIncidentPanel() {
       />
 
       {isLoading ? (
-        <div role="status" aria-live="polite" className="p-12 text-center mono-label text-muted-foreground animate-pulse">
+        <div
+          role="status"
+          aria-live="polite"
+          className="p-12 text-center mono-label text-muted-foreground animate-pulse"
+        >
           Loading major incident protocols...
         </div>
       ) : (
-        <div className="grid gap-px lg:grid-cols-[1fr_1.2fr]" style={{ background: "var(--hairline)" }}>
+        <div
+          className="grid gap-px lg:grid-cols-[1fr_1.2fr]"
+          style={{ background: "var(--hairline)" }}
+        >
           <div className="bg-background p-5 sm:p-8">
-            <div className={`hairline flex items-center justify-between gap-4 p-5 transition-colors ${
-              isArmed ? "border-destructive/60 bg-destructive/5" : ""
-            }`}>
+            <div
+              className={`hairline flex items-center justify-between gap-4 p-5 transition-colors ${
+                isArmed ? "border-destructive/60 bg-destructive/5" : ""
+              }`}
+            >
               <div>
-                <p className="mono-label text-muted-foreground text-xs">Major incident protocol</p>
-                <p className={`mt-1 font-mono text-2xl font-bold ${isArmed ? "text-destructive" : ""}`}>
+                <p className="mono-label text-muted-foreground text-xs">
+                  Major incident protocol
+                </p>
+                <p
+                  className={`mt-1 font-mono text-2xl font-bold ${isArmed ? "text-destructive" : ""}`}
+                >
                   {isArmed ? "ARMED — MASS CASUALTY" : "STANDBY"}
                 </p>
                 {incident?.armedAt && (
                   <p className="mono-label text-muted-foreground mt-1 text-xs">
-                    Activated: {new Date(incident.armedAt).toLocaleTimeString()} by {incident.armedBy}
+                    Activated: {new Date(incident.armedAt).toLocaleTimeString()}{" "}
+                    by {incident.armedBy}
                   </p>
                 )}
               </div>
-              <Toggle on={isArmed} onChange={(val) => !isToggling && handleToggleArmed(val)} />
+              <Toggle
+                on={isArmed}
+                onChange={(val) => !isToggling && handleToggleArmed(val)}
+              />
             </div>
 
             {isArmed && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-5">
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-5"
+              >
                 <Card>
                   <p className="mono-label text-destructive font-bold text-xs">
                     <Siren className="mr-1 inline size-3.5 animate-pulse" />
@@ -141,7 +165,9 @@ export function MajorIncidentPanel() {
                     ].map(([k, v]) => (
                       <div key={k}>
                         <p className="font-mono text-2xl font-bold">{v}</p>
-                        <p className="mono-label text-muted-foreground text-xs">{k}</p>
+                        <p className="mono-label text-muted-foreground text-xs">
+                          {k}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -152,7 +178,8 @@ export function MajorIncidentPanel() {
             <div className="mono-label text-muted-foreground mt-5 space-y-2 text-xs">
               <p>
                 <AlertTriangle className="mr-1 inline size-3 text-amber-500" />
-                Triage sieve: P1 immediate · P2 urgent · P3 delayed · P4 expectant
+                Triage sieve: P1 immediate · P2 urgent · P3 delayed · P4
+                expectant
               </p>
               <p>Commander: ED consultant · Loggist: assigned at activation</p>
             </div>
@@ -160,8 +187,14 @@ export function MajorIncidentPanel() {
 
           <div className="bg-background p-5 sm:p-8">
             <div className="flex items-center justify-between">
-              <p className="mono-label text-muted-foreground text-xs">Action cascade checklist</p>
-              <Pill tone={doneCount === steps.length && steps.length > 0 ? "ok" : "warn"}>
+              <p className="mono-label text-muted-foreground text-xs">
+                Action cascade checklist
+              </p>
+              <Pill
+                tone={
+                  doneCount === steps.length && steps.length > 0 ? "ok" : "warn"
+                }
+              >
                 {doneCount} / {steps.length} completed
               </Pill>
             </div>
@@ -177,13 +210,17 @@ export function MajorIncidentPanel() {
                   >
                     <span
                       className={`grid size-4 shrink-0 place-items-center rounded-xs ${
-                        step.completed ? "bg-accent text-background" : "hairline"
+                        step.completed
+                          ? "bg-accent text-background"
+                          : "hairline"
                       }`}
                     >
                       {step.completed && <Check className="size-3" />}
                     </span>
                     <div className="flex-1">
-                      <span className={`text-sm ${step.completed ? "line-through text-muted-foreground" : ""}`}>
+                      <span
+                        className={`text-sm ${step.completed ? "line-through text-muted-foreground" : ""}`}
+                      >
                         {step.text}
                       </span>
                       {step.completed && step.completedBy && (

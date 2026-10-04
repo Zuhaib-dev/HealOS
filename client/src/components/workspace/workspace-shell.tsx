@@ -4,7 +4,13 @@ import { useState, type ComponentType, type ReactNode } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Bell, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+  Search,
+  Bell,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
@@ -71,7 +77,12 @@ export function WorkspaceShell({
     <div className="bg-background text-foreground min-h-screen">
       <header className="bg-background/90 hairline-b sticky top-0 z-40 backdrop-blur-md">
         <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-3" aria-label="HealOS home" title="HealOS home">
+          <Link
+            href="/"
+            className="flex items-center gap-3"
+            aria-label="HealOS home"
+            title="HealOS home"
+          >
             <HealOSLogo size={28} />
           </Link>
           <span className="mono-label text-muted-foreground hairline-l hidden pl-4 md:inline">
@@ -80,7 +91,9 @@ export function WorkspaceShell({
 
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("open-command-menu"))}
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("open-command-menu"))
+            }
             aria-label={searchPlaceholder || "Search workspace..."}
             className="hairline ml-auto hidden w-72 items-center gap-2 px-3 py-2 lg:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:bg-muted/40 transition-all text-left cursor-pointer rounded-md"
           >
@@ -101,14 +114,19 @@ export function WorkspaceShell({
       </header>
 
       <div className="flex">
-        <aside 
+        <aside
           className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-(--hairline) p-3 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? "w-18 items-center px-2" : "w-60"}`}
         >
-          <nav aria-label="Workspace sidebar navigation" title="Workspace sidebar navigation" className="flex flex-col gap-0.5 w-full">
+          <nav
+            aria-label="Workspace sidebar navigation"
+            title="Workspace sidebar navigation"
+            className="flex flex-col gap-0.5 w-full"
+          >
             {sections.map((s, i) => {
               const Icon = s.icon;
               const isActive = isSectionActive(s.id);
-              const href = s.id === defaultSectionId ? `/${navId}` : `/${navId}/${s.id}`;
+              const href =
+                s.id === defaultSectionId ? `/${navId}` : `/${navId}/${s.id}`;
               return (
                 <Link
                   key={s.id}
@@ -126,7 +144,11 @@ export function WorkspaceShell({
                       className="bg-accent absolute top-0 left-0 h-full w-0.5"
                     />
                   )}
-                  {!isSidebarCollapsed && <span className="text-accent/60">{String(i + 1).padStart(2, "0")}</span>}
+                  {!isSidebarCollapsed && (
+                    <span className="text-accent/60">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                  )}
                   <Icon className="size-3.5" />
                   {!isSidebarCollapsed && s.label}
                 </Link>
@@ -134,27 +156,41 @@ export function WorkspaceShell({
             })}
           </nav>
 
-          <div className={`hairline mt-auto transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3"}`}>
+          <div
+            className={`hairline mt-auto transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3"}`}
+          >
             {isSidebarCollapsed ? (
-              <span className="bg-accent size-1.5 animate-pulse rounded-full" title={statusLine} />
+              <span
+                className="bg-accent size-1.5 animate-pulse rounded-full"
+                title={statusLine}
+              />
             ) : (
               <>
-                <p className="mono-label text-muted-foreground">{statusTitle}</p>
+                <p className="mono-label text-muted-foreground">
+                  {statusTitle}
+                </p>
                 <div className="mt-2 flex items-center gap-2">
                   <span className="bg-accent size-1.5 animate-pulse rounded-full" />
                   <span className="mono-label">{statusLine}</span>
                 </div>
-                <p className="mono-label text-muted-foreground mt-2">{statusNote}</p>
+                <p className="mono-label text-muted-foreground mt-2">
+                  {statusNote}
+                </p>
               </>
             )}
           </div>
-          
+
           <button
             onClick={toggleSidebar}
             className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors hairline ${isSidebarCollapsed ? "" : "w-full"}`}
-            aria-label="Toggle sidebar" title="Toggle sidebar"
+            aria-label="Toggle sidebar"
+            title="Toggle sidebar"
           >
-            {isSidebarCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="size-4.5" />}
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen className="size-4.5" />
+            ) : (
+              <PanelLeftClose className="size-4.5" />
+            )}
           </button>
         </aside>
 
@@ -165,11 +201,16 @@ export function WorkspaceShell({
 
       {/* Persistent Bottom Navigation Bar - Mobile Only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
-        <nav aria-label="Workspace mobile navigation" title="Workspace mobile navigation" className="flex justify-around items-center px-2 py-1.5">
+        <nav
+          aria-label="Workspace mobile navigation"
+          title="Workspace mobile navigation"
+          className="flex justify-around items-center px-2 py-1.5"
+        >
           {mainMobileTabs.map((s) => {
             const Icon = s.icon;
             const isActive = isSectionActive(s.id);
-            const href = s.id === defaultSectionId ? `/${navId}` : `/${navId}/${s.id}`;
+            const href =
+              s.id === defaultSectionId ? `/${navId}` : `/${navId}/${s.id}`;
             return (
               <Link
                 key={s.id}
@@ -177,18 +218,27 @@ export function WorkspaceShell({
                 onClick={() => setIsMoreOpen(false)}
                 className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
               >
-                <motion.div 
-                  animate={isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }}
+                <motion.div
+                  animate={
+                    isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }
+                  }
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
-                  <Icon className={`size-5 ${isActive ? "fill-primary/20" : ""}`} strokeWidth={isActive ? 2.5 : 2} />
+                  <Icon
+                    className={`size-5 ${isActive ? "fill-primary/20" : ""}`}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
                 </motion.div>
-                <span 
+                <span
                   className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                    isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                    isActive
+                      ? "text-primary font-semibold"
+                      : "text-muted-foreground"
                   }`}
                 >
                   {s.label}
@@ -205,14 +255,29 @@ export function WorkspaceShell({
                   type="button"
                   className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
                 >
-                  <div className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                    moreMobileTabs.some(s => isSectionActive(s.id)) ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-                  }`}>
-                    <Menu className={`size-5 ${moreMobileTabs.some(s => isSectionActive(s.id)) ? "fill-primary/20" : ""}`} strokeWidth={moreMobileTabs.some(s => isSectionActive(s.id)) ? 2.5 : 2} />
+                  <div
+                    className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                      moreMobileTabs.some((s) => isSectionActive(s.id))
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground"
+                    }`}
+                  >
+                    <Menu
+                      className={`size-5 ${moreMobileTabs.some((s) => isSectionActive(s.id)) ? "fill-primary/20" : ""}`}
+                      strokeWidth={
+                        moreMobileTabs.some((s) => isSectionActive(s.id))
+                          ? 2.5
+                          : 2
+                      }
+                    />
                   </div>
-                  <span className={`text-[10px] mt-0.5 font-medium transition-colors ${
-                    moreMobileTabs.some(s => isSectionActive(s.id)) ? "text-primary font-semibold" : "text-muted-foreground"
-                  }`}>
+                  <span
+                    className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                      moreMobileTabs.some((s) => isSectionActive(s.id))
+                        ? "text-primary font-semibold"
+                        : "text-muted-foreground"
+                    }`}
+                  >
                     More
                   </span>
                 </button>
@@ -229,7 +294,10 @@ export function WorkspaceShell({
                   {moreMobileTabs.map((s) => {
                     const Icon = s.icon;
                     const isActive = isSectionActive(s.id);
-                    const href = s.id === defaultSectionId ? `/${navId}` : `/${navId}/${s.id}`;
+                    const href =
+                      s.id === defaultSectionId
+                        ? `/${navId}`
+                        : `/${navId}/${s.id}`;
                     return (
                       <Link
                         key={s.id}
@@ -241,8 +309,13 @@ export function WorkspaceShell({
                             : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
                         }`}
                       >
-                        <Icon className="size-6" strokeWidth={isActive ? 2.5 : 2} />
-                        <span className="text-[11px] font-semibold tracking-wide">{s.label}</span>
+                        <Icon
+                          className="size-6"
+                          strokeWidth={isActive ? 2.5 : 2}
+                        />
+                        <span className="text-[11px] font-semibold tracking-wide">
+                          {s.label}
+                        </span>
                       </Link>
                     );
                   })}

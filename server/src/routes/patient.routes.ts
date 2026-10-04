@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { verifyToken, requireRole } from "../middleware/auth.middleware.js";
-import { getPatientDashboard, updatePatientProfile, payInvoice, uploadPatientDocument } from "../controllers/patient.controller.js";
+import {
+  getPatientDashboard,
+  updatePatientProfile,
+  payInvoice,
+  uploadPatientDocument,
+} from "../controllers/patient.controller.js";
 import { UserRole } from "../models/user.model.js";
 import { upload } from "../controllers/radiology.controller.js";
 

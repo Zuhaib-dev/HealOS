@@ -16,15 +16,26 @@ export interface IModalityMachine extends Document {
 const modalityMachineSchema = new Schema<IModalityMachine>(
   {
     room: { type: String, required: true },
-    modality: { type: String, enum: ["CT", "MRI", "X-Ray", "US", "Mammo", "PET-CT"], required: true },
-    state: { type: String, enum: ["scanning", "idle", "maintenance", "offline"], required: true },
+    modality: {
+      type: String,
+      enum: ["CT", "MRI", "X-Ray", "US", "Mammo", "PET-CT"],
+      required: true,
+    },
+    state: {
+      type: String,
+      enum: ["scanning", "idle", "maintenance", "offline"],
+      required: true,
+    },
     vendor: { type: String, required: true },
     queue: { type: Number, default: 0 },
     uptime: { type: String },
     doseIndex: { type: String },
     nextService: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const ModalityMachine = mongoose.model<IModalityMachine>("ModalityMachine", modalityMachineSchema);
+export const ModalityMachine = mongoose.model<IModalityMachine>(
+  "ModalityMachine",
+  modalityMachineSchema,
+);

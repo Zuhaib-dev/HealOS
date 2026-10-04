@@ -1,12 +1,20 @@
 import request from "supertest";
 import app from "../app";
-import { User, UserRole, AppointmentType, PaymentMethod, AppointmentStatus } from "../models";
-import { API_PREFIX } from "@healos/shared"; 
+import {
+  User,
+  UserRole,
+  AppointmentType,
+  PaymentMethod,
+  AppointmentStatus,
+} from "../models";
+import { API_PREFIX } from "@healos/shared";
 import jwt from "jsonwebtoken";
 import { envConfig } from "../config/env";
 
 const generateTestToken = (userId: string, role: UserRole) => {
-  return jwt.sign({ userId, role, tokenVersion: 0 }, envConfig.JWT_SECRET, { expiresIn: "1h" });
+  return jwt.sign({ userId, role, tokenVersion: 0 }, envConfig.JWT_SECRET, {
+    expiresIn: "1h",
+  });
 };
 
 describe("Appointment API", () => {

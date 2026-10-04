@@ -20,7 +20,12 @@ router.post("/sync", authRateLimiter, syncGoogleUser);
 router.post("/register", authRateLimiter, otpRateLimiter, register);
 router.post("/verify-otp", authRateLimiter, verifyOtp);
 router.post("/resend-otp", authRateLimiter, otpRateLimiter, resendOtp);
-router.post("/forgot-password", authRateLimiter, otpRateLimiter, forgotPassword);
+router.post(
+  "/forgot-password",
+  authRateLimiter,
+  otpRateLimiter,
+  forgotPassword,
+);
 router.post("/reset-password", authRateLimiter, resetPassword);
 router.post("/login", authRateLimiter, login);
 

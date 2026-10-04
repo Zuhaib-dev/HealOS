@@ -5,19 +5,28 @@ export const dynamic = "force-dynamic";
 const TOOLS = [
   {
     name: "search_patients",
-    description: "Search the HealOS Master Patient Index (MPI) by name, MRN, or telephone number.",
+    description:
+      "Search the HealOS Master Patient Index (MPI) by name, MRN, or telephone number.",
     inputSchema: {
       type: "object",
       required: ["query"],
       properties: {
-        query: { type: "string", description: "Patient name, Medical Record Number (MRN), or phone number" },
+        query: {
+          type: "string",
+          description:
+            "Patient name, Medical Record Number (MRN), or phone number",
+        },
       },
     },
     parameters: {
       type: "object",
       required: ["query"],
       properties: {
-        query: { type: "string", description: "Patient name, Medical Record Number (MRN), or phone number" },
+        query: {
+          type: "string",
+          description:
+            "Patient name, Medical Record Number (MRN), or phone number",
+        },
       },
     },
     _meta: {
@@ -28,7 +37,8 @@ const TOOLS = [
   },
   {
     name: "get_patient_vitals",
-    description: "Retrieve real-time telemetry and bedside observations (heart rate, blood pressure, SpO2, temperature).",
+    description:
+      "Retrieve real-time telemetry and bedside observations (heart rate, blood pressure, SpO2, temperature).",
     inputSchema: {
       type: "object",
       required: ["patientId"],
@@ -51,15 +61,23 @@ const TOOLS = [
   },
   {
     name: "book_appointment",
-    description: "Schedule an outpatient consultation with a physician or specialist clinic.",
+    description:
+      "Schedule an outpatient consultation with a physician or specialist clinic.",
     inputSchema: {
       type: "object",
       required: ["patientId", "doctorId", "date", "reason"],
       properties: {
         patientId: { type: "string", description: "Patient ID" },
         doctorId: { type: "string", description: "Doctor ID" },
-        date: { type: "string", format: "date-time", description: "Appointment ISO timestamp" },
-        reason: { type: "string", description: "Clinical reason for consultation" },
+        date: {
+          type: "string",
+          format: "date-time",
+          description: "Appointment ISO timestamp",
+        },
+        reason: {
+          type: "string",
+          description: "Clinical reason for consultation",
+        },
       },
     },
     parameters: {
@@ -80,7 +98,8 @@ const TOOLS = [
   },
   {
     name: "get_emergency_triage",
-    description: "Inspect the active Emergency Department triage board, ESI level breakdown, and resuscitation bays.",
+    description:
+      "Inspect the active Emergency Department triage board, ESI level breakdown, and resuscitation bays.",
     inputSchema: {
       type: "object",
       properties: {},
@@ -101,13 +120,15 @@ const RESOURCES = [
   {
     uri: "ui://healos/appointment-booking-form",
     name: "Interactive Appointment Booking Affordance",
-    description: "A2UI / MCP App component enabling interactive in-agent clinic booking.",
+    description:
+      "A2UI / MCP App component enabling interactive in-agent clinic booking.",
     mimeType: "text/html",
   },
   {
     uri: "ui://healos/vitals-telemetry-monitor",
     name: "Real-time Telemetry Monitor Component",
-    description: "A2UI / MCP App component rendering live patient ECG, SpO2, and BP curves.",
+    description:
+      "A2UI / MCP App component rendering live patient ECG, SpO2, and BP curves.",
     mimeType: "text/html",
   },
   {
@@ -207,7 +228,7 @@ export async function POST(request: Request) {
               "HealOS Hospital Management and Clinical Telemetry MCP Server. Exposes clinical tools with A2UI ui:// affordances.",
           },
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -226,7 +247,7 @@ export async function POST(request: Request) {
             tools: TOOLS,
           },
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -240,7 +261,7 @@ export async function POST(request: Request) {
             resources: RESOURCES,
           },
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -262,7 +283,7 @@ export async function POST(request: Request) {
             ],
           },
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -291,15 +312,15 @@ export async function POST(request: Request) {
                   toolName === "search_patients"
                     ? "ui://healos/patient-search-card"
                     : toolName === "get_patient_vitals"
-                    ? "ui://healos/vitals-telemetry-monitor"
-                    : toolName === "book_appointment"
-                    ? "ui://healos/appointment-booking-form"
-                    : "ui://healos/emergency-triage-board",
+                      ? "ui://healos/vitals-telemetry-monitor"
+                      : toolName === "book_appointment"
+                        ? "ui://healos/appointment-booking-form"
+                        : "ui://healos/emergency-triage-board",
               },
             },
           },
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -312,7 +333,7 @@ export async function POST(request: Request) {
         tools: TOOLS,
         resources: RESOURCES,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch {
     return NextResponse.json(MCP_MANIFEST, {
@@ -341,10 +362,14 @@ function handleSse() {
   const readable = new ReadableStream({
     start(controller) {
       controller.enqueue(
-        encoder.encode(`event: endpoint\ndata: ${JSON.stringify({ url: "https://healos-theta.vercel.app/.well-known/mcp" })}\n\n`)
+        encoder.encode(
+          `event: endpoint\ndata: ${JSON.stringify({ url: "https://healos-theta.vercel.app/.well-known/mcp" })}\n\n`,
+        ),
       );
       controller.enqueue(
-        encoder.encode(`event: message\ndata: ${JSON.stringify({ jsonrpc: "2.0", method: "server/ready", params: { server: "HealOS-Core", version: "1.0.0" } })}\n\n`)
+        encoder.encode(
+          `event: message\ndata: ${JSON.stringify({ jsonrpc: "2.0", method: "server/ready", params: { server: "HealOS-Core", version: "1.0.0" } })}\n\n`,
+        ),
       );
       controller.close();
     },

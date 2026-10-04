@@ -2,24 +2,53 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { TestTube, PhoneCall, Check, X, Barcode, TriangleAlert } from "lucide-react";
+import {
+  TestTube,
+  PhoneCall,
+  Check,
+  X,
+  Barcode,
+  TriangleAlert,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Card, LiveDot, Pill, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
+import {
+  Card,
+  LiveDot,
+  Pill,
+  StatGrid,
+  Td,
+  Th,
+  type Tone,
+} from "@/components/workspace/ui";
 import { fetchLabCriticalValuesApi } from "@/lib/api/lab";
 import { getSocket } from "@/lib/socket";
 import { toast } from "sonner";
 
-
-
 /** Animated tube-rack glyph — hand-drawn SVG, no raster assets. */
 function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
-  const flat = tubes.flatMap((t) => Array.from({ length: t.count }, () => t.colour)).slice(0, 8);
+  const flat = tubes
+    .flatMap((t) => Array.from({ length: t.count }, () => t.colour))
+    .slice(0, 8);
   return (
     <svg viewBox="0 0 120 48" className="h-12 w-full">
-      <line x1="4" y1="42" x2="116" y2="42" stroke="var(--hairline)" strokeWidth="1" />
+      <line
+        x1="4"
+        y1="42"
+        x2="116"
+        y2="42"
+        stroke="var(--hairline)"
+        strokeWidth="1"
+      />
       {flat.map((c, i) => (
         <g key={i}>
-          <rect x={8 + i * 13} y="10" width="8" height="30" fill="none" stroke="var(--hairline)" />
+          <rect
+            x={8 + i * 13}
+            y="10"
+            width="8"
+            height="30"
+            fill="none"
+            stroke="var(--hairline)"
+          />
           <motion.rect
             x={8 + i * 13}
             width="8"
@@ -34,7 +63,6 @@ function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
     </svg>
   );
 }
-
 
 /* ---------- 05 critical callback ---------- */
 
@@ -73,72 +101,107 @@ export function CriticalPanel() {
         index="05 / closed loop"
         title="Critical-value callback"
         note="Every critical result must be phoned, read back and signed. Open items age visibly until the loop closes."
-        actions={<ActionButton tone="solid">{rows.filter((r) => !r.readBack).length} open</ActionButton>}
+        actions={
+          <ActionButton tone="solid">
+            {rows.filter((r) => !r.readBack).length} open
+          </ActionButton>
+        }
       />
 
-      <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
+      <div
+        className="grid gap-px lg:grid-cols-3"
+        style={{ background: "var(--hairline)" }}
+      >
         {loading ? (
-          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-3">Loading critical values...</div>
-        ) : rows.length === 0 ? (
-          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-3">No pending critical values.</div>
-        ) : rows.map((c) => {
-          const patientName = c.patient?.name || "Unknown Patient";
-          const accession = c.order?.accessionNumber || c.order?._id?.slice(-8) || "N/A";
-          
-          return (
-          <div key={c._id} className="bg-background p-5">
-            <div className="flex items-center justify-between gap-2">
-              <p className="mono-label text-accent/80">{accession}</p>
-              {!c.readBack && <LiveDot tone="bad" />}
-            </div>
-            <p className="mt-1 font-mono text-lg font-bold">{patientName}</p>
-            <p className="mono-label text-muted-foreground">{c.order?.testName}</p>
-
-            <div className="hairline mt-4 p-4">
-              <p className="mono-label text-muted-foreground">Findings</p>
-              <p className="text-destructive mt-1 font-mono text-base font-bold">{c.findings || "See report"}</p>
-              <p className="mono-label text-muted-foreground mt-1">detected {new Date(c.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-            </div>
-
-            {c.readBack ? (
-              <p className="mono-label text-brass mt-4">
-                Called {c.calledTo} at {c.calledAt} · read-back confirmed
-              </p>
-            ) : (
-              <div className="mt-4">
-                <input
-                  id={`clinician-called-${c._id}`}
-                  aria-label="Clinician called" title="Clinician called"
-                  value={target}
-                  onChange={(e) => setTarget(e.target.value)}
-                  placeholder="Clinician called"
-                  className="hairline mono-label w-full bg-transparent px-3 py-2 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
-                />
-                <div className="mt-2 flex gap-2">
-                  <ActionButton
-                    tone="solid"
-                    onClick={() =>
-                      setRows((r) =>
-                        r.map((x) =>
-                          x._id === c._id
-                            ? { ...x, readBack: true, calledTo: target || "on-call MO", calledAt: "now" }
-                            : x,
-                        ),
-                      )
-                    }
-                  >
-                    <PhoneCall className="mr-1 inline size-3" /> Mark called
-                  </ActionButton>
-                </div>
-              </div>
-            )}
+          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-3">
+            Loading critical values...
           </div>
-        )})}
+        ) : rows.length === 0 ? (
+          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-3">
+            No pending critical values.
+          </div>
+        ) : (
+          rows.map((c) => {
+            const patientName = c.patient?.name || "Unknown Patient";
+            const accession =
+              c.order?.accessionNumber || c.order?._id?.slice(-8) || "N/A";
+
+            return (
+              <div key={c._id} className="bg-background p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="mono-label text-accent/80">{accession}</p>
+                  {!c.readBack && <LiveDot tone="bad" />}
+                </div>
+                <p className="mt-1 font-mono text-lg font-bold">
+                  {patientName}
+                </p>
+                <p className="mono-label text-muted-foreground">
+                  {c.order?.testName}
+                </p>
+
+                <div className="hairline mt-4 p-4">
+                  <p className="mono-label text-muted-foreground">Findings</p>
+                  <p className="text-destructive mt-1 font-mono text-base font-bold">
+                    {c.findings || "See report"}
+                  </p>
+                  <p className="mono-label text-muted-foreground mt-1">
+                    detected{" "}
+                    {new Date(c.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+
+                {c.readBack ? (
+                  <p className="mono-label text-brass mt-4">
+                    Called {c.calledTo} at {c.calledAt} · read-back confirmed
+                  </p>
+                ) : (
+                  <div className="mt-4">
+                    <input
+                      id={`clinician-called-${c._id}`}
+                      aria-label="Clinician called"
+                      title="Clinician called"
+                      value={target}
+                      onChange={(e) => setTarget(e.target.value)}
+                      placeholder="Clinician called"
+                      className="hairline mono-label w-full bg-transparent px-3 py-2 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
+                    />
+                    <div className="mt-2 flex gap-2">
+                      <ActionButton
+                        tone="solid"
+                        onClick={() =>
+                          setRows((r) =>
+                            r.map((x) =>
+                              x._id === c._id
+                                ? {
+                                    ...x,
+                                    readBack: true,
+                                    calledTo: target || "on-call MO",
+                                    calledAt: "now",
+                                  }
+                                : x,
+                            ),
+                          )
+                        }
+                      >
+                        <PhoneCall className="mr-1 inline size-3" /> Mark called
+                      </ActionButton>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
 
       <div className="p-5 sm:px-8">
         <Card>
-          <p className="mono-label text-muted-foreground">Callback compliance · rolling 30 days</p>
+          <p className="mono-label text-muted-foreground">
+            Callback compliance · rolling 30 days
+          </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-3">
             {[
               ["Called within 15 min", "98.2%"],

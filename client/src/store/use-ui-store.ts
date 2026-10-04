@@ -11,11 +11,13 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       isSidebarCollapsed: false,
-      setSidebarCollapsed: (collapsed) => set({ isSidebarCollapsed: collapsed }),
-      toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+      setSidebarCollapsed: (collapsed) =>
+        set({ isSidebarCollapsed: collapsed }),
+      toggleSidebar: () =>
+        set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
     }),
     {
       name: "healos-ui-storage",
-    }
-  )
+    },
+  ),
 );

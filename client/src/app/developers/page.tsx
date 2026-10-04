@@ -28,7 +28,9 @@ export default function DevelopersPage() {
               HealOS Developer Platform
             </h1>
             <p className="mt-4 max-w-3xl text-lg text-muted-foreground leading-relaxed">
-              Programmatic APIs and autonomous agent toolkits for modern healthcare management. Connect clinical EHR records, real-time telemetry, scheduling engines, and diagnostic workflows.
+              Programmatic APIs and autonomous agent toolkits for modern
+              healthcare management. Connect clinical EHR records, real-time
+              telemetry, scheduling engines, and diagnostic workflows.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-4">
@@ -64,16 +66,21 @@ export default function DevelopersPage() {
             Quickstart in 60 Seconds
           </h2>
           <p className="mt-2 text-muted-foreground">
-            Probe the live HealOS gateway or inspect system health directly with cURL:
+            Probe the live HealOS gateway or inspect system health directly with
+            cURL:
           </p>
 
           <div className="mt-6 rounded-lg border border-border bg-card/60 p-5 font-mono text-sm shadow-sm overflow-x-auto">
-            <div className="text-muted-foreground mb-2 select-none"># 1. Probe the system health endpoint</div>
+            <div className="text-muted-foreground mb-2 select-none">
+              # 1. Probe the system health endpoint
+            </div>
             <code className="text-primary select-all">
               curl -s https://healos-theta.vercel.app/api/v1/health | jq .
             </code>
 
-            <div className="text-muted-foreground mt-4 mb-2 select-none"># 2. Query available clinical appointments</div>
+            <div className="text-muted-foreground mt-4 mb-2 select-none">
+              # 2. Query available clinical appointments
+            </div>
             <code className="text-primary select-all">
               curl -s https://healos-theta.vercel.app/api/v1/appointments | jq .
             </code>
@@ -90,19 +97,40 @@ export default function DevelopersPage() {
 
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
               <div className="p-4 rounded-lg border border-border bg-card/60">
-                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">Node.js / TypeScript</span>
-                <code className="text-primary mt-2 block select-all font-semibold">npm i @healos/sdk</code>
-                <p className="text-muted-foreground mt-2 font-sans text-xs">Full TypeScript definitions, React hooks, and MCP client bindings.</p>
+                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">
+                  Node.js / TypeScript
+                </span>
+                <code className="text-primary mt-2 block select-all font-semibold">
+                  npm i @healos/sdk
+                </code>
+                <p className="text-muted-foreground mt-2 font-sans text-xs">
+                  Full TypeScript definitions, React hooks, and MCP client
+                  bindings.
+                </p>
               </div>
               <div className="p-4 rounded-lg border border-border bg-card/60">
-                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">Python (LangChain / CrewAI)</span>
-                <code className="text-primary mt-2 block select-all font-semibold">pip install healos-sdk</code>
-                <p className="text-muted-foreground mt-2 font-sans text-xs">Pydantic models, async telemetry client, and LangChain clinical tools.</p>
+                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">
+                  Python (LangChain / CrewAI)
+                </span>
+                <code className="text-primary mt-2 block select-all font-semibold">
+                  pip install healos-sdk
+                </code>
+                <p className="text-muted-foreground mt-2 font-sans text-xs">
+                  Pydantic models, async telemetry client, and LangChain
+                  clinical tools.
+                </p>
               </div>
               <div className="p-4 rounded-lg border border-border bg-card/60">
-                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">Go</span>
-                <code className="text-primary mt-2 block select-all font-semibold">go get github.com/Zuhaib-dev/healos-go</code>
-                <p className="text-muted-foreground mt-2 font-sans text-xs">High-performance hospital gateway client and WebSocket listener.</p>
+                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">
+                  Go
+                </span>
+                <code className="text-primary mt-2 block select-all font-semibold">
+                  go get github.com/Zuhaib-dev/healos-go
+                </code>
+                <p className="text-muted-foreground mt-2 font-sans text-xs">
+                  High-performance hospital gateway client and WebSocket
+                  listener.
+                </p>
               </div>
             </div>
           </div>
@@ -113,13 +141,19 @@ export default function DevelopersPage() {
               Model Context Protocol (MCP) &amp; A2UI Generative UI
             </h2>
             <p className="mt-2 text-muted-foreground">
-              HealOS publishes a first-party MCP server at <code>/.well-known/mcp</code> supporting JSON-RPC 2.0 handshake, live SSE telemetry, and A2UI generative UI resources (<code>ui://</code>) for Claude Desktop, Cursor, and autonomous agent runtimes:
+              HealOS publishes a first-party MCP server at{" "}
+              <code>/.well-known/mcp</code> supporting JSON-RPC 2.0 handshake,
+              live SSE telemetry, and A2UI generative UI resources (
+              <code>ui://</code>) for Claude Desktop, Cursor, and autonomous
+              agent runtimes:
             </p>
 
             <div className="mt-6 rounded-lg border border-border bg-card/60 p-5 font-mono text-sm shadow-sm overflow-x-auto">
-              <div className="text-muted-foreground mb-2 select-none">{"// claude_desktop_config.json"}</div>
+              <div className="text-muted-foreground mb-2 select-none">
+                {"// claude_desktop_config.json"}
+              </div>
               <pre className="text-foreground">
-{`{
+                {`{
   "mcpServers": {
     "healos": {
       "url": "https://healos-theta.vercel.app/.well-known/mcp"
@@ -134,13 +168,34 @@ export default function DevelopersPage() {
                 A2UI (Agent-to-UI) &amp; MCP Apps Support
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                HealOS exposes in-agent interactive UI cards that agents can present directly to users without leaving the chat interface:
+                HealOS exposes in-agent interactive UI cards that agents can
+                present directly to users without leaving the chat interface:
               </p>
               <ul className="mt-3 space-y-2 text-xs font-mono text-muted-foreground">
-                <li><code className="text-foreground font-semibold">ui://healos/appointment-booking-form</code> — Interactive date picker and clinician selector.</li>
-                <li><code className="text-foreground font-semibold">ui://healos/vitals-telemetry-monitor</code> — Real-time continuous ECG, SpO2, and blood pressure graphs.</li>
-                <li><code className="text-foreground font-semibold">ui://healos/emergency-triage-board</code> — Live Emergency Department triage board (ESI 1-5).</li>
-                <li><code className="text-foreground font-semibold">ui://healos/patient-search-card</code> — Demographic master patient index summary.</li>
+                <li>
+                  <code className="text-foreground font-semibold">
+                    ui://healos/appointment-booking-form
+                  </code>{" "}
+                  — Interactive date picker and clinician selector.
+                </li>
+                <li>
+                  <code className="text-foreground font-semibold">
+                    ui://healos/vitals-telemetry-monitor
+                  </code>{" "}
+                  — Real-time continuous ECG, SpO2, and blood pressure graphs.
+                </li>
+                <li>
+                  <code className="text-foreground font-semibold">
+                    ui://healos/emergency-triage-board
+                  </code>{" "}
+                  — Live Emergency Department triage board (ESI 1-5).
+                </li>
+                <li>
+                  <code className="text-foreground font-semibold">
+                    ui://healos/patient-search-card
+                  </code>{" "}
+                  — Demographic master patient index summary.
+                </li>
               </ul>
             </div>
           </div>
@@ -165,28 +220,48 @@ export default function DevelopersPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   <tr>
-                    <td className="px-4 py-3 font-medium text-primary">read:patients</td>
-                    <td className="px-4 py-3 text-muted-foreground">Read demographic records and allergies</td>
+                    <td className="px-4 py-3 font-medium text-primary">
+                      read:patients
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      Read demographic records and allergies
+                    </td>
                     <td className="px-4 py-3">Doctor, Nurse, Admin</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 font-medium text-primary">write:patients</td>
-                    <td className="px-4 py-3 text-muted-foreground">Register or update patient profiles</td>
+                    <td className="px-4 py-3 font-medium text-primary">
+                      write:patients
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      Register or update patient profiles
+                    </td>
                     <td className="px-4 py-3">Reception, Admin</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 font-medium text-primary">read:appointments</td>
-                    <td className="px-4 py-3 text-muted-foreground">Query scheduled consultation slots</td>
+                    <td className="px-4 py-3 font-medium text-primary">
+                      read:appointments
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      Query scheduled consultation slots
+                    </td>
                     <td className="px-4 py-3">All Authenticated</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 font-medium text-primary">write:appointments</td>
-                    <td className="px-4 py-3 text-muted-foreground">Book or cancel clinic appointments</td>
+                    <td className="px-4 py-3 font-medium text-primary">
+                      write:appointments
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      Book or cancel clinic appointments
+                    </td>
                     <td className="px-4 py-3">Patient, Doctor, Reception</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 font-medium text-primary">read:vitals</td>
-                    <td className="px-4 py-3 text-muted-foreground">Access physiological vitals observations</td>
+                    <td className="px-4 py-3 font-medium text-primary">
+                      read:vitals
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      Access physiological vitals observations
+                    </td>
                     <td className="px-4 py-3">Nurse, Doctor</td>
                   </tr>
                 </tbody>
@@ -195,7 +270,10 @@ export default function DevelopersPage() {
           </div>
 
           {/* API Deprecation & Sunset Policy */}
-          <div id="deprecation" className="mt-16 rounded-xl border border-border bg-card p-6 sm:p-8">
+          <div
+            id="deprecation"
+            className="mt-16 rounded-xl border border-border bg-card p-6 sm:p-8"
+          >
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 font-mono text-xs text-amber-500">
               <span>⚠️</span> RFC 8594 Sunset &amp; Deprecation Policy
             </div>
@@ -203,33 +281,79 @@ export default function DevelopersPage() {
               API Deprecation Policy
             </h2>
             <p className="mt-2 text-muted-foreground leading-relaxed">
-              HealOS adheres strictly to semantic versioning and the IETF RFC 8594 standard. Changes to public REST and MCP contracts are governed by our stability commitments:
+              HealOS adheres strictly to semantic versioning and the IETF RFC
+              8594 standard. Changes to public REST and MCP contracts are
+              governed by our stability commitments:
             </p>
 
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
               <div className="p-4 rounded-lg border border-border bg-background">
-                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">Guarantee Window</span>
-                <span className="text-foreground text-sm font-semibold mt-1 block">24 Months Minimum Notice</span>
-                <p className="text-muted-foreground mt-2 font-sans text-xs">All deprecated endpoints remain functional and supported for at least 24 months after deprecation notice.</p>
+                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">
+                  Guarantee Window
+                </span>
+                <span className="text-foreground text-sm font-semibold mt-1 block">
+                  24 Months Minimum Notice
+                </span>
+                <p className="text-muted-foreground mt-2 font-sans text-xs">
+                  All deprecated endpoints remain functional and supported for
+                  at least 24 months after deprecation notice.
+                </p>
               </div>
               <div className="p-4 rounded-lg border border-border bg-background">
-                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">Current Stable Version</span>
-                <span className="text-primary text-sm font-semibold mt-1 block">v1 (Path Prefix: /api/v1)</span>
-                <p className="text-muted-foreground mt-2 font-sans text-xs">Includes health, catalog, sandbox, appointments, patients, and vitals APIs.</p>
+                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">
+                  Current Stable Version
+                </span>
+                <span className="text-primary text-sm font-semibold mt-1 block">
+                  v1 (Path Prefix: /api/v1)
+                </span>
+                <p className="text-muted-foreground mt-2 font-sans text-xs">
+                  Includes health, catalog, sandbox, appointments, patients, and
+                  vitals APIs.
+                </p>
               </div>
               <div className="p-4 rounded-lg border border-border bg-background">
-                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">Scheduled Sunset Date</span>
-                <span className="text-amber-500 text-sm font-semibold mt-1 block">December 31, 2027</span>
-                <p className="text-muted-foreground mt-2 font-sans text-xs">Responses include <code>Sunset: Fri, 31 Dec 2027 23:59:59 GMT</code> and <code>Deprecation</code> headers.</p>
+                <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">
+                  Scheduled Sunset Date
+                </span>
+                <span className="text-amber-500 text-sm font-semibold mt-1 block">
+                  December 31, 2027
+                </span>
+                <p className="text-muted-foreground mt-2 font-sans text-xs">
+                  Responses include{" "}
+                  <code>Sunset: Fri, 31 Dec 2027 23:59:59 GMT</code> and{" "}
+                  <code>Deprecation</code> headers.
+                </p>
               </div>
             </div>
 
             <div className="mt-6 text-sm text-muted-foreground leading-relaxed space-y-2">
               <p>
-                When an endpoint is marked for deprecation, HealOS automatically includes the standard HTTP <code>Sunset</code> and <code>Link: &lt;https://healos-theta.vercel.app/developers#deprecation&gt;; rel=&quot;deprecation&quot;</code> headers.
+                When an endpoint is marked for deprecation, HealOS automatically
+                includes the standard HTTP <code>Sunset</code> and{" "}
+                <code>
+                  Link:
+                  &lt;https://healos-theta.vercel.app/developers#deprecation&gt;;
+                  rel=&quot;deprecation&quot;
+                </code>{" "}
+                headers.
               </p>
               <p>
-                Migration documentation and version release notes are continuously mirrored at <Link href="/developers" className="text-primary hover:underline">/developers</Link> and <Link href="/openapi.json" className="text-primary hover:underline">/openapi.json</Link>.
+                Migration documentation and version release notes are
+                continuously mirrored at{" "}
+                <Link
+                  href="/developers"
+                  className="text-primary hover:underline"
+                >
+                  /developers
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/openapi.json"
+                  className="text-primary hover:underline"
+                >
+                  /openapi.json
+                </Link>
+                .
               </p>
             </div>
           </div>
@@ -240,7 +364,8 @@ export default function DevelopersPage() {
               AI Coding Agent Configurations
             </h2>
             <p className="mt-2 text-muted-foreground">
-              Official workspace rules and instruction sets for Claude Code, Cursor, and Windsurf are published in our open-source repository:
+              Official workspace rules and instruction sets for Claude Code,
+              Cursor, and Windsurf are published in our open-source repository:
             </p>
 
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
@@ -250,8 +375,12 @@ export default function DevelopersPage() {
                 rel="noreferrer"
                 className="p-4 rounded-lg border border-border bg-card hover:bg-muted/40 transition-colors"
               >
-                <span className="text-primary font-semibold block">Claude Code Rules</span>
-                <span className="text-muted-foreground mt-1 block font-mono text-[11px]">.claude/CLAUDE.md</span>
+                <span className="text-primary font-semibold block">
+                  Claude Code Rules
+                </span>
+                <span className="text-muted-foreground mt-1 block font-mono text-[11px]">
+                  .claude/CLAUDE.md
+                </span>
               </a>
               <a
                 href="https://github.com/Zuhaib-dev/HealOS/blob/main/.cursorrules"
@@ -259,8 +388,12 @@ export default function DevelopersPage() {
                 rel="noreferrer"
                 className="p-4 rounded-lg border border-border bg-card hover:bg-muted/40 transition-colors"
               >
-                <span className="text-primary font-semibold block">Cursor Rules</span>
-                <span className="text-muted-foreground mt-1 block font-mono text-[11px]">.cursorrules</span>
+                <span className="text-primary font-semibold block">
+                  Cursor Rules
+                </span>
+                <span className="text-muted-foreground mt-1 block font-mono text-[11px]">
+                  .cursorrules
+                </span>
               </a>
               <a
                 href="https://github.com/Zuhaib-dev/HealOS/blob/main/.windsurfrules"
@@ -268,8 +401,12 @@ export default function DevelopersPage() {
                 rel="noreferrer"
                 className="p-4 rounded-lg border border-border bg-card hover:bg-muted/40 transition-colors"
               >
-                <span className="text-primary font-semibold block">Windsurf Rules</span>
-                <span className="text-muted-foreground mt-1 block font-mono text-[11px]">.windsurfrules</span>
+                <span className="text-primary font-semibold block">
+                  Windsurf Rules
+                </span>
+                <span className="text-muted-foreground mt-1 block font-mono text-[11px]">
+                  .windsurfrules
+                </span>
               </a>
             </div>
 
@@ -280,7 +417,8 @@ export default function DevelopersPage() {
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 text-primary hover:underline font-mono text-xs"
               >
-                <span>📦</span> Explore Full GitHub Repository: github.com/Zuhaib-dev/HealOS →
+                <span>📦</span> Explore Full GitHub Repository:
+                github.com/Zuhaib-dev/HealOS →
               </a>
             </div>
           </div>
@@ -292,12 +430,15 @@ export default function DevelopersPage() {
                 <span className="mono-label text-primary font-semibold text-xs tracking-wider uppercase">
                   Architecture &amp; Engineering
                 </span>
-                <h3 className="font-display text-2xl font-bold mt-1">Zuhaib Rashid</h3>
+                <h3 className="font-display text-2xl font-bold mt-1">
+                  Zuhaib Rashid
+                </h3>
                 <p className="text-muted-foreground text-sm mt-1">
                   Full Stack Developer &amp; Healthcare Systems Architect
                 </p>
                 <p className="text-muted-foreground text-xs font-mono mt-3">
-                  Lead architect of HealOS clinical workflows, WebSocket telemetry, and autonomous MCP integration.
+                  Lead architect of HealOS clinical workflows, WebSocket
+                  telemetry, and autonomous MCP integration.
                 </p>
               </div>
 

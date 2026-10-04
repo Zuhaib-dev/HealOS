@@ -3,7 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus, X, UserCheck, AlertCircle, RefreshCw } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { LiveDot, Pill, StatGrid, Td, Th, type Tone } from "@/components/workspace/ui";
+import {
+  LiveDot,
+  Pill,
+  StatGrid,
+  Td,
+  Th,
+  type Tone,
+} from "@/components/workspace/ui";
 import { getSocket } from "@/lib/socket";
 import {
   fetchEmergencyStatsApi,
@@ -16,7 +23,8 @@ import {
   type EsiLevel,
 } from "@/lib/api/emergency";
 
-const esiTone = (e: EsiLevel): Tone => (e <= 2 ? "bad" : e === 3 ? "warn" : "mute");
+const esiTone = (e: EsiLevel): Tone =>
+  e <= 2 ? "bad" : e === 3 ? "warn" : "mute";
 
 export function TriageBoardPanel() {
   const [filter, setFilter] = useState<"all" | "esi12" | "waiting">("all");
@@ -30,7 +38,10 @@ export function TriageBoardPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: "ok" | "err";
+    msg: string;
+  } | null>(null);
 
   // New Case Form state
   const [form, setForm] = useState({
@@ -80,8 +91,15 @@ export function TriageBoardPanel() {
 
   const handleIntakeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.patientName.trim() || !form.age || !form.presentingComplaint.trim()) {
-      setFeedback({ type: "err", msg: "Please fill in patient name, age, and complaint." });
+    if (
+      !form.patientName.trim() ||
+      !form.age ||
+      !form.presentingComplaint.trim()
+    ) {
+      setFeedback({
+        type: "err",
+        msg: "Please fill in patient name, age, and complaint.",
+      });
       return;
     }
 
@@ -119,14 +137,18 @@ export function TriageBoardPanel() {
     } catch (err: any) {
       setFeedback({
         type: "err",
-        msg: err.response?.data?.message || "Failed to intake emergency patient",
+        msg:
+          err.response?.data?.message || "Failed to intake emergency patient",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDispositionChange = async (caseId: string, disposition: EmergencyDisposition) => {
+  const handleDispositionChange = async (
+    caseId: string,
+    disposition: EmergencyDisposition,
+  ) => {
     try {
       await updateEmergencyCaseApi(caseId, { disposition });
       await loadData();
@@ -146,10 +168,26 @@ export function TriageBoardPanel() {
   };
 
   const statItems = [
-    { label: "In department", value: String(stats.totalInDept), note: "active cases" },
-    { label: "Awaiting triage", value: String(stats.awaitingTriage), note: "pending clinical review" },
-    { label: "Time to clinician", value: stats.medianTimeToClinician, note: "median duration" },
-    { label: "4-hour breaches", value: String(stats.fourHourBreaches), note: "against target standard" },
+    {
+      label: "In department",
+      value: String(stats.totalInDept),
+      note: "active cases",
+    },
+    {
+      label: "Awaiting triage",
+      value: String(stats.awaitingTriage),
+      note: "pending clinical review",
+    },
+    {
+      label: "Time to clinician",
+      value: stats.medianTimeToClinician,
+      note: "median duration",
+    },
+    {
+      label: "4-hour breaches",
+      value: String(stats.fourHourBreaches),
+      note: "against target standard",
+    },
   ];
 
   return (
@@ -188,13 +226,16 @@ export function TriageBoardPanel() {
           <div className="bg-background hairline w-full max-w-lg rounded-none p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
-                <p className="mono-label text-accent font-bold">EMERGENCY DEPARTMENT INTAKE</p>
+                <p className="mono-label text-accent font-bold">
+                  EMERGENCY DEPARTMENT INTAKE
+                </p>
                 <h3 className="text-lg font-bold">Register Triage Patient</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsIntakeOpen(false)}
-                aria-label="Close intake dialog" title="Close intake dialog"
+                aria-label="Close intake dialog"
+                title="Close intake dialog"
                 className="text-muted-foreground hover:text-foreground p-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
               >
                 <X className="size-5" aria-hidden="true" />
@@ -205,7 +246,9 @@ export function TriageBoardPanel() {
             {feedback && (
               <div
                 className={`mt-4 p-3 text-xs mono-label flex items-center gap-2 ${
-                  feedback.type === "ok" ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive"
+                  feedback.type === "ok"
+                    ? "bg-emerald-500/10 text-emerald-500"
+                    : "bg-destructive/10 text-destructive"
                 }`}
               >
                 <AlertCircle className="size-4 shrink-0" />
@@ -216,19 +259,31 @@ export function TriageBoardPanel() {
             <form onSubmit={handleIntakeSubmit} className="mt-4 space-y-4">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="sm:col-span-2">
-                  <label htmlFor="triage-patient-name" className="mono-label block text-muted-foreground text-xs">Patient Name</label>
+                  <label
+                    htmlFor="triage-patient-name"
+                    className="mono-label block text-muted-foreground text-xs"
+                  >
+                    Patient Name
+                  </label>
                   <input
                     id="triage-patient-name"
                     type="text"
                     required={true}
                     placeholder="e.g. John Doe / Unknown Male"
                     value={form.patientName}
-                    onChange={(e) => setForm({ ...form, patientName: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, patientName: e.target.value })
+                    }
                     className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm focus:outline-hidden"
                   />
                 </div>
                 <div>
-                  <label htmlFor="triage-patient-age" className="mono-label block text-muted-foreground text-xs">Age & Sex</label>
+                  <label
+                    htmlFor="triage-patient-age"
+                    className="mono-label block text-muted-foreground text-xs"
+                  >
+                    Age & Sex
+                  </label>
                   <div className="mt-1 flex gap-1">
                     <input
                       id="triage-patient-age"
@@ -238,14 +293,19 @@ export function TriageBoardPanel() {
                       max={120}
                       placeholder="Age"
                       value={form.age}
-                      onChange={(e) => setForm({ ...form, age: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, age: e.target.value })
+                      }
                       className="hairline bg-foreground/3 w-16 p-2 text-sm focus:outline-hidden"
                     />
                     <select
                       id="triage-patient-sex"
-                      aria-label="Sex" title="Sex"
+                      aria-label="Sex"
+                      title="Sex"
                       value={form.sex}
-                      onChange={(e) => setForm({ ...form, sex: e.target.value as any })}
+                      onChange={(e) =>
+                        setForm({ ...form, sex: e.target.value as any })
+                      }
                       className="hairline bg-foreground/3 flex-1 p-2 text-sm focus:outline-hidden"
                     >
                       <option value="M">M</option>
@@ -257,36 +317,66 @@ export function TriageBoardPanel() {
               </div>
 
               <div>
-                <label htmlFor="triage-complaint" className="mono-label block text-muted-foreground text-xs">Presenting Complaint</label>
+                <label
+                  htmlFor="triage-complaint"
+                  className="mono-label block text-muted-foreground text-xs"
+                >
+                  Presenting Complaint
+                </label>
                 <input
                   id="triage-complaint"
                   type="text"
                   required={true}
                   placeholder="e.g. Severe chest pain radiating to left arm, diaphoresis"
                   value={form.presentingComplaint}
-                  onChange={(e) => setForm({ ...form, presentingComplaint: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, presentingComplaint: e.target.value })
+                  }
                   className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm focus:outline-hidden"
                 />
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="triage-esi-acuity" className="mono-label block text-muted-foreground text-xs">ESI Triage Acuity (1 - 5)</label>
+                  <label
+                    htmlFor="triage-esi-acuity"
+                    className="mono-label block text-muted-foreground text-xs"
+                  >
+                    ESI Triage Acuity (1 - 5)
+                  </label>
                   <select
                     id="triage-esi-acuity"
                     value={form.esi}
-                    onChange={(e) => setForm({ ...form, esi: parseInt(e.target.value, 10) as EsiLevel })}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        esi: parseInt(e.target.value, 10) as EsiLevel,
+                      })
+                    }
                     className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm font-mono focus:outline-hidden"
                   >
-                    <option value={1}>ESI 1 — Resuscitation (Immediate life-threat)</option>
-                    <option value={2}>ESI 2 — Emergent (High risk / conf / severe pain)</option>
-                    <option value={3}>ESI 3 — Urgent (Multiple resources required)</option>
-                    <option value={4}>ESI 4 — Less Urgent (One resource required)</option>
+                    <option value={1}>
+                      ESI 1 — Resuscitation (Immediate life-threat)
+                    </option>
+                    <option value={2}>
+                      ESI 2 — Emergent (High risk / conf / severe pain)
+                    </option>
+                    <option value={3}>
+                      ESI 3 — Urgent (Multiple resources required)
+                    </option>
+                    <option value={4}>
+                      ESI 4 — Less Urgent (One resource required)
+                    </option>
                     <option value={5}>ESI 5 — Non-urgent (No resource)</option>
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="triage-target-area" className="mono-label block text-muted-foreground text-xs">Target Department Area</label>
+                  <label
+                    htmlFor="triage-target-area"
+                    className="mono-label block text-muted-foreground text-xs"
+                  >
+                    Target Department Area
+                  </label>
                   <select
                     id="triage-target-area"
                     value={form.area}
@@ -304,22 +394,36 @@ export function TriageBoardPanel() {
               </div>
 
               <div>
-                <label htmlFor="triage-observations" className="mono-label block text-muted-foreground text-xs">Initial Observations</label>
+                <label
+                  htmlFor="triage-observations"
+                  className="mono-label block text-muted-foreground text-xs"
+                >
+                  Initial Observations
+                </label>
                 <input
                   id="triage-observations"
                   type="text"
                   placeholder="e.g. HR 112 · BP 142/90 · SpO2 94% · RR 24"
                   value={form.observations}
-                  onChange={(e) => setForm({ ...form, observations: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, observations: e.target.value })
+                  }
                   className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm font-mono focus:outline-hidden"
                 />
               </div>
 
               <div className="mt-6 flex justify-end gap-3 border-t pt-4">
-                <ActionButton type="button" onClick={() => setIsIntakeOpen(false)}>
+                <ActionButton
+                  type="button"
+                  onClick={() => setIsIntakeOpen(false)}
+                >
                   Cancel
                 </ActionButton>
-                <ActionButton type="submit" tone="solid" disabled={isSubmitting}>
+                <ActionButton
+                  type="submit"
+                  tone="solid"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? "Registering..." : "Confirm Intake"}
                 </ActionButton>
               </div>
@@ -347,13 +451,21 @@ export function TriageBoardPanel() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={9} role="status" aria-live="polite" className="p-8 text-center mono-label text-muted-foreground animate-pulse">
+                <td
+                  colSpan={9}
+                  role="status"
+                  aria-live="polite"
+                  className="p-8 text-center mono-label text-muted-foreground animate-pulse"
+                >
                   Loading live department triage feed...
                 </td>
               </tr>
             ) : cases.length === 0 ? (
               <tr>
-                <td colSpan={9} className="p-8 text-center mono-label text-muted-foreground">
+                <td
+                  colSpan={9}
+                  className="p-8 text-center mono-label text-muted-foreground"
+                >
                   No active patients matching selected filter.
                 </td>
               </tr>
@@ -361,7 +473,9 @@ export function TriageBoardPanel() {
               cases.map((t) => (
                 <tr key={t.id} className="hairline-b hover:bg-foreground/2">
                   <Td>
-                    <span className="mono-label font-bold text-accent">{t.id}</span>
+                    <span className="mono-label font-bold text-accent">
+                      {t.id}
+                    </span>
                   </Td>
                   <Td>
                     <p className="font-medium">{t.patient}</p>
@@ -378,13 +492,17 @@ export function TriageBoardPanel() {
                     </span>
                   </Td>
                   <Td>
-                    <span className="mono-label text-muted-foreground">{t.obs}</span>
+                    <span className="mono-label text-muted-foreground">
+                      {t.obs}
+                    </span>
                   </Td>
                   <Td>
                     <span className="mono-label font-medium">{t.area}</span>
                   </Td>
                   <Td>
-                    <span className={`font-mono font-bold ${t.waitMin > 60 ? "text-destructive" : ""}`}>
+                    <span
+                      className={`font-mono font-bold ${t.waitMin > 60 ? "text-destructive" : ""}`}
+                    >
                       {t.waitMin}′
                     </span>
                   </Td>
@@ -393,7 +511,12 @@ export function TriageBoardPanel() {
                       id={`triage-disposition-${t.id}`}
                       aria-label={`Update disposition for patient ${t.patient} (${t.id})`}
                       value={t.disposition}
-                      onChange={(e) => handleDispositionChange(t.id, e.target.value as EmergencyDisposition)}
+                      onChange={(e) =>
+                        handleDispositionChange(
+                          t.id,
+                          e.target.value as EmergencyDisposition,
+                        )
+                      }
                       className="hairline bg-foreground/2 text-xs p-1 font-mono rounded-none focus:outline-hidden focus-visible:ring-1 focus-visible:ring-primary/40"
                     >
                       <option value="awaiting triage">awaiting triage</option>

@@ -8,7 +8,8 @@ interface BackendAuthResponse {
   user?: AuthUser;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
 
 const syncGoogleUserWithBackend = async (profile: {
   email?: string | null;
@@ -33,7 +34,9 @@ const syncGoogleUserWithBackend = async (profile: {
   });
 
   if (!response.ok) {
-    throw new Error(`Backend Google auth sync failed with status ${response.status}`);
+    throw new Error(
+      `Backend Google auth sync failed with status ${response.status}`,
+    );
   }
 
   return response.json() as Promise<BackendAuthResponse>;

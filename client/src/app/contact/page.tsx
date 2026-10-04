@@ -33,8 +33,8 @@ export default function ContactPage() {
                 <span className="text-brass">actually needs.</span>
               </motion.h1>
               <p className="text-muted-foreground mt-8 max-w-xl leading-relaxed">
-                One inbound line, routed by clinical impact to a named human. No chat bots, no
-                lead-scoring queue, no "we'll be in touch".
+                One inbound line, routed by clinical impact to a named human. No
+                chat bots, no lead-scoring queue, no "we'll be in touch".
               </p>
               <div className="mono-label text-muted-foreground hairline-t mt-10 flex flex-wrap gap-x-10 gap-y-3 pt-6">
                 <span>
@@ -44,7 +44,8 @@ export default function ContactPage() {
                   <span className="text-foreground">24/7</span> clinical cover
                 </span>
                 <span>
-                  <span className="text-foreground">15 min</span> P0 acknowledgement
+                  <span className="text-foreground">15 min</span> P0
+                  acknowledgement
                 </span>
               </div>
             </div>

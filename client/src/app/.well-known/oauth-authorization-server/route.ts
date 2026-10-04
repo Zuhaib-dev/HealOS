@@ -5,13 +5,17 @@ export const dynamic = "force-static";
 export async function GET() {
   const asMetadata = {
     issuer: "https://healos-theta.vercel.app",
-    authorization_endpoint: "https://healos-theta.vercel.app/api/auth/oauth2/authorize",
+    authorization_endpoint:
+      "https://healos-theta.vercel.app/api/auth/oauth2/authorize",
     token_endpoint: "https://healos-theta.vercel.app/api/auth/oauth2/token",
     registration_endpoint: "https://healos-theta.vercel.app/api/auth/register",
     revocation_endpoint: "https://healos-theta.vercel.app/api/auth/revoke",
     identity_endpoint: "https://healos-theta.vercel.app/agent/identity",
     claim_endpoint: "https://healos-theta.vercel.app/agent/auth",
-    token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post"],
+    token_endpoint_auth_methods_supported: [
+      "client_secret_basic",
+      "client_secret_post",
+    ],
     scopes_supported: [
       "read:patients",
       "write:patients",
@@ -27,10 +31,15 @@ export async function GET() {
       supported: true,
       identity_endpoint: "https://healos-theta.vercel.app/agent/identity",
       claim_endpoint: "https://healos-theta.vercel.app/agent/auth",
-      registration_endpoint: "https://healos-theta.vercel.app/api/auth/register",
+      registration_endpoint:
+        "https://healos-theta.vercel.app/api/auth/register",
       token_endpoint: "https://healos-theta.vercel.app/api/auth/oauth2/token",
       revocation_endpoint: "https://healos-theta.vercel.app/api/auth/revoke",
-      grant_types_supported: ["client_credentials", "authorization_code", "urn:ietf:params:oauth:grant-type:token-exchange"],
+      grant_types_supported: [
+        "client_credentials",
+        "authorization_code",
+        "urn:ietf:params:oauth:grant-type:token-exchange",
+      ],
       registration_template: {
         client_name: "HealOS Autonomous Agent",
         grant_types: ["client_credentials"],

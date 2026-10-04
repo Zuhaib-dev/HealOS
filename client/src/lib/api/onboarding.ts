@@ -1,16 +1,19 @@
 import apiClient from "../api-client";
 
-export type ProfessionalStatus = "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
+export type ProfessionalStatus =
+  "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
 
 export interface ProfessionalProfileData {
   _id: string;
-  user: {
-    _id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    avatarUrl?: string;
-  } | string;
+  user:
+    | {
+        _id: string;
+        name: string;
+        email: string;
+        phone?: string;
+        avatarUrl?: string;
+      }
+    | string;
   requestedRole: "DOCTOR" | "RADIOLOGIST";
   degree: string;
   specialization: string;
@@ -48,7 +51,9 @@ export interface ApplyRolePayload {
   documentUrls?: string[];
 }
 
-export const updatePatientProfileApi = async (payload: Partial<PatientProfileData>) => {
+export const updatePatientProfileApi = async (
+  payload: Partial<PatientProfileData>,
+) => {
   const response = await apiClient.put<{
     success: boolean;
     message: string;
@@ -92,7 +97,12 @@ export const approveOnboardingRequestApi = async (id: string) => {
   return response.data;
 };
 
-export const rejectOnboardingRequestApi = async (id: string, rejectionReason: string) => {
-  const response = await apiClient.put(`/onboarding/${id}/reject`, { rejectionReason });
+export const rejectOnboardingRequestApi = async (
+  id: string,
+  rejectionReason: string,
+) => {
+  const response = await apiClient.put(`/onboarding/${id}/reject`, {
+    rejectionReason,
+  });
   return response.data;
 };

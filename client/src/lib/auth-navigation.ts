@@ -107,7 +107,10 @@ export function getSafeRedirectPath(
  * Checks whether an authenticated role is permitted to access a given workspace path.
  * Enforces strict role boundaries (e.g. ADMIN can only access /admin and public paths).
  */
-export function isPathAllowedForRole(pathname: string, role?: string | null): boolean {
+export function isPathAllowedForRole(
+  pathname: string,
+  role?: string | null,
+): boolean {
   if (!role) return false;
   const normalized = role.toUpperCase();
 
@@ -131,4 +134,3 @@ export function isPathAllowedForRole(pathname: string, role?: string | null): bo
 
   return true;
 }
-

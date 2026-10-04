@@ -26,23 +26,23 @@ const handoverSchema = new Schema<IHandover>(
     fromDoctor: { type: Schema.Types.ObjectId, ref: "User", required: true },
     toDoctor: { type: Schema.Types.ObjectId, ref: "User" },
     department: { type: String },
-    acuity: { 
-      type: String, 
+    acuity: {
+      type: String,
       enum: ["critical", "guarded", "stable"],
-      default: "stable" 
+      default: "stable",
     },
     situation: { type: String },
     background: { type: String, required: true },
     assessment: { type: String, required: true },
     recommendation: { type: String },
     tasks: { type: [String], default: [] },
-    status: { 
-      type: String, 
+    status: {
+      type: String,
       enum: ["PENDING", "ACKNOWLEDGED", "COMPLETED"],
-      default: "PENDING"
+      default: "PENDING",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 handoverSchema.index({ toDoctor: 1, status: 1 });

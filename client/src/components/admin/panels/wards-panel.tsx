@@ -8,17 +8,31 @@ import { ActionButton, PanelHeader } from "../admin-shell";
 
 /* ---------- shared primitives ---------- */
 
-function Pill({ children, tone }: { children: React.ReactNode; tone: "ok" | "warn" | "bad" | "mute" }) {
+function Pill({
+  children,
+  tone,
+}: {
+  children: React.ReactNode;
+  tone: "ok" | "warn" | "bad" | "mute";
+}) {
   const map = {
     ok: "bg-accent/12 text-brass",
     warn: "bg-foreground/[0.06] text-foreground",
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
-import { fetchAdminWardsApi, createWardApi, updateWardApi, deleteWardApi, AdminWardData } from "@/lib/api/admin";
+import {
+  fetchAdminWardsApi,
+  createWardApi,
+  updateWardApi,
+  deleteWardApi,
+  AdminWardData,
+} from "@/lib/api/admin";
 import { useAdminRealtime } from "../use-admin-realtime";
 
 /* ---------- 04 wards ---------- */
@@ -29,9 +43,13 @@ export function WardsPanel() {
   const [dbWards, setDbWards] = useState<AdminWardData[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState<Partial<AdminWardData>>({
-    name: "", code: "", department: "General Medicine", capacity: 20, currentOccupancy: 0
+    name: "",
+    code: "",
+    department: "General Medicine",
+    capacity: 20,
+    currentOccupancy: 0,
   });
 
   const loadWards = useCallback(async () => {
@@ -55,7 +73,13 @@ export function WardsPanel() {
   useAdminRealtime(["wards", "patients"], loadWards);
 
   const handleOpenNew = () => {
-    setFormData({ name: "", code: "", department: "General Medicine", capacity: 20, currentOccupancy: 0 });
+    setFormData({
+      name: "",
+      code: "",
+      department: "General Medicine",
+      capacity: 20,
+      currentOccupancy: 0,
+    });
     setEditingId(null);
     setIsFormOpen(true);
   };
@@ -107,55 +131,131 @@ export function WardsPanel() {
           <>
             <ActionButton>Open bed board</ActionButton>
             <ActionButton tone="solid" onClick={handleOpenNew}>
-              <span className="flex items-center gap-2"><Plus className="size-3" /> Add Ward</span>
+              <span className="flex items-center gap-2">
+                <Plus className="size-3" /> Add Ward
+              </span>
             </ActionButton>
           </>
         }
       />
-      
+
       {isFormOpen && (
         <div className="mx-5 sm:mx-8 mb-8 p-6 bg-card/40 rounded-2xl border border-border/60 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="mono-label font-bold text-foreground">{editingId ? "Edit Ward" : "Add New Ward"}</h3>
+            <h3 className="mono-label font-bold text-foreground">
+              {editingId ? "Edit Ward" : "Add New Ward"}
+            </h3>
             <button
               type="button"
               onClick={() => setIsFormOpen(false)}
-              aria-label="Close ward form" title="Close ward form"
+              aria-label="Close ward form"
+              title="Close ward form"
               className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
             >
               <X className="size-4" />
               <span className="sr-only">Close ward form</span>
             </button>
           </div>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
+          >
             <label className="block">
-              <span className="mono-label text-xs text-muted-foreground block mb-1">Ward Name</span>
-              <input required value={formData.name} onChange={e => setFormData(d => ({ ...d, name: e.target.value }))} className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="e.g. ICU" />
+              <span className="mono-label text-xs text-muted-foreground block mb-1">
+                Ward Name
+              </span>
+              <input
+                required
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((d) => ({ ...d, name: e.target.value }))
+                }
+                className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                placeholder="e.g. ICU"
+              />
             </label>
             <label className="block">
-              <span className="mono-label text-xs text-muted-foreground block mb-1">Ward Code</span>
-              <input required value={formData.code} onChange={e => setFormData(d => ({ ...d, code: e.target.value }))} className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="e.g. ICU-1" />
+              <span className="mono-label text-xs text-muted-foreground block mb-1">
+                Ward Code
+              </span>
+              <input
+                required
+                value={formData.code}
+                onChange={(e) =>
+                  setFormData((d) => ({ ...d, code: e.target.value }))
+                }
+                className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                placeholder="e.g. ICU-1"
+              />
             </label>
             <label className="block">
-              <span className="mono-label text-xs text-muted-foreground block mb-1">Department</span>
-              <input required value={formData.department} onChange={e => setFormData(d => ({ ...d, department: e.target.value }))} className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="e.g. Intensive Care" />
+              <span className="mono-label text-xs text-muted-foreground block mb-1">
+                Department
+              </span>
+              <input
+                required
+                value={formData.department}
+                onChange={(e) =>
+                  setFormData((d) => ({ ...d, department: e.target.value }))
+                }
+                className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                placeholder="e.g. Intensive Care"
+              />
             </label>
             <label className="block">
-              <span className="mono-label text-xs text-muted-foreground block mb-1">Capacity</span>
-              <input type="number" min={1} required value={formData.capacity} onChange={e => setFormData(d => ({ ...d, capacity: parseInt(e.target.value) || 0 }))} className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+              <span className="mono-label text-xs text-muted-foreground block mb-1">
+                Capacity
+              </span>
+              <input
+                type="number"
+                min={1}
+                required
+                value={formData.capacity}
+                onChange={(e) =>
+                  setFormData((d) => ({
+                    ...d,
+                    capacity: parseInt(e.target.value) || 0,
+                  }))
+                }
+                className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
             </label>
             <label className="block">
-              <span className="mono-label text-xs text-muted-foreground block mb-1">Current Occupancy</span>
-              <input type="number" min={0} required value={formData.currentOccupancy} onChange={e => setFormData(d => ({ ...d, currentOccupancy: parseInt(e.target.value) || 0 }))} className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+              <span className="mono-label text-xs text-muted-foreground block mb-1">
+                Current Occupancy
+              </span>
+              <input
+                type="number"
+                min={0}
+                required
+                value={formData.currentOccupancy}
+                onChange={(e) =>
+                  setFormData((d) => ({
+                    ...d,
+                    currentOccupancy: parseInt(e.target.value) || 0,
+                  }))
+                }
+                className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
             </label>
             <div className="sm:col-span-2 lg:col-span-5 flex justify-end gap-3 mt-2">
-              <button type="button" onClick={() => setIsFormOpen(false)} className="mono-label text-muted-foreground px-4 py-2 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors">Cancel</button>
+              <button
+                type="button"
+                onClick={() => setIsFormOpen(false)}
+                className="mono-label text-muted-foreground px-4 py-2 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="bg-primary text-primary-foreground mono-label rounded-lg px-4 py-2 font-bold hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
               >
-                {isSubmitting ? "Saving..." : editingId ? "Save Changes" : "Create Ward"}
+                {isSubmitting
+                  ? "Saving..."
+                  : editingId
+                    ? "Save Changes"
+                    : "Create Ward"}
               </button>
             </div>
           </form>
@@ -169,10 +269,15 @@ export function WardsPanel() {
           </div>
         ) : dbWards.length > 0 ? (
           dbWards.map((w) => {
-            const pct = Math.round(((w.currentOccupancy || 0) / (w.capacity || 1)) * 100);
+            const pct = Math.round(
+              ((w.currentOccupancy || 0) / (w.capacity || 1)) * 100,
+            );
             const tight = pct >= 85;
             return (
-              <div key={w._id} className="bg-card/40 border border-border/60 rounded-2xl p-6 relative group hover:-translate-y-1 hover:shadow-lg transition-all duration-300 backdrop-blur-sm overflow-hidden">
+              <div
+                key={w._id}
+                className="bg-card/40 border border-border/60 rounded-2xl p-6 relative group hover:-translate-y-1 hover:shadow-lg transition-all duration-300 backdrop-blur-sm overflow-hidden"
+              >
                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
                   <button
                     type="button"
@@ -195,24 +300,42 @@ export function WardsPanel() {
                 </div>
                 <div className="flex items-start justify-between relative z-0">
                   <div>
-                    <p className="font-mono text-lg font-bold pr-16">{w.name}</p>
-                    <p className="mono-label text-muted-foreground mt-1">{w.code} · {w.department}</p>
+                    <p className="font-mono text-lg font-bold pr-16">
+                      {w.name}
+                    </p>
+                    <p className="mono-label text-muted-foreground mt-1">
+                      {w.code} · {w.department}
+                    </p>
                   </div>
-                  <Pill tone={tight ? "bad" : "ok"}>{tight ? "tight" : "ok"}</Pill>
+                  <Pill tone={tight ? "bad" : "ok"}>
+                    {tight ? "tight" : "ok"}
+                  </Pill>
                 </div>
                 <div className="mt-5 grid grid-cols-8 gap-1">
-                  {Array.from({ length: w.capacity }).slice(0, 24).map((_, i) => (
-                    <motion.span
-                      key={i}
-                      className={`h-3 ${i < Math.min(w.currentOccupancy, 24) ? "bg-accent" : "bg-foreground/8"}`}
-                      initial={{ opacity: 0.2 }}
-                      animate={{ opacity: i < Math.min(w.currentOccupancy, 24) ? [0.55, 1, 0.55] : 0.5 }}
-                      transition={{ duration: 3, delay: i * 0.05, repeat: Infinity }}
-                    />
-                  ))}
+                  {Array.from({ length: w.capacity })
+                    .slice(0, 24)
+                    .map((_, i) => (
+                      <motion.span
+                        key={i}
+                        className={`h-3 ${i < Math.min(w.currentOccupancy, 24) ? "bg-accent" : "bg-foreground/8"}`}
+                        initial={{ opacity: 0.2 }}
+                        animate={{
+                          opacity:
+                            i < Math.min(w.currentOccupancy, 24)
+                              ? [0.55, 1, 0.55]
+                              : 0.5,
+                        }}
+                        transition={{
+                          duration: 3,
+                          delay: i * 0.05,
+                          repeat: Infinity,
+                        }}
+                      />
+                    ))}
                 </div>
                 <p className="mono-label text-muted-foreground mt-4">
-                  {w.currentOccupancy}/{w.capacity} occupied · {w.capacity - w.currentOccupancy} free
+                  {w.currentOccupancy}/{w.capacity} occupied ·{" "}
+                  {w.capacity - w.currentOccupancy} free
                 </p>
               </div>
             );
@@ -223,7 +346,9 @@ export function WardsPanel() {
               <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
                 <BedDouble className="size-6 text-muted-foreground/60" />
               </div>
-              <p className="mono-label text-muted-foreground">No wards registered in system.</p>
+              <p className="mono-label text-muted-foreground">
+                No wards registered in system.
+              </p>
             </div>
           </div>
         )}

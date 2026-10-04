@@ -18,7 +18,7 @@ const wardSchema = new Schema(
     currentOccupancy: { type: Number, default: 0 },
     department: { type: String, required: true, default: "General" },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Ward = mongoose.model<IWard>("Ward", wardSchema);

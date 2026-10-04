@@ -13,12 +13,14 @@ import {
   type EsiLevel,
 } from "@/lib/api/emergency";
 
-const esiTone = (e: EsiLevel): Tone => (e <= 2 ? "bad" : e === 3 ? "warn" : "mute");
+const esiTone = (e: EsiLevel): Tone =>
+  e <= 2 ? "bad" : e === 3 ? "warn" : "mute";
 
 export function InboundPanel() {
   const [units, setUnits] = useState<InboundAmbulanceData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [assigningUnit, setAssigningUnit] = useState<InboundAmbulanceData | null>(null);
+  const [assigningUnit, setAssigningUnit] =
+    useState<InboundAmbulanceData | null>(null);
   const [selectedBay, setSelectedBay] = useState("Resus 1");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isPending = isSubmitting;
@@ -96,7 +98,9 @@ export function InboundPanel() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
           <div className="bg-background hairline w-full max-w-sm p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="font-mono text-base font-bold">Assign Bay to {assigningUnit.unit}</h3>
+              <h3 className="font-mono text-base font-bold">
+                Assign Bay to {assigningUnit.unit}
+              </h3>
               <button
                 type="button"
                 onClick={() => setAssigningUnit(null)}
@@ -113,9 +117,17 @@ export function InboundPanel() {
               <p className="mt-1">Crew: {assigningUnit.crew}</p>
             </div>
 
-            <form onSubmit={handleConfirmBayAssignment} className="mt-4 space-y-4">
+            <form
+              onSubmit={handleConfirmBayAssignment}
+              className="mt-4 space-y-4"
+            >
               <div>
-                <label htmlFor="receiving-bay-select" className="mono-label block text-muted-foreground text-xs">Receiving Bay / Area</label>
+                <label
+                  htmlFor="receiving-bay-select"
+                  className="mono-label block text-muted-foreground text-xs"
+                >
+                  Receiving Bay / Area
+                </label>
                 <select
                   id="receiving-bay-select"
                   required={true}
@@ -129,15 +141,24 @@ export function InboundPanel() {
                   <option value="Acute 2">Acute Bay 2</option>
                   <option value="Majors 1">Majors Bay 1</option>
                   <option value="Majors 2">Majors Bay 2</option>
-                  <option value="Triage / Assessment">Triage Assessment Bay</option>
+                  <option value="Triage / Assessment">
+                    Triage Assessment Bay
+                  </option>
                 </select>
               </div>
 
               <div className="mt-6 flex justify-end gap-3 border-t pt-4">
-                <ActionButton type="button" onClick={() => setAssigningUnit(null)}>
+                <ActionButton
+                  type="button"
+                  onClick={() => setAssigningUnit(null)}
+                >
                   Cancel
                 </ActionButton>
-                <ActionButton type="submit" tone="solid" disabled={isSubmitting}>
+                <ActionButton
+                  type="submit"
+                  tone="solid"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? "Assigning..." : "Confirm Bay"}
                 </ActionButton>
               </div>
@@ -147,15 +168,26 @@ export function InboundPanel() {
       )}
 
       {isLoading ? (
-        <div role="status" aria-live="polite" className="p-12 text-center mono-label text-muted-foreground animate-pulse">
+        <div
+          role="status"
+          aria-live="polite"
+          className="p-12 text-center mono-label text-muted-foreground animate-pulse"
+        >
           Connecting to regional EMS dispatch feed...
         </div>
       ) : units.length === 0 ? (
-        <div role="status" aria-live="polite" className="p-12 text-center mono-label text-muted-foreground">
+        <div
+          role="status"
+          aria-live="polite"
+          className="p-12 text-center mono-label text-muted-foreground"
+        >
           No ambulances currently en route.
         </div>
       ) : (
-        <div className="grid gap-px lg:grid-cols-3" style={{ background: "var(--hairline)" }}>
+        <div
+          className="grid gap-px lg:grid-cols-3"
+          style={{ background: "var(--hairline)" }}
+        >
           {units.map((i) => {
             const hasBay = Boolean(i.assignedBay);
             return (
@@ -167,12 +199,29 @@ export function InboundPanel() {
                   </p>
                   {i.prealert && <Pill tone="bad">pre-alert</Pill>}
                 </div>
-                <p className="mt-2 font-mono text-3xl font-bold">{i.etaMinutes}′</p>
-                <p className="mono-label text-muted-foreground text-xs">estimated arrival</p>
+                <p className="mt-2 font-mono text-3xl font-bold">
+                  {i.etaMinutes}′
+                </p>
+                <p className="mono-label text-muted-foreground text-xs">
+                  estimated arrival
+                </p>
 
                 <svg viewBox="0 0 200 24" className="mt-4 h-6 w-full">
-                  <line x1="4" y1="16" x2="196" y2="16" stroke="var(--hairline)" />
-                  <rect x="188" y="6" width="8" height="10" fill="none" stroke="var(--color-accent)" />
+                  <line
+                    x1="4"
+                    y1="16"
+                    x2="196"
+                    y2="16"
+                    stroke="var(--hairline)"
+                  />
+                  <rect
+                    x="188"
+                    y="6"
+                    width="8"
+                    height="10"
+                    fill="none"
+                    stroke="var(--color-accent)"
+                  />
                   <motion.circle
                     cy="16"
                     r="3.5"
@@ -183,9 +232,15 @@ export function InboundPanel() {
                   />
                 </svg>
 
-                <p className="mt-3 text-sm font-medium">{i.presentingComplaint}</p>
-                <p className="mono-label text-muted-foreground mt-2 text-xs">{i.observations}</p>
-                <p className="mono-label text-muted-foreground mt-1 text-xs">{i.crew}</p>
+                <p className="mt-3 text-sm font-medium">
+                  {i.presentingComplaint}
+                </p>
+                <p className="mono-label text-muted-foreground mt-2 text-xs">
+                  {i.observations}
+                </p>
+                <p className="mono-label text-muted-foreground mt-1 text-xs">
+                  {i.crew}
+                </p>
 
                 {i.assignedBay && (
                   <p className="mono-label text-accent mt-2 text-xs font-bold">

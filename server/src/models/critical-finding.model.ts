@@ -20,7 +20,10 @@ const criticalFindingSchema = new Schema<ICriticalFinding>(
     clinician: { type: String, required: true },
     atTime: { type: String, required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const CriticalFinding = mongoose.model<ICriticalFinding>("CriticalFinding", criticalFindingSchema);
+export const CriticalFinding = mongoose.model<ICriticalFinding>(
+  "CriticalFinding",
+  criticalFindingSchema,
+);

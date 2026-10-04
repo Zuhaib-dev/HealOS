@@ -22,7 +22,8 @@ export function GuestGuard({ children }: GuestGuardProps) {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
   const isSwitchRequested =
-    searchParams.get("switch") === "true" || searchParams.get("logout") === "true";
+    searchParams.get("switch") === "true" ||
+    searchParams.get("logout") === "true";
 
   const { isAuthenticated, user, token, _hasHydrated, logout } = useAuthStore();
   const [countdown, setCountdown] = useState(2);
@@ -46,7 +47,13 @@ export function GuestGuard({ children }: GuestGuardProps) {
 
   // Auto-redirect countdown when authenticated
   useEffect(() => {
-    if (!_hasHydrated || !isAuthenticated || !user || !token || isSwitchRequested) {
+    if (
+      !_hasHydrated ||
+      !isAuthenticated ||
+      !user ||
+      !token ||
+      isSwitchRequested
+    ) {
       return;
     }
 
@@ -84,7 +91,9 @@ export function GuestGuard({ children }: GuestGuardProps) {
     try {
       logout();
       await signOut({ redirect: false });
-      toast.success("Signed out successfully. You may sign in with a different account.");
+      toast.success(
+        "Signed out successfully. You may sign in with a different account.",
+      );
     } catch {
       toast.success("Signed out successfully.");
     } finally {
@@ -159,7 +168,8 @@ export function GuestGuard({ children }: GuestGuardProps) {
             Already Signed In
           </h1>
           <p className="mono-label mt-1.5 text-xs text-muted-foreground">
-            You are currently logged in to HealOS. Redirecting you to your workspace.
+            You are currently logged in to HealOS. Redirecting you to your
+            workspace.
           </p>
         </div>
 
@@ -181,9 +191,7 @@ export function GuestGuard({ children }: GuestGuardProps) {
                   {user.name}
                 </span>
                 {user.isEmailVerified && (
-                  <ShieldCheck
-                    className="size-3.5 text-emerald-500 shrink-0"
-                  />
+                  <ShieldCheck className="size-3.5 text-emerald-500 shrink-0" />
                 )}
               </div>
               <p className="text-xs text-muted-foreground truncate font-mono mt-0.5">
@@ -203,7 +211,9 @@ export function GuestGuard({ children }: GuestGuardProps) {
 
           <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground font-mono">
             <span>Destination</span>
-            <span className="font-semibold text-foreground">{workspaceTitle}</span>
+            <span className="font-semibold text-foreground">
+              {workspaceTitle}
+            </span>
           </div>
         </div>
 

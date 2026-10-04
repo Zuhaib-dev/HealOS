@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Check, TriangleAlert, PenLine, Send, X, CheckCircle2 } from "lucide-react";
+import {
+  Check,
+  TriangleAlert,
+  PenLine,
+  Send,
+  X,
+  CheckCircle2,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
 import {
@@ -29,12 +36,16 @@ function Pill({
     bad: "bg-destructive/12 text-destructive",
     mute: "bg-foreground/[0.04] text-muted-foreground",
   } as const;
-  return <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>;
+  return (
+    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">{children}</th>
+    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
+      {children}
+    </th>
   );
 }
 
@@ -55,7 +66,11 @@ function Vitals({ series }: { series: number[] }) {
     .join(" ");
 
   return (
-    <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-8 w-24 shrink-0">
+    <svg
+      viewBox="0 0 100 32"
+      preserveAspectRatio="none"
+      className="h-8 w-24 shrink-0"
+    >
       <motion.polyline
         points={pts}
         fill="none"
@@ -91,7 +106,7 @@ export function HandoverPanel() {
   const fetchHandovers = () => {
     setLoading(true);
     getHandoversApi()
-      .then(res => setHandoversList(res.data.handovers || []))
+      .then((res) => setHandoversList(res.data.handovers || []))
       .catch(() => toast.error("Failed to load handovers"))
       .finally(() => setLoading(false));
   };
@@ -124,7 +139,9 @@ export function HandoverPanel() {
       <div className="grid lg:grid-cols-[1fr_360px]">
         <div className="hairline-l px-5 py-6 sm:px-8">
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading handovers...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading handovers...
+            </p>
           ) : handoversList.length === 0 ? (
             <p className="text-sm text-muted-foreground">No handovers found.</p>
           ) : (
@@ -139,22 +156,36 @@ export function HandoverPanel() {
                   <span className="mono-label text-accent/80">
                     {new Date(h.createdAt).toLocaleString()}
                   </span>
-                  <span className="mono-label">{h.fromDoctor?.name || "Unknown"}</span>
-                  {h.acuity === "critical" ? <Pill tone="bad">critical</Pill> : null}
+                  <span className="mono-label">
+                    {h.fromDoctor?.name || "Unknown"}
+                  </span>
+                  {h.acuity === "critical" ? (
+                    <Pill tone="bad">critical</Pill>
+                  ) : null}
                 </div>
-                <p className="mt-2 text-sm whitespace-pre-wrap">{h.assessment}</p>
-                {h.patient && <p className="mt-1 text-xs text-muted-foreground">Patient: {h.patient.name}</p>}
+                <p className="mt-2 text-sm whitespace-pre-wrap">
+                  {h.assessment}
+                </p>
+                {h.patient && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Patient: {h.patient.name}
+                  </p>
+                )}
               </motion.div>
             ))
           )}
         </div>
         <div className="hairline-l px-5 py-6">
-          <label htmlFor="handover-note-draft" className="mono-label text-muted-foreground block">
+          <label
+            htmlFor="handover-note-draft"
+            className="mono-label text-muted-foreground block"
+          >
             Add handover note
           </label>
           <textarea
             id="handover-note-draft"
-            aria-label="Add handover note" title="Add handover note"
+            aria-label="Add handover note"
+            title="Add handover note"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="e.g. ICU-A 04 — repeat ABG at 12:00, escalate if lactate rising"

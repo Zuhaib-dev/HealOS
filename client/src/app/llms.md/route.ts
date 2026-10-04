@@ -25,9 +25,12 @@ last-updated: 2026-09-04
       },
     });
   } catch {
-    return new NextResponse("# HealOS LLM Guide\n\nRefer to https://healos-theta.vercel.app/llms.txt", {
-      status: 200,
-      headers: { "Content-Type": "text/markdown; charset=utf-8" },
-    });
+    return new NextResponse(
+      "# HealOS LLM Guide\n\nRefer to https://healos-theta.vercel.app/llms.txt",
+      {
+        status: 200,
+        headers: { "Content-Type": "text/markdown; charset=utf-8" },
+      },
+    );
   }
 }

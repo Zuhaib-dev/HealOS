@@ -59,9 +59,9 @@ export function PatientJourney() {
               Every corridor, <span className="text-brass">one thread.</span>
             </h2>
             <p className="text-muted-foreground mt-6 max-w-md leading-relaxed">
-              HealOS follows the patient, not the department. The same record moves from the
-              front desk to theatre to the claim file — timestamped, attributable, and never
-              typed twice.
+              HealOS follows the patient, not the department. The same record
+              moves from the front desk to theatre to the claim file —
+              timestamped, attributable, and never typed twice.
             </p>
             <div className="mt-8 grid grid-cols-2 gap-0">
               {[
@@ -71,7 +71,9 @@ export function PatientJourney() {
                 { k: "First-pass claims", v: "97.4%" },
               ].map((s) => (
                 <div key={s.k} className="hairline-t hairline-b py-4">
-                  <div className="font-display text-2xl font-bold tracking-tight">{s.v}</div>
+                  <div className="font-display text-2xl font-bold tracking-tight">
+                    {s.v}
+                  </div>
                   <div className="mono-label text-muted-foreground">{s.k}</div>
                 </div>
               ))}
@@ -83,7 +85,8 @@ export function PatientJourney() {
               <div className="mono-label text-muted-foreground mb-4 flex items-center justify-between">
                 <span>Floor schematic · level 2</span>
                 <span className="text-brass animate-blink flex items-center gap-2">
-                  <span className="bg-accent inline-block h-1.5 w-1.5" /> tracking
+                  <span className="bg-accent inline-block h-1.5 w-1.5" />{" "}
+                  tracking
                 </span>
               </div>
               <JourneyFloorplan className="h-auto w-full" />
@@ -107,14 +110,22 @@ export function PatientJourney() {
                 initial={{ scaleX: 0 }}
                 whileInView={{ scaleX: 1 }}
                 viewport={{ once: true, amount: 0.4 }}
-                transition={{ duration: 0.9, delay: 0.15 + (i % 3) * 0.1, ease: "easeOut" }}
+                transition={{
+                  duration: 0.9,
+                  delay: 0.15 + (i % 3) * 0.1,
+                  ease: "easeOut",
+                }}
               />
               <div className="mono-label text-muted-foreground flex items-baseline justify-between">
                 <span className="text-brass">{s.code}</span>
                 <span>T+{s.t}</span>
               </div>
-              <h3 className="font-display mt-4 text-lg font-bold tracking-tight">{s.name}</h3>
-              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{s.body}</p>
+              <h3 className="font-display mt-4 text-lg font-bold tracking-tight">
+                {s.name}
+              </h3>
+              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                {s.body}
+              </p>
             </motion.div>
           ))}
         </div>

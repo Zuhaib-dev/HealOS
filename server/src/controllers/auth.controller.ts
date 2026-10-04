@@ -13,7 +13,8 @@ const isDbConnected = (res: Response): boolean => {
   if (mongoose.connection.readyState !== 1) {
     res.status(StatusCodes.SERVICE_UNAVAILABLE).json({
       success: false,
-      message: "MongoDB database is not connected. Please start MongoDB to perform this action.",
+      message:
+        "MongoDB database is not connected. Please start MongoDB to perform this action.",
     });
     return false;
   }
@@ -64,7 +65,12 @@ const updatePhoneSchema = z.object({
   phone: z.string().trim().min(7, "Invalid phone number"),
 });
 
-import { generateToken, generate6DigitOtp, sendOtpOrRespond, normalizeUserRole } from "../services/auth.service.js";
+import {
+  generateToken,
+  generate6DigitOtp,
+  sendOtpOrRespond,
+  normalizeUserRole,
+} from "../services/auth.service.js";
 
 const serializeAuthUser = (user: {
   _id: unknown;
@@ -94,7 +100,10 @@ const hasValidSyncSecret = (req: Request): boolean => {
 // ---------------------------
 // 1. Google OAuth Sync Endpoint
 // ---------------------------
-export const syncGoogleUser = async (req: Request, res: Response): Promise<void> => {
+export const syncGoogleUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     if (!isDbConnected(res)) return;
 
@@ -145,9 +154,18 @@ export const syncGoogleUser = async (req: Request, res: Response): Promise<void>
     }
 
     const normalizedRole = normalizeUserRole(user.role);
-    const token = generateToken(user._id.toString(), normalizedRole, user.tokenVersion);
+    const token = generateToken(
+      user._id.toString(),
+      normalizedRole,
+      user.tokenVersion,
+    );
 
-    await logAudit(`user:${user._id.toString().slice(-6)}`, "Successful SSO login via Google", `email:${user.email}`, "info");
+    await logAudit(
+      `user:${user._id.toString().slice(-6)}`,
+      "Successful SSO login via Google",
+      `email:${user.email}`,
+      "info",
+    );
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -256,7 +274,11 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
     const { email, otp } = parsed.data;
 
     const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
-    const otpRecord = await OTP.findOne({ email, otp: hashedOtp, purpose: "email_verification" });
+    const otpRecord = await OTP.findOne({
+      email,
+      otp: hashedOtp,
+      purpose: "email_verification",
+    });
     if (!otpRecord) {
       res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -283,7 +305,11 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
 
     // Issue JWT token
     const normalizedRole = normalizeUserRole(user.role);
-    const token = generateToken(user._id.toString(), normalizedRole, user.tokenVersion);
+    const token = generateToken(
+      user._id.toString(),
+      normalizedRole,
+      user.tokenVersion,
+    );
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -361,7 +387,10 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
 // ---------------------------
 // 5. Forgot Password
 // ---------------------------
-export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+export const forgotPassword = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     if (!isDbConnected(res)) return;
 
@@ -379,7 +408,8 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     if (!user || !user.password) {
       res.status(StatusCodes.OK).json({
         success: true,
-        message: "If an account exists for this email, a reset code has been sent.",
+        message:
+          "If an account exists for this email, a reset code has been sent.",
       });
       return;
     }
@@ -397,7 +427,8 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: "If an account exists for this email, a reset code has been sent.",
+      message:
+        "If an account exists for this email, a reset code has been sent.",
     });
   } catch (error) {
     console.error("Error in forgotPassword:", error);
@@ -411,7 +442,10 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 // ---------------------------
 // 6. Reset Password
 // ---------------------------
-export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     if (!isDbConnected(res)) return;
 
@@ -427,7 +461,11 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 
     const { email, otp, password } = parsed.data;
     const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
-    const otpRecord = await OTP.findOne({ email, otp: hashedOtp, purpose: "password_reset" });
+    const otpRecord = await OTP.findOne({
+      email,
+      otp: hashedOtp,
+      purpose: "password_reset",
+    });
     if (!otpRecord) {
       res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -451,7 +489,8 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: "Password reset successfully. Please sign in with your new password.",
+      message:
+        "Password reset successfully. Please sign in with your new password.",
     });
   } catch (error) {
     console.error("Error in resetPassword:", error);
@@ -503,8 +542,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       // Re-send OTP automatically
       const otpCode = generate6DigitOtp();
       await OTP.deleteMany({ email, purpose: "email_verification" });
-      const hashedOtp = crypto.createHash("sha256").update(otpCode).digest("hex");
-      await OTP.create({ email, otp: hashedOtp, purpose: "email_verification" });
+      const hashedOtp = crypto
+        .createHash("sha256")
+        .update(otpCode)
+        .digest("hex");
+      await OTP.create({
+        email,
+        otp: hashedOtp,
+        purpose: "email_verification",
+      });
       const otpRes = await sendOtpOrRespond(email, otpCode);
       if (!otpRes.success) {
         res.status(StatusCodes.BAD_GATEWAY).json(otpRes);
@@ -514,15 +560,25 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(StatusCodes.FORBIDDEN).json({
         success: false,
         requiresVerification: true,
-        message: "Email is not verified. A new 6-digit OTP has been sent to your email.",
+        message:
+          "Email is not verified. A new 6-digit OTP has been sent to your email.",
       });
       return;
     }
 
     const normalizedRole = normalizeUserRole(user.role);
-    const token = generateToken(user._id.toString(), normalizedRole, user.tokenVersion);
+    const token = generateToken(
+      user._id.toString(),
+      normalizedRole,
+      user.tokenVersion,
+    );
 
-    await logAudit(`user:${user._id.toString().slice(-6)}`, "Successful password login", `email:${user.email}`, "info");
+    await logAudit(
+      `user:${user._id.toString().slice(-6)}`,
+      "Successful password login",
+      `email:${user.email}`,
+      "info",
+    );
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -567,7 +623,10 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
 // ---------------------------
 // 7. Update Phone Number
 // ---------------------------
-export const updatePhone = async (req: Request, res: Response): Promise<void> => {
+export const updatePhone = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = req.user?._id;
     const parsed = updatePhoneSchema.safeParse(req.body);

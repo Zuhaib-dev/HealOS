@@ -39,7 +39,7 @@ const columns = [
     ],
   },
 ];
- 
+
 export function SiteFooter() {
   return (
     <footer className="relative">
@@ -48,8 +48,8 @@ export function SiteFooter() {
           <div className="col-span-2 lg:col-span-4">
             <HealOSLogo size={30} />
             <p className="text-muted-foreground mt-6 max-w-xs text-sm leading-relaxed">
-              The hospital operating system. Built with clinicians, audited by regulators, deployed
-              across 37 sites.
+              The hospital operating system. Built with clinicians, audited by
+              regulators, deployed across 37 sites.
             </p>
             <p className="mono-label text-muted-foreground mt-8">
               Lat 12.9716 · Lon 77.5946 · UTC+5:30
@@ -110,7 +110,10 @@ export function SiteFooter() {
             >
               GitHub
             </a>
-            <Link href="/openapi.json" className="hover:text-foreground transition-colors">
+            <Link
+              href="/openapi.json"
+              className="hover:text-foreground transition-colors"
+            >
               OpenAPI
             </Link>
             <a href="#top" className="hover:text-foreground transition-colors">

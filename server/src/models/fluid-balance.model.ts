@@ -24,7 +24,10 @@ const fluidBalanceSchema = new Schema(
     target: { type: Number, required: true },
     restriction: { type: Number },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const FluidBalance = mongoose.model<IFluidBalance>("FluidBalance", fluidBalanceSchema);
+export const FluidBalance = mongoose.model<IFluidBalance>(
+  "FluidBalance",
+  fluidBalanceSchema,
+);

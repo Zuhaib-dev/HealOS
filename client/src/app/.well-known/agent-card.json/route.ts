@@ -6,7 +6,8 @@ export async function GET() {
   const agentCard = {
     schema_version: "1.0",
     name: "HealOS Autonomous Clinical Agent",
-    description: "Hospital workflow agent capable of checking appointment slots, querying EHR data, and monitoring triage queues.",
+    description:
+      "Hospital workflow agent capable of checking appointment slots, querying EHR data, and monitoring triage queues.",
     url: "https://healos-theta.vercel.app",
     provider: {
       name: "HealOS",
@@ -28,22 +29,26 @@ export async function GET() {
       {
         id: "clinical_scheduling",
         name: "Appointment Scheduling",
-        description: "Checks provider schedules, prevents double-booking, and reserves clinic visit slots.",
+        description:
+          "Checks provider schedules, prevents double-booking, and reserves clinic visit slots.",
       },
       {
         id: "patient_inquiry",
         name: "Patient Demographic and EHR Lookup",
-        description: "Retrieves patient histories, allergy alerts, and active medication lists.",
+        description:
+          "Retrieves patient histories, allergy alerts, and active medication lists.",
       },
       {
         id: "vitals_monitoring",
         name: "Vitals Observation",
-        description: "Accesses physiological telemetry rounds and flags critical deviations.",
+        description:
+          "Accesses physiological telemetry rounds and flags critical deviations.",
       },
       {
         id: "emergency_triage",
         name: "Emergency Triage Board",
-        description: "Inspects Emergency Severity Index (ESI) levels and resus bay allocation.",
+        description:
+          "Inspects Emergency Severity Index (ESI) levels and resus bay allocation.",
       },
     ],
     endpoints: {

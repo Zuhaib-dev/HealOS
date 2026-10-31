@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import {
   Mic,
@@ -9,7 +9,17 @@ import {
   VideoOff,
   PhoneOff,
   UserRound,
+  RefreshCw,
+  Volume2,
 } from "lucide-react";
+
+type CallStatus =
+  | "starting"
+  | "waiting"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "ended";
 
 export function TelemedicineWorkbench({
   appointmentId,
@@ -22,282 +32,374 @@ export function TelemedicineWorkbench({
 }) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
-
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
+  const [hasAudioInput, setHasAudioInput] = useState(false);
+  const [hasVideoInput, setHasVideoInput] = useState(false);
+  const [status, setStatus] = useState<CallStatus>("starting");
+  const [hasRemoteMedia, setHasRemoteMedia] = useState(false);
+  const [error, setError] = useState("");
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
+
+  const endCall = useCallback(() => {
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    localStreamRef.current?.getTracks().forEach((track) => track.stop());
+    localStreamRef.current = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    setStatus("ended");
+  }, []);
 
   useEffect(() => {
     const socket = getSocket();
+    let disposed = false;
+    let joined = false;
+    let makingOffer = false;
+    let remoteStream = new MediaStream();
+    const pendingCandidates: RTCIceCandidateInit[] = [];
+    let pc: RTCPeerConnection | null = null;
+
+    const handleOffer = async ({
+      offer,
+    }: {
+      offer: RTCSessionDescriptionInit;
+    }) => {
+      if (isDoctor || !pc || pc.signalingState === "closed") return;
+      try {
+        if (pc.signalingState !== "stable") return;
+        await pc.setRemoteDescription(offer);
+        for (const candidate of pendingCandidates.splice(0)) {
+          await pc.addIceCandidate(candidate);
+        }
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.emit("webrtc:answer", {
+          appointmentId,
+          answer: pc.localDescription,
+        });
+        if (!disposed) setStatus("connecting");
+      } catch (cause) {
+        console.error("Unable to answer teleconsult offer", cause);
+        if (!disposed)
+          setError(
+            "Could not connect to the other participant. Try reconnecting.",
+          );
+      }
+    };
+
+    const handleAnswer = async ({
+      answer,
+    }: {
+      answer: RTCSessionDescriptionInit;
+    }) => {
+      if (!isDoctor || !pc || pc.signalingState !== "have-local-offer") return;
+      try {
+        await pc.setRemoteDescription(answer);
+        for (const candidate of pendingCandidates.splice(0)) {
+          await pc.addIceCandidate(candidate);
+        }
+        if (!disposed) setStatus("connecting");
+      } catch (cause) {
+        console.error("Unable to apply teleconsult answer", cause);
+        if (!disposed)
+          setError(
+            "Could not connect to the other participant. Try reconnecting.",
+          );
+      }
+    };
+
+    const handleCandidate = async ({
+      candidate,
+    }: {
+      candidate: RTCIceCandidateInit;
+    }) => {
+      if (!pc || pc.signalingState === "closed") return;
+      try {
+        if (pc.remoteDescription) await pc.addIceCandidate(candidate);
+        else pendingCandidates.push(candidate);
+      } catch (cause) {
+        console.warn("Could not add teleconsult network candidate", cause);
+      }
+    };
+
+    const createOffer = async () => {
+      if (!pc || pc.signalingState !== "stable" || makingOffer) return;
+      try {
+        makingOffer = true;
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit("webrtc:offer", {
+          appointmentId,
+          offer: pc.localDescription,
+        });
+        if (!disposed) setStatus("connecting");
+      } catch (cause) {
+        console.error("Unable to create teleconsult offer", cause);
+        if (!disposed) setError("Could not start the call. Try reconnecting.");
+      } finally {
+        makingOffer = false;
+      }
+    };
+
+    const handleParticipantJoined = () => {
+      if (!isDoctor) return;
+      setError("");
+      void createOffer();
+    };
+
+    const handleRoomState = ({
+      participantPresent,
+    }: {
+      participantPresent: boolean;
+    }) => {
+      if (isDoctor && participantPresent) void createOffer();
+    };
+
+    const handleParticipantLeft = () => {
+      remoteStream = new MediaStream();
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+      if (!disposed) setHasRemoteMedia(false);
+      if (!disposed) setStatus("waiting");
+    };
+
+    socket.on("webrtc:offer", handleOffer);
+    socket.on("webrtc:answer", handleAnswer);
+    socket.on("webrtc:ice_candidate", handleCandidate);
+    socket.on("webrtc:user_joined", handleParticipantJoined);
+    socket.on("webrtc:room_state", handleRoomState);
+    socket.on("webrtc:user_left", handleParticipantLeft);
 
     const startCall = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        localStreamRef.current = stream;
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error(
+            "Video calls require a supported browser and a secure connection (HTTPS).",
+          );
         }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          video: {
+            facingMode: "user",
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 24, max: 30 },
+          },
+        });
+        if (disposed) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        localStreamRef.current = stream;
+        setHasAudioInput(stream.getAudioTracks().length > 0);
+        setHasVideoInput(stream.getVideoTracks().length > 0);
+        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-        const configuration = {
+        pc = new RTCPeerConnection({
           iceServers: [
             { urls: "stun:stun.l.google.com:19302" },
             { urls: "stun:stun1.l.google.com:19302" },
           ],
-        };
-        const pc = new RTCPeerConnection(configuration);
+        });
         peerConnectionRef.current = pc;
+        stream.getTracks().forEach((track) => pc?.addTrack(track, stream));
 
-        // Add local tracks to peer connection
-        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-        // Handle incoming tracks (remote video)
         pc.ontrack = (event) => {
-          if (event.streams && event.streams[0]) {
-            if (remoteVideoRef.current) {
-              remoteVideoRef.current.srcObject = event.streams[0];
-            }
-            setIsConnected(true);
-          }
-        };
-
-        let makingOffer = false;
-
-        const sendOffer = async () => {
-          if (!peerConnectionRef.current) return;
-          if (
-            makingOffer ||
-            peerConnectionRef.current.signalingState !== "stable"
+          const incoming = event.streams[0];
+          if (incoming) remoteStream = incoming;
+          else if (
+            !remoteStream
+              .getTracks()
+              .some((track) => track.id === event.track.id)
           )
-            return;
-          try {
-            makingOffer = true;
-            const offer = await peerConnectionRef.current.createOffer();
-            await peerConnectionRef.current.setLocalDescription(offer);
-            socket.emit("webrtc:offer", {
-              appointmentId,
-              offer: peerConnectionRef.current.localDescription,
-            });
-          } catch (e) {
-            console.error("Error creating offer", e);
-          } finally {
-            makingOffer = false;
-          }
-        };
-
-        let iceCandidateQueue: RTCIceCandidateInit[] = [];
-
-        // Only the Doctor initiates offers to prevent WebRTC glare (collisions)
-        if (isDoctor) {
-          pc.onnegotiationneeded = () => {
-            sendOffer();
-          };
-        } else {
-          pc.onnegotiationneeded = () => {
-            // Patient waits for the doctor's offer
-          };
-        }
-
-        // Handle ICE candidates
-        pc.onicecandidate = (event) => {
-          if (event.candidate) {
-            socket.emit("webrtc:ice_candidate", {
-              appointmentId,
-              candidate: event.candidate,
-            });
-          }
-        };
-
-        let processingOffer = false;
-        socket.on("webrtc:offer", async ({ offer }) => {
-          if (pc.signalingState === "closed") return;
-          if (isDoctor) return; // Doctor NEVER processes offers, only sends them
-          if (processingOffer || pc.signalingState !== "stable") {
-            console.warn("Patient: Ignoring concurrent or invalid offer");
-            return;
-          }
-
-          try {
-            processingOffer = true;
-            await pc.setRemoteDescription(new RTCSessionDescription(offer));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            socket.emit("webrtc:answer", {
-              appointmentId,
-              answer: pc.localDescription,
-            });
-
-            // Process queued ICE candidates
-            for (const c of iceCandidateQueue) {
-              await pc.addIceCandidate(new RTCIceCandidate(c));
-            }
-            iceCandidateQueue = [];
-          } catch (e) {
-            console.error("Error handling offer:", e);
-          } finally {
-            processingOffer = false;
-          }
-        });
-
-        let processingAnswer = false;
-        socket.on("webrtc:answer", async ({ answer }) => {
-          if (pc.signalingState === "closed") return;
-          if (!isDoctor) return; // Patient NEVER processes answers, only sends them
-          if (processingAnswer || pc.signalingState !== "have-local-offer") {
-            console.warn("Doctor: Ignoring concurrent or invalid answer");
-            return;
-          }
-
-          try {
-            processingAnswer = true;
-            await pc.setRemoteDescription(new RTCSessionDescription(answer));
-
-            // Process queued ICE candidates
-            for (const c of iceCandidateQueue) {
-              await pc.addIceCandidate(new RTCIceCandidate(c));
-            }
-            iceCandidateQueue = [];
-          } catch (e) {
-            console.error("Error handling answer:", e);
-          } finally {
-            processingAnswer = false;
-          }
-        });
-
-        socket.on("webrtc:ice_candidate", async ({ candidate }) => {
-          if (pc.signalingState === "closed") return;
-          try {
-            if (pc.remoteDescription) {
-              await pc.addIceCandidate(new RTCIceCandidate(candidate));
-            } else {
-              iceCandidateQueue.push(candidate);
-            }
-          } catch (e) {
-            // This can fail gracefully if candidates arrive before remote description is set
-            console.warn("Ignoring ICE candidate error:", (e as Error).message);
-          }
-        });
-
-        socket.on("webrtc:user_joined", () => {
-          // If a new user joins, and we are the Doctor, we send an offer to them
-          if (isDoctor) {
-            sendOffer();
-          }
-        });
-
-        socket.on("webrtc:user_left", () => {
-          setIsConnected(false);
+            remoteStream.addTrack(event.track);
+          if (!disposed) setHasRemoteMedia(true);
           if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = null;
+            remoteVideoRef.current.srcObject = remoteStream;
+            void remoteVideoRef.current.play().catch(() => {
+              if (!disposed)
+                setError(
+                  "Your browser blocked remote playback. Tap the video to enable sound and picture.",
+                );
+            });
           }
-        });
+        };
+        pc.onconnectionstatechange = () => {
+          if (!pc || disposed) return;
+          if (pc.connectionState === "connected") {
+            setError("");
+            setStatus("connected");
+          } else if (pc.connectionState === "connecting")
+            setStatus("connecting");
+          else if (pc.connectionState === "disconnected")
+            setStatus("reconnecting");
+          else if (pc.connectionState === "failed") {
+            setStatus("reconnecting");
+            setError("Connection failed. Check your network and reconnect.");
+          }
+        };
+        pc.oniceconnectionstatechange = () => {
+          if (pc?.iceConnectionState === "failed" && !disposed) {
+            void pc.restartIce();
+            if (isDoctor) void createOffer();
+          }
+        };
 
-        // Join the room
+        // Register for room events before joining so neither participant misses the arrival signal.
         socket.emit("webrtc:join_call", appointmentId);
-      } catch (err) {
-        console.error("Error accessing media devices.", err);
+        joined = true;
+        if (!disposed) setStatus("waiting");
+      } catch (cause) {
+        console.error("Unable to access teleconsult media devices", cause);
+        const mediaError = cause as DOMException;
+        const message =
+          mediaError.name === "NotAllowedError"
+            ? "Camera or microphone permission was denied. Allow access in your browser, then reconnect."
+            : mediaError.name === "NotFoundError"
+              ? "No camera or microphone was found. Connect a device, then reconnect."
+              : mediaError.message ||
+                "Could not access your camera and microphone.";
+        if (!disposed) {
+          setError(message);
+          setStatus("waiting");
+        }
       }
     };
 
-    startCall();
-
+    void startCall();
     return () => {
-      socket.off("webrtc:user_joined");
-      socket.off("webrtc:offer");
-      socket.off("webrtc:answer");
-      socket.off("webrtc:ice_candidate");
-      socket.off("webrtc:user_left");
-
-      socket.emit("webrtc:leave_call", appointmentId);
-
-      if (peerConnectionRef.current) {
-        peerConnectionRef.current.close();
-      }
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
+      disposed = true;
+      socket.off("webrtc:offer", handleOffer);
+      socket.off("webrtc:answer", handleAnswer);
+      socket.off("webrtc:ice_candidate", handleCandidate);
+      socket.off("webrtc:user_joined", handleParticipantJoined);
+      socket.off("webrtc:room_state", handleRoomState);
+      socket.off("webrtc:user_left", handleParticipantLeft);
+      if (joined) socket.emit("webrtc:leave_call", appointmentId);
+      pc?.close();
+      streamCleanup();
     };
-  }, [appointmentId]);
+
+    function streamCleanup() {
+      localStreamRef.current?.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
+      if (peerConnectionRef.current === pc) peerConnectionRef.current = null;
+    }
+  }, [appointmentId, isDoctor, connectionAttempt]);
 
   const toggleMute = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks()[0].enabled = isMuted;
-      setIsMuted(!isMuted);
-    }
+    const tracks = localStreamRef.current?.getAudioTracks() ?? [];
+    if (!tracks.length) return;
+    const nextMuted = !isMuted;
+    tracks.forEach((track) => (track.enabled = !nextMuted));
+    setIsMuted(nextMuted);
   };
 
   const toggleVideo = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getVideoTracks()[0].enabled = isVideoOff;
-      setIsVideoOff(!isVideoOff);
-    }
+    const tracks = localStreamRef.current?.getVideoTracks() ?? [];
+    if (!tracks.length) return;
+    const nextOff = !isVideoOff;
+    tracks.forEach((track) => (track.enabled = !nextOff));
+    setIsVideoOff(nextOff);
   };
 
   const handleEndCall = () => {
-    const socket = getSocket();
-    socket.emit("webrtc:leave_call", appointmentId);
-    if (peerConnectionRef.current) peerConnectionRef.current.close();
-    if (localStreamRef.current)
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
+    getSocket().emit("webrtc:leave_call", appointmentId);
+    endCall();
     onEndCall();
   };
 
+  const statusLabel: Record<CallStatus, string> = {
+    starting: "Starting your camera and microphone…",
+    waiting: `Waiting for ${isDoctor ? "patient" : "doctor"}`,
+    connecting: "Connecting securely…",
+    connected: "Call connected",
+    reconnecting: "Connection interrupted · reconnecting…",
+    ended: "Call ended",
+  };
+
   return (
-    <div className="flex flex-col h-full w-full bg-background relative overflow-hidden rounded-2xl border border-border/40 shadow-sm min-h-125">
-      {/* Video Grid */}
-      <div className="flex-1 relative bg-black/5 flex items-center justify-center p-4">
-        {/* Remote Video (Main) */}
+    <div className="flex min-h-125 h-full w-full flex-col overflow-hidden rounded-2xl border border-border/40 bg-background shadow-sm">
+      <div className="relative flex flex-1 items-center justify-center bg-neutral-950 p-3 sm:p-5">
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className={`w-full h-full object-cover rounded-xl shadow-lg border border-border/20 ${isConnected ? "block" : "hidden"}`}
+          onClick={() => void remoteVideoRef.current?.play()}
+          className={`h-full min-h-80 w-full rounded-xl object-contain sm:object-cover ${hasRemoteMedia ? "block" : "hidden"}`}
         />
-
-        {!isConnected && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground animate-pulse z-0 bg-background/50 backdrop-blur-sm">
-            <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mb-4 border border-border/50">
-              <UserRound className="size-10 text-muted-foreground/60" />
+        {!hasRemoteMedia && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-white">
+            <div className="flex size-20 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/15">
+              <UserRound className="size-9 text-white/70" />
             </div>
-            <p className="font-mono text-sm tracking-wider uppercase font-semibold">
-              Waiting for {isDoctor ? "patient" : "doctor"}...
+            <p className="font-medium">{statusLabel[status]}</p>
+            <p className="text-sm text-white/60">
+              Keep this window open while you wait.
             </p>
           </div>
         )}
 
-        {/* Local Video (PiP) */}
-        <div className="absolute bottom-6 right-6 w-32 md:w-48 aspect-3/4 bg-card border-2 border-border/50 rounded-xl overflow-hidden shadow-2xl z-10 transition-transform hover:scale-105">
+        <div className="absolute bottom-4 right-4 aspect-video w-28 overflow-hidden rounded-xl border border-white/30 bg-neutral-800 shadow-xl sm:bottom-6 sm:right-6 sm:w-48">
           <video
             ref={localVideoRef}
             autoPlay
             playsInline
             muted
-            className={`w-full h-full object-cover ${isVideoOff ? "opacity-0" : "opacity-100"}`}
+            className={`h-full w-full -scale-x-100 object-cover ${isVideoOff ? "opacity-0" : "opacity-100"}`}
           />
           {isVideoOff && (
-            <div className="absolute inset-0 flex items-center justify-center bg-muted">
-              <VideoOff className="size-6 text-muted-foreground" />
+            <div className="absolute inset-0 flex items-center justify-center text-white/70">
+              <VideoOff className="size-6" />
             </div>
           )}
+          <span className="absolute bottom-1 left-2 text-[10px] text-white/80">
+            You
+          </span>
         </div>
+
+        <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 text-xs text-white backdrop-blur">
+          <span
+            className={`size-2 rounded-full ${status === "connected" ? "bg-emerald-400" : status === "reconnecting" ? "bg-amber-400" : "bg-white/50"}`}
+          />
+          {statusLabel[status]}
+        </div>
+        {error && (
+          <div
+            role="alert"
+            className="absolute bottom-4 left-4 right-36 rounded-lg bg-destructive/95 px-3 py-2 text-xs text-white sm:bottom-6 sm:left-6 sm:right-56"
+          >
+            {error}
+          </div>
+        )}
       </div>
 
-      {/* Control Bar */}
-      <div className="h-20 bg-card/80 backdrop-blur-md border-t border-border/40 flex items-center justify-center gap-4 px-6 z-20">
+      <div className="flex min-h-20 items-center justify-center gap-3 border-t border-border/40 bg-card/90 px-4">
         <button
+          type="button"
           onClick={toggleMute}
-          className={`p-4 rounded-full transition-all ${isMuted ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-muted hover:bg-muted/80 text-foreground"}`}
+          disabled={!hasAudioInput}
+          aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+          aria-pressed={isMuted}
+          className={`rounded-full p-3 transition-colors disabled:opacity-40 ${isMuted ? "bg-destructive/10 text-destructive" : "bg-muted text-foreground hover:bg-muted/80"}`}
         >
           {isMuted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
         </button>
         <button
+          type="button"
           onClick={toggleVideo}
-          className={`p-4 rounded-full transition-all ${isVideoOff ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-muted hover:bg-muted/80 text-foreground"}`}
+          disabled={!hasVideoInput}
+          aria-label={isVideoOff ? "Turn camera on" : "Turn camera off"}
+          aria-pressed={isVideoOff}
+          className={`rounded-full p-3 transition-colors disabled:opacity-40 ${isVideoOff ? "bg-destructive/10 text-destructive" : "bg-muted text-foreground hover:bg-muted/80"}`}
         >
           {isVideoOff ? (
             <VideoOff className="size-5" />
@@ -305,9 +407,27 @@ export function TelemedicineWorkbench({
             <Video className="size-5" />
           )}
         </button>
+        <div className="mx-1 hidden items-center gap-1 text-xs text-muted-foreground sm:flex">
+          <Volume2 className="size-4" /> Audio optimized
+        </div>
+        {(status === "reconnecting" || Boolean(error)) && (
+          <button
+            type="button"
+            onClick={() => {
+              setError("");
+              setStatus("starting");
+              setConnectionAttempt((attempt) => attempt + 1);
+            }}
+            aria-label="Reconnect call"
+            className="rounded-full bg-muted p-3 text-foreground hover:bg-muted/80"
+          >
+            <RefreshCw className="size-5" />
+          </button>
+        )}
         <button
+          type="button"
           onClick={handleEndCall}
-          className="p-4 px-8 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold shadow-lg transition-transform hover:scale-105 flex items-center gap-2"
+          className="flex items-center gap-2 rounded-full bg-destructive px-6 py-3 font-semibold text-destructive-foreground shadow-lg transition-colors hover:bg-destructive/90"
         >
           <PhoneOff className="size-5" />
           <span>End Call</span>

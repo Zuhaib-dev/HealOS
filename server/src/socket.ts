@@ -101,13 +101,19 @@ export const initSocketIO = (server: HttpServer): Server => {
     // WebRTC Signaling Events
     // ============================================
 
-    socket.on("webrtc:join_call", (appointmentId: string) => {
+    socket.on("webrtc:join_call", async (appointmentId: string) => {
       if (!socket.data.user) return;
       const room = `call:${appointmentId}`;
       socket.join(room);
       console.log(`📹 Socket ${socket.id} joined WebRTC call room ${room}`);
       // Notify others in the room that a user joined
       socket.to(room).emit("webrtc:user_joined", socket.data.user.id);
+      // Also tell the joining client whether someone was already waiting. This
+      // closes the race where camera permission takes longer on the second joiner.
+      const participants = await io!.in(room).fetchSockets();
+      socket.emit("webrtc:room_state", {
+        participantPresent: participants.length > 1,
+      });
     });
 
     socket.on(

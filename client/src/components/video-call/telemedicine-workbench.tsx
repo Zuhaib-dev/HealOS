@@ -35,6 +35,7 @@ export function TelemedicineWorkbench({
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const pendingMediaStreamRef = useRef<MediaStream | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [hasAudioInput, setHasAudioInput] = useState(false);
@@ -54,6 +55,8 @@ export function TelemedicineWorkbench({
     }
     localStreamRef.current?.getTracks().forEach((track) => track.stop());
     localStreamRef.current = null;
+    pendingMediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+    pendingMediaStreamRef.current = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     setStatus("ended");
@@ -209,44 +212,53 @@ export function TelemedicineWorkbench({
           noiseSuppression: true,
           autoGainControl: true,
         };
-        const videoConstraints: MediaTrackConstraints = {
-          facingMode: "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 24, max: 30 },
-        };
-        let stream: MediaStream;
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            audio: audioConstraints,
-            video: videoConstraints,
-          });
-        } catch (cause) {
-          const mediaError = cause as DOMException;
-          if (
-            mediaError.name !== "NotFoundError" &&
-            mediaError.name !== "OverconstrainedError"
-          ) {
-            throw cause;
-          }
-
-          // A missing camera should not prevent an audio consultation, and a
-          // missing microphone should not prevent a video consultation.
-          const fallbacks = await Promise.allSettled([
-            navigator.mediaDevices.getUserMedia({
+        let stream = pendingMediaStreamRef.current;
+        let cameraFailure: unknown;
+        pendingMediaStreamRef.current = null;
+        if (!stream) {
+          try {
+            // Ask for both devices using browser defaults. Restrictive device
+            // preferences can produce NotFoundError even when a camera exists.
+            stream = await navigator.mediaDevices.getUserMedia({
               audio: audioConstraints,
-              video: false,
-            }),
-            navigator.mediaDevices.getUserMedia({
-              audio: false,
-              video: videoConstraints,
-            }),
-          ]);
-          const tracks = fallbacks.flatMap((result) =>
-            result.status === "fulfilled" ? result.value.getTracks() : [],
-          );
-          if (!tracks.length) throw cause;
-          stream = new MediaStream(tracks);
+              video: true,
+            });
+          } catch (cause) {
+            const mediaError = cause as DOMException;
+            if (
+              mediaError.name !== "NotFoundError" &&
+              mediaError.name !== "OverconstrainedError" &&
+              mediaError.name !== "NotAllowedError"
+            ) {
+              throw cause;
+            }
+
+            // Retry sequentially: parallel permission prompts can conflict in
+            // some browsers. Keep whichever device can be opened.
+            const availableTracks: MediaStreamTrack[] = [];
+            let videoError: unknown;
+            try {
+              const cameraStream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: true,
+              });
+              availableTracks.push(...cameraStream.getVideoTracks());
+            } catch (cameraCause) {
+              videoError = cameraCause;
+              cameraFailure = cameraCause;
+            }
+            try {
+              const audioStream = await navigator.mediaDevices.getUserMedia({
+                audio: audioConstraints,
+                video: false,
+              });
+              availableTracks.push(...audioStream.getAudioTracks());
+            } catch {
+              // A usable camera alone is enough to continue the consultation.
+            }
+            if (!availableTracks.length) throw videoError || cause;
+            stream = new MediaStream(availableTracks);
+          }
         }
         if (disposed) {
           stream.getTracks().forEach((track) => track.stop());
@@ -256,8 +268,14 @@ export function TelemedicineWorkbench({
         setHasAudioInput(stream.getAudioTracks().length > 0);
         setHasVideoInput(stream.getVideoTracks().length > 0);
         if (!stream.getVideoTracks().length && stream.getAudioTracks().length) {
+          const cameraErrorName = (cameraFailure as DOMException | undefined)
+            ?.name;
           setDeviceNotice(
-            "Camera not found. You can continue with audio only.",
+            cameraErrorName === "NotAllowedError"
+              ? "Camera permission was denied. You can continue with audio and tap Enable camera to request access again."
+              : cameraErrorName === "NotReadableError"
+                ? "Camera is busy in another app. You can continue with audio and try Enable camera again."
+                : "Camera not detected. You can continue with audio and tap Enable camera to retry.",
           );
         } else if (
           !stream.getAudioTracks().length &&
@@ -427,6 +445,45 @@ export function TelemedicineWorkbench({
       });
   };
 
+  const requestCameraAccess = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError(
+        "Camera access requires a supported browser and a secure HTTPS connection.",
+      );
+      return;
+    }
+
+    setError("");
+    try {
+      // This is called directly from the button click so the browser can show
+      // its camera permission prompt when permission has not been granted.
+      const cameraStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: true,
+      });
+      const currentAudioTracks =
+        localStreamRef.current
+          ?.getAudioTracks()
+          .map((track) => track.clone()) ?? [];
+      pendingMediaStreamRef.current = new MediaStream([
+        ...currentAudioTracks,
+        ...cameraStream.getVideoTracks(),
+      ]);
+      setConnectionAttempt((attempt) => attempt + 1);
+    } catch (cause) {
+      const mediaError = cause as DOMException;
+      const message =
+        mediaError.name === "NotAllowedError"
+          ? "Camera permission is blocked. Allow camera access in your browser’s site settings, then tap Enable camera again."
+          : mediaError.name === "NotFoundError"
+            ? "The browser still cannot detect a camera. Check that it is connected and enabled."
+            : mediaError.name === "NotReadableError"
+              ? "The camera is busy in another app. Close that app and try again."
+              : mediaError.message || "Could not open the camera. Try again.";
+      setError(message);
+    }
+  };
+
   const handleEndCall = () => {
     getSocket().emit("webrtc:leave_call", appointmentId);
     endCall();
@@ -540,6 +597,17 @@ export function TelemedicineWorkbench({
             <Video className="size-5" />
           )}
         </button>
+        {!hasVideoInput && (
+          <button
+            type="button"
+            onClick={() => void requestCameraAccess()}
+            aria-label="Enable camera and request camera permission"
+            className="flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Video className="size-5" />
+            <span className="hidden sm:inline">Enable camera</span>
+          </button>
+        )}
         <div className="mx-1 hidden items-center gap-1 text-xs text-muted-foreground sm:flex">
           <Volume2 className="size-4" /> Audio optimized
         </div>

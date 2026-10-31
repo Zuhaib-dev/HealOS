@@ -44,6 +44,7 @@ export function TelemedicineWorkbench({
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false);
   const [playbackError, setPlaybackError] = useState("");
   const [error, setError] = useState("");
+  const [deviceNotice, setDeviceNotice] = useState("");
   const [connectionAttempt, setConnectionAttempt] = useState(0);
 
   const endCall = useCallback(() => {
@@ -187,19 +188,50 @@ export function TelemedicineWorkbench({
             "Video calls require a supported browser and a secure connection (HTTPS).",
           );
         }
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-          video: {
-            facingMode: "user",
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 24, max: 30 },
-          },
-        });
+        const audioConstraints: MediaTrackConstraints = {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        };
+        const videoConstraints: MediaTrackConstraints = {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 24, max: 30 },
+        };
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: audioConstraints,
+            video: videoConstraints,
+          });
+        } catch (cause) {
+          const mediaError = cause as DOMException;
+          if (
+            mediaError.name !== "NotFoundError" &&
+            mediaError.name !== "OverconstrainedError"
+          ) {
+            throw cause;
+          }
+
+          // A missing camera should not prevent an audio consultation, and a
+          // missing microphone should not prevent a video consultation.
+          const fallbacks = await Promise.allSettled([
+            navigator.mediaDevices.getUserMedia({
+              audio: audioConstraints,
+              video: false,
+            }),
+            navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: videoConstraints,
+            }),
+          ]);
+          const tracks = fallbacks.flatMap((result) =>
+            result.status === "fulfilled" ? result.value.getTracks() : [],
+          );
+          if (!tracks.length) throw cause;
+          stream = new MediaStream(tracks);
+        }
         if (disposed) {
           stream.getTracks().forEach((track) => track.stop());
           return;
@@ -207,6 +239,20 @@ export function TelemedicineWorkbench({
         localStreamRef.current = stream;
         setHasAudioInput(stream.getAudioTracks().length > 0);
         setHasVideoInput(stream.getVideoTracks().length > 0);
+        if (!stream.getVideoTracks().length && stream.getAudioTracks().length) {
+          setDeviceNotice(
+            "Camera not found. You can continue with audio only.",
+          );
+        } else if (
+          !stream.getAudioTracks().length &&
+          stream.getVideoTracks().length
+        ) {
+          setDeviceNotice(
+            "Microphone not found. You can continue with video only.",
+          );
+        } else {
+          setDeviceNotice("");
+        }
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
         pc = new RTCPeerConnection({
@@ -421,6 +467,14 @@ export function TelemedicineWorkbench({
             className="absolute bottom-4 left-4 right-36 rounded-lg bg-destructive/95 px-3 py-2 text-xs text-white sm:bottom-6 sm:left-6 sm:right-56"
           >
             {error}
+          </div>
+        )}
+        {deviceNotice && !error && (
+          <div
+            role="status"
+            className="absolute bottom-4 left-4 right-36 rounded-lg bg-amber-500/90 px-3 py-2 text-xs text-black sm:bottom-6 sm:left-6 sm:right-56"
+          >
+            {deviceNotice}
           </div>
         )}
       </div>

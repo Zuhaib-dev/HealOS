@@ -11,6 +11,7 @@ import {
   UserRound,
   RefreshCw,
   Volume2,
+  VolumeX,
 } from "lucide-react";
 
 type CallStatus =
@@ -40,6 +41,8 @@ export function TelemedicineWorkbench({
   const [hasVideoInput, setHasVideoInput] = useState(false);
   const [status, setStatus] = useState<CallStatus>("starting");
   const [hasRemoteMedia, setHasRemoteMedia] = useState(false);
+  const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false);
+  const [playbackError, setPlaybackError] = useState("");
   const [error, setError] = useState("");
   const [connectionAttempt, setConnectionAttempt] = useState(0);
 
@@ -60,6 +63,7 @@ export function TelemedicineWorkbench({
     let disposed = false;
     let joined = false;
     let makingOffer = false;
+    let hasStartedRemotePlayback = false;
     let remoteStream = new MediaStream();
     const pendingCandidates: RTCIceCandidateInit[] = [];
     let pc: RTCPeerConnection | null = null;
@@ -162,8 +166,10 @@ export function TelemedicineWorkbench({
 
     const handleParticipantLeft = () => {
       remoteStream = new MediaStream();
+      hasStartedRemotePlayback = false;
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
       if (!disposed) setHasRemoteMedia(false);
+      if (!disposed) setRemoteAudioEnabled(false);
       if (!disposed) setStatus("waiting");
     };
 
@@ -223,12 +229,19 @@ export function TelemedicineWorkbench({
             remoteStream.addTrack(event.track);
           if (!disposed) setHasRemoteMedia(true);
           if (remoteVideoRef.current) {
+            // Muted autoplay is allowed by browsers, so the remote face appears
+            // immediately. A user gesture below enables incoming audio.
+            if (!hasStartedRemotePlayback) {
+              remoteVideoRef.current.muted = true;
+              hasStartedRemotePlayback = true;
+            }
             remoteVideoRef.current.srcObject = remoteStream;
             void remoteVideoRef.current.play().catch(() => {
-              if (!disposed)
-                setError(
-                  "Your browser blocked remote playback. Tap the video to enable sound and picture.",
+              if (!disposed) {
+                setPlaybackError(
+                  "Playback was blocked. Use the audio button to start the call media.",
                 );
+              }
             });
           }
         };
@@ -311,6 +324,27 @@ export function TelemedicineWorkbench({
     setIsVideoOff(nextOff);
   };
 
+  const enableRemoteAudio = () => {
+    const video = remoteVideoRef.current;
+    if (!video) return;
+    // Set the media property synchronously within this click gesture so Safari
+    // and mobile browsers accept the unmute/play request.
+    video.muted = false;
+    void video
+      .play()
+      .then(() => {
+        setRemoteAudioEnabled(true);
+        setPlaybackError("");
+      })
+      .catch(() => {
+        video.muted = true;
+        setRemoteAudioEnabled(false);
+        setPlaybackError(
+          "Your browser still blocked audio. Check the site sound settings and tap again.",
+        );
+      });
+  };
+
   const handleEndCall = () => {
     getSocket().emit("webrtc:leave_call", appointmentId);
     endCall();
@@ -333,7 +367,8 @@ export function TelemedicineWorkbench({
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          onClick={() => void remoteVideoRef.current?.play()}
+          muted={!remoteAudioEnabled}
+          onClick={enableRemoteAudio}
           className={`h-full min-h-80 w-full rounded-xl object-contain sm:object-cover ${hasRemoteMedia ? "block" : "hidden"}`}
         />
         {!hasRemoteMedia && (
@@ -372,6 +407,14 @@ export function TelemedicineWorkbench({
           />
           {statusLabel[status]}
         </div>
+        {playbackError && hasRemoteMedia && (
+          <div
+            role="status"
+            className="absolute bottom-4 left-4 right-36 rounded-lg bg-black/75 px-3 py-2 text-xs text-white sm:bottom-6 sm:left-6 sm:right-56"
+          >
+            {playbackError}
+          </div>
+        )}
         {error && (
           <div
             role="alert"
@@ -410,6 +453,23 @@ export function TelemedicineWorkbench({
         <div className="mx-1 hidden items-center gap-1 text-xs text-muted-foreground sm:flex">
           <Volume2 className="size-4" /> Audio optimized
         </div>
+        {hasRemoteMedia && (
+          <button
+            type="button"
+            onClick={enableRemoteAudio}
+            aria-label={
+              remoteAudioEnabled ? "Enable call audio" : "Turn on call audio"
+            }
+            aria-pressed={remoteAudioEnabled}
+            className={`rounded-full p-3 transition-colors ${remoteAudioEnabled ? "bg-muted text-foreground hover:bg-muted/80" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+          >
+            {remoteAudioEnabled ? (
+              <Volume2 className="size-5" />
+            ) : (
+              <VolumeX className="size-5" />
+            )}
+          </button>
+        )}
         {(status === "reconnecting" || Boolean(error)) && (
           <button
             type="button"

@@ -289,13 +289,44 @@ export function TelemedicineWorkbench({
         }
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-        const turnUrls = process.env.NEXT_PUBLIC_TURN_URL?.split(",")
-          .map((url) => url.trim())
-          .filter(Boolean);
         const iceServers: RTCIceServer[] = [
           { urls: "stun:stun.l.google.com:19302" },
           { urls: "stun:stun1.l.google.com:19302" },
         ];
+
+        const meteredDomain = process.env.NEXT_PUBLIC_METERED_DOMAIN?.trim()
+          .replace(/^https?:\/\//, "")
+          .replace(/\/+$/, "");
+        const meteredApiKey =
+          process.env.NEXT_PUBLIC_METERED_TURN_API_KEY?.trim();
+        if (meteredDomain && meteredApiKey) {
+          try {
+            const response = await fetch(
+              `https://${meteredDomain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(meteredApiKey)}`,
+              { cache: "no-store", signal: AbortSignal.timeout(8000) },
+            );
+            if (!response.ok) {
+              throw new Error(`Metered returned HTTP ${response.status}`);
+            }
+            const meteredIceServers = (await response.json()) as RTCIceServer[];
+            if (
+              !Array.isArray(meteredIceServers) ||
+              !meteredIceServers.length
+            ) {
+              throw new Error("Metered returned no ICE servers");
+            }
+            iceServers.push(...meteredIceServers);
+          } catch (cause) {
+            console.warn("Could not load Metered TURN servers", cause);
+            setError(
+              "TURN relay settings could not be loaded. This network may not connect reliably.",
+            );
+          }
+        }
+
+        const turnUrls = process.env.NEXT_PUBLIC_TURN_URL?.split(",")
+          .map((url) => url.trim())
+          .filter(Boolean);
         if (turnUrls?.length) {
           iceServers.push({
             urls: turnUrls,

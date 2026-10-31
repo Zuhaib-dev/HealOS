@@ -110,6 +110,7 @@ export default function RegisterClient() {
         setAuth(res.user, res.token);
         toast.success("Email verified!");
         setStep("phone"); // Proceed to optional phone step
+        router.replace("/register?step=phone");
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Invalid OTP code");

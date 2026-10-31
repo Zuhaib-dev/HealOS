@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import {
-  getSafeRedirectPath,
   getRoleDashboardPath,
   isPathAllowedForRole,
 } from "@/lib/auth-navigation";
@@ -13,7 +12,7 @@ const RFC8288_LINK_HEADER =
   '<https://healos-theta.vercel.app/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json", ' +
   '<https://healos-theta.vercel.app/.well-known/api-catalog>; rel="api-catalog"';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const acceptHeader = request.headers.get("accept") || "";
   const userAgent = request.headers.get("user-agent") || "";
@@ -66,28 +65,44 @@ export async function middleware(request: NextRequest) {
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
 
-  // If visiting login or register while already authenticated
-  if (isAuthPage) {
-    const roleCookie = request.cookies.get("healos_role")?.value;
-    const tokenCookie = request.cookies.get("healos_token")?.value;
-    const sessionCookie =
-      request.cookies.get("authjs.session-token")?.value ||
-      request.cookies.get("__Secure-authjs.session-token")?.value;
+  const tokenCookie = request.cookies.get("healos_token")?.value;
+  let verifiedRole: string | null = null;
+  let hasValidBackendToken = false;
 
-    const hasAuthSession = Boolean(tokenCookie || sessionCookie || roleCookie);
-    const isSwitching =
-      request.nextUrl.searchParams.get("switch") === "true" ||
-      request.nextUrl.searchParams.get("logout") === "true";
-
-    if (hasAuthSession && !isSwitching) {
-      const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
-      const targetPath = getSafeRedirectPath(roleCookie, callbackUrl);
-      return NextResponse.redirect(new URL(targetPath, request.url));
+  if (tokenCookie) {
+    try {
+      const secret = new TextEncoder().encode(
+        process.env.JWT_SECRET || "dev-jwt-secret-change-in-production",
+      );
+      const { payload } = await jwtVerify(tokenCookie, secret);
+      if (typeof payload.role === "string") {
+        verifiedRole = payload.role;
+        hasValidBackendToken = true;
+      }
+    } catch {
+      // Treat expired, malformed, and incorrectly signed tokens as logged out.
     }
+  }
 
-    const response = NextResponse.next();
+  const clearStaleAuthCookies = (response: NextResponse) => {
+    if (tokenCookie && !hasValidBackendToken) {
+      response.cookies.delete("healos_token");
+      response.cookies.delete("healos_role");
+    } else if (!tokenCookie && request.cookies.has("healos_role")) {
+      response.cookies.delete("healos_role");
+    }
+    return response;
+  };
+
+  // Always let login/register render. The client guard verifies the token
+  // against /auth/me before offering an active-session redirect; doing it here
+  // would strand users with a signed but revoked JWT (for example after a role
+  // change) in a protected-route redirect loop.
+  if (isAuthPage) {
+    const response = clearStaleAuthCookies(NextResponse.next());
     response.headers.set("Vary", "Accept, User-Agent, Accept-Encoding");
     response.headers.set("Link", RFC8288_LINK_HEADER);
+    response.headers.set("Cache-Control", "private, no-store");
     return response;
   }
 
@@ -113,35 +128,26 @@ export async function middleware(request: NextRequest) {
   }
 
   // Verify authentication for protected paths
-  const tokenCookie = request.cookies.get("healos_token")?.value;
-  const nextAuthCookie =
-    request.cookies.get("authjs.session-token")?.value ||
-    request.cookies.get("__Secure-authjs.session-token")?.value;
-
-  if (!tokenCookie && !nextAuthCookie) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  if (tokenCookie) {
-    try {
-      const secret = new TextEncoder().encode(
-        process.env.JWT_SECRET || "dev-jwt-secret-change-in-production",
-      );
-      await jwtVerify(tokenCookie, secret);
-    } catch (error) {
-      const response = NextResponse.redirect(new URL("/login", request.url));
-      response.cookies.delete("healos_token");
-      response.cookies.delete("healos_role");
-      return response;
-    }
+  if (!hasValidBackendToken) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set(
+      "callbackUrl",
+      `${pathname}${request.nextUrl.search}`,
+    );
+    const response = NextResponse.redirect(loginUrl);
+    clearStaleAuthCookies(response);
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
   }
 
   // Enforce role workspace boundaries (e.g. ADMIN cannot view /doctor or /patient)
-  const roleCookie = request.cookies.get("healos_role")?.value;
+  const roleCookie = verifiedRole || request.cookies.get("healos_role")?.value;
   if (roleCookie) {
     if (!isPathAllowedForRole(pathname, roleCookie)) {
       const correctPath = getRoleDashboardPath(roleCookie);
-      return NextResponse.redirect(new URL(correctPath, request.url));
+      const response = NextResponse.redirect(new URL(correctPath, request.url));
+      response.headers.set("Cache-Control", "private, no-store");
+      return response;
     }
   }
 

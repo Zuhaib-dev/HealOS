@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/use-auth-store";
+import { fetchMeApi } from "@/lib/api/auth";
 import { getSafeRedirectPath, getRoleDisplayName } from "@/lib/auth-navigation";
 import { signOut } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,16 +20,85 @@ interface GuestGuardProps {
 
 export function GuestGuard({ children }: GuestGuardProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
   const isSwitchRequested =
     searchParams.get("switch") === "true" ||
     searchParams.get("logout") === "true";
+  const isRegistrationContinuation =
+    pathname === "/register" && searchParams.get("step") === "phone";
 
-  const { isAuthenticated, user, token, _hasHydrated, logout } = useAuthStore();
+  const { isAuthenticated, user, token, _hasHydrated, setUser, logout } =
+    useAuthStore();
   const [countdown, setCountdown] = useState(2);
   const [isPending, startTransition] = useTransition();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [hasValidatedSession, setHasValidatedSession] = useState(false);
+  const [sessionValidationError, setSessionValidationError] = useState("");
+
+  // Zustand persists across browser sessions, so its token can outlive the
+  // backend session (for example after a role change or server-side logout).
+  // Validate it before treating login/register as an active-session redirect.
+  useEffect(() => {
+    if (!_hasHydrated) return;
+    if (
+      isSwitchRequested ||
+      isRegistrationContinuation ||
+      !isAuthenticated ||
+      !token
+    ) {
+      setIsCheckingSession(false);
+      setHasValidatedSession(false);
+      setSessionValidationError("");
+      return;
+    }
+
+    let isActive = true;
+    setIsCheckingSession(true);
+    setHasValidatedSession(false);
+    setSessionValidationError("");
+
+    fetchMeApi()
+      .then((response) => {
+        if (!isActive) return;
+        if (!response.success || !response.user) {
+          logout();
+          return;
+        }
+        setUser(response.user);
+        setHasValidatedSession(true);
+      })
+      .catch((cause: unknown) => {
+        if (!isActive) return;
+        const status = (cause as { response?: { status?: number } }).response
+          ?.status;
+        if (status === 401 || status === 403) {
+          logout();
+        } else {
+          // A temporary API outage should not erase a session that may still be valid.
+          setSessionValidationError(
+            "We couldn’t verify your saved session. You can still sign in below.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isActive) setIsCheckingSession(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [
+    _hasHydrated,
+    isAuthenticated,
+    isSwitchRequested,
+    isRegistrationContinuation,
+    token,
+    setUser,
+    logout,
+  ]);
 
   // If ?switch=true was passed in the URL, automatically logout to allow clean new sign-in
   useEffect(() => {
@@ -49,10 +119,13 @@ export function GuestGuard({ children }: GuestGuardProps) {
   useEffect(() => {
     if (
       !_hasHydrated ||
+      !hasValidatedSession ||
+      isCheckingSession ||
       !isAuthenticated ||
       !user ||
       !token ||
-      isSwitchRequested
+      isSwitchRequested ||
+      isRegistrationContinuation
     ) {
       return;
     }
@@ -71,10 +144,13 @@ export function GuestGuard({ children }: GuestGuardProps) {
     return () => clearTimeout(timer);
   }, [
     _hasHydrated,
+    hasValidatedSession,
+    isCheckingSession,
     isAuthenticated,
     user,
     token,
     isSwitchRequested,
+    isRegistrationContinuation,
     countdown,
     targetPath,
     router,
@@ -137,7 +213,7 @@ export function GuestGuard({ children }: GuestGuardProps) {
   };
 
   // 1. Initial hydration state: clean subtle loading placeholder
-  if (!_hasHydrated) {
+  if (!_hasHydrated || isCheckingSession) {
     return (
       <div className="w-full flex flex-col items-center justify-center py-12 space-y-4">
         <div className="size-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
@@ -151,7 +227,14 @@ export function GuestGuard({ children }: GuestGuardProps) {
   }
 
   // 2. Already authenticated user detected on guest page
-  if (isAuthenticated && user && token && !isSwitchRequested) {
+  if (
+    isAuthenticated &&
+    user &&
+    token &&
+    hasValidatedSession &&
+    !isSwitchRequested &&
+    !isRegistrationContinuation
+  ) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -261,5 +344,17 @@ export function GuestGuard({ children }: GuestGuardProps) {
   }
 
   // 3. Guest user: render auth form as normal
-  return <>{children}</>;
+  return (
+    <>
+      {sessionValidationError && (
+        <div
+          role="status"
+          className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300"
+        >
+          {sessionValidationError}
+        </div>
+      )}
+      {children}
+    </>
+  );
 }

@@ -8,12 +8,22 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuthStore } from "@/store/use-auth-store";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { NotificationBell } from "@/components/shared/notification-bell";
+import { signOut } from "next-auth/react";
 
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
   const { isAuthenticated, user, logout } = useAuthStore();
+
+  const handleLogout = async () => {
+    logout();
+    try {
+      await signOut({ redirect: false });
+    } catch {
+      // The custom backend session is already cleared if there is no SSO session.
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -226,7 +236,7 @@ export function SiteHeader() {
                     type="button"
                     onClick={() => {
                       setOpen(false);
-                      logout();
+                      void handleLogout();
                     }}
                     className="mono-label w-full text-left text-sm text-destructive"
                   >

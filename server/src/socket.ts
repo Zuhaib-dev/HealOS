@@ -104,7 +104,7 @@ export const initSocketIO = (server: HttpServer): Server => {
     socket.on("webrtc:join_call", async (appointmentId: string) => {
       if (!socket.data.user) return;
       const room = `call:${appointmentId}`;
-      socket.join(room);
+      await socket.join(room);
       console.log(`📹 Socket ${socket.id} joined WebRTC call room ${room}`);
       // Notify others in the room that a user joined
       socket.to(room).emit("webrtc:user_joined", socket.data.user.id);

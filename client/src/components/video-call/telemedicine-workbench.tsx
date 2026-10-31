@@ -63,6 +63,7 @@ export function TelemedicineWorkbench({
     const socket = getSocket();
     let disposed = false;
     let joined = false;
+    let peerPresent = false;
     let makingOffer = false;
     let hasStartedRemotePlayback = false;
     let remoteStream = new MediaStream();
@@ -152,6 +153,7 @@ export function TelemedicineWorkbench({
     };
 
     const handleParticipantJoined = () => {
+      peerPresent = true;
       if (!isDoctor) return;
       setError("");
       void createOffer();
@@ -162,10 +164,12 @@ export function TelemedicineWorkbench({
     }: {
       participantPresent: boolean;
     }) => {
+      peerPresent = participantPresent;
       if (isDoctor && participantPresent) void createOffer();
     };
 
     const handleParticipantLeft = () => {
+      peerPresent = false;
       remoteStream = new MediaStream();
       hasStartedRemotePlayback = false;
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
@@ -174,12 +178,24 @@ export function TelemedicineWorkbench({
       if (!disposed) setStatus("waiting");
     };
 
+    const handleSocketConnect = () => {
+      if (!joined || !pc || pc.signalingState === "closed") return;
+      setStatus("reconnecting");
+      socket.emit("webrtc:join_call", appointmentId);
+    };
+
+    const handleSocketDisconnect = () => {
+      if (joined && !disposed) setStatus("reconnecting");
+    };
+
     socket.on("webrtc:offer", handleOffer);
     socket.on("webrtc:answer", handleAnswer);
     socket.on("webrtc:ice_candidate", handleCandidate);
     socket.on("webrtc:user_joined", handleParticipantJoined);
     socket.on("webrtc:room_state", handleRoomState);
     socket.on("webrtc:user_left", handleParticipantLeft);
+    socket.on("connect", handleSocketConnect);
+    socket.on("disconnect", handleSocketDisconnect);
 
     const startCall = async () => {
       try {
@@ -255,14 +271,33 @@ export function TelemedicineWorkbench({
         }
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-        pc = new RTCPeerConnection({
-          iceServers: [
-            { urls: "stun:stun.l.google.com:19302" },
-            { urls: "stun:stun1.l.google.com:19302" },
-          ],
-        });
+        const turnUrls = process.env.NEXT_PUBLIC_TURN_URL?.split(",")
+          .map((url) => url.trim())
+          .filter(Boolean);
+        const iceServers: RTCIceServer[] = [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+        ];
+        if (turnUrls?.length) {
+          iceServers.push({
+            urls: turnUrls,
+            username: process.env.NEXT_PUBLIC_TURN_USERNAME,
+            credential: process.env.NEXT_PUBLIC_TURN_CREDENTIAL,
+          });
+        }
+        pc = new RTCPeerConnection({ iceServers });
         peerConnectionRef.current = pc;
         stream.getTracks().forEach((track) => pc?.addTrack(track, stream));
+        pc.onicecandidate = (event) => {
+          if (!event.candidate) return;
+          socket.emit("webrtc:ice_candidate", {
+            appointmentId,
+            candidate: event.candidate,
+          });
+        };
+        pc.onnegotiationneeded = () => {
+          if (isDoctor && peerPresent) void createOffer();
+        };
 
         pc.ontrack = (event) => {
           const incoming = event.streams[0];
@@ -308,7 +343,6 @@ export function TelemedicineWorkbench({
         pc.oniceconnectionstatechange = () => {
           if (pc?.iceConnectionState === "failed" && !disposed) {
             void pc.restartIce();
-            if (isDoctor) void createOffer();
           }
         };
 
@@ -342,6 +376,8 @@ export function TelemedicineWorkbench({
       socket.off("webrtc:user_joined", handleParticipantJoined);
       socket.off("webrtc:room_state", handleRoomState);
       socket.off("webrtc:user_left", handleParticipantLeft);
+      socket.off("connect", handleSocketConnect);
+      socket.off("disconnect", handleSocketDisconnect);
       if (joined) socket.emit("webrtc:leave_call", appointmentId);
       pc?.close();
       streamCleanup();

@@ -17,9 +17,27 @@ const razorpay = new Razorpay({
 
 export const createRazorpayOrder = async (req: Request, res: Response) => {
   try {
-    const { amount, receipt, doctorId } = req.body; // Amount should be in INR
+    const { amount, receipt, doctorId, invoiceId } = req.body;
+    let orderAmount = Number(amount);
+    let invoice = null;
 
-    if (!amount) {
+    if (invoiceId) {
+      invoice = await Invoice.findOne({
+        _id: invoiceId,
+        patient: req.user?._id,
+      });
+      if (!invoice) throw new AppError("Invoice not found", 404);
+      orderAmount = Math.max(
+        0,
+        invoice.totalAmount -
+          (invoice.insuranceCoverage || 0) -
+          (invoice.paidAmount || 0),
+      );
+      if (orderAmount <= 0)
+        throw new AppError("This invoice has no balance due", 400);
+    }
+
+    if (!Number.isFinite(orderAmount) || orderAmount <= 0) {
       throw new AppError("Amount is required", 400);
     }
 
@@ -37,12 +55,17 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
     }
 
     const options = {
-      amount: amount * 100, // amount in the smallest currency unit (paise)
+      amount: Math.round(orderAmount * 100), // paise
       currency: "INR",
       receipt: receipt || `rcpt_${Date.now()}`,
     };
 
     const order = await razorpay.orders.create(options);
+
+    if (invoice) {
+      invoice.razorpayOrderId = order.id;
+      await invoice.save();
+    }
 
     res.status(200).json({
       success: true,
@@ -50,7 +73,7 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Error creating Razorpay order:", error);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
       message: error.message || "Failed to create Razorpay order",
     });
@@ -120,8 +143,13 @@ export const verifyPayment = async (req: Request, res: Response) => {
       await appointment.save();
       const invoice = await Invoice.findOne({ appointment: appointment._id });
       if (invoice) {
+        invoice.paidAmount = Math.max(
+          invoice.paidAmount || 0,
+          appointment.paidAmount,
+        );
         invoice.status =
-          appointment.paidAmount >= invoice.totalAmount
+          invoice.paidAmount + (invoice.insuranceCoverage || 0) >=
+          invoice.totalAmount
             ? ("PAID" as any)
             : ("PARTIAL" as any);
         invoice.paidAt = new Date();
@@ -141,32 +169,81 @@ export const verifyPayment = async (req: Request, res: Response) => {
 
     // Update Invoice
     if (invoiceId) {
-      const invoice = await Invoice.findById(invoiceId);
-      if (invoice) {
-        invoice.status = "PAID" as any;
-        invoice.paidAt = new Date();
-        invoice.razorpayOrderId = razorpay_order_id;
-        invoice.razorpayPaymentId = razorpay_payment_id;
-        invoice.razorpaySignature = razorpay_signature;
+      const invoice = await Invoice.findOne({
+        _id: invoiceId,
+        patient: req.user?._id,
+      });
+      if (!invoice) {
+        return res.status(404).json({
+          success: false,
+          message: "Invoice not found",
+        });
+      }
+      if (invoice.razorpayPaymentId === razorpay_payment_id) {
+        return res.status(200).json({
+          success: true,
+          message: "Payment was already applied to this invoice",
+        });
+      }
+      if (invoice.razorpayOrderId !== razorpay_order_id) {
+        return res.status(409).json({
+          success: false,
+          message: "This payment order is not linked to the invoice.",
+        });
+      }
+      if (invoice.status === "CANCELLED") {
+        return res.status(409).json({
+          success: false,
+          message: "This invoice has been cancelled.",
+        });
+      }
+      const order = await razorpay.orders.fetch(razorpay_order_id);
+      const paymentAmount = Number(order.amount) / 100;
+      const balanceDue = Math.max(
+        0,
+        invoice.totalAmount -
+          (invoice.insuranceCoverage || 0) -
+          (invoice.paidAmount || 0),
+      );
+      if (paymentAmount <= 0 || paymentAmount > balanceDue) {
+        return res.status(409).json({
+          success: false,
+          message: "The invoice balance changed. Refresh and try again.",
+        });
+      }
 
-        // Also update appointment if linked to invoice and not passed explicitly
-        if (invoice.appointment && !appointmentId) {
-          const appt = await Appointment.findById(invoice.appointment);
-          if (appt) {
-            appt.paymentStatus = "PAID" as any;
-            appt.razorpayOrderId = razorpay_order_id;
-            appt.razorpayPaymentId = razorpay_payment_id;
-            appt.razorpaySignature = razorpay_signature;
-            await appt.save();
-          }
-        }
-        await invoice.save();
+      invoice.paidAmount = (invoice.paidAmount || 0) + paymentAmount;
+      invoice.status =
+        invoice.paidAmount + (invoice.insuranceCoverage || 0) >=
+        invoice.totalAmount
+          ? ("PAID" as any)
+          : ("PARTIAL" as any);
+      invoice.paymentMethod = "CARD" as any;
+      invoice.paidAt = new Date();
+      invoice.razorpayPaymentId = razorpay_payment_id;
+      invoice.razorpaySignature = razorpay_signature;
 
-        const io = getIO();
-        if (io) {
-          io.emit("invoice_paid", { invoiceId: invoice._id });
-          io.emit("admin:data_changed", { types: ["invoices", "billing"] });
+      // Also update appointment if linked to invoice and not passed explicitly
+      if (invoice.appointment && !appointmentId) {
+        const appt = await Appointment.findById(invoice.appointment);
+        if (appt) {
+          appt.paidAmount = (appt.paidAmount || 0) + paymentAmount;
+          appt.paymentStatus =
+            appt.paidAmount >= appt.amount
+              ? ("PAID" as any)
+              : ("PENDING_CASH" as any);
+          appt.razorpayOrderId = razorpay_order_id;
+          appt.razorpayPaymentId = razorpay_payment_id;
+          appt.razorpaySignature = razorpay_signature;
+          await appt.save();
         }
+      }
+      await invoice.save();
+
+      const io = getIO();
+      if (io) {
+        io.emit("invoice_paid", { invoiceId: invoice._id });
+        io.emit("admin:data_changed", { types: ["invoices", "billing"] });
       }
     }
 

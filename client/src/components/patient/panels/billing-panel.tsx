@@ -111,6 +111,24 @@ function stateTone(s: string) {
   return "bad";
 }
 
+function invoicePaidAmount(invoice: PatientDashboardData["invoices"][number]) {
+  const recorded = invoice.paidAmount ?? invoice.appointment?.paidAmount;
+  if (recorded !== undefined) return Math.max(0, recorded);
+  if (invoice.status === "PAID")
+    return Math.max(0, invoice.totalAmount - (invoice.insuranceCoverage || 0));
+  return 0;
+}
+
+function invoiceBalanceDue(invoice: PatientDashboardData["invoices"][number]) {
+  if (invoice.status === "CANCELLED") return 0;
+  return Math.max(
+    0,
+    invoice.totalAmount -
+      (invoice.insuranceCoverage || 0) -
+      invoicePaidAmount(invoice),
+  );
+}
+
 /** Animated trend line — drawn, never an image. */
 function Trend({ series }: { series: number[] }) {
   const max = Math.max(...series);
@@ -154,11 +172,16 @@ export function BillingPanel() {
   const { user } = useAuthStore();
   const [processing, setProcessing] = useState<string | null>(null);
 
-  const handleOnlinePay = async (id: string, amount: number) => {
+  const handleOnlinePay = async (id: string) => {
     try {
       setProcessing(id);
+      const checkoutReady = await loadRazorpayScript();
+      if (!checkoutReady) throw new Error("Payment checkout could not load");
       // 1. Create Order
-      const orderRes = await createRazorpayOrderApi({ amount, receipt: id });
+      const orderRes = await createRazorpayOrderApi({
+        invoiceId: id,
+        receipt: id,
+      });
       if (!orderRes.success) throw new Error("Failed to create Razorpay order");
 
       // 2. Open Razorpay
@@ -170,6 +193,9 @@ export function BillingPanel() {
         name: "HealOS",
         description: "Invoice Payment",
         order_id: orderRes.order.id,
+        modal: {
+          ondismiss: () => setProcessing(null),
+        },
         handler: async function (response: any) {
           try {
             // 3. Verify Payment
@@ -211,9 +237,25 @@ export function BillingPanel() {
   };
 
   const invoiceRows = data?.invoices || [];
-  const outstandingAmount = invoiceRows
-    .filter((i) => i.status !== "PAID" && i.status !== "CANCELLED")
-    .reduce((sum, i) => sum + i.totalAmount, 0);
+  const dueInvoices = invoiceRows.filter(
+    (invoice) =>
+      invoice.status !== "CANCELLED" && invoiceBalanceDue(invoice) > 0,
+  );
+  const outstandingAmount = dueInvoices.reduce(
+    (sum, invoice) => sum + invoiceBalanceDue(invoice),
+    0,
+  );
+  const currentYear = new Date().getFullYear();
+  const paidThisYear = invoiceRows
+    .filter((invoice) => {
+      const paidDate = invoice.paidAt || invoice.createdAt;
+      return new Date(paidDate).getFullYear() === currentYear;
+    })
+    .reduce((sum, invoice) => sum + invoicePaidAmount(invoice), 0);
+  const insuredAmount = invoiceRows.reduce(
+    (sum, invoice) => sum + (invoice.insuranceCoverage || 0),
+    0,
+  );
 
   return (
     <section>
@@ -222,8 +264,18 @@ export function BillingPanel() {
         title="Bills &amp; insurance"
         note="Every invoice with what your insurer covered and what is left for you to pay."
         actions={
-          <ActionButton tone="solid">
-            Pay outstanding ₹{outstandingAmount}
+          <ActionButton
+            tone="solid"
+            disabled={outstandingAmount === 0}
+            onClick={() =>
+              document
+                .getElementById("patient-invoice-list")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+          >
+            {outstandingAmount > 0
+              ? `Review balance · ₹${outstandingAmount}`
+              : "All bills settled"}
           </ActionButton>
         }
       />
@@ -236,13 +288,17 @@ export function BillingPanel() {
           {
             label: "Outstanding",
             value: `₹${outstandingAmount}`,
-            note: `${invoiceRows.filter((i) => i.status !== "PAID" && i.status !== "CANCELLED").length} invoice(s) due`,
+            note: `${dueInvoices.length} invoice(s) with a balance`,
           },
-          { label: "With insurer", value: "₹0", note: "claim in review" },
+          {
+            label: "With insurer",
+            value: `₹${insuredAmount}`,
+            note: "Insurance coverage recorded",
+          },
           {
             label: "Paid this year",
-            value: `₹${invoiceRows.filter((i) => i.status === "PAID").reduce((sum, i) => sum + i.totalAmount, 0)}`,
-            note: `${invoiceRows.filter((i) => i.status === "PAID").length} invoice(s)`,
+            value: `₹${paidThisYear}`,
+            note: "Payments recorded this year",
           },
         ].map((s) => (
           <div key={s.label} className="bg-background p-5">
@@ -255,230 +311,372 @@ export function BillingPanel() {
         ))}
       </div>
 
-      <div className="hairline-t overflow-x-auto">
-        <table className="w-full min-w-205">
-          <thead className="hairline-b">
-            <tr>
-              <Th>Invoice</Th>
-              <Th>Date</Th>
-              <Th>Item</Th>
-              <Th>Total</Th>
-              <Th>State</Th>
-              <Th>Actions</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoiceRows.map((b) => (
-              <tr key={b._id} className="hairline-b hover:bg-foreground/2">
-                <Td>
-                  <span className="mono-label">
-                    {b._id.slice(-6).toUpperCase()}
-                  </span>
-                </Td>
-                <Td>
-                  <span className="mono-label">
-                    {new Date(b.createdAt).toLocaleDateString()}
-                  </span>
-                </Td>
-                <Td>{b.items[0]?.description || "Service"}</Td>
-                <Td>
-                  <span className="mono-label">₹{b.totalAmount}</span>
-                </Td>
-                <Td>
+      <div id="patient-invoice-list" className="hairline-t scroll-mt-6">
+        <div className="space-y-3 p-4 lg:hidden">
+          {invoiceRows.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
+              No invoices yet.
+            </p>
+          ) : (
+            invoiceRows.map((invoice) => (
+              <article
+                key={invoice._id}
+                className="min-w-0 rounded-xl border border-border/60 bg-card p-4"
+              >
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="mono-label truncate font-semibold">
+                      INV-{invoice._id.slice(-6).toUpperCase()}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {new Date(invoice.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
                   <Pill
                     tone={
-                      b.status === "PAID"
-                        ? "ok"
-                        : b.status === "PENDING"
-                          ? "bad"
+                      invoice.status === "CANCELLED"
+                        ? "mute"
+                        : invoiceBalanceDue(invoice) === 0
+                          ? "ok"
                           : "warn"
                     }
                   >
-                    {b.status}
+                    {invoice.status === "CANCELLED"
+                      ? "CANCELLED"
+                      : invoiceBalanceDue(invoice) === 0
+                        ? "PAID"
+                        : invoicePaidAmount(invoice) > 0
+                          ? "PARTIAL"
+                          : invoice.status}
                   </Pill>
-                </Td>
-                <Td>
-                  <div className="flex gap-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <ActionButton>Receipt</ActionButton>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md border-0 bg-transparent shadow-none p-0">
-                        <DialogHeader className="sr-only">
-                          <DialogTitle>
-                            Patient Receipt INV-{b._id.slice(-8).toUpperCase()}
-                          </DialogTitle>
-                          <DialogDescription>
-                            Hospital billing invoice receipt
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div
-                          className="relative bg-card text-card-foreground p-6 pt-10 font-mono shadow-2xl rounded-sm overflow-hidden"
-                          style={{
-                            backgroundImage:
-                              "radial-gradient(circle at top, transparent 4px, var(--card) 5px)",
-                            backgroundSize: "12px 10px",
-                            backgroundPosition: "top center",
-                            backgroundRepeat: "repeat-x",
-                          }}
-                        >
+                </div>
+                <p className="mt-4 text-sm font-medium">
+                  {invoice.items[0]?.description || "Service"}
+                </p>
+                <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-muted/30 p-3 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">Total</p>
+                    <p className="mt-1 font-mono font-semibold">
+                      ₹{invoice.totalAmount}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Paid</p>
+                    <p className="mt-1 font-mono font-semibold text-emerald-700 dark:text-emerald-400">
+                      ₹{invoicePaidAmount(invoice)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Due</p>
+                    <p className="mt-1 font-mono font-semibold">
+                      ₹{invoiceBalanceDue(invoice)}
+                    </p>
+                  </div>
+                </div>
+                <details className="mt-3 rounded-lg border border-border/50 px-3 py-2">
+                  <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">
+                    Receipt details
+                  </summary>
+                  <div className="mt-3 space-y-2 text-xs">
+                    {invoice.items.map((item, index) => (
+                      <div
+                        key={`${item.description}-${index}`}
+                        className="flex justify-between gap-3"
+                      >
+                        <span>{item.description}</span>
+                        <span className="shrink-0">₹{item.amount}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between border-t border-border/50 pt-2">
+                      <span>Invoice total</span>
+                      <span>₹{invoice.totalAmount}</span>
+                    </div>
+                    <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
+                      <span>Paid so far</span>
+                      <span>₹{invoicePaidAmount(invoice)}</span>
+                    </div>
+                    {(invoice.insuranceCoverage || 0) > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Insurance coverage</span>
+                        <span>₹{invoice.insuranceCoverage}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t border-border/50 pt-2 font-semibold">
+                      <span>Balance due</span>
+                      <span>₹{invoiceBalanceDue(invoice)}</span>
+                    </div>
+                  </div>
+                </details>
+                {invoice.status !== "CANCELLED" &&
+                  invoiceBalanceDue(invoice) > 0 && (
+                    <ActionButton
+                      tone="solid"
+                      className="mt-3 w-full justify-center"
+                      onClick={() => handleOnlinePay(invoice._id)}
+                      disabled={processing === invoice._id}
+                    >
+                      {processing === invoice._id
+                        ? "Processing…"
+                        : `Pay balance · ₹${invoiceBalanceDue(invoice)}`}
+                    </ActionButton>
+                  )}
+              </article>
+            ))
+          )}
+        </div>
+        <div className="hidden overflow-x-auto lg:block">
+          <table className="w-full min-w-[900px]">
+            <thead className="hairline-b">
+              <tr>
+                <Th>Invoice</Th>
+                <Th>Date</Th>
+                <Th>Item</Th>
+                <Th>Total</Th>
+                <Th>Paid</Th>
+                <Th>Balance</Th>
+                <Th>State</Th>
+                <Th>Actions</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoiceRows.map((b) => (
+                <tr key={b._id} className="hairline-b hover:bg-foreground/2">
+                  <Td>
+                    <span className="mono-label">
+                      {b._id.slice(-6).toUpperCase()}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span className="mono-label">
+                      {new Date(b.createdAt).toLocaleDateString()}
+                    </span>
+                  </Td>
+                  <Td>{b.items[0]?.description || "Service"}</Td>
+                  <Td>
+                    <span className="mono-label">₹{b.totalAmount}</span>
+                  </Td>
+                  <Td>
+                    <span className="mono-label text-emerald-700 dark:text-emerald-400">
+                      ₹{invoicePaidAmount(b)}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span className="mono-label font-semibold">
+                      ₹{invoiceBalanceDue(b)}
+                    </span>
+                  </Td>
+                  <Td>
+                    <Pill
+                      tone={
+                        invoiceBalanceDue(b) === 0
+                          ? "ok"
+                          : invoicePaidAmount(b) > 0
+                            ? "warn"
+                            : "warn"
+                      }
+                    >
+                      {b.status === "CANCELLED"
+                        ? "CANCELLED"
+                        : invoiceBalanceDue(b) === 0
+                          ? "PAID"
+                          : invoicePaidAmount(b) > 0
+                            ? "PARTIAL"
+                            : b.status}
+                    </Pill>
+                  </Td>
+                  <Td>
+                    <div className="flex gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <ActionButton>Receipt</ActionButton>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md border-0 bg-transparent shadow-none p-0">
+                          <DialogHeader className="sr-only">
+                            <DialogTitle>
+                              Patient Receipt INV-
+                              {b._id.slice(-8).toUpperCase()}
+                            </DialogTitle>
+                            <DialogDescription>
+                              Hospital billing invoice receipt
+                            </DialogDescription>
+                          </DialogHeader>
                           <div
-                            className="absolute bottom-0 left-0 right-0 h-3 w-full"
+                            className="relative bg-card text-card-foreground p-6 pt-10 font-mono shadow-2xl rounded-sm overflow-hidden"
                             style={{
                               backgroundImage:
-                                "radial-gradient(circle at bottom, transparent 4px, var(--card) 5px)",
+                                "radial-gradient(circle at top, transparent 4px, var(--card) 5px)",
                               backgroundSize: "12px 10px",
-                              backgroundPosition: "bottom center",
+                              backgroundPosition: "top center",
                               backgroundRepeat: "repeat-x",
                             }}
-                          />
+                          >
+                            <div
+                              className="absolute bottom-0 left-0 right-0 h-3 w-full"
+                              style={{
+                                backgroundImage:
+                                  "radial-gradient(circle at bottom, transparent 4px, var(--card) 5px)",
+                                backgroundSize: "12px 10px",
+                                backgroundPosition: "bottom center",
+                                backgroundRepeat: "repeat-x",
+                              }}
+                            />
 
-                          <div className="text-center mb-6 space-y-1">
-                            <h2 className="text-xl font-bold tracking-widest uppercase">
-                              HealOS Hospital
-                            </h2>
-                            <p className="text-xs text-muted-foreground uppercase tracking-widest">
-                              Official Receipt
-                            </p>
-                            <div className="text-xs pt-2">
-                              INV-{b._id.slice(-8).toUpperCase()}
-                            </div>
-                          </div>
-
-                          <div className="space-y-4 text-sm relative z-10 mb-4">
-                            <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
-                              <span className="text-muted-foreground uppercase text-xs">
-                                Date
-                              </span>
-                              <span>
-                                {new Date(b.createdAt).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    month: "short",
-                                    day: "2-digit",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  },
-                                )}
-                              </span>
-                            </div>
-
-                            <div className="flex justify-between items-start border-b border-dashed border-border/60 pb-3">
-                              <span className="text-muted-foreground uppercase text-xs">
-                                Patient
-                              </span>
-                              <div className="text-right">
-                                <span className="font-bold">
-                                  {user?.name || "Patient"}
-                                </span>
-                                {user?.phone && (
-                                  <span className="block mt-0.5">
-                                    {user.phone}
-                                  </span>
-                                )}
-                                {user?.email && (
-                                  <span className="block text-xs mt-0.5">
-                                    {user.email}
-                                  </span>
-                                )}
+                            <div className="text-center mb-6 space-y-1">
+                              <h2 className="text-xl font-bold tracking-widest uppercase">
+                                HealOS Hospital
+                              </h2>
+                              <p className="text-xs text-muted-foreground uppercase tracking-widest">
+                                Official Receipt
+                              </p>
+                              <div className="text-xs pt-2">
+                                INV-{b._id.slice(-8).toUpperCase()}
                               </div>
                             </div>
 
-                            <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
-                              <span className="text-muted-foreground uppercase text-xs">
-                                Status
-                              </span>
-                              <span className="font-bold uppercase tracking-wider">
-                                {b.status || "PENDING"}
-                              </span>
-                            </div>
-
-                            <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
-                              <span className="text-muted-foreground uppercase text-xs">
-                                Method
-                              </span>
-                              <span className="uppercase">
-                                {(b as any).paymentMethod ||
-                                  (b as any).type ||
-                                  "Online"}
-                              </span>
-                            </div>
-
-                            {b.items && b.items.length > 0 && (
-                              <div className="py-2">
-                                <span className="text-muted-foreground uppercase text-xs mb-3 block">
-                                  Items
+                            <div className="space-y-4 text-sm relative z-10 mb-4">
+                              <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                                <span className="text-muted-foreground uppercase text-xs">
+                                  Date
                                 </span>
-                                <div className="space-y-2">
-                                  {b.items.map((item: any, idx: number) => (
-                                    <div
-                                      key={idx}
-                                      className="flex justify-between items-start gap-4"
-                                    >
-                                      <span className="leading-tight">
-                                        {item.description}
-                                      </span>
-                                      <span>
-                                        ₹{item.amount.toLocaleString()}
-                                      </span>
-                                    </div>
-                                  ))}
+                                <span>
+                                  {new Date(b.createdAt).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      month: "short",
+                                      day: "2-digit",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    },
+                                  )}
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between items-start border-b border-dashed border-border/60 pb-3">
+                                <span className="text-muted-foreground uppercase text-xs">
+                                  Patient
+                                </span>
+                                <div className="text-right">
+                                  <span className="font-bold">
+                                    {user?.name || "Patient"}
+                                  </span>
+                                  {user?.phone && (
+                                    <span className="block mt-0.5">
+                                      {user.phone}
+                                    </span>
+                                  )}
+                                  {user?.email && (
+                                    <span className="block text-xs mt-0.5">
+                                      {user.email}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
-                            )}
-                          </div>
 
-                          <div className="border-t-2 border-dashed border-border pt-4 mt-2 pb-6 relative z-10">
-                            <div className="flex justify-between items-center">
-                              <span className="uppercase font-bold tracking-widest text-lg">
-                                Total
-                              </span>
-                              <span className="text-2xl font-bold tracking-tight">
-                                ₹{(b.totalAmount || 0).toLocaleString()}
-                              </span>
+                              <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                                <span className="text-muted-foreground uppercase text-xs">
+                                  Status
+                                </span>
+                                <span className="font-bold uppercase tracking-wider">
+                                  {b.status || "PENDING"}
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between items-center border-b border-dashed border-border/60 pb-3">
+                                <span className="text-muted-foreground uppercase text-xs">
+                                  Method
+                                </span>
+                                <span className="uppercase">
+                                  {(b as any).paymentMethod ||
+                                    (b as any).type ||
+                                    "Online"}
+                                </span>
+                              </div>
+
+                              {b.items && b.items.length > 0 && (
+                                <div className="py-2">
+                                  <span className="text-muted-foreground uppercase text-xs mb-3 block">
+                                    Items
+                                  </span>
+                                  <div className="space-y-2">
+                                    {b.items.map((item: any, idx: number) => (
+                                      <div
+                                        key={idx}
+                                        className="flex justify-between items-start gap-4"
+                                      >
+                                        <span className="leading-tight">
+                                          {item.description}
+                                        </span>
+                                        <span>
+                                          ₹{item.amount.toLocaleString()}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="border-t-2 border-dashed border-border pt-4 mt-2 pb-6 relative z-10">
+                              <div className="flex justify-between items-center">
+                                <span className="uppercase font-bold tracking-widest text-sm">
+                                  Invoice total
+                                </span>
+                                <span className="text-lg font-bold tracking-tight">
+                                  ₹{(b.totalAmount || 0).toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="mt-3 flex justify-between text-sm text-muted-foreground">
+                                <span>Paid so far</span>
+                                <span>
+                                  ₹{invoicePaidAmount(b).toLocaleString()}
+                                </span>
+                              </div>
+                              {(b.insuranceCoverage || 0) > 0 && (
+                                <div className="mt-2 flex justify-between text-sm text-muted-foreground">
+                                  <span>Insurance coverage</span>
+                                  <span>
+                                    ₹
+                                    {(
+                                      b.insuranceCoverage || 0
+                                    ).toLocaleString()}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="mt-2 flex justify-between border-t border-border/50 pt-2 font-bold">
+                                <span>Balance due</span>
+                                <span>
+                                  ₹{invoiceBalanceDue(b).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="relative z-10 pb-3 pt-2 text-center text-xs text-muted-foreground">
+                              <p>Keep this receipt for your records.</p>
                             </div>
                           </div>
-
-                          <div className="text-center mt-2 mb-2 pb-4 opacity-50 relative z-10">
-                            <div className="h-8 w-full flex items-center justify-center gap-0.5">
-                              {Array.from({ length: 30 }).map((_, i) => (
-                                <div
-                                  key={i}
-                                  className="h-full bg-foreground"
-                                  style={{
-                                    width: `${Math.random() * 4 + 1}px`,
-                                    opacity: Math.random() > 0.3 ? 1 : 0,
-                                  }}
-                                />
-                              ))}
-                            </div>
-                            <p className="text-[10px] mt-2 uppercase tracking-widest">
-                              Thank you
-                            </p>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                    {b.status !== "PAID" && b.status !== "CANCELLED" && (
-                      <>
-                        <ActionButton
-                          tone="solid"
-                          onClick={() => handleOnlinePay(b._id, b.totalAmount)}
-                          disabled={processing === b._id}
-                        >
-                          {processing === b._id
-                            ? "Processing..."
-                            : "Pay Online"}
-                        </ActionButton>
-                      </>
-                    )}
-                  </div>
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                        </DialogContent>
+                      </Dialog>
+                      {b.status !== "CANCELLED" && invoiceBalanceDue(b) > 0 && (
+                        <>
+                          <ActionButton
+                            tone="solid"
+                            onClick={() => handleOnlinePay(b._id)}
+                            disabled={processing === b._id}
+                          >
+                            {processing === b._id
+                              ? "Processing..."
+                              : "Pay Online"}
+                          </ActionButton>
+                        </>
+                      )}
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );

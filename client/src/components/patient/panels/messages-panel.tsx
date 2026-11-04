@@ -132,6 +132,11 @@ function AppointmentRow({
             Arrive {formatTime12Hour(a.arrivalTime)}
           </p>
         )}
+        {a.queueNumber && (
+          <p className="mt-0.5 text-[10px] font-semibold text-primary">
+            Queue #{String(a.queueNumber).padStart(2, "0")}
+          </p>
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{a.reason}</p>

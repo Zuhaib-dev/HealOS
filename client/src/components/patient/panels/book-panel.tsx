@@ -44,13 +44,7 @@ import { useAuthStore } from "@/store/use-auth-store";
 import { getSocket } from "@/lib/socket";
 import Image from "next/image";
 
-const departments = [
-  { id: "med", label: "General Medicine" },
-  { id: "cardio", label: "Cardiology" },
-  { id: "neuro", label: "Neurology" },
-  { id: "ortho", label: "Orthopedics" },
-  { id: "paed", label: "Pediatrics" },
-];
+const allDepartments = { id: "all", label: "All departments" };
 
 declare global {
   interface Window {
@@ -74,7 +68,7 @@ const loadRazorpayScript = () => {
 
 export function BookPanel() {
   const { user } = useAuthStore();
-  const [dept, setDept] = useState(departments[0]!);
+  const [dept, setDept] = useState(allDepartments);
   const [doctorsList, setDoctorsList] = useState<DoctorListItem[]>([]);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
@@ -205,9 +199,24 @@ export function BookPanel() {
   const filteredDoctors = doctorsList.filter(
     (doctor) =>
       doctor.role === "DOCTOR" &&
-      doctor.specialization.trim().toLowerCase() ===
-        dept.label.trim().toLowerCase(),
+      (dept.id === "all" ||
+        doctor.specialization.trim().toLowerCase() ===
+          dept.label.trim().toLowerCase()),
   );
+  const departments = [
+    allDepartments,
+    ...Array.from(
+      new Set(
+        doctorsList
+          .filter((doctor) => doctor.role === "DOCTOR")
+          .map((doctor) => doctor.specialization.trim())
+          .filter(Boolean),
+      ),
+    ).map((label) => ({
+      id: label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      label,
+    })),
+  ];
 
   // Auto-select first doctor when department changes
   useEffect(() => {
@@ -236,7 +245,7 @@ export function BookPanel() {
         // Reserve a unique appointment window before taking payment.
         const reservation = await bookAppointmentApi({
           doctorId: selectedDoctorId,
-          department: dept.label,
+          department: selectedDoctorObj?.specialization || dept.label,
           date: format(date, "yyyy-MM-dd"),
           reason,
           type: mode,
@@ -340,7 +349,7 @@ export function BookPanel() {
         // CASH Booking
         const res = await bookAppointmentApi({
           doctorId: selectedDoctorId,
-          department: dept.label,
+          department: selectedDoctorObj?.specialization || dept.label,
           date: format(date, "yyyy-MM-dd"),
           reason,
           type: mode,
@@ -556,7 +565,7 @@ export function BookPanel() {
                         <span className="flex items-center gap-1">
                           <Clock className="size-3" />{" "}
                           {doc.experienceYears
-                            ? `${doc.experienceYears}+ Yrs`
+                            ? `${doc.experienceYears} Yrs`
                             : "Experience not listed"}
                         </span>
                         <span className="flex items-center gap-1">

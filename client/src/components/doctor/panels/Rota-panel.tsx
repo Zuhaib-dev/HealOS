@@ -119,13 +119,22 @@ export function RotaPanel() {
     const socket = getSocket();
     socket.on("appointment_created", refresh);
     socket.on("appointment_updated", refresh);
+    socket.on("appointment_slot_released", refresh);
     socket.on("doctor_availability_updated", refresh);
     return () => {
       socket.off("appointment_created", refresh);
       socket.off("appointment_updated", refresh);
+      socket.off("appointment_slot_released", refresh);
       socket.off("doctor_availability_updated", refresh);
     };
   }, []);
+
+  const queueAppointments = [...appointments].sort((a, b) => {
+    const dayOrder = String(a.date).localeCompare(String(b.date));
+    if (dayOrder) return dayOrder;
+    if (a.queueNumber && b.queueNumber) return a.queueNumber - b.queueNumber;
+    return String(a.timeSlot).localeCompare(String(b.timeSlot));
+  });
 
   return (
     <div>
@@ -229,49 +238,31 @@ export function RotaPanel() {
             <h2 className="mt-1 text-lg font-semibold">Upcoming patients</h2>
           </div>
           <span className="mono-label text-muted-foreground">
-            {appointments.length} booked
+            {queueAppointments.length} booked
           </span>
         </div>
-        {appointments.length === 0 ? (
+        {queueAppointments.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
             No patient appointments are booked in your upcoming rota.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border/60">
-            <table className="w-full min-w-[520px] text-left">
-              <thead className="bg-muted/30">
-                <tr>
-                  <Th>Date</Th>
-                  <Th>Time</Th>
-                  <Th>Patient</Th>
-                  <Th>Status</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {appointments.map((appointment) => (
-                  <tr
-                    key={appointment._id}
-                    className="border-t border-border/50"
-                  >
-                    <Td>
-                      {new Date(
-                        `${appointment.date}T00:00:00`,
-                      ).toLocaleDateString(undefined, {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </Td>
-                    <Td>
-                      <span className="font-mono">
-                        {formatTimeRange(
-                          appointment.timeSlot,
-                          appointment.slotEndTime,
-                        )}
-                      </span>
-                    </Td>
-                    <Td>{appointment.patient?.name || "Patient"}</Td>
-                    <Td>
+          <>
+            <div className="space-y-3 md:hidden">
+              {queueAppointments.map((appointment) => (
+                <article
+                  key={appointment._id}
+                  className="flex min-w-0 items-start gap-3 rounded-xl border border-border/60 bg-card p-4"
+                >
+                  <div className="grid size-12 shrink-0 place-items-center rounded-lg bg-primary/10 font-mono text-lg font-bold text-primary">
+                    {appointment.queueNumber
+                      ? String(appointment.queueNumber).padStart(2, "0")
+                      : "—"}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <h3 className="min-w-0 truncate text-sm font-semibold">
+                        {appointment.patient?.name || "Patient"}
+                      </h3>
                       <Pill
                         tone={
                           appointment.status === "COMPLETED" ? "ok" : "mute"
@@ -279,12 +270,83 @@ export function RotaPanel() {
                       >
                         {appointment.status}
                       </Pill>
-                    </Td>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {new Date(
+                        `${appointment.date}T12:00:00`,
+                      ).toLocaleDateString(undefined, {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
+                    <p className="mt-1 font-mono text-sm">
+                      {formatTimeRange(
+                        appointment.timeSlot,
+                        appointment.slotEndTime,
+                      )}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto rounded-lg border border-border/60 md:block">
+              <table className="w-full min-w-[640px] text-left">
+                <thead className="bg-muted/30">
+                  <tr>
+                    <Th>Queue</Th>
+                    <Th>Date</Th>
+                    <Th>Time</Th>
+                    <Th>Patient</Th>
+                    <Th>Status</Th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {queueAppointments.map((appointment) => (
+                    <tr
+                      key={appointment._id}
+                      className="border-t border-border/50"
+                    >
+                      <Td>
+                        <span className="font-mono font-bold text-primary">
+                          {appointment.queueNumber
+                            ? `#${String(appointment.queueNumber).padStart(2, "0")}`
+                            : "—"}
+                        </span>
+                      </Td>
+                      <Td>
+                        {new Date(
+                          `${appointment.date}T12:00:00`,
+                        ).toLocaleDateString(undefined, {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </Td>
+                      <Td>
+                        <span className="font-mono">
+                          {formatTimeRange(
+                            appointment.timeSlot,
+                            appointment.slotEndTime,
+                          )}
+                        </span>
+                      </Td>
+                      <Td>{appointment.patient?.name || "Patient"}</Td>
+                      <Td>
+                        <Pill
+                          tone={
+                            appointment.status === "COMPLETED" ? "ok" : "mute"
+                          }
+                        >
+                          {appointment.status}
+                        </Pill>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
 

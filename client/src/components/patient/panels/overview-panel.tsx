@@ -555,6 +555,15 @@ export function OverviewPanel() {
                         upcomingAppointments[0].date,
                       ).toLocaleDateString()}
                     </p>
+                    {upcomingAppointments[0].queueNumber && (
+                      <p className="mt-1 text-xs font-semibold text-primary">
+                        Queue #
+                        {String(upcomingAppointments[0].queueNumber).padStart(
+                          2,
+                          "0",
+                        )}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

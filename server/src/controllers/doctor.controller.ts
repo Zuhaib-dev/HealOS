@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   Appointment,
   Consultation,
+  ConsultationStatus,
   DiagnosticOrder,
   DiagnosticReport,
   ProfessionalProfile,
@@ -14,6 +15,7 @@ import {
 import { AppError } from "../middleware/error-handler.js";
 import ImageKit from "imagekit";
 import fs from "fs";
+import { z } from "zod";
 import { getIO } from "../socket.js";
 import { getClinicDateKey } from "../utils/clinic-date.js";
 
@@ -54,9 +56,82 @@ export const getAppointments = async (req: Request, res: Response) => {
 // ==========================================
 // 2. Create or Update Consultation (Prescription)
 // ==========================================
+const consultationPayloadSchema = z
+  .object({
+    patientId: z.string().regex(/^[a-f\d]{24}$/i, "Valid patient is required"),
+    appointmentId: z
+      .string()
+      .regex(/^[a-f\d]{24}$/i, "Invalid appointment")
+      .optional(),
+    chiefComplaint: z.string().trim().max(2000).default(""),
+    diagnosis: z.string().trim().max(2000).default(""),
+    advice: z.string().trim().max(4000).default(""),
+    followUpDate: z.string().optional(),
+    medicines: z
+      .array(
+        z.object({
+          name: z.string().trim().min(1),
+          dosage: z.string().trim().min(1),
+          frequency: z.string().trim().min(1),
+          duration: z.string().trim().min(1),
+          instructions: z.string().trim().optional(),
+        }),
+      )
+      .default([]),
+    diagnosticOrders: z
+      .array(
+        z.object({
+          testType: z.enum(["RADIOLOGY", "PATHOLOGY"]),
+          testName: z.string().trim().min(2),
+          clinicalNotes: z.string().trim().optional(),
+          priority: z.enum(["ROUTINE", "URGENT", "STAT"]).optional(),
+        }),
+      )
+      .default([]),
+    status: z.enum(["DRAFT", "COMPLETED"]).default("DRAFT"),
+  })
+  .superRefine((data, context) => {
+    if (data.status === "COMPLETED") {
+      if (data.chiefComplaint.length < 3) {
+        context.addIssue({
+          code: "custom",
+          path: ["chiefComplaint"],
+          message: "Enter the patient's chief complaint before completing.",
+        });
+      }
+      if (data.diagnosis.length < 2) {
+        context.addIssue({
+          code: "custom",
+          path: ["diagnosis"],
+          message: "Diagnosis is required before completing.",
+        });
+      }
+    }
+    if (
+      data.followUpDate &&
+      (!/^\d{4}-\d{2}-\d{2}$/.test(data.followUpDate) ||
+        Number.isNaN(new Date(`${data.followUpDate}T12:00:00`).getTime()))
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["followUpDate"],
+        message: "Enter a valid follow-up date.",
+      });
+    }
+  });
+
 export const saveConsultation = async (req: Request, res: Response) => {
   try {
     const doctorId = req.user?.id;
+    const parsed = consultationPayloadSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        status: "error",
+        message:
+          "Complete the required consultation fields and check your entries.",
+        errors: parsed.error.flatten().fieldErrors,
+      });
+    }
     const {
       patientId,
       appointmentId,
@@ -65,18 +140,34 @@ export const saveConsultation = async (req: Request, res: Response) => {
       advice,
       followUpDate,
       medicines,
-      diagnosticOrders, // array of { testType, testName, clinicalNotes }
-      status, // DRAFT or COMPLETED
-    } = req.body;
+      diagnosticOrders,
+      status,
+    } = parsed.data;
 
-    if (!patientId) {
-      throw new AppError("Patient ID is required", 400);
+    const patientExists = await User.exists({
+      _id: patientId,
+      role: "PATIENT",
+    });
+    if (!patientExists) throw new AppError("Patient not found", 404);
+
+    if (appointmentId) {
+      const appointment = await Appointment.findOne({
+        _id: appointmentId,
+        doctor: doctorId,
+        patient: patientId,
+      }).select("status");
+      if (!appointment) throw new AppError("Appointment not found", 404);
+      if (appointment.status === "CANCELLED")
+        throw new AppError("A cancelled appointment cannot be completed", 409);
     }
 
     // Check if consultation for this appointment already exists
     let consultation;
     if (appointmentId) {
-      consultation = await Consultation.findOne({ appointment: appointmentId });
+      consultation = await Consultation.findOne({
+        appointment: appointmentId,
+        doctor: doctorId,
+      });
     }
 
     if (consultation) {
@@ -86,8 +177,10 @@ export const saveConsultation = async (req: Request, res: Response) => {
       consultation.advice = advice;
       consultation.medicines = medicines;
       if (diagnosticOrders) consultation.diagnosticOrders = diagnosticOrders;
-      consultation.followUpDate = followUpDate;
-      consultation.status = status;
+      consultation.followUpDate = followUpDate
+        ? new Date(`${followUpDate}T12:00:00`)
+        : undefined;
+      consultation.status = status as ConsultationStatus;
       await consultation.save();
     } else {
       // Create new
@@ -98,7 +191,9 @@ export const saveConsultation = async (req: Request, res: Response) => {
         chiefComplaint,
         diagnosis,
         advice,
-        followUpDate,
+        followUpDate: followUpDate
+          ? new Date(`${followUpDate}T12:00:00`)
+          : undefined,
         medicines,
         diagnosticOrders,
         status,
@@ -107,23 +202,51 @@ export const saveConsultation = async (req: Request, res: Response) => {
 
     // If completed, update appointment status
     if (status === "COMPLETED" && appointmentId) {
-      await Appointment.findByIdAndUpdate(appointmentId, {
-        status: "COMPLETED",
-      });
+      const completedAppointment = await Appointment.findOneAndUpdate(
+        { _id: appointmentId, doctor: doctorId },
+        { status: "COMPLETED" },
+        { new: true },
+      ).select("_id doctor patient status");
+      if (completedAppointment) {
+        getIO()?.emit("appointment_updated", {
+          appointmentId: completedAppointment._id,
+          doctorId: completedAppointment.doctor,
+          patientId: completedAppointment.patient,
+          status: completedAppointment.status,
+        });
+      }
     }
 
     // Process diagnosticOrders
-    if (diagnosticOrders && Array.isArray(diagnosticOrders)) {
-      const ordersToCreate = diagnosticOrders.map((order) => ({
-        patient: patientId,
-        doctor: doctorId,
+    if (diagnosticOrders.length > 0) {
+      const existingOrders = await DiagnosticOrder.find({
         consultation: consultation._id,
-        testType: order.testType,
-        testName: order.testName,
-        priority: order.priority || "ROUTINE",
-        clinicalNotes: order.clinicalNotes || chiefComplaint,
-      }));
-      await DiagnosticOrder.insertMany(ordersToCreate);
+      })
+        .select("testType testName")
+        .lean();
+      const existingKeys = new Set(
+        existingOrders.map(
+          (order) => `${order.testType}:${order.testName.toLowerCase()}`,
+        ),
+      );
+      const ordersToCreate = diagnosticOrders
+        .filter(
+          (order) =>
+            !existingKeys.has(
+              `${order.testType}:${order.testName.toLowerCase()}`,
+            ),
+        )
+        .map((order) => ({
+          patient: patientId,
+          doctor: doctorId,
+          consultation: consultation._id,
+          testType: order.testType,
+          testName: order.testName,
+          priority: order.priority || "ROUTINE",
+          clinicalNotes: order.clinicalNotes || chiefComplaint,
+        }));
+      if (ordersToCreate.length > 0)
+        await DiagnosticOrder.insertMany(ordersToCreate);
     }
 
     const io = getIO();
@@ -597,9 +720,10 @@ export const getSchedule = async (req: Request, res: Response) => {
         doctor: doctorId,
         date: { $gte: today },
         status: { $ne: "CANCELLED" },
+        $nor: [{ paymentMethod: "ONLINE", paymentStatus: "PENDING_ONLINE" }],
       })
         .populate("patient", "name")
-        .sort({ date: 1, timeSlot: 1 })
+        .sort({ date: 1, queueNumber: 1, timeSlot: 1 })
         .limit(100)
         .lean(),
     ]);

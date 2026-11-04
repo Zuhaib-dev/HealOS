@@ -66,23 +66,30 @@ export const bookAppointment = async (
       return;
     }
 
-    const { doctorId, department, date, reason, type, paymentMethod } =
-      parsed.data;
+    const { doctorId, date, reason, type, paymentMethod } = parsed.data;
 
     // Verify doctor exists
     const doctorObj = await User.findById(doctorId);
-    if (
-      !doctorObj ||
-      (doctorObj.role !== UserRole.DOCTOR &&
-        doctorObj.role !== UserRole.RADIOLOGIST &&
-        doctorObj.role !== UserRole.ADMIN)
-    ) {
+    if (!doctorObj || doctorObj.role !== UserRole.DOCTOR) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: "Selected physician not found or unavailable",
       });
       return;
     }
+    const professionalProfile = await ProfessionalProfile.findOne({
+      user: doctorId,
+      requestedRole: UserRole.DOCTOR,
+      status: "APPROVED",
+    }).select("specialization");
+    if (!professionalProfile) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "This doctor is not approved for patient bookings.",
+      });
+      return;
+    }
+    const department = professionalProfile.specialization;
 
     let appointment: any;
     try {

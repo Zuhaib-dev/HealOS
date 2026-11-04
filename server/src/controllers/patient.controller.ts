@@ -34,8 +34,15 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
     }
 
     // 1. Get Appointments
+    const unpaidOnlineAppointmentIds = await Appointment.find({
+      patient: patientId,
+      paymentMethod: "ONLINE",
+      paymentStatus: "PENDING_ONLINE",
+      status: "PENDING",
+    }).distinct("_id");
     const appointments = await Appointment.find({
       patient: patientId,
+      $nor: [{ paymentMethod: "ONLINE", paymentStatus: "PENDING_ONLINE" }],
     })
       .populate("doctor", "name role specialization")
       .sort({ date: -1, timeSlot: -1 })
@@ -68,8 +75,11 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
       .lean();
 
     // 6. Get Invoices
-    const invoices = await Invoice.find({ patient: patientId })
-      .populate("appointment", "date timeSlot")
+    const invoices = await Invoice.find({
+      patient: patientId,
+      appointment: { $nin: unpaidOnlineAppointmentIds },
+    })
+      .populate("appointment", "date timeSlot paidAmount amount")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -166,12 +176,20 @@ export const payInvoice = async (req: Request, res: Response) => {
     }
 
     invoice.status = "PAID" as any; // InvoiceStatus.PAID
+    invoice.paidAmount = Math.max(
+      0,
+      invoice.totalAmount - (invoice.insuranceCoverage || 0),
+    );
     invoice.paidAt = new Date();
 
     // Check if it's an appointment invoice
     if (invoice.appointment) {
       const appointment = await Appointment.findById(invoice.appointment);
       if (appointment) {
+        appointment.paidAmount = Math.max(
+          appointment.paidAmount || 0,
+          invoice.paidAmount,
+        );
         appointment.paymentStatus = "PAID" as any;
         await appointment.save();
       }

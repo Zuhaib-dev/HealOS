@@ -5,13 +5,18 @@ import { PatientProfileData } from "./onboarding";
 export interface DashboardInvoice {
   _id: string;
   totalAmount: number;
-  status: "PENDING" | "PAID" | "CANCELLED";
+  paidAmount?: number;
+  insuranceCoverage?: number;
+  status: "PENDING" | "PARTIAL" | "PAID" | "CANCELLED";
   items: { description: string; amount: number }[];
   appointment?: {
     date: string;
     timeSlot: string;
+    paidAmount?: number;
+    amount?: number;
   };
   createdAt: string;
+  paidAt?: string;
 }
 
 export interface DashboardVitals {

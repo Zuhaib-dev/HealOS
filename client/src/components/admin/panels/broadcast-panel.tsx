@@ -236,7 +236,13 @@ export function BroadcastPanel() {
                       </span>
                     </div>
                     <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                      <span>{new Date(n.createdAt).toLocaleString()}</span>
+                      <span>
+                        {new Date(n.createdAt).toLocaleString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </span>
                       <span className="flex items-center gap-1">
                         <CheckCircle2 className="size-3 text-emerald-500" />{" "}
                         {n.readBy?.length || 0} read

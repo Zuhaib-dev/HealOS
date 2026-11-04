@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { AppointmentRecord } from "@/lib/api/appointment";
 import { useMemo } from "react";
+import { formatTimeRange } from "@/lib/time-format";
 
 export function NeonTimeline({
   appointments,
@@ -14,7 +15,7 @@ export function NeonTimeline({
     return appointments
       .filter((a) => a.status === "PENDING" || a.status === "CONFIRMED")
       .sort((a, b) => {
-        // Simple sort by timeSlot if it's formatted well (e.g. "09:00 AM")
+        // Stored times use sortable 24-hour HH:mm values.
         return a.timeSlot.localeCompare(b.timeSlot);
       });
   }, [appointments]);
@@ -59,7 +60,7 @@ export function NeonTimeline({
               {/* Time Label (top) */}
               <div className="absolute bottom-full mb-4 whitespace-nowrap transition-all duration-300 transform group-hover:-translate-y-1">
                 <p className="mono-label text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
-                  {appt.timeSlot}
+                  {formatTimeRange(appt.timeSlot, appt.slotEndTime)}
                 </p>
               </div>
 

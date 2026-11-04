@@ -18,6 +18,8 @@ import {
   fetchAdminPatientsApi,
   fetchAdminScheduleApi,
   createScheduleApi,
+  fetchDoctorAvailabilitiesApi,
+  saveDoctorAvailabilityApi,
   fetchAdminStaffApi,
   fetchAdminIntegrationsApi,
   fetchAdminRolesApi,
@@ -33,6 +35,9 @@ import {
 } from "@/lib/api/admin";
 import { toast } from "sonner";
 import { useAdminRealtime } from "../use-admin-realtime";
+import { formatTimeRange } from "@/lib/time-format";
+import { formatTime12Hour } from "@/lib/time-format";
+import { TimePicker12Hour } from "@/components/shared/time-picker-12h";
 
 import {
   getApiErrorMessage,
@@ -52,6 +57,19 @@ export function SchedulePanel() {
   const [staffList, setStaffList] = useState<AdminStaffData[]>([]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingAvailability, setIsSavingAvailability] = useState(false);
+  const [availabilityRows, setAvailabilityRows] = useState<any[]>([]);
+  const [availabilityForm, setAvailabilityForm] = useState({
+    doctorId: "",
+    weekdays: [1, 2, 3, 4, 5],
+    startTime: "09:00",
+    endTime: "17:00",
+    slotDurationMinutes: 60,
+    maxPatientsPerDay: 8,
+    consultationFee: 350,
+    advanceFee: 20,
+    active: true,
+  });
 
   // Form state for creating a new shift
   const [formData, setFormData] = useState({
@@ -75,6 +93,8 @@ export function SchedulePanel() {
       if (staffRes.success && staffRes.staff) {
         setStaffList(staffRes.staff);
       }
+      const availabilityRes = await fetchDoctorAvailabilitiesApi();
+      setAvailabilityRows(availabilityRes.availability || []);
     } catch (err) {
       console.error("Failed to fetch admin schedule", err);
     } finally {
@@ -123,6 +143,30 @@ export function SchedulePanel() {
     }
   };
 
+  const saveAvailability = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!availabilityForm.doctorId) {
+      toast.error("Select a doctor first");
+      return;
+    }
+    try {
+      setIsSavingAvailability(true);
+      await saveDoctorAvailabilityApi(availabilityForm.doctorId, {
+        ...availabilityForm,
+        consultationFee: Number(availabilityForm.consultationFee),
+        advanceFee: Number(availabilityForm.advanceFee),
+        slotDurationMinutes: Number(availabilityForm.slotDurationMinutes),
+        maxPatientsPerDay: Number(availabilityForm.maxPatientsPerDay),
+      });
+      toast.success("Doctor booking timetable saved");
+      loadSchedule();
+    } catch {
+      toast.error("Could not save booking timetable");
+    } finally {
+      setIsSavingAvailability(false);
+    }
+  };
+
   const scheduleWindow = { from: 7, to: 20 };
   const span = scheduleWindow.to - scheduleWindow.from;
   const hours = Array.from(
@@ -132,15 +176,21 @@ export function SchedulePanel() {
 
   // Map appointments
   const mappedApts = appointments.map((apt) => {
-    const [hourStr, minStr] = apt.timeSlot.split(":");
-    const startHour = parseInt(hourStr) + parseInt(minStr) / 60;
+    const [hourStr, minStr] = (apt.timeSlot || "").split(":");
+    const startHour = hourStr
+      ? parseInt(hourStr) + parseInt(minStr || "0") / 60
+      : scheduleWindow.from;
+    const [endHourStr, endMinuteStr] = (apt.slotEndTime || "").split(":");
+    const endHour = endHourStr
+      ? parseInt(endHourStr) + parseInt(endMinuteStr || "0") / 60
+      : startHour + 1;
     return {
       id: apt._id,
       room: apt.doctor?.department || "General",
       label: apt.patient?.user?.name || "Patient",
-      subLabel: "Case: " + (apt.doctor?.user?.name || "Doctor"),
+      subLabel: `${apt.queueNumber ? `Queue #${apt.queueNumber} · ` : ""}Case: ${apt.doctor?.user?.name || "Doctor"}`,
       start: startHour,
-      end: startHour + 1, // Assume 1 hr
+      end: endHour,
       state:
         apt.status === "COMPLETED"
           ? "in-theatre"
@@ -185,6 +235,229 @@ export function SchedulePanel() {
           </>
         }
       />
+
+      <section className="mx-4 mb-7 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm sm:mx-8">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/50 bg-muted/20 px-5 py-4 sm:px-6">
+          <div>
+            <p className="mono-label text-muted-foreground">
+              Patient booking rules
+            </p>
+            <h3 className="mt-1 text-lg font-semibold">Doctor timetable</h3>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+              One weekly schedule controls patient booking days, automatic slot
+              assignment, capacity and fees.
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background px-3 py-1.5 text-xs text-muted-foreground">
+            <span className="size-2 rounded-full bg-emerald-500" /> Live
+            availability
+          </span>
+        </div>
+        <form onSubmit={saveAvailability} className="space-y-5 p-5 sm:p-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(220px,1fr)_2fr]">
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Doctor
+              <select
+                aria-label="Doctor"
+                className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                value={availabilityForm.doctorId}
+                onChange={(e) => {
+                  const saved = availabilityRows.find(
+                    (row) => row.doctor?._id === e.target.value,
+                  );
+                  setAvailabilityForm((v) => ({
+                    ...v,
+                    doctorId: e.target.value,
+                    ...(saved
+                      ? {
+                          weekdays: saved.weekdays,
+                          startTime: saved.startTime,
+                          endTime: saved.endTime,
+                          slotDurationMinutes: saved.slotDurationMinutes,
+                          maxPatientsPerDay: saved.maxPatientsPerDay,
+                          consultationFee: saved.consultationFee,
+                          advanceFee: saved.advanceFee,
+                          active: saved.active,
+                        }
+                      : {}),
+                  }));
+                }}
+              >
+                <option value="">Select doctor</option>
+                {staffList
+                  .filter((x) =>
+                    ["DOCTOR", "RADIOLOGIST"].includes(x.user.role),
+                  )
+                  .map((x) => (
+                    <option key={x.user._id} value={x.user._id}>
+                      {x.user.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <fieldset>
+              <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Clinic days
+              </legend>
+              <div className="flex flex-wrap gap-2 text-xs">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                  (day, i) => (
+                    <label
+                      key={day}
+                      className={`flex min-w-12 cursor-pointer items-center justify-center rounded-lg border px-3 py-2 font-semibold transition-colors ${availabilityForm.weekdays.includes(i) ? "border-primary/40 bg-primary/8 text-primary" : "border-border/60 bg-background text-muted-foreground hover:bg-muted/50"}`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={availabilityForm.weekdays.includes(i)}
+                        onChange={(e) =>
+                          setAvailabilityForm((v) => ({
+                            ...v,
+                            weekdays: e.target.checked
+                              ? [...v.weekdays, i]
+                              : v.weekdays.filter((d) => d !== i),
+                          }))
+                        }
+                      />
+                      {day}
+                    </label>
+                  ),
+                )}
+              </div>
+            </fieldset>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <label className="text-xs">
+              Start{" "}
+              <TimePicker12Hour
+                aria-label="Clinic start time"
+                className="mt-1"
+                value={availabilityForm.startTime}
+                onChange={(startTime) =>
+                  setAvailabilityForm((v) => ({
+                    ...v,
+                    startTime,
+                  }))
+                }
+              />
+            </label>
+            <label className="text-xs">
+              End{" "}
+              <TimePicker12Hour
+                aria-label="Clinic end time"
+                className="mt-1"
+                value={availabilityForm.endTime}
+                onChange={(endTime) =>
+                  setAvailabilityForm((v) => ({
+                    ...v,
+                    endTime,
+                  }))
+                }
+              />
+            </label>
+            <label className="text-xs">
+              Appointment minutes{" "}
+              <input
+                aria-label="Slot duration"
+                type="number"
+                min="5"
+                className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                value={availabilityForm.slotDurationMinutes}
+                onChange={(e) =>
+                  setAvailabilityForm((v) => ({
+                    ...v,
+                    slotDurationMinutes: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+            <label className="text-xs">
+              Max patients / day{" "}
+              <input
+                aria-label="Maximum patients per day"
+                type="number"
+                min="1"
+                className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                value={availabilityForm.maxPatientsPerDay}
+                onChange={(e) =>
+                  setAvailabilityForm((v) => ({
+                    ...v,
+                    maxPatientsPerDay: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+            <label className="text-xs">
+              Consultation fee ₹{" "}
+              <input
+                aria-label="Consultation fee"
+                type="number"
+                min="0"
+                className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                value={availabilityForm.consultationFee}
+                onChange={(e) =>
+                  setAvailabilityForm((v) => ({
+                    ...v,
+                    consultationFee: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+            <label className="text-xs">
+              Advance fee ₹{" "}
+              <input
+                aria-label="Advance fee"
+                type="number"
+                min="1"
+                className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                value={availabilityForm.advanceFee}
+                onChange={(e) =>
+                  setAvailabilityForm((v) => ({
+                    ...v,
+                    advanceFee: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/50 pt-4">
+            <p className="text-xs text-muted-foreground">
+              Advance is collected online; the remaining fee is due at the
+              clinic.
+            </p>
+            <button
+              disabled={isSavingAvailability}
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSavingAvailability ? "Saving…" : "Save timetable"}
+            </button>
+          </div>
+        </form>
+        {availabilityRows.length > 0 && (
+          <div className="border-t border-border/50 px-5 py-4 sm:px-6">
+            <p className="mono-label mb-2 text-muted-foreground">
+              Configured timetables
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {availabilityRows.map((row) => (
+                <span
+                  key={row._id}
+                  className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-2 text-xs"
+                >
+                  <span
+                    className={`size-1.5 rounded-full ${row.active ? "bg-emerald-500" : "bg-muted-foreground"}`}
+                  />
+                  {row.doctor?.name || "Doctor"}
+                  <span className="text-muted-foreground">
+                    {formatTimeRange(row.startTime, row.endTime)} ·{" "}
+                    {row.maxPatientsPerDay}/day
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
 
       {isFormOpen && (
         <div className="hairline-b bg-muted/30 p-5 sm:px-8">
@@ -296,21 +569,20 @@ export function SchedulePanel() {
               >
                 Start Time
               </label>
-              <input
+              <TimePicker12Hour
                 id="shift-start-time"
-                type="time"
                 required={true}
-                aria-invalid={Boolean(formErrors.startTime)}
+                invalid={Boolean(formErrors.startTime)}
                 aria-describedby={
                   formErrors.startTime ? "shift-start-time-error" : undefined
                 }
                 value={formData.startTime}
-                onChange={(e) => {
-                  setFormData((d) => ({ ...d, startTime: e.target.value }));
+                onChange={(startTime) => {
+                  setFormData((d) => ({ ...d, startTime }));
                   if (formErrors.startTime)
                     setFormErrors((prev) => ({ ...prev, startTime: "" }));
                 }}
-                className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.startTime ? "border-destructive" : ""}`}
+                className={`w-full ${formErrors.startTime ? "rounded-md border border-destructive" : ""}`}
               />
               {formErrors.startTime && (
                 <span
@@ -329,21 +601,20 @@ export function SchedulePanel() {
               >
                 End Time
               </label>
-              <input
+              <TimePicker12Hour
                 id="shift-end-time"
-                type="time"
                 required={true}
-                aria-invalid={Boolean(formErrors.endTime)}
+                invalid={Boolean(formErrors.endTime)}
                 aria-describedby={
                   formErrors.endTime ? "shift-end-time-error" : undefined
                 }
                 value={formData.endTime}
-                onChange={(e) => {
-                  setFormData((d) => ({ ...d, endTime: e.target.value }));
+                onChange={(endTime) => {
+                  setFormData((d) => ({ ...d, endTime }));
                   if (formErrors.endTime)
                     setFormErrors((prev) => ({ ...prev, endTime: "" }));
                 }}
-                className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.endTime ? "border-destructive" : ""}`}
+                className={`w-full ${formErrors.endTime ? "rounded-md border border-destructive" : ""}`}
               />
               {formErrors.endTime && (
                 <span
@@ -409,7 +680,7 @@ export function SchedulePanel() {
             <div className="mono-label text-muted-foreground flex pl-28">
               {hours.map((h) => (
                 <span key={h} className="flex-1">
-                  {String(h).padStart(2, "0")}:00
+                  {formatTime12Hour(`${String(h).padStart(2, "0")}:00`)}
                 </span>
               ))}
             </div>

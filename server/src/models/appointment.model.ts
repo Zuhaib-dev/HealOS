@@ -30,13 +30,18 @@ export interface IAppointment extends Document {
   doctor: mongoose.Types.ObjectId;
   department: string;
   date: string; // YYYY-MM-DD
-  timeSlot: string; // e.g. "09:00 AM"
+  timeSlot: string; // Stored as sortable 24-hour HH:mm; formatted for display by the client.
+  queueNumber?: number;
   reason: string;
   type: AppointmentType;
   status: AppointmentStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   amount: number;
+  advanceAmount?: number;
+  paidAmount?: number;
+  arrivalTime?: string;
+  slotEndTime?: string;
   bookedAt: Date;
   notes?: string;
   razorpayOrderId?: string;
@@ -53,6 +58,7 @@ const appointmentSchema = new Schema<IAppointment>(
     department: { type: String, required: true, trim: true },
     date: { type: String, required: true },
     timeSlot: { type: String, required: true },
+    queueNumber: { type: Number, min: 1 },
     reason: { type: String, required: true },
     type: {
       type: String,
@@ -77,6 +83,10 @@ const appointmentSchema = new Schema<IAppointment>(
       default: PaymentStatus.PENDING_CASH,
     },
     amount: { type: Number, required: true, default: 400 },
+    advanceAmount: { type: Number, default: 20 },
+    paidAmount: { type: Number, default: 0 },
+    arrivalTime: { type: String },
+    slotEndTime: { type: String },
     bookedAt: { type: Date, default: Date.now },
     notes: { type: String },
     razorpayOrderId: { type: String },
@@ -92,6 +102,15 @@ appointmentSchema.index({ status: 1, date: 1 });
 appointmentSchema.index(
   { doctor: 1, date: 1, timeSlot: 1 },
   { unique: true, partialFilterExpression: { status: { $ne: "CANCELLED" } } },
+);
+appointmentSchema.index(
+  { doctor: 1, date: 1, queueNumber: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      queueNumber: { $type: "number" },
+    },
+  },
 );
 
 export const Appointment = mongoose.model<IAppointment>(

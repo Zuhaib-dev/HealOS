@@ -4,9 +4,11 @@ import { User, UserRole } from "../models/user.model.js";
 import { PatientProfile } from "../models/patient-profile.model.js";
 import { ProfessionalProfile } from "../models/professional-profile.model.js";
 import { Appointment } from "../models/appointment.model.js";
-import { emitAdminDataChanged, emitUserRoleUpdated } from "../socket.js";
+import { emitAdminDataChanged, emitUserRoleUpdated, getIO } from "../socket.js";
 import { logAudit } from "../utils/audit.js";
 import { z } from "zod";
+import { DoctorAvailability } from "../models/doctor-availability.model.js";
+import { getClinicDateKey } from "../utils/clinic-date.js";
 
 const wardSchema = z.object({
   name: z.string().min(1),
@@ -418,18 +420,14 @@ export const getSchedule = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const dateQuery = req.query.date
-      ? new Date(req.query.date as string)
-      : new Date();
-    dateQuery.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(dateQuery);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    // Convert to YYYY-MM-DD for Schedule string dates
-    const dateStr = dateQuery.toISOString().split("T")[0];
+    const dateStr =
+      typeof req.query.date === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(req.query.date)
+        ? req.query.date
+        : getClinicDateKey();
 
     const appointments = await Appointment.find({
-      date: { $gte: dateQuery, $lt: tomorrow },
+      date: dateStr,
     })
       .populate("patient", "user")
       .populate("doctor", "user department")
@@ -463,6 +461,65 @@ const scheduleSchema = z.object({
   department: z.string().optional(),
   notes: z.string().optional(),
 });
+
+const doctorAvailabilitySchema = z
+  .object({
+    weekdays: z.array(z.number().int().min(0).max(6)).min(1),
+    startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    slotDurationMinutes: z.number().int().min(5).max(240),
+    maxPatientsPerDay: z.number().int().min(1).max(100),
+    consultationFee: z.number().nonnegative(),
+    advanceFee: z.number().int().min(1),
+    active: z.boolean().default(true),
+  })
+  .refine((data) => data.startTime < data.endTime, {
+    path: ["endTime"],
+    message: "End time must be after start time",
+  })
+  .refine((data) => data.advanceFee <= data.consultationFee, {
+    path: ["advanceFee"],
+    message: "Advance must not exceed the total fee",
+  });
+
+export const getDoctorAvailabilities = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
+  const availability = await DoctorAvailability.find()
+    .populate("doctor", "name role")
+    .sort({ updatedAt: -1 });
+  res.json({ success: true, availability });
+};
+
+export const saveDoctorAvailability = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const parsed = doctorAvailabilitySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, errors: parsed.error.format() });
+    return;
+  }
+  const doctor = await User.findById(req.params.doctorId);
+  if (
+    !doctor ||
+    ![UserRole.DOCTOR, UserRole.RADIOLOGIST].includes(doctor.role)
+  ) {
+    res.status(404).json({ success: false, message: "Doctor not found" });
+    return;
+  }
+  const availability = await DoctorAvailability.findOneAndUpdate(
+    { doctor: doctor._id },
+    { ...parsed.data, doctor: doctor._id },
+    { upsert: true, new: true, runValidators: true },
+  );
+  getIO()
+    ?.to(`user:${doctor._id}`)
+    .emit("doctor_availability_updated", { doctorId: doctor._id });
+  emitAdminDataChanged(["schedule"], "doctor_availability_updated");
+  res.json({ success: true, availability });
+};
 
 export const createSchedule = async (
   req: Request,

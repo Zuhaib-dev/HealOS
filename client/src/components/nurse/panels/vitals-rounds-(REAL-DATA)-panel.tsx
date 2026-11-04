@@ -28,6 +28,7 @@ import {
   VitalsQueueItem,
 } from "@/lib/api/nurse";
 import { toast } from "sonner";
+import { formatTime12Hour, formatTimeRange } from "@/lib/time-format";
 
 export function VitalsRoundsPanel() {
   const [queue, setQueue] = useState<VitalsQueueItem[]>([]);
@@ -249,13 +250,22 @@ export function VitalsRoundsPanel() {
                               {p.name}
                             </h3>
                             <div className="flex items-center gap-2 mt-1">
+                              {item.appointment.queueNumber && (
+                                <span className="mono-label text-[10px] font-semibold text-primary px-2 py-0.5 bg-primary/10 rounded-full">
+                                  Queue #
+                                  {String(
+                                    item.appointment.queueNumber,
+                                  ).padStart(2, "0")}
+                                </span>
+                              )}
                               <span className="mono-label text-[10px] text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
-                                {new Date(
-                                  item.appointment.date,
-                                ).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                                {item.appointment.arrivalTime
+                                  ? `Arrive ${formatTime12Hour(item.appointment.arrivalTime)} · `
+                                  : ""}
+                                {formatTimeRange(
+                                  item.appointment.timeSlot,
+                                  item.appointment.slotEndTime,
+                                )}
                               </span>
                               <span className="text-muted-foreground/30">
                                 •

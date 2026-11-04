@@ -128,6 +128,9 @@ export interface AdminAppointmentData {
   doctor: { user: { name: string }; department: string };
   date: string;
   timeSlot: string;
+  queueNumber?: number;
+  slotEndTime?: string;
+  arrivalTime?: string;
   status: string;
   type: string;
 }
@@ -179,6 +182,21 @@ export async function updateScheduleApi(id: string, data: any) {
 export async function deleteScheduleApi(id: string) {
   const response = await apiClient.delete<{ success: boolean }>(
     `/admin/schedule/${id}`,
+  );
+  return response.data;
+}
+
+export async function fetchDoctorAvailabilitiesApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    availability: any[];
+  }>("/admin/doctor-availability");
+  return response.data;
+}
+export async function saveDoctorAvailabilityApi(doctorId: string, data: any) {
+  const response = await apiClient.put<{ success: boolean; availability: any }>(
+    `/admin/doctor-availability/${doctorId}`,
+    data,
   );
   return response.data;
 }

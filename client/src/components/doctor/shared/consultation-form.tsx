@@ -10,6 +10,7 @@ import { AppointmentRecord } from "@/lib/api/appointment";
 import { AnatomySelector } from "./anatomy-selector";
 import { TelemedicineWorkbench } from "../../video-call/telemedicine-workbench";
 import { Video } from "lucide-react";
+import { formatTimeRange } from "@/lib/time-format";
 
 export function ConsultationForm({
   appointment,
@@ -30,6 +31,10 @@ export function ConsultationForm({
   const [diagnosticOrders, setDiagnosticOrders] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{
+    chiefComplaint?: string;
+    diagnosis?: string;
+  }>({});
 
   // New Medicine Form
   const [newMed, setNewMed] = useState<IMedicine>({
@@ -85,6 +90,48 @@ export function ConsultationForm({
   };
 
   const handleSave = async () => {
+    const hasMedicineDraft = [
+      newMed.name,
+      newMed.dosage,
+      newMed.frequency,
+      newMed.duration,
+    ].some((value) => value.trim().length > 0);
+    const medicineDraftComplete = [
+      newMed.name,
+      newMed.dosage,
+      newMed.frequency,
+      newMed.duration,
+    ].every((value) => value.trim().length > 0);
+    if (hasMedicineDraft && !medicineDraftComplete) {
+      toast.error("Finish or clear the medicine details before completing.");
+      document.getElementById("new-med-name")?.focus();
+      return;
+    }
+    const prescriptionMedicines = hasMedicineDraft
+      ? [...medicines, { ...newMed }]
+      : medicines;
+
+    const errors = {
+      ...(chiefComplaint.trim().length < 3
+        ? { chiefComplaint: "Add the patient's chief complaint." }
+        : {}),
+      ...(diagnosis.trim().length < 2
+        ? { diagnosis: "Enter a diagnosis before completing this visit." }
+        : {}),
+    };
+    setValidationErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error(
+        "Add the chief complaint and diagnosis to complete this visit.",
+      );
+      document
+        .getElementById(
+          errors.chiefComplaint ? "chief-complaint" : "consultation-diagnosis",
+        )
+        ?.focus();
+      return;
+    }
+
     try {
       setSaving(true);
       const patId = appointment
@@ -105,7 +152,7 @@ export function ConsultationForm({
         diagnosis,
         advice,
         followUpDate,
-        medicines,
+        medicines: prescriptionMedicines,
         diagnosticOrders,
         status: "COMPLETED",
       });
@@ -132,17 +179,21 @@ export function ConsultationForm({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="fixed inset-0 bg-background z-100 flex flex-col overflow-y-auto w-full h-full"
+      className="fixed inset-0 z-100 flex h-dvh w-full flex-col overflow-y-auto bg-background"
     >
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/40 px-4 py-3 flex items-center justify-between shadow-sm">
-        <div>
-          <h2 className="font-semibold text-foreground text-lg">
+      <div className="sticky top-0 z-20 flex flex-col gap-3 border-b border-border/40 bg-background/95 px-3 py-3 shadow-sm backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="min-w-0">
+          <h2 className="truncate font-semibold text-foreground text-lg">
             Consultation: {displayPat?.name || "Unknown"}
           </h2>
           {appointment ? (
             <p className="mono-label text-muted-foreground text-xs">
-              {appointment.date} | {appointment.timeSlot} |{" "}
+              {appointment.date} |{" "}
+              {formatTimeRange(appointment.timeSlot, appointment.slotEndTime)} |{" "}
               {appointment.department}
+              {appointment.queueNumber
+                ? ` · Queue #${String(appointment.queueNumber).padStart(2, "0")}`
+                : ""}
             </p>
           ) : (
             <p className="mono-label text-muted-foreground text-xs">
@@ -150,7 +201,7 @@ export function ConsultationForm({
             </p>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
           {appointment?.type === "TELECONSULT" && !isVideoCallActive && (
             <ActionButton
               onClick={() => setIsVideoCallActive(true)}
@@ -159,13 +210,9 @@ export function ConsultationForm({
               <Video className="size-4" /> Start Video Call
             </ActionButton>
           )}
-          <ActionButton onClick={onBack}>Cancel</ActionButton>
-          <ActionButton tone="solid" onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save & Complete"}
-          </ActionButton>
         </div>
       </div>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-5xl w-full mx-auto space-y-8 pb-32">
+      <div className="mx-auto w-full max-w-6xl space-y-5 p-3 pb-36 sm:space-y-7 sm:p-6 sm:pb-36 lg:p-8">
         {/* Video Call Workspace */}
         {isVideoCallActive && appointment && (
           <div className="mb-8 w-full">
@@ -195,7 +242,7 @@ export function ConsultationForm({
                 htmlFor="chief-complaint"
                 className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3"
               >
-                Chief Complaint
+                Chief Complaint <span className="text-destructive">*</span>
               </label>
               <div className="flex flex-col xl:flex-row gap-4">
                 <div className="w-full xl:w-2/5 min-w-45 flex items-center justify-center">
@@ -212,29 +259,75 @@ export function ConsultationForm({
                   aria-label="Chief Complaint"
                   title="Chief Complaint"
                   value={chiefComplaint}
-                  onChange={(e) => setChiefComplaint(e.target.value)}
-                  className="w-full xl:w-3/5 bg-background border border-border/60 rounded-xl p-3 min-h-32 outline-none focus:border-primary/50 transition-colors resize-none"
+                  required
+                  aria-required="true"
+                  aria-invalid={Boolean(validationErrors.chiefComplaint)}
+                  aria-describedby={
+                    validationErrors.chiefComplaint
+                      ? "chief-complaint-error"
+                      : undefined
+                  }
+                  onChange={(e) => {
+                    setChiefComplaint(e.target.value);
+                    if (validationErrors.chiefComplaint)
+                      setValidationErrors((current) => ({
+                        ...current,
+                        chiefComplaint: undefined,
+                      }));
+                  }}
+                  className={`w-full resize-none rounded-xl border bg-background p-3 min-h-32 outline-none transition-colors focus:border-primary/50 xl:w-3/5 ${validationErrors.chiefComplaint ? "border-destructive" : "border-border/60"}`}
                   placeholder="Patient presents with... (Select anatomy areas to auto-tag)"
                 />
               </div>
+              {validationErrors.chiefComplaint && (
+                <p
+                  id="chief-complaint-error"
+                  className="mt-2 text-sm text-destructive"
+                  role="alert"
+                >
+                  {validationErrors.chiefComplaint}
+                </p>
+              )}
             </div>
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
               <label
                 htmlFor="consultation-diagnosis"
                 className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3"
               >
-                Diagnosis
+                Diagnosis <span className="text-destructive">*</span>
               </label>
               <input
                 id="consultation-diagnosis"
                 aria-label="Diagnosis"
                 title="Diagnosis"
                 type="text"
+                required
+                aria-required="true"
+                aria-invalid={Boolean(validationErrors.diagnosis)}
+                aria-describedby={
+                  validationErrors.diagnosis ? "diagnosis-error" : undefined
+                }
                 value={diagnosis}
-                onChange={(e) => setDiagnosis(e.target.value)}
-                className="w-full bg-background border border-border/60 rounded-xl p-3 outline-none focus:border-primary/50 transition-colors"
+                onChange={(e) => {
+                  setDiagnosis(e.target.value);
+                  if (validationErrors.diagnosis)
+                    setValidationErrors((current) => ({
+                      ...current,
+                      diagnosis: undefined,
+                    }));
+                }}
+                className={`w-full rounded-xl border bg-background p-3 outline-none transition-colors focus:border-primary/50 ${validationErrors.diagnosis ? "border-destructive" : "border-border/60"}`}
                 placeholder="e.g. Acute Viral Pharyngitis"
               />
+              {validationErrors.diagnosis && (
+                <p
+                  id="diagnosis-error"
+                  className="mt-2 text-sm text-destructive"
+                  role="alert"
+                >
+                  {validationErrors.diagnosis}
+                </p>
+              )}
             </div>
             <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
               <label
@@ -334,6 +427,8 @@ export function ConsultationForm({
                   aria-label="Drug Name"
                   title="Drug Name"
                   type="text"
+                  required
+                  aria-required="true"
                   placeholder="Drug Name (e.g. Paracetamol)"
                   value={newMed.name}
                   onChange={(e) =>
@@ -357,6 +452,8 @@ export function ConsultationForm({
                   aria-label="Dosage"
                   title="Dosage"
                   type="text"
+                  required
+                  aria-required="true"
                   placeholder="Dosage (e.g. 500mg)"
                   value={newMed.dosage}
                   onChange={(e) =>
@@ -368,6 +465,8 @@ export function ConsultationForm({
                   aria-label="Frequency"
                   title="Frequency"
                   type="text"
+                  required
+                  aria-required="true"
                   placeholder="Freq (e.g. 1-0-1)"
                   value={newMed.frequency}
                   onChange={(e) =>
@@ -379,6 +478,8 @@ export function ConsultationForm({
                   aria-label="Duration"
                   title="Duration"
                   type="text"
+                  required
+                  aria-required="true"
                   placeholder="Duration (e.g. 5 days)"
                   value={newMed.duration}
                   onChange={(e) =>
@@ -499,6 +600,26 @@ export function ConsultationForm({
             >
               + Add Diagnostic Order
             </button>
+          </div>
+        </div>
+      </div>
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/95 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
+          <p className="hidden text-xs text-muted-foreground sm:block">
+            Chief complaint and diagnosis are required to complete the visit.
+          </p>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <ActionButton onClick={onBack} disabled={saving}>
+              Cancel
+            </ActionButton>
+            <ActionButton
+              tone="solid"
+              onClick={handleSave}
+              disabled={saving}
+              className="whitespace-nowrap"
+            >
+              {saving ? "Saving…" : "Save & Complete"}
+            </ActionButton>
           </div>
         </div>
       </div>

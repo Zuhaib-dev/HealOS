@@ -135,7 +135,12 @@ export function MajorIncidentPanel() {
                 </p>
                 {incident?.armedAt && (
                   <p className="mono-label text-muted-foreground mt-1 text-xs">
-                    Activated: {new Date(incident.armedAt).toLocaleTimeString()}{" "}
+                    Activated:{" "}
+                    {new Date(incident.armedAt).toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}{" "}
                     by {incident.armedBy}
                   </p>
                 )}

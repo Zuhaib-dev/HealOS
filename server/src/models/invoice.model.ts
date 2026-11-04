@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export enum InvoiceStatus {
   PENDING = "PENDING",
   PAID = "PAID",
+  PARTIAL = "PARTIAL",
   CANCELLED = "CANCELLED",
 }
 
@@ -24,6 +25,7 @@ export interface IInvoice extends Document {
   appointment?: mongoose.Types.ObjectId; // Optional link to an appointment
   items: IInvoiceItem[];
   totalAmount: number;
+  paidAmount?: number;
   status: InvoiceStatus;
   paymentMethod?: InvoicePaymentMethod;
   payer: string; // "self", "insurance", "corporate"
@@ -48,6 +50,7 @@ const invoiceSchema = new Schema<IInvoice>(
       },
     ],
     totalAmount: { type: Number, required: true },
+    paidAmount: { type: Number, min: 0, default: 0 },
     status: {
       type: String,
       enum: Object.values(InvoiceStatus),

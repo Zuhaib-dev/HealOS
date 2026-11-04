@@ -1,7 +1,9 @@
 import apiClient from "../api-client";
 
 export interface CreateOrderPayload {
-  amount: number;
+  amount?: number;
+  doctorId?: string;
+  invoiceId?: string;
   receipt?: string;
 }
 

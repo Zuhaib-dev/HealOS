@@ -14,13 +14,12 @@ import {
   FileText,
   ChevronRight,
   ChevronLeft,
-  Star,
   Activity,
   BriefcaseMedical,
 } from "lucide-react";
-import { format } from "date-fns";
+import { addDays, format, isSameDay } from "date-fns";
+import { formatTime12Hour, formatTimeRange } from "@/lib/time-format";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -31,8 +30,10 @@ import {
 import {
   fetchAvailableDoctorsApi,
   bookAppointmentApi,
+  cancelAppointmentApi,
   DoctorListItem,
   AppointmentRecord,
+  fetchDoctorAvailabilityApi,
 } from "@/lib/api/appointment";
 import {
   createRazorpayOrderApi,
@@ -40,30 +41,10 @@ import {
 } from "@/lib/api/payment";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/use-auth-store";
+import { getSocket } from "@/lib/socket";
 import Image from "next/image";
 
-const departments = [
-  { id: "med", label: "General Medicine" },
-  { id: "cardio", label: "Cardiology" },
-  { id: "neuro", label: "Neurology" },
-  { id: "ortho", label: "Orthopedics" },
-  { id: "paed", label: "Pediatrics" },
-];
-
-const slotTimes = [
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-];
+const allDepartments = { id: "all", label: "All departments" };
 
 declare global {
   interface Window {
@@ -87,11 +68,25 @@ const loadRazorpayScript = () => {
 
 export function BookPanel() {
   const { user } = useAuthStore();
-  const [dept, setDept] = useState(departments[0]!);
+  const [dept, setDept] = useState(allDepartments);
   const [doctorsList, setDoctorsList] = useState<DoctorListItem[]>([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [time, setTime] = useState<string | null>(null);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [weekAvailability, setWeekAvailability] = useState<
+    Record<string, boolean>
+  >({});
+  const dateOptions = Array.from({ length: 7 }, (_, index) =>
+    addDays(new Date(), weekOffset * 7 + index),
+  );
+  const [availability, setAvailability] = useState<{
+    available: boolean;
+    slotsRemaining: number;
+    consultationFee?: number;
+    advanceFee?: number;
+    slotDurationMinutes?: number;
+  } | null>(null);
   const [mode, setMode] = useState<"IN_PERSON" | "TELECONSULT">("IN_PERSON");
   const [paymentMethod, setPaymentMethod] = useState<"ONLINE" | "CASH">(
     "ONLINE",
@@ -103,6 +98,88 @@ export function BookPanel() {
   );
 
   useEffect(() => {
+    if (!date || !selectedDoctorId) {
+      setAvailability(null);
+      return;
+    }
+    setAvailability(null);
+    fetchDoctorAvailabilityApi(selectedDoctorId, format(date, "yyyy-MM-dd"))
+      .then(setAvailability)
+      .catch(() => setAvailability({ available: false, slotsRemaining: 0 }));
+  }, [date, selectedDoctorId]);
+
+  useEffect(() => {
+    if (!selectedDoctorId) return;
+    let cancelled = false;
+    const dates = Array.from({ length: 7 }, (_, index) =>
+      addDays(new Date(), weekOffset * 7 + index),
+    );
+    Promise.all(
+      dates.map(async (day) => {
+        const key = format(day, "yyyy-MM-dd");
+        try {
+          const result = await fetchDoctorAvailabilityApi(
+            selectedDoctorId,
+            key,
+          );
+          return [key, result.available] as const;
+        } catch {
+          return [key, false] as const;
+        }
+      }),
+    ).then((entries) => {
+      if (!cancelled) setWeekAvailability(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDoctorId, weekOffset]);
+
+  useEffect(() => {
+    const socket = getSocket();
+    const refresh = (event: { doctorId?: string }) => {
+      if (
+        date &&
+        selectedDoctorId &&
+        (!event?.doctorId || event.doctorId === selectedDoctorId)
+      ) {
+        fetchDoctorAvailabilityApi(selectedDoctorId, format(date, "yyyy-MM-dd"))
+          .then(setAvailability)
+          .catch(() => {});
+        const visibleDates = Array.from({ length: 7 }, (_, index) =>
+          addDays(new Date(), weekOffset * 7 + index),
+        );
+        Promise.all(
+          visibleDates.map(async (day) => {
+            const key = format(day, "yyyy-MM-dd");
+            try {
+              const result = await fetchDoctorAvailabilityApi(
+                selectedDoctorId,
+                key,
+              );
+              return [key, result.available] as const;
+            } catch {
+              return [key, false] as const;
+            }
+          }),
+        ).then((entries) => setWeekAvailability(Object.fromEntries(entries)));
+      }
+    };
+    socket.on("appointment_created", refresh);
+    socket.on("appointment_updated", refresh);
+    socket.on("appointment_slot_reserved", refresh);
+    socket.on("appointment_slot_released", refresh);
+    socket.on("doctor_availability_updated", refresh);
+    return () => {
+      socket.off("appointment_created", refresh);
+      socket.off("appointment_updated", refresh);
+      socket.off("appointment_slot_reserved", refresh);
+      socket.off("appointment_slot_released", refresh);
+      socket.off("doctor_availability_updated", refresh);
+    };
+  }, [date, selectedDoctorId, weekOffset]);
+
+  useEffect(() => {
     const loadDoctors = async () => {
       try {
         const res = await fetchAvailableDoctorsApi();
@@ -111,6 +188,8 @@ export function BookPanel() {
         }
       } catch (err) {
         console.error("Failed to load available doctors", err);
+      } finally {
+        setDoctorsLoading(false);
       }
     };
     loadDoctors();
@@ -118,11 +197,26 @@ export function BookPanel() {
   }, []);
 
   const filteredDoctors = doctorsList.filter(
-    (d) =>
-      !dept ||
-      d.specialization === dept.label ||
-      dept.label === "General Medicine",
+    (doctor) =>
+      doctor.role === "DOCTOR" &&
+      (dept.id === "all" ||
+        doctor.specialization.trim().toLowerCase() ===
+          dept.label.trim().toLowerCase()),
   );
+  const departments = [
+    allDepartments,
+    ...Array.from(
+      new Set(
+        doctorsList
+          .filter((doctor) => doctor.role === "DOCTOR")
+          .map((doctor) => doctor.specialization.trim())
+          .filter(Boolean),
+      ),
+    ).map((label) => ({
+      id: label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      label,
+    })),
+  ];
 
   // Auto-select first doctor when department changes
   useEffect(() => {
@@ -135,9 +229,14 @@ export function BookPanel() {
   }, [dept, filteredDoctors, selectedDoctorId]);
 
   const handleBook = async () => {
-    if (!date || !time || !selectedDoctorId || !reason) {
+    if (
+      !date ||
+      !availability?.available ||
+      !selectedDoctorId ||
+      reason.trim().length < 3
+    ) {
       toast.error(
-        "Please fill all required fields (Date, Time, Doctor, Reason).",
+        "Choose an available date and doctor, and enter a visit reason with at least 3 characters.",
       );
       return;
     }
@@ -145,11 +244,37 @@ export function BookPanel() {
     setSubmitting(true);
     try {
       if (paymentMethod === "ONLINE") {
+        const razorpayReady = await loadRazorpayScript();
+        if (!razorpayReady) throw new Error("Payment checkout could not load.");
+
+        // Reserve a unique appointment window before taking payment.
+        const reservation = await bookAppointmentApi({
+          doctorId: selectedDoctorId,
+          date: format(date, "yyyy-MM-dd"),
+          reason: reason.trim(),
+          type: mode,
+          paymentMethod,
+        });
+        if (!reservation.success || !reservation.appointment)
+          throw new Error("Could not reserve an appointment slot.");
+
         // 1. Create Razorpay Order
-        const orderRes = await createRazorpayOrderApi({ amount: 400 });
-        if (!orderRes.success) throw new Error("Failed to create order");
+        let orderRes;
+        try {
+          orderRes = await createRazorpayOrderApi({
+            amount: availability.advanceFee || 20,
+            doctorId: selectedDoctorId,
+          });
+          if (!orderRes.success) throw new Error("Failed to create order");
+        } catch (error) {
+          await cancelAppointmentApi(reservation.appointment._id).catch(
+            () => {},
+          );
+          throw error;
+        }
 
         // 2. Open Razorpay Checkout
+        let paymentCaptured = false;
         const options = {
           key:
             process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
@@ -157,33 +282,31 @@ export function BookPanel() {
           amount: orderRes.order.amount,
           currency: "INR",
           name: "HealOS",
-          description: "Consultation Fee",
+          description: `Appointment advance (total ₹${availability.consultationFee})`,
           order_id: orderRes.order.id,
           handler: async function (response: any) {
+            paymentCaptured = true;
             try {
-              // 3. Book Appointment after payment
-              const res = await bookAppointmentApi({
-                doctorId: selectedDoctorId,
-                department: dept.label,
-                date: format(date, "yyyy-MM-dd"),
-                timeSlot: time,
-                reason,
-                type: mode,
-                paymentMethod,
+              // 3. Verify payment and confirm the reserved appointment.
+              await verifyRazorpayPaymentApi({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                appointmentId: reservation.appointment._id,
               });
 
-              if (res.success && res.appointment) {
-                // 4. Verify Payment
-                await verifyRazorpayPaymentApi({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  appointmentId: res.appointment._id,
-                });
-
-                toast.success("Payment successful & Appointment booked!");
-                setBookedRecord(res.appointment);
-              }
+              toast.success("Advance paid — your appointment is confirmed!");
+              setBookedRecord({
+                ...reservation.appointment,
+                status: "CONFIRMED",
+                paymentStatus:
+                  (availability.advanceFee || 20) >=
+                  (availability.consultationFee ||
+                    reservation.appointment.amount)
+                    ? "PAID"
+                    : "PENDING_CASH",
+                paidAmount: availability.advanceFee || 20,
+              });
             } catch (err: any) {
               toast.error(
                 err.response?.data?.message ||
@@ -193,6 +316,15 @@ export function BookPanel() {
               setSubmitting(false);
             }
           },
+          modal: {
+            ondismiss: async () => {
+              if (!paymentCaptured)
+                await cancelAppointmentApi(reservation.appointment._id).catch(
+                  () => {},
+                );
+              setSubmitting(false);
+            },
+          },
           prefill: {
             name: user?.name,
             email: user?.email,
@@ -201,20 +333,28 @@ export function BookPanel() {
             color: "#10b981", // Emerald 500
           },
         };
-        const rzp = new window.Razorpay(options);
-        rzp.on("payment.failed", function (response: any) {
-          toast.error("Payment failed. Please try again.");
-          setSubmitting(false);
-        });
-        rzp.open();
+        try {
+          const rzp = new window.Razorpay(options);
+          rzp.on("payment.failed", function () {
+            toast.error("Payment failed. Please try again.");
+            void cancelAppointmentApi(reservation.appointment._id).catch(
+              () => {},
+            );
+            setSubmitting(false);
+          });
+          rzp.open();
+        } catch (error) {
+          await cancelAppointmentApi(reservation.appointment._id).catch(
+            () => {},
+          );
+          throw error;
+        }
       } else {
         // CASH Booking
         const res = await bookAppointmentApi({
           doctorId: selectedDoctorId,
-          department: dept.label,
           date: format(date, "yyyy-MM-dd"),
-          timeSlot: time,
-          reason,
+          reason: reason.trim(),
           type: mode,
           paymentMethod,
         });
@@ -264,12 +404,48 @@ export function BookPanel() {
                     </strong>{" "}
                     has been scheduled for{" "}
                     <strong className="text-foreground">
-                      {bookedRecord.date}
+                      {format(
+                        new Date(`${bookedRecord.date}T12:00:00`),
+                        "EEEE, MMMM d, yyyy",
+                      )}
                     </strong>{" "}
                     at{" "}
                     <strong className="text-foreground">
-                      {bookedRecord.timeSlot}
+                      arrive by{" "}
+                      {formatTime12Hour(
+                        bookedRecord.arrivalTime || bookedRecord.timeSlot,
+                      )}
+                      . Your appointment is{" "}
+                      {formatTimeRange(
+                        bookedRecord.timeSlot,
+                        bookedRecord.slotEndTime,
+                      )}
                     </strong>
+                    .
+                  </p>
+                  {bookedRecord.queueNumber && (
+                    <div className="mt-4 inline-flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Queue number
+                      </span>
+                      <span className="font-mono text-2xl font-bold text-primary">
+                        {String(bookedRecord.queueNumber).padStart(2, "0")}
+                      </span>
+                    </div>
+                  )}
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Advance paid: ₹
+                    {bookedRecord.advanceAmount ??
+                      availability?.advanceFee ??
+                      20}
+                    . Balance due at the clinic: ₹
+                    {Math.max(
+                      0,
+                      bookedRecord.amount -
+                        (bookedRecord.advanceAmount ??
+                          availability?.advanceFee ??
+                          20),
+                    )}
                     .
                   </p>
                   <div className="mt-4 inline-flex gap-2 items-center text-xs font-mono bg-background/50 px-3 py-1.5 rounded border border-border/50">
@@ -286,7 +462,6 @@ export function BookPanel() {
                       tone="solid"
                       onClick={() => {
                         setBookedRecord(null);
-                        setTime(null);
                         setReason("");
                       }}
                     >
@@ -343,7 +518,9 @@ export function BookPanel() {
             {filteredDoctors.length === 0 ? (
               <div className="p-8 text-center border border-dashed rounded-xl border-border/60">
                 <p className="text-muted-foreground text-sm">
-                  No clinicians available for {dept.label} right now.
+                  {doctorsLoading
+                    ? "Loading verified clinicians and their schedules…"
+                    : `No verified clinicians with an active schedule are available for ${dept.label}.`}
                 </p>
               </div>
             ) : (
@@ -379,12 +556,10 @@ export function BookPanel() {
                         <h3
                           className={`font-bold truncate text-sm ${selectedDoctorId === doc._id ? "text-primary" : "text-foreground"}`}
                         >
-                          Dr. {doc.name}
+                          {/^dr\.?\s/i.test(doc.name)
+                            ? doc.name
+                            : `Dr. ${doc.name}`}
                         </h3>
-                        <div className="flex items-center gap-0.5 text-amber-500">
-                          <Star className="size-3 fill-amber-500" />
-                          <span className="text-[10px] font-bold">4.9</span>
-                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
                         {doc.specialization}
@@ -392,10 +567,13 @@ export function BookPanel() {
                       <div className="flex items-center gap-3 mt-2 text-[11px] font-mono text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Clock className="size-3" />{" "}
-                          {doc.degree ? "10+ Yrs" : "8 Yrs"}
+                          {doc.experienceYears
+                            ? `${doc.experienceYears} Yrs`
+                            : "Experience not listed"}
                         </span>
                         <span className="flex items-center gap-1">
-                          <CreditCard className="size-3" /> ₹400
+                          <CreditCard className="size-3" /> ₹
+                          {doc.consultationFee ?? "—"}
                         </span>
                       </div>
                     </div>
@@ -457,7 +635,7 @@ export function BookPanel() {
                       Payment Method
                     </label>
                     <div className="grid grid-cols-2 gap-3">
-                      {(["ONLINE", "CASH"] as const).map((p) => (
+                      {(["ONLINE"] as const).map((p) => (
                         <button
                           key={p}
                           type="button"
@@ -478,7 +656,8 @@ export function BookPanel() {
                                 : "text-muted-foreground font-mono text-[10px]"
                             }
                           >
-                            ₹400
+                            Advance ₹{availability?.advanceFee ?? "—"} · Total ₹
+                            {availability?.consultationFee ?? "—"}
                           </span>
                         </button>
                       ))}
@@ -499,43 +678,102 @@ export function BookPanel() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border/40">
-                    {/* Calendar Widget */}
-                    <div className="p-6 flex flex-col items-center sm:items-start">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 block w-full text-center sm:text-left">
-                        Select Date
-                      </label>
-                      <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={setDate}
-                        disabled={(d) =>
-                          d < new Date(new Date().setHours(0, 0, 0, 0))
-                        }
-                        className="rounded-xl border shadow-sm mx-auto sm:mx-0 p-3 bg-card"
-                      />
+                    {/* Compact weekday strip */}
+                    <div className="p-5 sm:p-6">
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Choose a day
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Only dates with open appointments can be selected.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            aria-label="Previous week"
+                            disabled={weekOffset === 0}
+                            onClick={() =>
+                              setWeekOffset((value) => Math.max(0, value - 1))
+                            }
+                            className="rounded-md p-2 text-muted-foreground hover:bg-muted disabled:opacity-30"
+                          >
+                            <ChevronLeft className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Next week"
+                            onClick={() => setWeekOffset((value) => value + 1)}
+                            className="rounded-md p-2 text-muted-foreground hover:bg-muted"
+                          >
+                            <ChevronRight className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                        {dateOptions.map((day) => {
+                          const selected = Boolean(
+                            date && isSameDay(day, date),
+                          );
+                          const key = format(day, "yyyy-MM-dd");
+                          const dayOpen = weekAvailability[key];
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              disabled={dayOpen === false}
+                              onClick={() => setDate(day)}
+                              className={`flex min-w-0 flex-col items-center gap-2 rounded-xl border px-1 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border/60 bg-background hover:border-primary/50 hover:bg-muted/50"}`}
+                            >
+                              <span
+                                className={`text-[10px] font-semibold uppercase sm:text-xs ${selected ? "text-primary-foreground/75" : "text-muted-foreground"}`}
+                              >
+                                {format(day, "EEEEE")}
+                              </span>
+                              <span className="font-mono text-sm font-bold sm:text-base">
+                                {format(day, "d")}
+                              </span>
+                              <span
+                                className={`size-1.5 rounded-full ${dayOpen === undefined ? "bg-muted-foreground/30" : dayOpen ? (selected ? "bg-primary-foreground" : "bg-emerald-500") : "bg-transparent"}`}
+                                aria-hidden="true"
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="mt-3 text-center text-xs text-muted-foreground">
+                        {date ? format(date, "EEEE, MMMM d") : "Select a day"}
+                      </p>
                     </div>
 
                     {/* Time Slots & Reason */}
                     <div className="p-6 flex flex-col h-full">
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                         <Clock className="size-3.5" />
-                        Select Time Slot
+                        Automatic appointment slot
                       </label>
-                      <div className="grid grid-cols-3 gap-2 mb-6">
-                        {slotTimes.map((t) => (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => setTime(t)}
-                            className={`font-mono text-[11px] px-2 py-2.5 rounded-lg border transition-all ${
-                              time === t
-                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                : "bg-background text-foreground hover:bg-muted border-border/70 hover:border-primary/40"
-                            }`}
-                          >
-                            {t}
-                          </button>
-                        ))}
+                      <div className="mb-6 rounded-lg border border-border/70 bg-muted/30 p-4 text-sm">
+                        {!availability ? (
+                          "Checking this doctor's schedule…"
+                        ) : availability.available ? (
+                          <>
+                            <strong>
+                              Appointment time assigned after booking
+                            </strong>
+                            <p className="mt-1 text-muted-foreground">
+                              {availability.slotsRemaining} appointment
+                              {availability.slotsRemaining === 1
+                                ? ""
+                                : "s"}{" "}
+                              remain for this day. Pay the advance to reserve
+                              your unique queue number and assigned visit time.
+                              We’ll show both after payment.
+                            </p>
+                          </>
+                        ) : (
+                          "This doctor has no remaining slots on this date. Choose another day."
+                        )}
                       </div>
 
                       <label
@@ -572,7 +810,6 @@ export function BookPanel() {
                         </p>
                         <p className="text-sm font-medium truncate text-foreground mt-0.5">
                           {date ? format(date, "MMM do") : "No Date"}{" "}
-                          {time ? `at ${time}` : ""}
                           <span className="text-muted-foreground mx-1.5">
                             •
                           </span>
@@ -586,7 +823,7 @@ export function BookPanel() {
                     <button
                       type="button"
                       disabled={
-                        !time ||
+                        !availability?.available ||
                         !date ||
                         !selectedDoctorId ||
                         !reason ||
@@ -594,7 +831,7 @@ export function BookPanel() {
                       }
                       onClick={handleBook}
                       className={`shrink-0 w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 ${
-                        time &&
+                        availability?.available &&
                         date &&
                         reason &&
                         selectedDoctorId &&

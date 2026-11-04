@@ -6,6 +6,9 @@ export interface VitalsQueueItem {
     department: string;
     date: string;
     timeSlot: string;
+    queueNumber?: number;
+    slotEndTime?: string;
+    arrivalTime?: string;
     reason: string;
     status: string;
     patient: {

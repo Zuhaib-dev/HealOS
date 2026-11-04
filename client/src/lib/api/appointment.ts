@@ -15,6 +15,8 @@ export interface DoctorListItem {
   role: string;
   specialization: string;
   degree: string;
+  experienceYears?: number;
+  consultationFee?: number;
 }
 
 export interface AppointmentRecord {
@@ -37,12 +39,17 @@ export interface AppointmentRecord {
   department: string;
   date: string;
   timeSlot: string;
+  queueNumber?: number;
+  arrivalTime?: string;
+  slotEndTime?: string;
   reason: string;
   type: AppointmentType;
   status: AppointmentStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   amount: number;
+  advanceAmount?: number;
+  paidAmount?: number;
   bookedAt: string;
   notes?: string;
   createdAt: string;
@@ -50,12 +57,26 @@ export interface AppointmentRecord {
 
 export interface BookAppointmentPayload {
   doctorId: string;
-  department: string;
+  department?: string;
   date: string;
-  timeSlot: string;
   reason: string;
   type?: AppointmentType;
   paymentMethod?: PaymentMethod;
+}
+
+export async function fetchDoctorAvailabilityApi(
+  doctorId: string,
+  date: string,
+) {
+  const response = await apiClient.get<{
+    success: boolean;
+    available: boolean;
+    slotsRemaining: number;
+    consultationFee?: number;
+    advanceFee?: number;
+    slotDurationMinutes?: number;
+  }>(`/appointments/availability?doctorId=${doctorId}&date=${date}`);
+  return response.data;
 }
 
 export const fetchAvailableDoctorsApi = async () => {
@@ -87,7 +108,20 @@ export const fetchPatientAppointmentsApi = async () => {
 export const fetchDoctorAppointmentsApi = async (
   page: number = 1,
   limit: number = 10,
+  filters: {
+    search?: string;
+    status?: string;
+    period?: string;
+    department?: string;
+  } = {},
 ) => {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value && value !== "ALL") params.set(key, value);
+  });
   const response = await apiClient.get<{
     success: boolean;
     count: number;
@@ -95,7 +129,7 @@ export const fetchDoctorAppointmentsApi = async (
     totalPages: number;
     currentPage: number;
     appointments: AppointmentRecord[];
-  }>(`/appointments/doctor?page=${page}&limit=${limit}`);
+  }>(`/appointments/doctor?${params.toString()}`);
   return response.data;
 };
 

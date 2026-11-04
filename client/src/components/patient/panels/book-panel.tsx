@@ -18,9 +18,8 @@ import {
   Activity,
   BriefcaseMedical,
 } from "lucide-react";
-import { format } from "date-fns";
+import { addDays, format, isSameDay } from "date-fns";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -78,6 +77,13 @@ export function BookPanel() {
   const [doctorsList, setDoctorsList] = useState<DoctorListItem[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [weekAvailability, setWeekAvailability] = useState<
+    Record<string, boolean>
+  >({});
+  const dateOptions = Array.from({ length: 7 }, (_, index) =>
+    addDays(new Date(), weekOffset * 7 + index),
+  );
   const [availability, setAvailability] = useState<{
     available: boolean;
     nextSlot?: string;
@@ -108,6 +114,33 @@ export function BookPanel() {
   }, [date, selectedDoctorId]);
 
   useEffect(() => {
+    if (!selectedDoctorId) return;
+    let cancelled = false;
+    const dates = Array.from({ length: 7 }, (_, index) =>
+      addDays(new Date(), weekOffset * 7 + index),
+    );
+    Promise.all(
+      dates.map(async (day) => {
+        const key = format(day, "yyyy-MM-dd");
+        try {
+          const result = await fetchDoctorAvailabilityApi(
+            selectedDoctorId,
+            key,
+          );
+          return [key, result.available] as const;
+        } catch {
+          return [key, false] as const;
+        }
+      }),
+    ).then((entries) => {
+      if (!cancelled) setWeekAvailability(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDoctorId, weekOffset]);
+
+  useEffect(() => {
     const socket = getSocket();
     const refresh = (event: { doctorId?: string }) => {
       if (
@@ -118,15 +151,34 @@ export function BookPanel() {
         fetchDoctorAvailabilityApi(selectedDoctorId, format(date, "yyyy-MM-dd"))
           .then(setAvailability)
           .catch(() => {});
+        const visibleDates = Array.from({ length: 7 }, (_, index) =>
+          addDays(new Date(), weekOffset * 7 + index),
+        );
+        Promise.all(
+          visibleDates.map(async (day) => {
+            const key = format(day, "yyyy-MM-dd");
+            try {
+              const result = await fetchDoctorAvailabilityApi(
+                selectedDoctorId,
+                key,
+              );
+              return [key, result.available] as const;
+            } catch {
+              return [key, false] as const;
+            }
+          }),
+        ).then((entries) => setWeekAvailability(Object.fromEntries(entries)));
       }
     };
     socket.on("appointment_created", refresh);
     socket.on("appointment_updated", refresh);
+    socket.on("doctor_availability_updated", refresh);
     return () => {
       socket.off("appointment_created", refresh);
       socket.off("appointment_updated", refresh);
+      socket.off("doctor_availability_updated", refresh);
     };
-  }, [date, selectedDoctorId]);
+  }, [date, selectedDoctorId, weekOffset]);
 
   useEffect(() => {
     const loadDoctors = async () => {
@@ -548,20 +600,73 @@ export function BookPanel() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border/40">
-                    {/* Calendar Widget */}
-                    <div className="p-6 flex flex-col items-center sm:items-start">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 block w-full text-center sm:text-left">
-                        Select Date
-                      </label>
-                      <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={setDate}
-                        disabled={(d) =>
-                          d < new Date(new Date().setHours(0, 0, 0, 0))
-                        }
-                        className="rounded-xl border shadow-sm mx-auto sm:mx-0 p-3 bg-card"
-                      />
+                    {/* Compact weekday strip */}
+                    <div className="p-5 sm:p-6">
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Choose a day
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Only dates with open appointments can be selected.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            aria-label="Previous week"
+                            disabled={weekOffset === 0}
+                            onClick={() =>
+                              setWeekOffset((value) => Math.max(0, value - 1))
+                            }
+                            className="rounded-md p-2 text-muted-foreground hover:bg-muted disabled:opacity-30"
+                          >
+                            <ChevronLeft className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Next week"
+                            onClick={() => setWeekOffset((value) => value + 1)}
+                            className="rounded-md p-2 text-muted-foreground hover:bg-muted"
+                          >
+                            <ChevronRight className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                        {dateOptions.map((day) => {
+                          const selected = Boolean(
+                            date && isSameDay(day, date),
+                          );
+                          const key = format(day, "yyyy-MM-dd");
+                          const dayOpen = weekAvailability[key];
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              disabled={dayOpen === false}
+                              onClick={() => setDate(day)}
+                              className={`flex min-w-0 flex-col items-center gap-2 rounded-xl border px-1 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border/60 bg-background hover:border-primary/50 hover:bg-muted/50"}`}
+                            >
+                              <span
+                                className={`text-[10px] font-semibold uppercase sm:text-xs ${selected ? "text-primary-foreground/75" : "text-muted-foreground"}`}
+                              >
+                                {format(day, "EEEEE")}
+                              </span>
+                              <span className="font-mono text-sm font-bold sm:text-base">
+                                {format(day, "d")}
+                              </span>
+                              <span
+                                className={`size-1.5 rounded-full ${dayOpen === undefined ? "bg-muted-foreground/30" : dayOpen ? (selected ? "bg-primary-foreground" : "bg-emerald-500") : "bg-transparent"}`}
+                                aria-hidden="true"
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="mt-3 text-center text-xs text-muted-foreground">
+                        {date ? format(date, "EEEE, MMMM d") : "Select a day"}
+                      </p>
                     </div>
 
                     {/* Time Slots & Reason */}

@@ -9,6 +9,7 @@ import {
   ClinicalNote,
   Handover,
   Schedule,
+  DoctorAvailability,
 } from "../models/index.js";
 import { AppError } from "../middleware/error-handler.js";
 import ImageKit from "imagekit";
@@ -588,7 +589,23 @@ export const getSchedule = async (req: Request, res: Response) => {
     const schedule = await Schedule.find({ user: doctorId })
       .sort({ date: 1, startTime: 1 })
       .lean();
-    res.status(200).json({ status: "success", data: { schedule } });
+    const today = new Date().toISOString().slice(0, 10);
+    const [availability, appointments] = await Promise.all([
+      DoctorAvailability.findOne({ doctor: doctorId }).lean(),
+      Appointment.find({
+        doctor: doctorId,
+        date: { $gte: today },
+        status: { $ne: "CANCELLED" },
+      })
+        .populate("patient", "name")
+        .sort({ date: 1, timeSlot: 1 })
+        .limit(100)
+        .lean(),
+    ]);
+    res.status(200).json({
+      status: "success",
+      data: { schedule, availability, appointments },
+    });
   } catch (error) {
     res
       .status(500)

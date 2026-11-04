@@ -4,7 +4,7 @@ import { User, UserRole } from "../models/user.model.js";
 import { PatientProfile } from "../models/patient-profile.model.js";
 import { ProfessionalProfile } from "../models/professional-profile.model.js";
 import { Appointment } from "../models/appointment.model.js";
-import { emitAdminDataChanged, emitUserRoleUpdated } from "../socket.js";
+import { emitAdminDataChanged, emitUserRoleUpdated, getIO } from "../socket.js";
 import { logAudit } from "../utils/audit.js";
 import { z } from "zod";
 import { DoctorAvailability } from "../models/doctor-availability.model.js";
@@ -517,6 +517,9 @@ export const saveDoctorAvailability = async (
     { ...parsed.data, doctor: doctor._id },
     { upsert: true, new: true, runValidators: true },
   );
+  getIO()
+    ?.to(`user:${doctor._id}`)
+    .emit("doctor_availability_updated", { doctorId: doctor._id });
   emitAdminDataChanged(["schedule"], "doctor_availability_updated");
   res.json({ success: true, availability });
 };

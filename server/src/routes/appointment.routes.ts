@@ -6,6 +6,7 @@ import {
   updateAppointmentStatus,
   getAvailableDoctors,
   cancelAppointmentByPatient,
+  getDoctorAvailability,
 } from "../controllers/appointment.controller";
 import { verifyToken, requireRole } from "../middleware/auth.middleware";
 import { UserRole } from "../models";
@@ -14,6 +15,7 @@ const router = Router();
 
 // Public / Authenticated Doctor List for selection
 router.get("/doctors-list", verifyToken, getAvailableDoctors);
+router.get("/availability", verifyToken, getDoctorAvailability);
 
 // Patient routes
 router.post("/book", verifyToken, bookAppointment);

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Razorpay from "razorpay";
 import crypto from "crypto";
-import { Appointment, Invoice } from "../models/index.js";
+import { Appointment, Invoice, DoctorAvailability } from "../models/index.js";
 import { AppError } from "../middleware/error-handler.js";
 import { getIO } from "../socket.js";
 
@@ -12,10 +12,23 @@ const razorpay = new Razorpay({
 
 export const createRazorpayOrder = async (req: Request, res: Response) => {
   try {
-    const { amount, receipt } = req.body; // Amount should be in INR
+    const { amount, receipt, doctorId } = req.body; // Amount should be in INR
 
     if (!amount) {
       throw new AppError("Amount is required", 400);
+    }
+
+    if (doctorId) {
+      const availability = await DoctorAvailability.findOne({
+        doctor: doctorId,
+        active: true,
+      }).select("advanceFee");
+      if (!availability || availability.advanceFee !== Number(amount)) {
+        throw new AppError(
+          "Advance amount does not match the doctor's current booking fee",
+          400,
+        );
+      }
     }
 
     const options = {
@@ -68,13 +81,33 @@ export const verifyPayment = async (req: Request, res: Response) => {
 
     // Update Appointment
     if (appointmentId) {
-      const appointment = await Appointment.findById(appointmentId);
+      const appointment = await Appointment.findOne({
+        _id: appointmentId,
+        patient: req.user?._id,
+      });
       if (appointment) {
-        appointment.paymentStatus = "PAID" as any;
+        appointment.paidAmount =
+          appointment.advanceAmount || appointment.amount;
+        appointment.paymentStatus =
+          appointment.paidAmount >= appointment.amount
+            ? ("PAID" as any)
+            : ("PENDING_CASH" as any);
         appointment.razorpayOrderId = razorpay_order_id;
         appointment.razorpayPaymentId = razorpay_payment_id;
         appointment.razorpaySignature = razorpay_signature;
         await appointment.save();
+        const invoice = await Invoice.findOne({ appointment: appointment._id });
+        if (invoice) {
+          invoice.status =
+            appointment.paidAmount >= invoice.totalAmount
+              ? ("PAID" as any)
+              : ("PARTIAL" as any);
+          invoice.paidAt = new Date();
+          invoice.razorpayOrderId = razorpay_order_id;
+          invoice.razorpayPaymentId = razorpay_payment_id;
+          invoice.razorpaySignature = razorpay_signature;
+          await invoice.save();
+        }
       }
     }
 

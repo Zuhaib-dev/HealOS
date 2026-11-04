@@ -37,12 +37,15 @@ export interface AppointmentRecord {
   department: string;
   date: string;
   timeSlot: string;
+  arrivalTime?: string;
   reason: string;
   type: AppointmentType;
   status: AppointmentStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   amount: number;
+  advanceAmount?: number;
+  paidAmount?: number;
   bookedAt: string;
   notes?: string;
   createdAt: string;
@@ -52,10 +55,25 @@ export interface BookAppointmentPayload {
   doctorId: string;
   department: string;
   date: string;
-  timeSlot: string;
   reason: string;
   type?: AppointmentType;
   paymentMethod?: PaymentMethod;
+}
+
+export async function fetchDoctorAvailabilityApi(
+  doctorId: string,
+  date: string,
+) {
+  const response = await apiClient.get<{
+    success: boolean;
+    available: boolean;
+    nextSlot?: string;
+    slotsRemaining: number;
+    consultationFee?: number;
+    advanceFee?: number;
+    slotDurationMinutes?: number;
+  }>(`/appointments/availability?doctorId=${doctorId}&date=${date}`);
+  return response.data;
 }
 
 export const fetchAvailableDoctorsApi = async () => {

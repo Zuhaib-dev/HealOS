@@ -37,6 +37,9 @@ export interface IAppointment extends Document {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   amount: number;
+  advanceAmount?: number;
+  paidAmount?: number;
+  arrivalTime?: string;
   bookedAt: Date;
   notes?: string;
   razorpayOrderId?: string;
@@ -77,6 +80,9 @@ const appointmentSchema = new Schema<IAppointment>(
       default: PaymentStatus.PENDING_CASH,
     },
     amount: { type: Number, required: true, default: 400 },
+    advanceAmount: { type: Number, default: 20 },
+    paidAmount: { type: Number, default: 0 },
+    arrivalTime: { type: String },
     bookedAt: { type: Date, default: Date.now },
     notes: { type: String },
     razorpayOrderId: { type: String },

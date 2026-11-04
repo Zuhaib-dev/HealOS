@@ -33,6 +33,7 @@ import {
   bookAppointmentApi,
   DoctorListItem,
   AppointmentRecord,
+  fetchDoctorAvailabilityApi,
 } from "@/lib/api/appointment";
 import {
   createRazorpayOrderApi,
@@ -40,6 +41,7 @@ import {
 } from "@/lib/api/payment";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/use-auth-store";
+import { getSocket } from "@/lib/socket";
 import Image from "next/image";
 
 const departments = [
@@ -48,21 +50,6 @@ const departments = [
   { id: "neuro", label: "Neurology" },
   { id: "ortho", label: "Orthopedics" },
   { id: "paed", label: "Pediatrics" },
-];
-
-const slotTimes = [
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
 ];
 
 declare global {
@@ -91,7 +78,14 @@ export function BookPanel() {
   const [doctorsList, setDoctorsList] = useState<DoctorListItem[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [time, setTime] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<{
+    available: boolean;
+    nextSlot?: string;
+    slotsRemaining: number;
+    consultationFee?: number;
+    advanceFee?: number;
+    slotDurationMinutes?: number;
+  } | null>(null);
   const [mode, setMode] = useState<"IN_PERSON" | "TELECONSULT">("IN_PERSON");
   const [paymentMethod, setPaymentMethod] = useState<"ONLINE" | "CASH">(
     "ONLINE",
@@ -101,6 +95,38 @@ export function BookPanel() {
   const [bookedRecord, setBookedRecord] = useState<AppointmentRecord | null>(
     null,
   );
+
+  useEffect(() => {
+    if (!date || !selectedDoctorId) {
+      setAvailability(null);
+      return;
+    }
+    setAvailability(null);
+    fetchDoctorAvailabilityApi(selectedDoctorId, format(date, "yyyy-MM-dd"))
+      .then(setAvailability)
+      .catch(() => setAvailability({ available: false, slotsRemaining: 0 }));
+  }, [date, selectedDoctorId]);
+
+  useEffect(() => {
+    const socket = getSocket();
+    const refresh = (event: { doctorId?: string }) => {
+      if (
+        date &&
+        selectedDoctorId &&
+        (!event?.doctorId || event.doctorId === selectedDoctorId)
+      ) {
+        fetchDoctorAvailabilityApi(selectedDoctorId, format(date, "yyyy-MM-dd"))
+          .then(setAvailability)
+          .catch(() => {});
+      }
+    };
+    socket.on("appointment_created", refresh);
+    socket.on("appointment_updated", refresh);
+    return () => {
+      socket.off("appointment_created", refresh);
+      socket.off("appointment_updated", refresh);
+    };
+  }, [date, selectedDoctorId]);
 
   useEffect(() => {
     const loadDoctors = async () => {
@@ -135,9 +161,9 @@ export function BookPanel() {
   }, [dept, filteredDoctors, selectedDoctorId]);
 
   const handleBook = async () => {
-    if (!date || !time || !selectedDoctorId || !reason) {
+    if (!date || !availability?.available || !selectedDoctorId || !reason) {
       toast.error(
-        "Please fill all required fields (Date, Time, Doctor, Reason).",
+        "Choose an available date, doctor, and enter a visit reason.",
       );
       return;
     }
@@ -146,7 +172,10 @@ export function BookPanel() {
     try {
       if (paymentMethod === "ONLINE") {
         // 1. Create Razorpay Order
-        const orderRes = await createRazorpayOrderApi({ amount: 400 });
+        const orderRes = await createRazorpayOrderApi({
+          amount: availability.advanceFee || 20,
+          doctorId: selectedDoctorId,
+        });
         if (!orderRes.success) throw new Error("Failed to create order");
 
         // 2. Open Razorpay Checkout
@@ -157,7 +186,7 @@ export function BookPanel() {
           amount: orderRes.order.amount,
           currency: "INR",
           name: "HealOS",
-          description: "Consultation Fee",
+          description: `Appointment advance (total ₹${availability.consultationFee})`,
           order_id: orderRes.order.id,
           handler: async function (response: any) {
             try {
@@ -166,7 +195,6 @@ export function BookPanel() {
                 doctorId: selectedDoctorId,
                 department: dept.label,
                 date: format(date, "yyyy-MM-dd"),
-                timeSlot: time,
                 reason,
                 type: mode,
                 paymentMethod,
@@ -182,7 +210,10 @@ export function BookPanel() {
                 });
 
                 toast.success("Payment successful & Appointment booked!");
-                setBookedRecord(res.appointment);
+                setBookedRecord({
+                  ...res.appointment,
+                  paidAmount: availability.advanceFee || 20,
+                });
               }
             } catch (err: any) {
               toast.error(
@@ -213,7 +244,6 @@ export function BookPanel() {
           doctorId: selectedDoctorId,
           department: dept.label,
           date: format(date, "yyyy-MM-dd"),
-          timeSlot: time,
           reason,
           type: mode,
           paymentMethod,
@@ -268,8 +298,26 @@ export function BookPanel() {
                     </strong>{" "}
                     at{" "}
                     <strong className="text-foreground">
-                      {bookedRecord.timeSlot}
+                      arrive at{" "}
+                      {bookedRecord.arrivalTime || bookedRecord.timeSlot};
+                      appointment starts {bookedRecord.timeSlot} and lasts{" "}
+                      {availability?.slotDurationMinutes || 60} minutes
                     </strong>
+                    .
+                  </p>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Advance paid: ₹
+                    {bookedRecord.advanceAmount ??
+                      availability?.advanceFee ??
+                      20}
+                    . Balance due at the clinic: ₹
+                    {Math.max(
+                      0,
+                      bookedRecord.amount -
+                        (bookedRecord.advanceAmount ??
+                          availability?.advanceFee ??
+                          20),
+                    )}
                     .
                   </p>
                   <div className="mt-4 inline-flex gap-2 items-center text-xs font-mono bg-background/50 px-3 py-1.5 rounded border border-border/50">
@@ -286,7 +334,6 @@ export function BookPanel() {
                       tone="solid"
                       onClick={() => {
                         setBookedRecord(null);
-                        setTime(null);
                         setReason("");
                       }}
                     >
@@ -395,7 +442,8 @@ export function BookPanel() {
                           {doc.degree ? "10+ Yrs" : "8 Yrs"}
                         </span>
                         <span className="flex items-center gap-1">
-                          <CreditCard className="size-3" /> ₹400
+                          <CreditCard className="size-3" /> ₹
+                          {availability?.consultationFee ?? "—"}
                         </span>
                       </div>
                     </div>
@@ -457,7 +505,7 @@ export function BookPanel() {
                       Payment Method
                     </label>
                     <div className="grid grid-cols-2 gap-3">
-                      {(["ONLINE", "CASH"] as const).map((p) => (
+                      {(["ONLINE"] as const).map((p) => (
                         <button
                           key={p}
                           type="button"
@@ -478,7 +526,8 @@ export function BookPanel() {
                                 : "text-muted-foreground font-mono text-[10px]"
                             }
                           >
-                            ₹400
+                            Advance ₹{availability?.advanceFee ?? "—"} · Total ₹
+                            {availability?.consultationFee ?? "—"}
                           </span>
                         </button>
                       ))}
@@ -519,23 +568,25 @@ export function BookPanel() {
                     <div className="p-6 flex flex-col h-full">
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                         <Clock className="size-3.5" />
-                        Select Time Slot
+                        Automatic appointment slot
                       </label>
-                      <div className="grid grid-cols-3 gap-2 mb-6">
-                        {slotTimes.map((t) => (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => setTime(t)}
-                            className={`font-mono text-[11px] px-2 py-2.5 rounded-lg border transition-all ${
-                              time === t
-                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                : "bg-background text-foreground hover:bg-muted border-border/70 hover:border-primary/40"
-                            }`}
-                          >
-                            {t}
-                          </button>
-                        ))}
+                      <div className="mb-6 rounded-lg border border-border/70 bg-muted/30 p-4 text-sm">
+                        {!availability ? (
+                          "Checking this doctor's schedule…"
+                        ) : availability.available ? (
+                          <>
+                            <strong>
+                              Next available: {availability.nextSlot}
+                            </strong>
+                            <p className="mt-1 text-muted-foreground">
+                              We assign your slot when you book.{" "}
+                              {availability.slotsRemaining} slots remain for
+                              this day. Please arrive 10 minutes early.
+                            </p>
+                          </>
+                        ) : (
+                          "This doctor has no remaining slots on this date. Choose another day."
+                        )}
                       </div>
 
                       <label
@@ -572,7 +623,9 @@ export function BookPanel() {
                         </p>
                         <p className="text-sm font-medium truncate text-foreground mt-0.5">
                           {date ? format(date, "MMM do") : "No Date"}{" "}
-                          {time ? `at ${time}` : ""}
+                          {availability?.available
+                            ? `· slot near ${availability.nextSlot}`
+                            : ""}
                           <span className="text-muted-foreground mx-1.5">
                             •
                           </span>
@@ -586,7 +639,7 @@ export function BookPanel() {
                     <button
                       type="button"
                       disabled={
-                        !time ||
+                        !availability?.available ||
                         !date ||
                         !selectedDoctorId ||
                         !reason ||
@@ -594,7 +647,7 @@ export function BookPanel() {
                       }
                       onClick={handleBook}
                       className={`shrink-0 w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 ${
-                        time &&
+                        availability?.available &&
                         date &&
                         reason &&
                         selectedDoctorId &&

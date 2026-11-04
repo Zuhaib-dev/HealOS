@@ -14,6 +14,7 @@ export * from "./invoice.model.js";
 export * from "./clinical-note.model.js";
 export * from "./handover.model.js";
 export * from "./schedule.model.js";
+export * from "./doctor-availability.model.js";
 export * from "./vitals.model";
 export * from "./ward.model.js";
 export * from "./inventory.model.js";

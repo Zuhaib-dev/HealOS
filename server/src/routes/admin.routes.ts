@@ -23,6 +23,8 @@ import {
   createSchedule,
   updateSchedule,
   deleteSchedule,
+  getDoctorAvailabilities,
+  saveDoctorAvailability,
 } from "../controllers/admin.controller.js";
 
 const adminRouter = Router();
@@ -40,6 +42,8 @@ adminRouter.get("/schedule", getSchedule);
 adminRouter.post("/schedule", createSchedule);
 adminRouter.put("/schedule/:id", updateSchedule);
 adminRouter.delete("/schedule/:id", deleteSchedule);
+adminRouter.get("/doctor-availability", getDoctorAvailabilities);
+adminRouter.put("/doctor-availability/:doctorId", saveDoctorAvailability);
 adminRouter.get("/invoices", getInvoices);
 
 // Wards CRUD

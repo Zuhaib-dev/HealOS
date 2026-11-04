@@ -12,6 +12,7 @@ import {
   Invoice,
   InvoiceStatus,
   InvoicePaymentMethod,
+  DoctorAvailability,
 } from "../models/index.js";
 import { z } from "zod";
 import { getIO } from "../socket.js";
@@ -23,7 +24,6 @@ const bookAppointmentSchema = z.object({
   doctorId: z.string().min(1, "Doctor selection is required"),
   department: z.string().min(1, "Department is required"),
   date: z.string().min(1, "Appointment date is required"),
-  timeSlot: z.string().min(1, "Time slot is required"),
   reason: z.string().min(3, "Reason for visit is required"),
   type: z
     .enum([
@@ -65,15 +65,8 @@ export const bookAppointment = async (
       return;
     }
 
-    const {
-      doctorId,
-      department,
-      date,
-      timeSlot,
-      reason,
-      type,
-      paymentMethod,
-    } = parsed.data;
+    const { doctorId, department, date, reason, type, paymentMethod } =
+      parsed.data;
 
     // Verify doctor exists
     const doctorObj = await User.findById(doctorId);
@@ -92,19 +85,64 @@ export const bookAppointment = async (
 
     let appointment: any;
     try {
-      // Check if slot is already booked
-      const existingBooking = await Appointment.findOne({
+      const requestedDate = new Date(`${date}T00:00:00`);
+      if (
+        Number.isNaN(requestedDate.getTime()) ||
+        date < new Date().toISOString().slice(0, 10)
+      ) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "Choose a valid future appointment date.",
+        });
+        return;
+      }
+      const availability = await DoctorAvailability.findOne({
         doctor: doctorId,
-        date,
-        timeSlot,
-        status: { $ne: AppointmentStatus.CANCELLED },
+        active: true,
       });
-
-      if (existingBooking) {
+      if (
+        !availability ||
+        !availability.weekdays.includes(requestedDate.getDay())
+      ) {
         res.status(StatusCodes.CONFLICT).json({
           success: false,
-          message:
-            "This doctor is already booked for the selected time slot. Please select another slot.",
+          message: "This doctor is not available on that day.",
+        });
+        return;
+      }
+      const start = toMinutes(availability.startTime);
+      const end = toMinutes(availability.endTime);
+      const occupied = await Appointment.find({
+        doctor: doctorId,
+        date,
+        status: { $ne: AppointmentStatus.CANCELLED },
+      })
+        .select("timeSlot")
+        .lean();
+      if (occupied.length >= availability.maxPatientsPerDay) {
+        res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          message: "All appointment slots for this day have been booked.",
+        });
+        return;
+      }
+      const occupiedSet = new Set(occupied.map((item) => item.timeSlot));
+      let timeSlot = "";
+      for (
+        let minute = start;
+        minute + availability.slotDurationMinutes <= end;
+        minute += availability.slotDurationMinutes
+      ) {
+        const candidate = formatTime(minute);
+        if (!occupiedSet.has(candidate)) {
+          timeSlot = candidate;
+          break;
+        }
+      }
+      if (!timeSlot) {
+        res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          message: "No appointment slots remain for this day.",
         });
         return;
       }
@@ -125,7 +163,9 @@ export const bookAppointment = async (
         status: AppointmentStatus.PENDING,
         paymentMethod,
         paymentStatus,
-        amount: 400,
+        amount: availability.consultationFee,
+        advanceAmount: availability.advanceFee,
+        arrivalTime: formatTime(Math.max(0, toMinutes(timeSlot) - 10)),
       });
       appointment = apptCreated;
 
@@ -134,8 +174,13 @@ export const bookAppointment = async (
         patient: patientId,
         issuedBy: patientId, // Self-booked
         appointment: appointment._id,
-        items: [{ description: "OPD Consultation Fee", amount: 400 }],
-        totalAmount: 400,
+        items: [
+          {
+            description: "OPD Consultation Fee",
+            amount: availability.consultationFee,
+          },
+        ],
+        totalAmount: availability.consultationFee,
         status: InvoiceStatus.PENDING,
         paymentMethod:
           paymentMethod === ApptPaymentMethod.ONLINE
@@ -180,6 +225,80 @@ export const bookAppointment = async (
       message: "Server error while booking appointment",
     });
   }
+};
+
+const toMinutes = (value: string) => {
+  const [h = 0, m = 0] = value.split(":").map(Number);
+  return h * 60 + m;
+};
+const formatTime = (minutes: number) =>
+  `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+
+export const getDoctorAvailability = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const { doctorId, date } = req.query as { doctorId?: string; date?: string };
+  if (!doctorId || !date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    res
+      .status(400)
+      .json({ success: false, message: "doctorId and date are required" });
+    return;
+  }
+  const day = new Date(`${date}T00:00:00`);
+  const availability = await DoctorAvailability.findOne({
+    doctor: doctorId,
+    active: true,
+  }).lean();
+  if (
+    !availability ||
+    !availability.weekdays.includes(day.getDay()) ||
+    date < new Date().toISOString().slice(0, 10)
+  ) {
+    res.json({ success: true, available: false, slotsRemaining: 0 });
+    return;
+  }
+  const booked = await Appointment.find({
+    doctor: doctorId,
+    date,
+    status: { $ne: AppointmentStatus.CANCELLED },
+  })
+    .select("timeSlot")
+    .lean();
+  const taken = new Set(booked.map((item) => item.timeSlot));
+  const total = Math.min(
+    availability.maxPatientsPerDay,
+    Math.floor(
+      (toMinutes(availability.endTime) - toMinutes(availability.startTime)) /
+        availability.slotDurationMinutes,
+    ),
+  );
+  let nextSlot: string | null = null;
+  for (
+    let minute = toMinutes(availability.startTime);
+    minute + availability.slotDurationMinutes <=
+    toMinutes(availability.endTime);
+    minute += availability.slotDurationMinutes
+  ) {
+    const candidate = formatTime(minute);
+    if (!taken.has(candidate)) {
+      nextSlot = candidate;
+      break;
+    }
+  }
+  res.json({
+    success: true,
+    available:
+      Boolean(nextSlot) && booked.length < availability.maxPatientsPerDay,
+    nextSlot,
+    slotsRemaining: Math.max(
+      0,
+      Math.min(total, availability.maxPatientsPerDay) - booked.length,
+    ),
+    consultationFee: availability.consultationFee,
+    advanceFee: availability.advanceFee,
+    slotDurationMinutes: availability.slotDurationMinutes,
+  });
 };
 
 // 2. Fetch Patient's Appointments

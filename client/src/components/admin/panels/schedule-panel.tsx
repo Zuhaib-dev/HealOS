@@ -18,6 +18,8 @@ import {
   fetchAdminPatientsApi,
   fetchAdminScheduleApi,
   createScheduleApi,
+  fetchDoctorAvailabilitiesApi,
+  saveDoctorAvailabilityApi,
   fetchAdminStaffApi,
   fetchAdminIntegrationsApi,
   fetchAdminRolesApi,
@@ -52,6 +54,18 @@ export function SchedulePanel() {
   const [staffList, setStaffList] = useState<AdminStaffData[]>([]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availabilityRows, setAvailabilityRows] = useState<any[]>([]);
+  const [availabilityForm, setAvailabilityForm] = useState({
+    doctorId: "",
+    weekdays: [1, 2, 3, 4, 5],
+    startTime: "09:00",
+    endTime: "17:00",
+    slotDurationMinutes: 60,
+    maxPatientsPerDay: 8,
+    consultationFee: 350,
+    advanceFee: 20,
+    active: true,
+  });
 
   // Form state for creating a new shift
   const [formData, setFormData] = useState({
@@ -75,6 +89,8 @@ export function SchedulePanel() {
       if (staffRes.success && staffRes.staff) {
         setStaffList(staffRes.staff);
       }
+      const availabilityRes = await fetchDoctorAvailabilitiesApi();
+      setAvailabilityRows(availabilityRes.availability || []);
     } catch (err) {
       console.error("Failed to fetch admin schedule", err);
     } finally {
@@ -120,6 +136,27 @@ export function SchedulePanel() {
       toast.error("Failed to create shift");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const saveAvailability = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!availabilityForm.doctorId) {
+      toast.error("Select a doctor first");
+      return;
+    }
+    try {
+      await saveDoctorAvailabilityApi(availabilityForm.doctorId, {
+        ...availabilityForm,
+        consultationFee: Number(availabilityForm.consultationFee),
+        advanceFee: Number(availabilityForm.advanceFee),
+        slotDurationMinutes: Number(availabilityForm.slotDurationMinutes),
+        maxPatientsPerDay: Number(availabilityForm.maxPatientsPerDay),
+      });
+      toast.success("Doctor booking timetable saved");
+      loadSchedule();
+    } catch {
+      toast.error("Could not save booking timetable");
     }
   };
 
@@ -185,6 +222,176 @@ export function SchedulePanel() {
           </>
         }
       />
+
+      <section className="mx-4 mb-6 rounded-xl border border-border/60 bg-card p-5 sm:mx-8">
+        <h3 className="mb-1 font-semibold">Doctor booking timetable</h3>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Set weekly clinic days, appointment length, daily capacity, and the
+          total and advance fees patients pay.
+        </p>
+        <form
+          onSubmit={saveAvailability}
+          className="grid grid-cols-2 gap-3 md:grid-cols-4"
+        >
+          <select
+            aria-label="Doctor"
+            className="border bg-background p-2 text-sm"
+            value={availabilityForm.doctorId}
+            onChange={(e) => {
+              const saved = availabilityRows.find(
+                (row) => row.doctor?._id === e.target.value,
+              );
+              setAvailabilityForm((v) => ({
+                ...v,
+                doctorId: e.target.value,
+                ...(saved
+                  ? {
+                      weekdays: saved.weekdays,
+                      startTime: saved.startTime,
+                      endTime: saved.endTime,
+                      slotDurationMinutes: saved.slotDurationMinutes,
+                      maxPatientsPerDay: saved.maxPatientsPerDay,
+                      consultationFee: saved.consultationFee,
+                      advanceFee: saved.advanceFee,
+                      active: saved.active,
+                    }
+                  : {}),
+              }));
+            }}
+          >
+            <option value="">Select doctor</option>
+            {staffList
+              .filter((x) => ["DOCTOR", "RADIOLOGIST"].includes(x.user.role))
+              .map((x) => (
+                <option key={x.user._id} value={x.user._id}>
+                  {x.user.name}
+                </option>
+              ))}
+          </select>
+          <div className="col-span-2 flex flex-wrap gap-2 text-xs">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
+              <label key={day} className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={availabilityForm.weekdays.includes(i)}
+                  onChange={(e) =>
+                    setAvailabilityForm((v) => ({
+                      ...v,
+                      weekdays: e.target.checked
+                        ? [...v.weekdays, i]
+                        : v.weekdays.filter((d) => d !== i),
+                    }))
+                  }
+                />
+                {day}
+              </label>
+            ))}
+          </div>
+          <label className="text-xs">
+            Start{" "}
+            <input
+              aria-label="Clinic start time"
+              type="time"
+              className="block w-full border bg-background p-2"
+              value={availabilityForm.startTime}
+              onChange={(e) =>
+                setAvailabilityForm((v) => ({
+                  ...v,
+                  startTime: e.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="text-xs">
+            End{" "}
+            <input
+              aria-label="Clinic end time"
+              type="time"
+              className="block w-full border bg-background p-2"
+              value={availabilityForm.endTime}
+              onChange={(e) =>
+                setAvailabilityForm((v) => ({ ...v, endTime: e.target.value }))
+              }
+            />
+          </label>
+          <label className="text-xs">
+            Appointment minutes{" "}
+            <input
+              aria-label="Slot duration"
+              type="number"
+              min="5"
+              className="block w-full border bg-background p-2"
+              value={availabilityForm.slotDurationMinutes}
+              onChange={(e) =>
+                setAvailabilityForm((v) => ({
+                  ...v,
+                  slotDurationMinutes: Number(e.target.value),
+                }))
+              }
+            />
+          </label>
+          <label className="text-xs">
+            Max patients / day{" "}
+            <input
+              aria-label="Maximum patients per day"
+              type="number"
+              min="1"
+              className="block w-full border bg-background p-2"
+              value={availabilityForm.maxPatientsPerDay}
+              onChange={(e) =>
+                setAvailabilityForm((v) => ({
+                  ...v,
+                  maxPatientsPerDay: Number(e.target.value),
+                }))
+              }
+            />
+          </label>
+          <label className="text-xs">
+            Consultation fee ₹{" "}
+            <input
+              aria-label="Consultation fee"
+              type="number"
+              min="0"
+              className="block w-full border bg-background p-2"
+              value={availabilityForm.consultationFee}
+              onChange={(e) =>
+                setAvailabilityForm((v) => ({
+                  ...v,
+                  consultationFee: Number(e.target.value),
+                }))
+              }
+            />
+          </label>
+          <label className="text-xs">
+            Advance fee ₹{" "}
+            <input
+              aria-label="Advance fee"
+              type="number"
+              min="1"
+              className="block w-full border bg-background p-2"
+              value={availabilityForm.advanceFee}
+              onChange={(e) =>
+                setAvailabilityForm((v) => ({
+                  ...v,
+                  advanceFee: Number(e.target.value),
+                }))
+              }
+            />
+          </label>
+          <button className="col-span-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground md:col-span-1">
+            Save timetable
+          </button>
+        </form>
+        {availabilityRows.length > 0 && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Configured doctors:{" "}
+            {availabilityRows
+              .map((x) => x.doctor?.name)
+              .filter(Boolean)
+              .join(", ")}
+          </p>
+        )}
+      </section>
 
       {isFormOpen && (
         <div className="hairline-b bg-muted/30 p-5 sm:px-8">

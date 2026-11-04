@@ -183,6 +183,21 @@ export async function deleteScheduleApi(id: string) {
   return response.data;
 }
 
+export async function fetchDoctorAvailabilitiesApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    availability: any[];
+  }>("/admin/doctor-availability");
+  return response.data;
+}
+export async function saveDoctorAvailabilityApi(doctorId: string, data: any) {
+  const response = await apiClient.put<{ success: boolean; availability: any }>(
+    `/admin/doctor-availability/${doctorId}`,
+    data,
+  );
+  return response.data;
+}
+
 export interface AdminInvoiceData {
   _id: string;
   patient: { name: string; email?: string; phone?: string };

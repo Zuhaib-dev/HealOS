@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export enum InvoiceStatus {
   PENDING = "PENDING",
   PAID = "PAID",
+  PARTIAL = "PARTIAL",
   CANCELLED = "CANCELLED",
 }
 

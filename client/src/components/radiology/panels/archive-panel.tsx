@@ -227,6 +227,7 @@ export function ArchivePanel() {
                       {new Date(d.createdAt).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
+                        hour12: true,
                       })}
                     </p>
                     <p className="mono-label text-muted-foreground">

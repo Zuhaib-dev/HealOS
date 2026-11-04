@@ -275,7 +275,11 @@ const auditPool = [
 
 function stamp(offsetSec: number) {
   const d = new Date(Date.now() - offsetSec * 1000);
-  return d.toLocaleTimeString("en-GB", { hour12: false });
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 function AuditStreamCell() {

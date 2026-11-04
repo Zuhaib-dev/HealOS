@@ -39,6 +39,8 @@ import {
   payInvoiceApi,
 } from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
+import { formatTime12Hour } from "@/lib/time-format";
+import { formatTimeRange } from "@/lib/time-format";
 
 /* ---------- primitives ---------- */
 
@@ -122,7 +124,14 @@ function AppointmentRow({
         <p className="mono-label text-brass">
           {new Date(a.date).toLocaleDateString()}
         </p>
-        <p className="mono-label text-muted-foreground">{a.timeSlot}</p>
+        <p className="mono-label text-muted-foreground">
+          {formatTimeRange(a.timeSlot, a.slotEndTime)}
+        </p>
+        {a.arrivalTime && (
+          <p className="mt-0.5 text-[10px] text-primary">
+            Arrive {formatTime12Hour(a.arrivalTime)}
+          </p>
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{a.reason}</p>
@@ -216,7 +225,11 @@ export function MessagesPanel() {
                       {m.role === "PATIENT" ? "You" : m.senderName}
                     </p>
                     <p className="mono-label text-muted-foreground">
-                      {new Date(m.timestamp).toLocaleTimeString()}
+                      {new Date(m.timestamp).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
                     </p>
                   </div>
                 </div>

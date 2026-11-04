@@ -29,10 +29,13 @@ export interface ReceptionOverviewData {
   recentQueue: Array<{
     id: string;
     tokenNumber: string;
+    queueNumber?: number;
     patientName: string;
     department: string;
     doctorName: string;
     timeSlot: string;
+    slotEndTime?: string;
+    arrivalTime?: string;
     status: string;
     waitMinutes: number;
   }>;

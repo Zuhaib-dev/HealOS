@@ -15,6 +15,8 @@ export interface DoctorListItem {
   role: string;
   specialization: string;
   degree: string;
+  experienceYears?: number;
+  consultationFee?: number;
 }
 
 export interface AppointmentRecord {
@@ -37,7 +39,9 @@ export interface AppointmentRecord {
   department: string;
   date: string;
   timeSlot: string;
+  queueNumber?: number;
   arrivalTime?: string;
+  slotEndTime?: string;
   reason: string;
   type: AppointmentType;
   status: AppointmentStatus;
@@ -67,7 +71,6 @@ export async function fetchDoctorAvailabilityApi(
   const response = await apiClient.get<{
     success: boolean;
     available: boolean;
-    nextSlot?: string;
     slotsRemaining: number;
     consultationFee?: number;
     advanceFee?: number;

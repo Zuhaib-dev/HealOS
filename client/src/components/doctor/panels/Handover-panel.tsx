@@ -154,7 +154,11 @@ export function HandoverPanel() {
               >
                 <div className="flex items-center gap-3">
                   <span className="mono-label text-accent/80">
-                    {new Date(h.createdAt).toLocaleString()}
+                    {new Date(h.createdAt).toLocaleString([], {
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
                   </span>
                   <span className="mono-label">
                     {h.fromDoctor?.name || "Unknown"}

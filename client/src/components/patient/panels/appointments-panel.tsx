@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { format } from "date-fns";
 import {
   Calendar,
   Clock,
@@ -27,6 +28,11 @@ import {
 } from "@/components/ui/dialog";
 import { OpdReceiptModal } from "@/components/doctor/shared/opd-receipt-modal";
 import { TelemedicineWorkbench } from "../../video-call/telemedicine-workbench";
+import {
+  addMinutesToClock,
+  formatTime12Hour,
+  formatTimeRange,
+} from "@/lib/time-format";
 
 export function AppointmentsPanel() {
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
@@ -70,6 +76,11 @@ export function AppointmentsPanel() {
       doctor: c.doctor,
       date: c.followUpDate,
       timeSlot: "Walk-in",
+      slotEndTime: undefined,
+      arrivalTime: undefined,
+      queueNumber: undefined,
+      amount: undefined,
+      paidAmount: undefined,
       department: "General/Walk-in",
       isFollowUp: true,
     }));
@@ -86,7 +97,13 @@ export function AppointmentsPanel() {
       timeSlot: new Date(c.createdAt).toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
+        hour12: true,
       }),
+      slotEndTime: undefined,
+      arrivalTime: undefined,
+      queueNumber: undefined,
+      amount: undefined,
+      paidAmount: undefined,
       department: "Walk-in",
       isWalkIn: true,
       originalConsultation: c,
@@ -249,18 +266,57 @@ export function AppointmentsPanel() {
                           <Calendar className="size-3" /> Date
                         </span>
                         <span className="text-sm font-medium text-foreground">
-                          {a.date}
+                          {format(
+                            new Date(`${String(a.date).slice(0, 10)}T12:00:00`),
+                            "EEE, MMM d, yyyy",
+                          )}
                         </span>
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5">
-                          <Clock className="size-3" /> Time
+                          <Clock className="size-3" /> Appointment window
                         </span>
-                        <span className="text-sm font-medium text-foreground">
-                          {a.timeSlot}
+                        <span className="text-sm font-semibold text-foreground">
+                          {formatTimeRange(
+                            a.timeSlot,
+                            a.slotEndTime || addMinutesToClock(a.timeSlot, 60),
+                          )}
                         </span>
+                        {a.arrivalTime && (
+                          <span className="mt-1 text-xs font-medium text-primary">
+                            Please arrive by {formatTime12Hour(a.arrivalTime)}
+                          </span>
+                        )}
                       </div>
                     </div>
+                    {a.queueNumber && (
+                      <div className="mb-4 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            Your queue number
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            Keep this number ready at check-in.
+                          </p>
+                        </div>
+                        <span className="font-mono text-2xl font-bold text-primary">
+                          {String(a.queueNumber).padStart(2, "0")}
+                        </span>
+                      </div>
+                    )}
+                    {a.paidAmount !== undefined && a.paidAmount > 0 && (
+                      <div className="-mt-1 mb-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-muted-foreground">
+                        <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                          Advance paid ₹{a.paidAmount}
+                        </span>
+                        {a.amount > a.paidAmount && (
+                          <span>
+                            {" "}
+                            · Balance ₹{a.amount - a.paidAmount} due at clinic
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Actions footer anchored to bottom */}
                     <div className="mt-auto pt-2 space-y-2">

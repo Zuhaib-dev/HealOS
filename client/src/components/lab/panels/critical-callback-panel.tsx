@@ -149,6 +149,7 @@ export function CriticalPanel() {
                     {new Date(c.createdAt).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
+                      hour12: true,
                     })}
                   </p>
                 </div>

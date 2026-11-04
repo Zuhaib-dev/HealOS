@@ -8,6 +8,7 @@ import { emitAdminDataChanged, emitUserRoleUpdated, getIO } from "../socket.js";
 import { logAudit } from "../utils/audit.js";
 import { z } from "zod";
 import { DoctorAvailability } from "../models/doctor-availability.model.js";
+import { getClinicDateKey } from "../utils/clinic-date.js";
 
 const wardSchema = z.object({
   name: z.string().min(1),
@@ -419,18 +420,14 @@ export const getSchedule = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const dateQuery = req.query.date
-      ? new Date(req.query.date as string)
-      : new Date();
-    dateQuery.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(dateQuery);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    // Convert to YYYY-MM-DD for Schedule string dates
-    const dateStr = dateQuery.toISOString().split("T")[0];
+    const dateStr =
+      typeof req.query.date === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(req.query.date)
+        ? req.query.date
+        : getClinicDateKey();
 
     const appointments = await Appointment.find({
-      date: { $gte: dateQuery, $lt: tomorrow },
+      date: dateStr,
     })
       .populate("patient", "user")
       .populate("doctor", "user department")

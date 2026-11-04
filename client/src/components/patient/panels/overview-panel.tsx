@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
+import { formatTime12Hour, formatTimeRange } from "@/lib/time-format";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
@@ -536,7 +537,18 @@ export function OverviewPanel() {
                   </div>
                   <div className="text-right">
                     <p className="font-mono text-foreground font-bold">
-                      {upcomingAppointments[0].timeSlot}
+                      Arrive{" "}
+                      {formatTime12Hour(
+                        upcomingAppointments[0].arrivalTime ||
+                          upcomingAppointments[0].timeSlot,
+                      )}
+                    </p>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Visit{" "}
+                      {formatTimeRange(
+                        upcomingAppointments[0].timeSlot,
+                        upcomingAppointments[0].slotEndTime,
+                      )}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(

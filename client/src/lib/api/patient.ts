@@ -5,7 +5,7 @@ import { PatientProfileData } from "./onboarding";
 export interface DashboardInvoice {
   _id: string;
   totalAmount: number;
-  status: "PENDING" | "PAID" | "CANCELLED";
+  status: "PENDING" | "PARTIAL" | "PAID" | "CANCELLED";
   items: { description: string; amount: number }[];
   appointment?: {
     date: string;

@@ -128,6 +128,9 @@ export interface AdminAppointmentData {
   doctor: { user: { name: string }; department: string };
   date: string;
   timeSlot: string;
+  queueNumber?: number;
+  slotEndTime?: string;
+  arrivalTime?: string;
   status: string;
   type: string;
 }

@@ -174,7 +174,11 @@ export function NotesPanel() {
                         {n.category}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(n.createdAt).toLocaleString()}
+                        {new Date(n.createdAt).toLocaleString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
                       </span>
                     </div>
                     <p className="text-sm font-mono whitespace-pre-wrap">

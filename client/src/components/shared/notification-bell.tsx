@@ -151,7 +151,11 @@ export function NotificationBell() {
                       {selectedNotif.title}
                     </h4>
                     <p className="text-[10px] font-mono text-muted-foreground/60 mt-1">
-                      {new Date(selectedNotif.createdAt).toLocaleString()}
+                      {new Date(selectedNotif.createdAt).toLocaleString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
                     </p>
                   </div>
                   <div className="bg-muted/30 p-3 rounded-lg border border-border/40">

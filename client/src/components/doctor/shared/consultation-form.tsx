@@ -10,6 +10,7 @@ import { AppointmentRecord } from "@/lib/api/appointment";
 import { AnatomySelector } from "./anatomy-selector";
 import { TelemedicineWorkbench } from "../../video-call/telemedicine-workbench";
 import { Video } from "lucide-react";
+import { formatTimeRange } from "@/lib/time-format";
 
 export function ConsultationForm({
   appointment,
@@ -141,7 +142,8 @@ export function ConsultationForm({
           </h2>
           {appointment ? (
             <p className="mono-label text-muted-foreground text-xs">
-              {appointment.date} | {appointment.timeSlot} |{" "}
+              {appointment.date} |{" "}
+              {formatTimeRange(appointment.timeSlot, appointment.slotEndTime)} |{" "}
               {appointment.department}
             </p>
           ) : (

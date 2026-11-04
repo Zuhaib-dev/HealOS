@@ -14,11 +14,11 @@ import {
   FileText,
   ChevronRight,
   ChevronLeft,
-  Star,
   Activity,
   BriefcaseMedical,
 } from "lucide-react";
 import { addDays, format, isSameDay } from "date-fns";
+import { formatTime12Hour, formatTimeRange } from "@/lib/time-format";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import {
   Card,
@@ -30,6 +30,7 @@ import {
 import {
   fetchAvailableDoctorsApi,
   bookAppointmentApi,
+  cancelAppointmentApi,
   DoctorListItem,
   AppointmentRecord,
   fetchDoctorAvailabilityApi,
@@ -75,6 +76,7 @@ export function BookPanel() {
   const { user } = useAuthStore();
   const [dept, setDept] = useState(departments[0]!);
   const [doctorsList, setDoctorsList] = useState<DoctorListItem[]>([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [weekOffset, setWeekOffset] = useState(0);
@@ -86,7 +88,6 @@ export function BookPanel() {
   );
   const [availability, setAvailability] = useState<{
     available: boolean;
-    nextSlot?: string;
     slotsRemaining: number;
     consultationFee?: number;
     advanceFee?: number;
@@ -172,10 +173,14 @@ export function BookPanel() {
     };
     socket.on("appointment_created", refresh);
     socket.on("appointment_updated", refresh);
+    socket.on("appointment_slot_reserved", refresh);
+    socket.on("appointment_slot_released", refresh);
     socket.on("doctor_availability_updated", refresh);
     return () => {
       socket.off("appointment_created", refresh);
       socket.off("appointment_updated", refresh);
+      socket.off("appointment_slot_reserved", refresh);
+      socket.off("appointment_slot_released", refresh);
       socket.off("doctor_availability_updated", refresh);
     };
   }, [date, selectedDoctorId, weekOffset]);
@@ -189,6 +194,8 @@ export function BookPanel() {
         }
       } catch (err) {
         console.error("Failed to load available doctors", err);
+      } finally {
+        setDoctorsLoading(false);
       }
     };
     loadDoctors();
@@ -196,10 +203,10 @@ export function BookPanel() {
   }, []);
 
   const filteredDoctors = doctorsList.filter(
-    (d) =>
-      !dept ||
-      d.specialization === dept.label ||
-      dept.label === "General Medicine",
+    (doctor) =>
+      doctor.role === "DOCTOR" &&
+      doctor.specialization.trim().toLowerCase() ===
+        dept.label.trim().toLowerCase(),
   );
 
   // Auto-select first doctor when department changes
@@ -223,14 +230,38 @@ export function BookPanel() {
     setSubmitting(true);
     try {
       if (paymentMethod === "ONLINE") {
-        // 1. Create Razorpay Order
-        const orderRes = await createRazorpayOrderApi({
-          amount: availability.advanceFee || 20,
+        const razorpayReady = await loadRazorpayScript();
+        if (!razorpayReady) throw new Error("Payment checkout could not load.");
+
+        // Reserve a unique appointment window before taking payment.
+        const reservation = await bookAppointmentApi({
           doctorId: selectedDoctorId,
+          department: dept.label,
+          date: format(date, "yyyy-MM-dd"),
+          reason,
+          type: mode,
+          paymentMethod,
         });
-        if (!orderRes.success) throw new Error("Failed to create order");
+        if (!reservation.success || !reservation.appointment)
+          throw new Error("Could not reserve an appointment slot.");
+
+        // 1. Create Razorpay Order
+        let orderRes;
+        try {
+          orderRes = await createRazorpayOrderApi({
+            amount: availability.advanceFee || 20,
+            doctorId: selectedDoctorId,
+          });
+          if (!orderRes.success) throw new Error("Failed to create order");
+        } catch (error) {
+          await cancelAppointmentApi(reservation.appointment._id).catch(
+            () => {},
+          );
+          throw error;
+        }
 
         // 2. Open Razorpay Checkout
+        let paymentCaptured = false;
         const options = {
           key:
             process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
@@ -241,32 +272,28 @@ export function BookPanel() {
           description: `Appointment advance (total ₹${availability.consultationFee})`,
           order_id: orderRes.order.id,
           handler: async function (response: any) {
+            paymentCaptured = true;
             try {
-              // 3. Book Appointment after payment
-              const res = await bookAppointmentApi({
-                doctorId: selectedDoctorId,
-                department: dept.label,
-                date: format(date, "yyyy-MM-dd"),
-                reason,
-                type: mode,
-                paymentMethod,
+              // 3. Verify payment and confirm the reserved appointment.
+              await verifyRazorpayPaymentApi({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                appointmentId: reservation.appointment._id,
               });
 
-              if (res.success && res.appointment) {
-                // 4. Verify Payment
-                await verifyRazorpayPaymentApi({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  appointmentId: res.appointment._id,
-                });
-
-                toast.success("Payment successful & Appointment booked!");
-                setBookedRecord({
-                  ...res.appointment,
-                  paidAmount: availability.advanceFee || 20,
-                });
-              }
+              toast.success("Advance paid — your appointment is confirmed!");
+              setBookedRecord({
+                ...reservation.appointment,
+                status: "CONFIRMED",
+                paymentStatus:
+                  (availability.advanceFee || 20) >=
+                  (availability.consultationFee ||
+                    reservation.appointment.amount)
+                    ? "PAID"
+                    : "PENDING_CASH",
+                paidAmount: availability.advanceFee || 20,
+              });
             } catch (err: any) {
               toast.error(
                 err.response?.data?.message ||
@@ -276,6 +303,15 @@ export function BookPanel() {
               setSubmitting(false);
             }
           },
+          modal: {
+            ondismiss: async () => {
+              if (!paymentCaptured)
+                await cancelAppointmentApi(reservation.appointment._id).catch(
+                  () => {},
+                );
+              setSubmitting(false);
+            },
+          },
           prefill: {
             name: user?.name,
             email: user?.email,
@@ -284,12 +320,22 @@ export function BookPanel() {
             color: "#10b981", // Emerald 500
           },
         };
-        const rzp = new window.Razorpay(options);
-        rzp.on("payment.failed", function (response: any) {
-          toast.error("Payment failed. Please try again.");
-          setSubmitting(false);
-        });
-        rzp.open();
+        try {
+          const rzp = new window.Razorpay(options);
+          rzp.on("payment.failed", function () {
+            toast.error("Payment failed. Please try again.");
+            void cancelAppointmentApi(reservation.appointment._id).catch(
+              () => {},
+            );
+            setSubmitting(false);
+          });
+          rzp.open();
+        } catch (error) {
+          await cancelAppointmentApi(reservation.appointment._id).catch(
+            () => {},
+          );
+          throw error;
+        }
       } else {
         // CASH Booking
         const res = await bookAppointmentApi({
@@ -346,17 +392,35 @@ export function BookPanel() {
                     </strong>{" "}
                     has been scheduled for{" "}
                     <strong className="text-foreground">
-                      {bookedRecord.date}
+                      {format(
+                        new Date(`${bookedRecord.date}T12:00:00`),
+                        "EEEE, MMMM d, yyyy",
+                      )}
                     </strong>{" "}
                     at{" "}
                     <strong className="text-foreground">
-                      arrive at{" "}
-                      {bookedRecord.arrivalTime || bookedRecord.timeSlot};
-                      appointment starts {bookedRecord.timeSlot} and lasts{" "}
-                      {availability?.slotDurationMinutes || 60} minutes
+                      arrive by{" "}
+                      {formatTime12Hour(
+                        bookedRecord.arrivalTime || bookedRecord.timeSlot,
+                      )}
+                      . Your appointment is{" "}
+                      {formatTimeRange(
+                        bookedRecord.timeSlot,
+                        bookedRecord.slotEndTime,
+                      )}
                     </strong>
                     .
                   </p>
+                  {bookedRecord.queueNumber && (
+                    <div className="mt-4 inline-flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Queue number
+                      </span>
+                      <span className="font-mono text-2xl font-bold text-primary">
+                        {String(bookedRecord.queueNumber).padStart(2, "0")}
+                      </span>
+                    </div>
+                  )}
                   <p className="mt-3 text-sm text-muted-foreground">
                     Advance paid: ₹
                     {bookedRecord.advanceAmount ??
@@ -442,7 +506,9 @@ export function BookPanel() {
             {filteredDoctors.length === 0 ? (
               <div className="p-8 text-center border border-dashed rounded-xl border-border/60">
                 <p className="text-muted-foreground text-sm">
-                  No clinicians available for {dept.label} right now.
+                  {doctorsLoading
+                    ? "Loading verified clinicians and their schedules…"
+                    : `No verified clinicians with an active schedule are available for ${dept.label}.`}
                 </p>
               </div>
             ) : (
@@ -478,12 +544,10 @@ export function BookPanel() {
                         <h3
                           className={`font-bold truncate text-sm ${selectedDoctorId === doc._id ? "text-primary" : "text-foreground"}`}
                         >
-                          Dr. {doc.name}
+                          {/^dr\.?\s/i.test(doc.name)
+                            ? doc.name
+                            : `Dr. ${doc.name}`}
                         </h3>
-                        <div className="flex items-center gap-0.5 text-amber-500">
-                          <Star className="size-3 fill-amber-500" />
-                          <span className="text-[10px] font-bold">4.9</span>
-                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
                         {doc.specialization}
@@ -491,11 +555,13 @@ export function BookPanel() {
                       <div className="flex items-center gap-3 mt-2 text-[11px] font-mono text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Clock className="size-3" />{" "}
-                          {doc.degree ? "10+ Yrs" : "8 Yrs"}
+                          {doc.experienceYears
+                            ? `${doc.experienceYears}+ Yrs`
+                            : "Experience not listed"}
                         </span>
                         <span className="flex items-center gap-1">
                           <CreditCard className="size-3" /> ₹
-                          {availability?.consultationFee ?? "—"}
+                          {doc.consultationFee ?? "—"}
                         </span>
                       </div>
                     </div>
@@ -681,12 +747,16 @@ export function BookPanel() {
                         ) : availability.available ? (
                           <>
                             <strong>
-                              Next available: {availability.nextSlot}
+                              Appointment time assigned after booking
                             </strong>
                             <p className="mt-1 text-muted-foreground">
-                              We assign your slot when you book.{" "}
-                              {availability.slotsRemaining} slots remain for
-                              this day. Please arrive 10 minutes early.
+                              {availability.slotsRemaining} appointment
+                              {availability.slotsRemaining === 1
+                                ? ""
+                                : "s"}{" "}
+                              remain for this day. Pay the advance to reserve
+                              your unique queue number and assigned visit time.
+                              We’ll show both after payment.
                             </p>
                           </>
                         ) : (
@@ -728,9 +798,6 @@ export function BookPanel() {
                         </p>
                         <p className="text-sm font-medium truncate text-foreground mt-0.5">
                           {date ? format(date, "MMM do") : "No Date"}{" "}
-                          {availability?.available
-                            ? `· slot near ${availability.nextSlot}`
-                            : ""}
                           <span className="text-muted-foreground mx-1.5">
                             •
                           </span>

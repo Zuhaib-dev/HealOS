@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { Vitals } from "../models/vitals.model.js";
 import { Appointment } from "../models/appointment.model.js";
+import { addClinicDays, getClinicDateKey } from "../utils/clinic-date.js";
 
 /**
  * GET /api/v1/nurse/queue
@@ -12,19 +13,18 @@ export const getVitalsQueue = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const today = getClinicDateKey();
+    const tomorrow = addClinicDays(today, 1);
 
     // Get today's appointments
     const appointments = await Appointment.find({
       date: { $gte: today, $lt: tomorrow },
       status: { $in: ["CONFIRMED", "PENDING"] },
+      $nor: [{ paymentMethod: "ONLINE", paymentStatus: "PENDING_ONLINE" }],
     })
       .populate("patient", "name phone gender dateOfBirth")
       .populate("doctor", "name")
-      .sort({ createdAt: 1 });
+      .sort({ timeSlot: 1 });
 
     // Check which appointments already have vitals recorded
     const appointmentIds = appointments.map((a) => a._id);

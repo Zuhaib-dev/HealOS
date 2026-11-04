@@ -16,9 +16,10 @@ import {
 } from "../models/index.js";
 import { z } from "zod";
 import { getIO } from "../socket.js";
-import NodeCache from "node-cache";
-
-const doctorCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
+import {
+  getClinicDateKey,
+  getClinicMinutesOfDay,
+} from "../utils/clinic-date.js";
 
 const bookAppointmentSchema = z.object({
   doctorId: z.string().min(1, "Doctor selection is required"),
@@ -85,11 +86,8 @@ export const bookAppointment = async (
 
     let appointment: any;
     try {
-      const requestedDate = new Date(`${date}T00:00:00`);
-      if (
-        Number.isNaN(requestedDate.getTime()) ||
-        date < new Date().toISOString().slice(0, 10)
-      ) {
+      const requestedDate = new Date(`${date}T00:00:00.000Z`);
+      if (Number.isNaN(requestedDate.getTime()) || date < getClinicDateKey()) {
         res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           message: "Choose a valid future appointment date.",
@@ -102,7 +100,7 @@ export const bookAppointment = async (
       });
       if (
         !availability ||
-        !availability.weekdays.includes(requestedDate.getDay())
+        !availability.weekdays.includes(requestedDate.getUTCDay())
       ) {
         res.status(StatusCodes.CONFLICT).json({
           success: false,
@@ -112,12 +110,14 @@ export const bookAppointment = async (
       }
       const start = toMinutes(availability.startTime);
       const end = toMinutes(availability.endTime);
+      const currentMinutes =
+        date === getClinicDateKey() ? getClinicMinutesOfDay() : -1;
       const occupied = await Appointment.find({
         doctor: doctorId,
         date,
         status: { $ne: AppointmentStatus.CANCELLED },
       })
-        .select("timeSlot")
+        .select("timeSlot queueNumber")
         .lean();
       if (occupied.length >= availability.maxPatientsPerDay) {
         res.status(StatusCodes.CONFLICT).json({
@@ -128,12 +128,25 @@ export const bookAppointment = async (
       }
       const occupiedSet = new Set(occupied.map((item) => item.timeSlot));
       let timeSlot = "";
+      const previousQueueNumbers = await Appointment.find({
+        doctor: doctorId,
+        date,
+        queueNumber: { $exists: true },
+      })
+        .select("queueNumber")
+        .lean();
+      const queueNumber =
+        previousQueueNumbers.reduce(
+          (highest, item) => Math.max(highest, item.queueNumber || 0),
+          0,
+        ) + 1;
       for (
         let minute = start;
         minute + availability.slotDurationMinutes <= end;
         minute += availability.slotDurationMinutes
       ) {
         const candidate = formatTime(minute);
+        if (minute <= currentMinutes) continue;
         if (!occupiedSet.has(candidate)) {
           timeSlot = candidate;
           break;
@@ -158,6 +171,7 @@ export const bookAppointment = async (
         department,
         date,
         timeSlot,
+        queueNumber,
         reason,
         type,
         status: AppointmentStatus.PENDING,
@@ -166,6 +180,9 @@ export const bookAppointment = async (
         amount: availability.consultationFee,
         advanceAmount: availability.advanceFee,
         arrivalTime: formatTime(Math.max(0, toMinutes(timeSlot) - 10)),
+        slotEndTime: formatTime(
+          toMinutes(timeSlot) + availability.slotDurationMinutes,
+        ),
       });
       appointment = apptCreated;
 
@@ -206,11 +223,13 @@ export const bookAppointment = async (
       .populate("patient", "name email phone avatarUrl");
 
     const io = getIO();
-    if (io) {
+    if (io && paymentMethod !== ApptPaymentMethod.ONLINE) {
       io.emit("appointment_created", {
         appointmentId: appointment._id,
         doctorId,
       });
+    } else if (io) {
+      io.emit("appointment_slot_reserved", { doctorId, date });
     }
 
     res.status(StatusCodes.CREATED).json({
@@ -245,15 +264,15 @@ export const getDoctorAvailability = async (
       .json({ success: false, message: "doctorId and date are required" });
     return;
   }
-  const day = new Date(`${date}T00:00:00`);
+  const day = new Date(`${date}T00:00:00.000Z`);
   const availability = await DoctorAvailability.findOne({
     doctor: doctorId,
     active: true,
   }).lean();
   if (
     !availability ||
-    !availability.weekdays.includes(day.getDay()) ||
-    date < new Date().toISOString().slice(0, 10)
+    !availability.weekdays.includes(day.getUTCDay()) ||
+    date < getClinicDateKey()
   ) {
     res.json({ success: true, available: false, slotsRemaining: 0 });
     return;
@@ -273,28 +292,43 @@ export const getDoctorAvailability = async (
         availability.slotDurationMinutes,
     ),
   );
-  let nextSlot: string | null = null;
+  const currentMinutes =
+    date === getClinicDateKey() ? getClinicMinutesOfDay() : -1;
+  const availableSlots: Array<{
+    start: string;
+    end: string;
+    arrivalTime: string;
+  }> = [];
   for (
     let minute = toMinutes(availability.startTime);
     minute + availability.slotDurationMinutes <=
     toMinutes(availability.endTime);
     minute += availability.slotDurationMinutes
   ) {
+    if (minute <= currentMinutes) continue;
     const candidate = formatTime(minute);
     if (!taken.has(candidate)) {
-      nextSlot = candidate;
-      break;
+      availableSlots.push({
+        start: candidate,
+        end: formatTime(minute + availability.slotDurationMinutes),
+        arrivalTime: formatTime(Math.max(0, minute - 10)),
+      });
     }
   }
+  const dailyCapacityRemaining = Math.max(
+    0,
+    Math.min(total, availability.maxPatientsPerDay) - booked.length,
+  );
+  const slotsRemaining = Math.min(
+    availableSlots.length,
+    dailyCapacityRemaining,
+  );
   res.json({
     success: true,
-    available:
-      Boolean(nextSlot) && booked.length < availability.maxPatientsPerDay,
-    nextSlot,
-    slotsRemaining: Math.max(
-      0,
-      Math.min(total, availability.maxPatientsPerDay) - booked.length,
-    ),
+    available: availableSlots.length > 0 && slotsRemaining > 0,
+    nextSlot: availableSlots[0]?.start || null,
+    availableSlots: availableSlots.slice(0, slotsRemaining),
+    slotsRemaining,
     consultationFee: availability.consultationFee,
     advanceFee: availability.advanceFee,
     slotDurationMinutes: availability.slotDurationMinutes,
@@ -309,7 +343,15 @@ export const getPatientAppointments = async (
   try {
     const patientId = req.user?._id;
 
-    const appointments = await Appointment.find({ patient: patientId })
+    const appointments = await Appointment.find({
+      patient: patientId,
+      $nor: [
+        {
+          paymentMethod: ApptPaymentMethod.ONLINE,
+          paymentStatus: ApptPaymentStatus.PENDING_ONLINE,
+        },
+      ],
+    })
       .populate("doctor", "name email avatarUrl phone role")
       .sort({ createdAt: -1 });
 
@@ -346,6 +388,12 @@ export const getDoctorAppointments = async (
         ? req.query.department.trim()
         : "";
     const query: Record<string, any> = { doctor: doctorId };
+    query.$nor = [
+      {
+        paymentMethod: ApptPaymentMethod.ONLINE,
+        paymentStatus: ApptPaymentStatus.PENDING_ONLINE,
+      },
+    ];
     if (Object.values(AppointmentStatus).includes(status as AppointmentStatus))
       query.status = status;
     const today = new Date().toISOString().slice(0, 10);
@@ -476,26 +524,28 @@ export const getAvailableDoctors = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const cachedDoctors = doctorCache.get("available_doctors");
-    if (cachedDoctors) {
-      res.status(StatusCodes.OK).json({
-        success: true,
-        doctors: cachedDoctors,
-      });
-      return;
-    }
-
-    const doctors = await User.find({
-      role: { $in: [UserRole.DOCTOR, UserRole.RADIOLOGIST, UserRole.ADMIN] },
-    }).select("name email phone avatarUrl role");
-
-    // Enhance with professional specialization if available
+    const schedules = await DoctorAvailability.find({
+      active: true,
+      weekdays: { $exists: true, $ne: [] },
+    })
+      .select("doctor consultationFee")
+      .exec();
+    const scheduledDoctors = schedules.map((schedule) => schedule.doctor);
     const doctorProfiles = await ProfessionalProfile.find({
-      user: { $in: doctors.map((d) => d._id) },
-    });
+      user: { $in: scheduledDoctors },
+      requestedRole: UserRole.DOCTOR,
+      status: "APPROVED",
+    }).select("user specialization degree experienceYears");
+    const doctors = await User.find({
+      _id: { $in: doctorProfiles.map((profile) => profile.user) },
+      role: UserRole.DOCTOR,
+    }).select("name email phone avatarUrl role");
 
     const doctorMap = new Map();
     doctorProfiles.forEach((p) => doctorMap.set(p.user.toString(), p));
+    const scheduleMap = new Map(
+      schedules.map((schedule) => [schedule.doctor.toString(), schedule]),
+    );
 
     const result = doctors.map((doc) => {
       const prof = doctorMap.get(doc._id.toString());
@@ -508,10 +558,10 @@ export const getAvailableDoctors = async (
         role: doc.role,
         specialization: prof?.specialization || "General Medicine",
         degree: prof?.degree || "MD / MBBS",
+        experienceYears: prof?.experienceYears || 0,
+        consultationFee: scheduleMap.get(doc._id.toString())?.consultationFee,
       };
     });
-
-    doctorCache.set("available_doctors", result);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -582,9 +632,16 @@ export const cancelAppointmentByPatient = async (
 
     appointment.status = AppointmentStatus.CANCELLED;
     if (appointment.paymentMethod === ApptPaymentMethod.ONLINE) {
-      appointment.paymentStatus = ApptPaymentStatus.REFUNDED;
+      appointment.paymentStatus =
+        (appointment.paidAmount || 0) > 0
+          ? ApptPaymentStatus.REFUNDED
+          : ApptPaymentStatus.PENDING_ONLINE;
     }
     await appointment.save();
+    getIO()?.emit("appointment_slot_released", {
+      doctorId: appointment.doctor,
+      date: appointment.date,
+    });
 
     // Update related invoice
     const invoice = await Invoice.findOne({ appointment: id });

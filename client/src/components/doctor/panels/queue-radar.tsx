@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { AppointmentRecord } from "@/lib/api/appointment";
 import { useMemo } from "react";
+import { formatTimeRange } from "@/lib/time-format";
 
 export function QueueRadar({
   appointments,
@@ -40,7 +41,7 @@ export function QueueRadar({
         x,
         y,
         name,
-        time: appt.timeSlot,
+        time: formatTimeRange(appt.timeSlot, appt.slotEndTime),
         status: appt.status,
       };
     });

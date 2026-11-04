@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { getScheduleApi } from "@/lib/api/doctor";
 import { getSocket } from "@/lib/socket";
+import { formatTimeRange } from "@/lib/time-format";
 
 /* ---------- primitives ---------- */
 
@@ -183,7 +184,10 @@ export function RotaPanel() {
               <div className="rounded-lg bg-muted/30 p-3">
                 <p className="mono-label text-muted-foreground">Hours</p>
                 <p className="mt-1 font-mono font-semibold">
-                  {availability.startTime}–{availability.endTime}
+                  {formatTimeRange(
+                    availability.startTime,
+                    availability.endTime,
+                  )}
                 </p>
               </div>
               <div className="rounded-lg bg-muted/30 p-3">
@@ -259,7 +263,12 @@ export function RotaPanel() {
                       })}
                     </Td>
                     <Td>
-                      <span className="font-mono">{appointment.timeSlot}</span>
+                      <span className="font-mono">
+                        {formatTimeRange(
+                          appointment.timeSlot,
+                          appointment.slotEndTime,
+                        )}
+                      </span>
                     </Td>
                     <Td>{appointment.patient?.name || "Patient"}</Td>
                     <Td>
@@ -302,7 +311,7 @@ export function RotaPanel() {
                   </p>
                 </div>
                 <p className="font-mono text-sm">
-                  {shift.startTime}–{shift.endTime}
+                  {formatTimeRange(shift.startTime, shift.endTime)}
                 </p>
               </div>
             ))}

@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { ConsultationForm } from "@/components/doctor/shared/consultation-form";
 import { getSocket } from "@/lib/socket";
+import { formatTimeRange } from "@/lib/time-format";
 import { QueueRadar } from "./queue-radar";
 import { NeonTimeline } from "./neon-timeline";
 
@@ -346,7 +347,17 @@ export function ClinicPanel() {
                   <span className="font-mono font-semibold text-foreground">
                     {appointment.date}
                   </span>
-                  <span>{appointment.timeSlot}</span>
+                  <span>
+                    {formatTimeRange(
+                      appointment.timeSlot,
+                      appointment.slotEndTime,
+                    )}
+                  </span>
+                  {appointment.queueNumber && (
+                    <span className="font-semibold text-primary">
+                      Queue #{String(appointment.queueNumber).padStart(2, "0")}
+                    </span>
+                  )}
                   <span>{appointment.department}</span>
                   <span>
                     {appointment.type === "TELECONSULT"
@@ -440,8 +451,13 @@ export function ClinicPanel() {
                         {a.date}
                       </span>
                       <p className="mono-label text-muted-foreground text-xs">
-                        {a.timeSlot}
+                        {formatTimeRange(a.timeSlot, a.slotEndTime)}
                       </p>
+                      {a.queueNumber && (
+                        <p className="mono-label text-primary text-xs font-semibold">
+                          Queue #{String(a.queueNumber).padStart(2, "0")}
+                        </p>
+                      )}
                     </Td>
                     <Td>
                       <span className="font-medium text-foreground">

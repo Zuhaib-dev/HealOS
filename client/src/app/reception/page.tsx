@@ -23,6 +23,7 @@ import {
   ReceptionOverviewData,
 } from "@/lib/api/reception";
 import { getSocket } from "@/lib/socket";
+import { formatTime12Hour, formatTimeRange } from "@/lib/time-format";
 
 // Reusable Cell Shell
 function MetricCard({
@@ -258,10 +259,18 @@ export default function ReceptionOverview() {
                   </p>
                   <p className="mono-label text-xs text-muted-foreground mt-0.5">
                     {item.department} · {item.doctorName}
+                    {item.queueNumber
+                      ? ` · Queue #${String(item.queueNumber).padStart(2, "0")}`
+                      : ""}
                   </p>
                 </div>
                 <div className="mono-label text-muted-foreground mt-3 flex items-center justify-between text-xs border-t border-border/30 pt-2">
-                  <span>Slot: {item.timeSlot}</span>
+                  <span>
+                    {item.arrivalTime
+                      ? `Arrive ${formatTime12Hour(item.arrivalTime)} · `
+                      : "Slot: "}
+                    {formatTimeRange(item.timeSlot, item.slotEndTime)}
+                  </span>
                   <span className="inline-flex items-center gap-1 font-mono">
                     <Clock className="size-3" /> {item.waitMinutes}m
                   </span>

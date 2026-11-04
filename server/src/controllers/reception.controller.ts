@@ -9,6 +9,7 @@ import {
 import { AppError } from "../middleware/error-handler.js";
 import { getIO } from "../socket.js";
 import crypto from "crypto";
+import { getClinicDateKey } from "../utils/clinic-date.js";
 
 // ==========================================
 // 1. Get Reception Overview Stats
@@ -18,8 +19,8 @@ export const getReceptionOverview = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getClinicDateKey();
+    const todayStart = new Date(`${today}T00:00:00+05:30`);
 
     // 1. Registrations Today
     const [appointmentsToday, totalPatients, newPatientsToday] =
@@ -28,7 +29,7 @@ export const getReceptionOverview = async (
         User.countDocuments({ role: UserRole.PATIENT }),
         User.countDocuments({
           role: UserRole.PATIENT,
-          createdAt: { $gte: today },
+          createdAt: { $gte: todayStart },
         }),
       ]);
 
@@ -40,6 +41,7 @@ export const getReceptionOverview = async (
     const waitingAppointments = await Appointment.find({
       date: { $gte: today },
       status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING] },
+      $nor: [{ paymentMethod: "ONLINE", paymentStatus: "PENDING_ONLINE" }],
     })
       .populate("patient", "name phone")
       .populate("doctor", "name department")
@@ -99,11 +101,16 @@ export const getReceptionOverview = async (
       .slice(0, 8)
       .map((a: any, idx: number) => ({
         id: a._id.toString(),
-        tokenNumber: `${(a.department || "OPD").charAt(0).toUpperCase()}-${String(idx + 10).padStart(2, "0")}`,
+        tokenNumber: a.queueNumber
+          ? `#${String(a.queueNumber).padStart(2, "0")}`
+          : `${(a.department || "OPD").charAt(0).toUpperCase()}-${String(idx + 10).padStart(2, "0")}`,
+        queueNumber: a.queueNumber,
         patientName: a.patient?.name || "Walk-in Patient",
         department: a.department || "General OPD",
         doctorName: a.doctor?.name || "On-Duty Clinician",
         timeSlot: a.timeSlot || "Walk-in",
+        slotEndTime: a.slotEndTime,
+        arrivalTime: a.arrivalTime,
         status: a.status,
         waitMinutes: Math.max(
           1,

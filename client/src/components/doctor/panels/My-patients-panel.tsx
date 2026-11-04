@@ -19,6 +19,7 @@ import {
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
 import { getPatientHistoryApi } from "@/lib/api/doctor";
+import { formatTimeRange } from "@/lib/time-format";
 import { AnimatePresence } from "motion/react";
 import {
   Loader2,
@@ -237,7 +238,7 @@ export function RoundsPanel() {
                   <div className="bg-muted/30 rounded-lg p-3 border border-border/40">
                     <p className="text-xs font-semibold flex items-center gap-1.5 text-foreground">
                       <Clock className="size-3 text-emerald-500" />{" "}
-                      {apt.timeSlot}
+                      {formatTimeRange(apt.timeSlot, apt.slotEndTime)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
                       {apt.reason}
@@ -285,7 +286,11 @@ export function RoundsPanel() {
                       : "Patient"}
                   </h2>
                   <p className="mono-label text-muted-foreground mt-1 text-[10px]">
-                    Appointment: {selectedAppointment.timeSlot}
+                    Appointment:{" "}
+                    {formatTimeRange(
+                      selectedAppointment.timeSlot,
+                      selectedAppointment.slotEndTime,
+                    )}
                   </p>
                 </div>
                 <button

@@ -35,6 +35,9 @@ import {
 } from "@/lib/api/admin";
 import { toast } from "sonner";
 import { useAdminRealtime } from "../use-admin-realtime";
+import { formatTimeRange } from "@/lib/time-format";
+import { formatTime12Hour } from "@/lib/time-format";
+import { TimePicker12Hour } from "@/components/shared/time-picker-12h";
 
 import {
   getApiErrorMessage,
@@ -173,15 +176,21 @@ export function SchedulePanel() {
 
   // Map appointments
   const mappedApts = appointments.map((apt) => {
-    const [hourStr, minStr] = apt.timeSlot.split(":");
-    const startHour = parseInt(hourStr) + parseInt(minStr) / 60;
+    const [hourStr, minStr] = (apt.timeSlot || "").split(":");
+    const startHour = hourStr
+      ? parseInt(hourStr) + parseInt(minStr || "0") / 60
+      : scheduleWindow.from;
+    const [endHourStr, endMinuteStr] = (apt.slotEndTime || "").split(":");
+    const endHour = endHourStr
+      ? parseInt(endHourStr) + parseInt(endMinuteStr || "0") / 60
+      : startHour + 1;
     return {
       id: apt._id,
       room: apt.doctor?.department || "General",
       label: apt.patient?.user?.name || "Patient",
-      subLabel: "Case: " + (apt.doctor?.user?.name || "Doctor"),
+      subLabel: `${apt.queueNumber ? `Queue #${apt.queueNumber} · ` : ""}Case: ${apt.doctor?.user?.name || "Doctor"}`,
       start: startHour,
-      end: startHour + 1, // Assume 1 hr
+      end: endHour,
       state:
         apt.status === "COMPLETED"
           ? "in-theatre"
@@ -320,30 +329,28 @@ export function SchedulePanel() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <label className="text-xs">
               Start{" "}
-              <input
+              <TimePicker12Hour
                 aria-label="Clinic start time"
-                type="time"
-                className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                className="mt-1"
                 value={availabilityForm.startTime}
-                onChange={(e) =>
+                onChange={(startTime) =>
                   setAvailabilityForm((v) => ({
                     ...v,
-                    startTime: e.target.value,
+                    startTime,
                   }))
                 }
               />
             </label>
             <label className="text-xs">
               End{" "}
-              <input
+              <TimePicker12Hour
                 aria-label="Clinic end time"
-                type="time"
-                className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                className="mt-1"
                 value={availabilityForm.endTime}
-                onChange={(e) =>
+                onChange={(endTime) =>
                   setAvailabilityForm((v) => ({
                     ...v,
-                    endTime: e.target.value,
+                    endTime,
                   }))
                 }
               />
@@ -442,7 +449,8 @@ export function SchedulePanel() {
                   />
                   {row.doctor?.name || "Doctor"}
                   <span className="text-muted-foreground">
-                    {row.startTime}–{row.endTime} · {row.maxPatientsPerDay}/day
+                    {formatTimeRange(row.startTime, row.endTime)} ·{" "}
+                    {row.maxPatientsPerDay}/day
                   </span>
                 </span>
               ))}
@@ -561,21 +569,20 @@ export function SchedulePanel() {
               >
                 Start Time
               </label>
-              <input
+              <TimePicker12Hour
                 id="shift-start-time"
-                type="time"
                 required={true}
-                aria-invalid={Boolean(formErrors.startTime)}
+                invalid={Boolean(formErrors.startTime)}
                 aria-describedby={
                   formErrors.startTime ? "shift-start-time-error" : undefined
                 }
                 value={formData.startTime}
-                onChange={(e) => {
-                  setFormData((d) => ({ ...d, startTime: e.target.value }));
+                onChange={(startTime) => {
+                  setFormData((d) => ({ ...d, startTime }));
                   if (formErrors.startTime)
                     setFormErrors((prev) => ({ ...prev, startTime: "" }));
                 }}
-                className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.startTime ? "border-destructive" : ""}`}
+                className={`w-full ${formErrors.startTime ? "rounded-md border border-destructive" : ""}`}
               />
               {formErrors.startTime && (
                 <span
@@ -594,21 +601,20 @@ export function SchedulePanel() {
               >
                 End Time
               </label>
-              <input
+              <TimePicker12Hour
                 id="shift-end-time"
-                type="time"
                 required={true}
-                aria-invalid={Boolean(formErrors.endTime)}
+                invalid={Boolean(formErrors.endTime)}
                 aria-describedby={
                   formErrors.endTime ? "shift-end-time-error" : undefined
                 }
                 value={formData.endTime}
-                onChange={(e) => {
-                  setFormData((d) => ({ ...d, endTime: e.target.value }));
+                onChange={(endTime) => {
+                  setFormData((d) => ({ ...d, endTime }));
                   if (formErrors.endTime)
                     setFormErrors((prev) => ({ ...prev, endTime: "" }));
                 }}
-                className={`hairline w-full bg-background px-3 py-2 text-sm outline-none focus:border-accent ${formErrors.endTime ? "border-destructive" : ""}`}
+                className={`w-full ${formErrors.endTime ? "rounded-md border border-destructive" : ""}`}
               />
               {formErrors.endTime && (
                 <span
@@ -674,7 +680,7 @@ export function SchedulePanel() {
             <div className="mono-label text-muted-foreground flex pl-28">
               {hours.map((h) => (
                 <span key={h} className="flex-1">
-                  {String(h).padStart(2, "0")}:00
+                  {formatTime12Hour(`${String(h).padStart(2, "0")}:00`)}
                 </span>
               ))}
             </div>

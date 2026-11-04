@@ -15,6 +15,7 @@ import { AppError } from "../middleware/error-handler.js";
 import ImageKit from "imagekit";
 import fs from "fs";
 import { getIO } from "../socket.js";
+import { getClinicDateKey } from "../utils/clinic-date.js";
 
 // Initialize ImageKit
 const imagekit = new ImageKit({
@@ -589,7 +590,7 @@ export const getSchedule = async (req: Request, res: Response) => {
     const schedule = await Schedule.find({ user: doctorId })
       .sort({ date: 1, startTime: 1 })
       .lean();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getClinicDateKey();
     const [availability, appointments] = await Promise.all([
       DoctorAvailability.findOne({ doctor: doctorId }).lean(),
       Appointment.find({

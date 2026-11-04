@@ -57,7 +57,7 @@ export interface AppointmentRecord {
 
 export interface BookAppointmentPayload {
   doctorId: string;
-  department: string;
+  department?: string;
   date: string;
   reason: string;
   type?: AppointmentType;

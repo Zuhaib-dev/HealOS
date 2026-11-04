@@ -229,9 +229,14 @@ export function BookPanel() {
   }, [dept, filteredDoctors, selectedDoctorId]);
 
   const handleBook = async () => {
-    if (!date || !availability?.available || !selectedDoctorId || !reason) {
+    if (
+      !date ||
+      !availability?.available ||
+      !selectedDoctorId ||
+      reason.trim().length < 3
+    ) {
       toast.error(
-        "Choose an available date, doctor, and enter a visit reason.",
+        "Choose an available date and doctor, and enter a visit reason with at least 3 characters.",
       );
       return;
     }
@@ -245,9 +250,8 @@ export function BookPanel() {
         // Reserve a unique appointment window before taking payment.
         const reservation = await bookAppointmentApi({
           doctorId: selectedDoctorId,
-          department: selectedDoctorObj?.specialization || dept.label,
           date: format(date, "yyyy-MM-dd"),
-          reason,
+          reason: reason.trim(),
           type: mode,
           paymentMethod,
         });
@@ -349,9 +353,8 @@ export function BookPanel() {
         // CASH Booking
         const res = await bookAppointmentApi({
           doctorId: selectedDoctorId,
-          department: selectedDoctorObj?.specialization || dept.label,
           date: format(date, "yyyy-MM-dd"),
-          reason,
+          reason: reason.trim(),
           type: mode,
           paymentMethod,
         });

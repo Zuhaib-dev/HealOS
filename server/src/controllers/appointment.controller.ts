@@ -22,10 +22,12 @@ import {
 } from "../utils/clinic-date.js";
 
 const bookAppointmentSchema = z.object({
-  doctorId: z.string().min(1, "Doctor selection is required"),
-  department: z.string().min(1, "Department is required"),
-  date: z.string().min(1, "Appointment date is required"),
-  reason: z.string().min(3, "Reason for visit is required"),
+  doctorId: z.string().regex(/^[a-f\d]{24}$/i, "Choose a valid doctor"),
+  // The server resolves the department from the approved doctor's profile.
+  // Keep this optional for older clients that still send it.
+  department: z.string().trim().optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a valid date"),
+  reason: z.string().trim().min(3, "Reason must be at least 3 characters"),
   type: z
     .enum([
       AppointmentType.IN_PERSON,
@@ -60,7 +62,9 @@ export const bookAppointment = async (
     if (!parsed.success) {
       res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: "Invalid booking data",
+        message:
+          parsed.error.issues[0]?.message ||
+          "Please check the booking details.",
         errors: parsed.error.format(),
       });
       return;

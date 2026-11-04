@@ -105,7 +105,20 @@ export const fetchPatientAppointmentsApi = async () => {
 export const fetchDoctorAppointmentsApi = async (
   page: number = 1,
   limit: number = 10,
+  filters: {
+    search?: string;
+    status?: string;
+    period?: string;
+    department?: string;
+  } = {},
 ) => {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value && value !== "ALL") params.set(key, value);
+  });
   const response = await apiClient.get<{
     success: boolean;
     count: number;
@@ -113,7 +126,7 @@ export const fetchDoctorAppointmentsApi = async (
     totalPages: number;
     currentPage: number;
     appointments: AppointmentRecord[];
-  }>(`/appointments/doctor?page=${page}&limit=${limit}`);
+  }>(`/appointments/doctor?${params.toString()}`);
   return response.data;
 };
 

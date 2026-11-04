@@ -337,12 +337,44 @@ export const getDoctorAppointments = async (
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
+    const status = typeof req.query.status === "string" ? req.query.status : "";
+    const period = typeof req.query.period === "string" ? req.query.period : "";
+    const search =
+      typeof req.query.search === "string" ? req.query.search.trim() : "";
+    const department =
+      typeof req.query.department === "string"
+        ? req.query.department.trim()
+        : "";
+    const query: Record<string, any> = { doctor: doctorId };
+    if (Object.values(AppointmentStatus).includes(status as AppointmentStatus))
+      query.status = status;
+    const today = new Date().toISOString().slice(0, 10);
+    if (period === "UPCOMING") query.date = { $gte: today };
+    if (period === "PAST") query.date = { $lt: today };
+    if (department) query.department = department;
+    if (search) {
+      const safeSearch = search.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&");
+      const matchingPatients = await User.find({
+        role: UserRole.PATIENT,
+        $or: [
+          { name: { $regex: safeSearch, $options: "i" } },
+          { email: { $regex: safeSearch, $options: "i" } },
+          { phone: { $regex: safeSearch, $options: "i" } },
+        ],
+      })
+        .select("_id")
+        .lean();
+      query.$or = [
+        { reason: { $regex: safeSearch, $options: "i" } },
+        { department: { $regex: safeSearch, $options: "i" } },
+        { patient: { $in: matchingPatients.map((patient) => patient._id) } },
+      ];
+    }
+    const totalCount = await Appointment.countDocuments(query);
 
-    const totalCount = await Appointment.countDocuments({ doctor: doctorId });
-
-    const appointments = await Appointment.find({ doctor: doctorId })
+    const appointments = await Appointment.find(query)
       .populate("patient", "name email phone avatarUrl")
-      .sort({ date: -1, timeSlot: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .skip(skip)
       .limit(limit);
 

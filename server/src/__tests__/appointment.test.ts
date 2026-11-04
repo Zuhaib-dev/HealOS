@@ -6,6 +6,8 @@ import {
   AppointmentType,
   PaymentMethod,
   AppointmentStatus,
+  ProfessionalProfile,
+  DoctorAvailability,
 } from "../models";
 import { API_PREFIX } from "@healos/shared";
 import jwt from "jsonwebtoken";
@@ -22,6 +24,7 @@ describe("Appointment API", () => {
   let doctorToken: string;
   let patientId: string;
   let doctorId: string;
+  let appointmentDate: string;
 
   beforeEach(async () => {
     // 1. Create a mock Patient
@@ -45,6 +48,30 @@ describe("Appointment API", () => {
     });
     doctorId = doctor._id.toString();
     doctorToken = generateTestToken(doctorId, UserRole.DOCTOR);
+
+    // Bookings require an approved doctor profile and an active rota.
+    await ProfessionalProfile.create({
+      user: doctor._id,
+      requestedRole: UserRole.DOCTOR,
+      degree: "MBBS",
+      specialization: "Cardiology",
+      experienceYears: 5,
+      licenseNumber: `TEST-${doctorId}`,
+      status: "APPROVED",
+    });
+    await DoctorAvailability.create({
+      doctor: doctor._id,
+      weekdays: [0, 1, 2, 3, 4, 5, 6],
+      startTime: "09:00",
+      endTime: "17:00",
+      slotDurationMinutes: 60,
+      maxPatientsPerDay: 8,
+      active: true,
+    });
+
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 2);
+    appointmentDate = futureDate.toISOString().slice(0, 10);
   });
 
   describe("Booking Flow", () => {
@@ -64,8 +91,7 @@ describe("Appointment API", () => {
       const bookingPayload = {
         doctorId,
         department: "Cardiology",
-        date: "2026-10-15",
-        timeSlot: "10:00 AM",
+        date: appointmentDate,
         reason: "Routine Checkup",
         type: AppointmentType.IN_PERSON,
         paymentMethod: PaymentMethod.CASH,
@@ -82,32 +108,35 @@ describe("Appointment API", () => {
       expect(res.body.appointment.status).toBe(AppointmentStatus.PENDING);
     });
 
-    it("should prevent double-booking the same slot for a doctor", async () => {
+    it("should assign distinct real slots when multiple patients book the same day", async () => {
       const payload = {
         doctorId,
         department: "Cardiology",
-        date: "2026-10-15",
-        timeSlot: "10:00 AM",
+        date: appointmentDate,
         reason: "Different Issue",
         type: AppointmentType.IN_PERSON,
         paymentMethod: PaymentMethod.CASH,
       };
 
-      // Book first time
-      await request(app)
+      // Booking assigns the earliest free time automatically.
+      const first = await request(app)
         .post(`${API_PREFIX}/appointments/book`)
         .set("Authorization", `Bearer ${patientToken}`)
         .send(payload);
 
-      // Book second time
-      const res = await request(app)
+      const second = await request(app)
         .post(`${API_PREFIX}/appointments/book`)
         .set("Authorization", `Bearer ${patientToken}`)
         .send(payload);
 
-      expect(res.status).toBe(409); // Conflict
-      expect(res.body.success).toBe(false);
-      expect(res.body.message).toMatch(/already booked/i);
+      expect(first.status).toBe(201);
+      expect(second.status).toBe(201);
+      expect(first.body.appointment.timeSlot).not.toBe(
+        second.body.appointment.timeSlot,
+      );
+      expect(first.body.appointment.queueNumber).not.toBe(
+        second.body.appointment.queueNumber,
+      );
     });
   });
 
@@ -120,8 +149,7 @@ describe("Appointment API", () => {
         .send({
           doctorId,
           department: "Cardiology",
-          date: "2026-10-16",
-          timeSlot: "11:00 AM",
+          date: appointmentDate,
           reason: "Follow up",
           type: AppointmentType.IN_PERSON,
           paymentMethod: PaymentMethod.CASH,

@@ -3,7 +3,6 @@ import { verifyToken, requireRole } from "../middleware/auth.middleware.js";
 import {
   getPatientDashboard,
   updatePatientProfile,
-  payInvoice,
   uploadPatientDocument,
 } from "../controllers/patient.controller.js";
 import { UserRole } from "../models/user.model.js";
@@ -16,7 +15,6 @@ router.use(requireRole([UserRole.PATIENT]));
 
 router.get("/dashboard", getPatientDashboard);
 router.put("/profile", updatePatientProfile);
-router.post("/invoices/:id/pay", payInvoice);
 router.post("/upload", upload.single("file"), uploadPatientDocument);
 
 export default router;

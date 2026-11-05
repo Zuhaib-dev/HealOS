@@ -85,24 +85,37 @@ function Metric({
 
 function RevenueChart({ invoices }: { invoices: AdminInvoiceData[] }) {
   const revenueData = useMemo(() => {
-    const sorted = [...invoices]
-      .filter((i) => i.status === "PAID")
-      .sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      );
     const grouped: Record<string, number> = {};
-    sorted.forEach((inv) => {
-      const date = new Date(inv.createdAt).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
+    invoices.forEach((invoice) => {
+      const transactions = invoice.paymentHistory?.length
+        ? invoice.paymentHistory
+        : invoice.status === "PAID"
+          ? [
+              {
+                amount:
+                  invoice.paidAmount ||
+                  Math.max(
+                    0,
+                    invoice.totalAmount - (invoice.insuranceCoverage || 0),
+                  ),
+                paidAt: invoice.createdAt,
+              },
+            ]
+          : [];
+      transactions.forEach((payment) => {
+        const dateKey = new Date(payment.paidAt).toISOString().slice(0, 10);
+        grouped[dateKey] = (grouped[dateKey] || 0) + payment.amount;
       });
-      grouped[date] = (grouped[date] || 0) + (inv.totalAmount || 0);
     });
-    const data = Object.entries(grouped).map(([date, total]) => ({
-      date,
-      total,
-    }));
+    const data = Object.entries(grouped)
+      .sort(([first], [second]) => first.localeCompare(second))
+      .map(([dateKey, total]) => ({
+        date: new Date(`${dateKey}T12:00:00`).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }),
+        total,
+      }));
     return data.length > 0 ? data : [{ date: "No data", total: 0 }];
   }, [invoices]);
 

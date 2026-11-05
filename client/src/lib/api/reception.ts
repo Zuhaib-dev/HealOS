@@ -87,7 +87,9 @@ export interface InvoiceRecord {
   };
   items: InvoiceItem[];
   totalAmount: number;
-  status: "PENDING" | "PAID" | "CANCELLED" | string;
+  paidAmount?: number;
+  appointment?: { paidAmount?: number };
+  status: "PENDING" | "PARTIAL" | "PAID" | "CANCELLED" | string;
   paymentMethod?: "CASH" | "CARD" | "UPI" | "INSURANCE" | string;
   payer?: string;
   insuranceCoverage?: number;

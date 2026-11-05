@@ -41,11 +41,7 @@ import {
 } from "@/lib/api/onboarding";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import {
-  fetchPatientDashboardApi,
-  PatientDashboardData,
-  payInvoiceApi,
-} from "@/lib/api/patient";
+import { fetchPatientDashboardApi, PatientDashboardData } from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
 import {
@@ -112,11 +108,16 @@ function stateTone(s: string) {
 }
 
 function invoicePaidAmount(invoice: PatientDashboardData["invoices"][number]) {
-  const recorded = invoice.paidAmount ?? invoice.appointment?.paidAmount;
-  if (recorded !== undefined) return Math.max(0, recorded);
+  const recorded = Math.max(
+    invoice.paidAmount || 0,
+    invoice.appointment?.paidAmount || 0,
+  );
   if (invoice.status === "PAID")
-    return Math.max(0, invoice.totalAmount - (invoice.insuranceCoverage || 0));
-  return 0;
+    return Math.max(
+      recorded,
+      invoice.totalAmount - (invoice.insuranceCoverage || 0),
+    );
+  return Math.max(0, recorded);
 }
 
 function invoiceBalanceDue(invoice: PatientDashboardData["invoices"][number]) {
@@ -180,14 +181,12 @@ export function BillingPanel() {
       // 1. Create Order
       const orderRes = await createRazorpayOrderApi({
         invoiceId: id,
-        receipt: id,
       });
       if (!orderRes.success) throw new Error("Failed to create Razorpay order");
 
       // 2. Open Razorpay
       const options = {
-        key:
-          process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_V0P16tZ8KXX30y",
+        key: orderRes.keyId,
         amount: orderRes.order.amount,
         currency: "INR",
         name: "HealOS",
@@ -246,12 +245,24 @@ export function BillingPanel() {
     0,
   );
   const currentYear = new Date().getFullYear();
-  const paidThisYear = invoiceRows
-    .filter((invoice) => {
-      const paidDate = invoice.paidAt || invoice.createdAt;
-      return new Date(paidDate).getFullYear() === currentYear;
-    })
-    .reduce((sum, invoice) => sum + invoicePaidAmount(invoice), 0);
+  const paidThisYear = invoiceRows.reduce((sum, invoice) => {
+    if (invoice.paymentHistory?.length) {
+      return (
+        sum +
+        invoice.paymentHistory
+          .filter(
+            (payment) =>
+              payment.method !== "INSURANCE" &&
+              new Date(payment.paidAt).getFullYear() === currentYear,
+          )
+          .reduce((paid, payment) => paid + payment.amount, 0)
+      );
+    }
+    const paidDate = invoice.paidAt;
+    return paidDate && new Date(paidDate).getFullYear() === currentYear
+      ? sum + invoicePaidAmount(invoice)
+      : sum;
+  }, 0);
   const insuredAmount = invoiceRows.reduce(
     (sum, invoice) => sum + (invoice.insuranceCoverage || 0),
     0,
@@ -395,6 +406,26 @@ export function BillingPanel() {
                       <span>Paid so far</span>
                       <span>₹{invoicePaidAmount(invoice)}</span>
                     </div>
+                    {invoice.paymentHistory?.length ? (
+                      <div className="border-t border-border/50 pt-2">
+                        <p className="mb-2 text-muted-foreground">
+                          Payment activity
+                        </p>
+                        {invoice.paymentHistory.map((payment, index) => (
+                          <div
+                            key={`${payment.paidAt}-${index}`}
+                            className="flex justify-between gap-3 py-1"
+                          >
+                            <span>
+                              {payment.method} · {payment.source === "RAZORPAY" ? "Online" : "Counter"}
+                            </span>
+                            <span className="shrink-0">
+                              ₹{payment.amount} · {new Date(payment.paidAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                     {(invoice.insuranceCoverage || 0) > 0 && (
                       <div className="flex justify-between text-muted-foreground">
                         <span>Insurance coverage</span>
@@ -632,6 +663,26 @@ export function BillingPanel() {
                                   ₹{invoicePaidAmount(b).toLocaleString()}
                                 </span>
                               </div>
+                              {b.paymentHistory?.length ? (
+                                <div className="mt-3 space-y-1 border-t border-border/50 pt-3 text-xs text-muted-foreground">
+                                  <p className="font-semibold text-foreground">
+                                    Payment activity
+                                  </p>
+                                  {b.paymentHistory.map((payment, index) => (
+                                    <div
+                                      key={`${payment.paidAt}-${index}`}
+                                      className="flex justify-between gap-3"
+                                    >
+                                      <span>
+                                        {payment.method} · {payment.source === "RAZORPAY" ? "Online" : "Counter"}
+                                      </span>
+                                      <span className="shrink-0">
+                                        ₹{payment.amount.toLocaleString()} · {new Date(payment.paidAt).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
                               {(b.insuranceCoverage || 0) > 0 && (
                                 <div className="mt-2 flex justify-between text-sm text-muted-foreground">
                                   <span>Insurance coverage</span>

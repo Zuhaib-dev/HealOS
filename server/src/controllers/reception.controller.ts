@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { User, UserRole, PatientProfile } from "../models/index.js";
-import { Appointment, AppointmentStatus } from "../models/appointment.model.js";
+import {
+  Appointment,
+  AppointmentStatus,
+  PaymentStatus,
+} from "../models/appointment.model.js";
 import {
   Invoice,
   InvoiceStatus,
@@ -65,36 +69,64 @@ export const getReceptionOverview = async (
 
     // 3. Collections Today
     const paidInvoicesToday = await Invoice.find({
-      status: InvoiceStatus.PAID,
-      updatedAt: { $gte: today },
+      $or: [
+        { "paymentHistory.paidAt": { $gte: todayStart } },
+        { paidAt: { $gte: todayStart } },
+      ],
+    }).select("totalAmount paidAmount insuranceCoverage paymentMethod paidAt paymentHistory");
+    const todayPayments = paidInvoicesToday.flatMap((invoice) => {
+      const history = (invoice.paymentHistory || []).filter(
+        (payment) => payment.paidAt >= todayStart,
+      );
+      if (history.length) return history;
+      // Fall back for bills recorded before payment history was added.
+      if (invoice.paidAt && invoice.paidAt >= todayStart) {
+        return [
+          {
+            amount:
+              invoice.paymentMethod === InvoicePaymentMethod.INSURANCE
+                ? invoice.insuranceCoverage || invoice.totalAmount
+                : invoice.paidAmount ||
+                  Math.max(
+                    0,
+                    invoice.totalAmount - (invoice.insuranceCoverage || 0),
+                  ),
+            method: invoice.paymentMethod,
+          },
+        ];
+      }
+      return [];
     });
 
-    const totalCollectionsToday = paidInvoicesToday.reduce(
-      (sum, inv) => sum + (inv.totalAmount || 0),
+    const totalCollectionsToday = todayPayments.reduce(
+      (sum, payment) => sum + payment.amount,
       0,
     );
-    const cashCount = paidInvoicesToday.filter(
-      (i) => i.paymentMethod === InvoicePaymentMethod.CASH,
+    const cashCount = todayPayments.filter(
+      (payment) => payment.method === InvoicePaymentMethod.CASH,
     ).length;
-    const cardCount = paidInvoicesToday.filter(
-      (i) => i.paymentMethod === InvoicePaymentMethod.CARD,
+    const cardCount = todayPayments.filter(
+      (payment) => payment.method === InvoicePaymentMethod.CARD,
     ).length;
-    const upiCount = paidInvoicesToday.filter(
-      (i) => i.paymentMethod === InvoicePaymentMethod.UPI,
+    const upiCount = todayPayments.filter(
+      (payment) => payment.method === InvoicePaymentMethod.UPI,
+    ).length;
+    const insuranceCount = todayPayments.filter(
+      (payment) => payment.method === InvoicePaymentMethod.INSURANCE,
     ).length;
 
     // 4. Insurance Captured
     const totalInvoicesToday = await Invoice.countDocuments({
-      createdAt: { $gte: today },
+      createdAt: { $gte: todayStart },
     });
     const insuranceInvoicesToday = await Invoice.countDocuments({
-      createdAt: { $gte: today },
+      createdAt: { $gte: todayStart },
       $or: [{ payer: "insurance" }, { insuranceCoverage: { $gt: 0 } }],
     });
     const insurancePercentage =
       totalInvoicesToday > 0
         ? ((insuranceInvoicesToday / totalInvoicesToday) * 100).toFixed(1)
-        : "96.4";
+        : "0.0";
 
     // 5. Recent Queue Snapshot
     const recentQueue = waitingAppointments
@@ -139,8 +171,8 @@ export const getReceptionOverview = async (
               ? `₹${(totalCollectionsToday / 100000).toFixed(2)} L`
               : `₹${totalCollectionsToday.toLocaleString("en-IN")}`,
           subValue: "total",
-          breakdown: `${cashCount} cash · ${cardCount} card · ${upiCount} UPI`,
-          note: "cash + card + UPI",
+          breakdown: `${cashCount} cash · ${cardCount} card · ${upiCount} UPI · ${insuranceCount} insurer`,
+          note: "cash + card + UPI + insurer",
         },
         insurance: {
           value: insurancePercentage,
@@ -320,13 +352,23 @@ export const getPendingBills = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const invoices = await Invoice.find({ status: InvoiceStatus.PENDING })
+    const invoices = await Invoice.find({
+      status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+    })
       .populate("patient", "name firstName lastName phone")
+      .populate("appointment", "paidAmount")
       .sort({ createdAt: 1 });
+
+    const dueInvoices = invoices.filter((invoice) => {
+      const appointmentPaid =
+        (invoice.appointment as any)?.paidAmount || 0;
+      const paid = Math.max(invoice.paidAmount || 0, appointmentPaid);
+      return invoice.totalAmount - (invoice.insuranceCoverage || 0) - paid > 0;
+    });
 
     res.status(200).json({
       status: "success",
-      data: { invoices },
+      data: { invoices: dueInvoices },
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
@@ -343,29 +385,111 @@ export const payBill = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { paymentMethod } = req.body;
+    const method = Object.values(InvoicePaymentMethod).find(
+      (candidate) => candidate === paymentMethod,
+    );
+    if (!method) throw new AppError("Choose a valid payment method", 400);
 
     const invoice = await Invoice.findById(id);
     if (!invoice) {
       throw new AppError("Invoice not found", 404);
     }
 
-    invoice.status = InvoiceStatus.PAID;
-    invoice.paymentMethod = paymentMethod as InvoicePaymentMethod;
-    invoice.paidAt = new Date();
-    await invoice.save();
+    if (invoice.status === InvoiceStatus.CANCELLED) {
+      throw new AppError("This invoice has been cancelled", 409);
+    }
+    if (invoice.status === InvoiceStatus.PAID) {
+      throw new AppError("This invoice is already settled", 409);
+    }
+    const appointment = invoice.appointment
+      ? await Appointment.findById(invoice.appointment)
+      : null;
+    const paidSoFar = Math.max(
+      invoice.paidAmount || 0,
+      appointment?.paidAmount || 0,
+    );
+    const due = Math.max(
+      0,
+      invoice.totalAmount -
+        (invoice.insuranceCoverage || 0) -
+        paidSoFar,
+    );
+    if (due <= 0) throw new AppError("This invoice has no balance due", 409);
+
+    const paidAt = new Date();
+    const settledInvoice = await Invoice.findOneAndUpdate(
+      { _id: invoice._id, __v: invoice.__v || 0, status: invoice.status },
+      {
+        $set: {
+          paidAmount:
+            method === InvoicePaymentMethod.INSURANCE
+              ? paidSoFar
+              : paidSoFar + due,
+          insuranceCoverage:
+            method === InvoicePaymentMethod.INSURANCE
+              ? (invoice.insuranceCoverage || 0) + due
+              : invoice.insuranceCoverage || 0,
+          status: InvoiceStatus.PAID,
+          paymentMethod: method,
+          paidAt,
+        },
+        $push: {
+          paymentHistory: {
+            amount: due,
+            method,
+            source: "RECEPTION",
+            recordedBy: req.user?._id,
+            paidAt,
+          },
+        },
+        $inc: { __v: 1 },
+      },
+      { new: true, runValidators: true },
+    );
+    if (!settledInvoice) {
+      throw new AppError(
+        "This invoice changed while it was being settled. Refresh and check its balance.",
+        409,
+      );
+    }
+
+    if (appointment) {
+      appointment.paidAmount = Math.max(
+        appointment.paidAmount || 0,
+        settledInvoice.paidAmount || 0,
+      );
+      appointment.paymentStatus =
+        appointment.paidAmount + (settledInvoice.insuranceCoverage || 0) >=
+        appointment.amount
+          ? PaymentStatus.PAID
+          : PaymentStatus.PENDING_CASH;
+      await appointment.save();
+    }
 
     try {
       const io = getIO();
       io.emit("reception:overview_updated");
+      io.emit("invoice_paid", { invoiceId: settledInvoice._id });
+      io.emit("invoice_updated", { invoiceId: settledInvoice._id });
+      io.emit("admin:data_changed", { types: ["invoices", "billing"] });
       io.emit("reception:bill_paid", {
-        invoiceId: invoice._id,
-        amount: invoice.totalAmount,
+        invoiceId: settledInvoice._id,
+        amount: due,
       });
+      if (appointment) {
+        io.emit("appointment_updated", {
+          appointmentId: appointment._id,
+          doctorId: appointment.doctor,
+          patientId: appointment.patient,
+          status: appointment.status,
+          paymentStatus: appointment.paymentStatus,
+        });
+      }
     } catch {}
 
     res.status(200).json({
       status: "success",
-      data: { invoice },
+      data: { invoice: settledInvoice },
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({

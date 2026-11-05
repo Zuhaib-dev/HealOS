@@ -110,7 +110,15 @@ export function CounterPanel() {
             <div className="flex flex-col gap-4">
               <AnimatePresence>
                 {bills.map((b) => {
-                  const net = b.totalAmount - (b.insuranceCoverage || 0);
+                  const net = Math.max(
+                    0,
+                    b.totalAmount -
+                      (b.insuranceCoverage || 0) -
+                      Math.max(
+                        b.paidAmount || 0,
+                        b.appointment?.paidAmount || 0,
+                      ),
+                  );
                   const isPaid = paid[b._id];
                   const isLoading = loading[b._id];
 
@@ -161,7 +169,7 @@ export function CounterPanel() {
                         <div className="flex items-center justify-between lg:justify-end gap-6 mt-2 lg:mt-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-border/40">
                           <div className="text-left lg:text-right">
                             <p className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider">
-                              Total Due
+                              Balance Due
                             </p>
                             <div className="flex items-baseline gap-2 mt-0.5">
                               <span

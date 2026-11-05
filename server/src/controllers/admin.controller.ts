@@ -617,6 +617,7 @@ export const getInvoices = async (
     const { Invoice } = await import("../models/invoice.model.js");
     const invoices = await Invoice.find()
       .populate("patient", "name email phone avatarUrl")
+      .populate("appointment", "paidAmount")
       .sort({ createdAt: -1 });
 
     res.status(StatusCodes.OK).json({

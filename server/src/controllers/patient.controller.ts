@@ -10,7 +10,6 @@ import {
 } from "../models/index.js";
 import { z } from "zod";
 import { AppError } from "../middleware/error-handler.js";
-import { getIO } from "../socket.js";
 import ImageKit from "imagekit";
 import fs from "fs";
 
@@ -153,63 +152,6 @@ export const updatePatientProfile = async (req: Request, res: Response) => {
     res.status(error.statusCode || 500).json({
       success: false,
       message: error.message || "Failed to update patient profile",
-    });
-  }
-};
-
-export const payInvoice = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const patientId = req.user?.id;
-
-    const invoice = await Invoice.findOne({ _id: id, patient: patientId });
-    if (!invoice) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Invoice not found or unauthorized" });
-    }
-
-    if (invoice.status === "PAID") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invoice is already paid" });
-    }
-
-    invoice.status = "PAID" as any; // InvoiceStatus.PAID
-    invoice.paidAmount = Math.max(
-      0,
-      invoice.totalAmount - (invoice.insuranceCoverage || 0),
-    );
-    invoice.paidAt = new Date();
-
-    // Check if it's an appointment invoice
-    if (invoice.appointment) {
-      const appointment = await Appointment.findById(invoice.appointment);
-      if (appointment) {
-        appointment.paidAmount = Math.max(
-          appointment.paidAmount || 0,
-          invoice.paidAmount,
-        );
-        appointment.paymentStatus = "PAID" as any;
-        await appointment.save();
-      }
-    }
-
-    await invoice.save();
-
-    const io = getIO();
-    if (io) {
-      io.emit("invoice_paid", { invoiceId: invoice._id });
-      io.emit("admin:data_changed", { types: ["invoices", "billing"] });
-    }
-
-    res
-      .status(200)
-      .json({ success: true, message: "Invoice paid successfully", invoice });
-  } catch (error: any) {
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || "Failed to pay invoice",
     });
   }
 };

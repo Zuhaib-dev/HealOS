@@ -262,8 +262,7 @@ export function BookPanel() {
         let orderRes;
         try {
           orderRes = await createRazorpayOrderApi({
-            amount: availability.advanceFee || 20,
-            doctorId: selectedDoctorId,
+            appointmentId: reservation.appointment._id,
           });
           if (!orderRes.success) throw new Error("Failed to create order");
         } catch (error) {
@@ -275,10 +274,9 @@ export function BookPanel() {
 
         // 2. Open Razorpay Checkout
         let paymentCaptured = false;
+        const advancePaidAmount = orderRes.order.amount / 100;
         const options = {
-          key:
-            process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-            "rzp_test_V0P16tZ8KXX30y",
+          key: orderRes.keyId,
           amount: orderRes.order.amount,
           currency: "INR",
           name: "HealOS",
@@ -300,12 +298,12 @@ export function BookPanel() {
                 ...reservation.appointment,
                 status: "CONFIRMED",
                 paymentStatus:
-                  (availability.advanceFee || 20) >=
+                  advancePaidAmount >=
                   (availability.consultationFee ||
                     reservation.appointment.amount)
                     ? "PAID"
                     : "PENDING_CASH",
-                paidAmount: availability.advanceFee || 20,
+                paidAmount: advancePaidAmount,
               });
             } catch (err: any) {
               toast.error(

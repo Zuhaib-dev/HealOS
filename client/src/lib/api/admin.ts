@@ -205,6 +205,15 @@ export interface AdminInvoiceData {
   _id: string;
   patient: { name: string; email?: string; phone?: string };
   totalAmount: number;
+  paidAmount?: number;
+  insuranceCoverage?: number;
+  paymentHistory?: {
+    amount: number;
+    method: string;
+    source: string;
+    paidAt: string;
+  }[];
+  appointment?: { paidAmount?: number };
   status: string;
   type: string;
   paymentMethod?: string;

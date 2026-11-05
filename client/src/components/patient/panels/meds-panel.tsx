@@ -36,7 +36,6 @@ import { toast } from "sonner";
 import {
   fetchPatientDashboardApi,
   PatientDashboardData,
-  payInvoiceApi,
 } from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";

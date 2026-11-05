@@ -19,6 +19,16 @@ export interface IInvoiceItem {
   amount: number;
 }
 
+export interface IInvoicePayment {
+  amount: number;
+  method: InvoicePaymentMethod;
+  source: "RAZORPAY" | "RECEPTION";
+  orderId?: string;
+  paymentId?: string;
+  recordedBy?: mongoose.Types.ObjectId;
+  paidAt: Date;
+}
+
 export interface IInvoice extends Document {
   patient: mongoose.Types.ObjectId;
   issuedBy: mongoose.Types.ObjectId; // User who generated the invoice
@@ -26,6 +36,7 @@ export interface IInvoice extends Document {
   items: IInvoiceItem[];
   totalAmount: number;
   paidAmount?: number;
+  paymentHistory?: IInvoicePayment[];
   status: InvoiceStatus;
   paymentMethod?: InvoicePaymentMethod;
   payer: string; // "self", "insurance", "corporate"
@@ -51,6 +62,27 @@ const invoiceSchema = new Schema<IInvoice>(
     ],
     totalAmount: { type: Number, required: true },
     paidAmount: { type: Number, min: 0, default: 0 },
+    paymentHistory: {
+      type: [
+        new Schema<IInvoicePayment>(
+          {
+            amount: { type: Number, min: 0.01, required: true },
+            method: {
+              type: String,
+              enum: Object.values(InvoicePaymentMethod),
+              required: true,
+            },
+            source: { type: String, enum: ["RAZORPAY", "RECEPTION"], required: true },
+            orderId: { type: String },
+            paymentId: { type: String },
+            recordedBy: { type: Schema.Types.ObjectId, ref: "User" },
+            paidAt: { type: Date, required: true, default: Date.now },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     status: {
       type: String,
       enum: Object.values(InvoiceStatus),

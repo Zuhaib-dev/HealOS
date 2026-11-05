@@ -1,14 +1,13 @@
 import apiClient from "../api-client";
 
 export interface CreateOrderPayload {
-  amount?: number;
-  doctorId?: string;
+  appointmentId?: string;
   invoiceId?: string;
-  receipt?: string;
 }
 
 export interface CreateOrderResponse {
   success: boolean;
+  keyId: string;
   order: {
     id: string;
     entity: string;

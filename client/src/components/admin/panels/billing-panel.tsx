@@ -98,6 +98,29 @@ function TablePanel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function invoicePaidAmount(invoice: AdminInvoiceData) {
+  const recorded = Math.max(
+    invoice.paidAmount || 0,
+    invoice.appointment?.paidAmount || 0,
+  );
+  if (invoice.status === "PAID")
+    return Math.max(
+      recorded,
+      invoice.totalAmount - (invoice.insuranceCoverage || 0),
+    );
+  return recorded;
+}
+
+function invoiceBalanceDue(invoice: AdminInvoiceData) {
+  if (invoice.status === "CANCELLED") return 0;
+  return Math.max(
+    0,
+    invoice.totalAmount -
+      (invoice.insuranceCoverage || 0) -
+      invoicePaidAmount(invoice),
+  );
+}
+
 import { fetchAdminInvoicesApi, AdminInvoiceData } from "@/lib/api/admin";
 import { useAdminRealtime } from "../use-admin-realtime";
 
@@ -219,13 +242,27 @@ export function BillingPanel() {
     }
   };
 
-  const totalCollected = invoicesData
-    .filter((i) => i.status === "PAID")
-    .reduce((a, i) => a + (i.totalAmount || 0), 0);
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const totalCollected = invoicesData.reduce((sum, invoice) => {
+    if (invoice.paymentHistory?.length) {
+      return (
+        sum +
+        invoice.paymentHistory
+          .filter(
+            (payment) => new Date(payment.paidAt).getTime() >= monthStart.getTime(),
+          )
+          .reduce((paid, payment) => paid + payment.amount, 0)
+      );
+    }
+    const paidAt = invoice.paidAt ? new Date(invoice.paidAt) : null;
+    return paidAt && paidAt >= monthStart
+      ? sum + invoicePaidAmount(invoice)
+      : sum;
+  }, 0);
 
   const outstanding = invoicesData
-    .filter((i) => i.status !== "PAID" && i.status !== "CANCELLED")
-    .reduce((a, i) => a + (i.totalAmount || 0), 0);
+    .reduce((sum, invoice) => sum + invoiceBalanceDue(invoice), 0);
 
   return (
     <section>
@@ -300,7 +337,9 @@ export function BillingPanel() {
             <Th>Invoice</Th>
             <Th>Patient</Th>
             <Th>Date</Th>
-            <Th>Amount</Th>
+            <Th>Total</Th>
+            <Th>Paid</Th>
+            <Th>Balance</Th>
             <Th>State</Th>
             <Th> </Th>
           </tr>
@@ -309,7 +348,7 @@ export function BillingPanel() {
           {loading ? (
             <tr>
               <td
-                colSpan={6}
+                colSpan={8}
                 className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse"
               >
                 Loading ledgers...
@@ -346,6 +385,16 @@ export function BillingPanel() {
                 <Td>
                   <span className="font-mono font-bold">
                     ₹{(inv.totalAmount || 0).toLocaleString()}
+                  </span>
+                </Td>
+                <Td>
+                  <span className="font-mono">
+                    ₹{invoicePaidAmount(inv).toLocaleString()}
+                  </span>
+                </Td>
+                <Td>
+                  <span className="font-mono">
+                    ₹{invoiceBalanceDue(inv).toLocaleString()}
                   </span>
                 </Td>
                 <Td>

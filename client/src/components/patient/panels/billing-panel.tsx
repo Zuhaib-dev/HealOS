@@ -44,6 +44,7 @@ import { toast } from "sonner";
 import { fetchPatientDashboardApi, PatientDashboardData } from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
+import { PaymentCelebration } from "./payment-celebration";
 import {
   createRazorpayOrderApi,
   verifyRazorpayPaymentApi,
@@ -172,6 +173,7 @@ export function BillingPanel() {
 
   const { user } = useAuthStore();
   const [processing, setProcessing] = useState<string | null>(null);
+  const [paymentCelebration, setPaymentCelebration] = useState(false);
 
   const handleOnlinePay = async (id: string) => {
     try {
@@ -204,6 +206,7 @@ export function BillingPanel() {
               razorpay_signature: response.razorpay_signature,
               invoiceId: id,
             });
+            setPaymentCelebration(true);
             toast.success("Payment successful!");
             refetch();
           } catch (err: any) {
@@ -733,6 +736,10 @@ export function BillingPanel() {
           </table>
         </div>
       </div>
+      <PaymentCelebration
+        active={paymentCelebration}
+        onComplete={() => setPaymentCelebration(false)}
+      />
     </section>
   );
 }

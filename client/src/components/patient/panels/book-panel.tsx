@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/store/use-auth-store";
 import { getSocket } from "@/lib/socket";
 import Image from "next/image";
+import { PaymentCelebration } from "./payment-celebration";
 
 const allDepartments = { id: "all", label: "All departments" };
 
@@ -93,6 +94,7 @@ export function BookPanel() {
   );
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [paymentCelebration, setPaymentCelebration] = useState(false);
   const [bookedRecord, setBookedRecord] = useState<AppointmentRecord | null>(
     null,
   );
@@ -293,6 +295,7 @@ export function BookPanel() {
                 appointmentId: reservation.appointment._id,
               });
 
+              setPaymentCelebration(true);
               toast.success("Advance paid — your appointment is confirmed!");
               setBookedRecord({
                 ...reservation.appointment,
@@ -852,6 +855,10 @@ export function BookPanel() {
           </div>
         </div>
       )}
+      <PaymentCelebration
+        active={paymentCelebration}
+        onComplete={() => setPaymentCelebration(false)}
+      />
       <style jsx global>{`
         .hide-scrollbar::-webkit-scrollbar {
           display: none;

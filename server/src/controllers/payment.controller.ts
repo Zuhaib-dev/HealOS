@@ -274,9 +274,18 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
         ),
       );
       if (!amountPaise) throw new AppError("This invoice has no balance due", 400);
+      // A booking advance used to be stored as the invoice's current Razorpay
+      // order too. Once its payment is recorded, that paid order must not block
+      // a new order for the remaining invoice balance.
+      const previousOrderWasApplied = Boolean(
+        invoice.razorpayOrderId &&
+          invoice.paymentHistory?.some(
+            (payment) => payment.orderId === invoice.razorpayOrderId,
+          ),
+      );
       order = await getOrCreateOrder(
         client,
-        invoice.razorpayOrderId,
+        previousOrderWasApplied ? undefined : invoice.razorpayOrderId,
         amountPaise,
         `inv-${String(invoice._id).slice(-12)}-${Date.now()}`,
         { invoiceId: String(invoice._id), patientId: String(patientId) },
@@ -423,9 +432,6 @@ export const verifyPayment = async (req: Request, res: Response) => {
         });
         invoice.paymentMethod = InvoicePaymentMethod.CARD;
         invoice.paidAt = new Date();
-        invoice.razorpayOrderId = orderId;
-        invoice.razorpayPaymentId = paymentId;
-        invoice.razorpaySignature = signature;
         updateInvoiceStatus(invoice);
         await invoice.save();
       }

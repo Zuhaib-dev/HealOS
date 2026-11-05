@@ -230,7 +230,11 @@ export function BillingPanel() {
       });
       rzp.open();
     } catch (err: any) {
-      toast.error(err.message || "Failed to initiate payment");
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to initiate payment",
+      );
       setProcessing(null);
     }
   };

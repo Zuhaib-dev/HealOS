@@ -277,12 +277,34 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
       // A booking advance used to be stored as the invoice's current Razorpay
       // order too. Once its payment is recorded, that paid order must not block
       // a new order for the remaining invoice balance.
-      const previousOrderWasApplied = Boolean(
+      let previousOrderWasApplied = Boolean(
         invoice.razorpayOrderId &&
           invoice.paymentHistory?.some(
             (payment) => payment.orderId === invoice.razorpayOrderId,
           ),
       );
+      // Older booking payments did not populate paymentHistory. In those
+      // records, the same order is linked from the appointment and its paid
+      // advance is already reflected on both records. Recognize that completed
+      // advance so it cannot block payment of the remaining invoice balance.
+      if (
+        !previousOrderWasApplied &&
+        invoice.razorpayOrderId &&
+        linkedAppointment &&
+        linkedAppointment.razorpayOrderId === invoice.razorpayOrderId &&
+        (linkedAppointment.paidAmount || 0) > 0
+      ) {
+        const previousOrder = await client.orders.fetch(invoice.razorpayOrderId);
+        const previousPaymentAmount = Number(previousOrder.amount) / 100;
+        const invoicePaid = invoice.paidAmount || 0;
+        const appointmentPaid = linkedAppointment.paidAmount || 0;
+        previousOrderWasApplied =
+          previousOrder.status === "paid" &&
+          previousOrder.currency === "INR" &&
+          previousPaymentAmount > 0 &&
+          previousPaymentAmount <= invoicePaid &&
+          previousPaymentAmount <= appointmentPaid;
+      }
       order = await getOrCreateOrder(
         client,
         previousOrderWasApplied ? undefined : invoice.razorpayOrderId,

@@ -220,6 +220,7 @@ export interface AdminInvoiceData {
   payer?: string;
   items?: { description: string; amount: number }[];
   createdAt: string;
+  paidAt?: string;
 }
 
 export async function fetchAdminInvoicesApi() {

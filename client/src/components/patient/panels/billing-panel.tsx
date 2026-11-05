@@ -44,7 +44,7 @@ import { toast } from "sonner";
 import { fetchPatientDashboardApi, PatientDashboardData } from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
-import { PaymentCelebration } from "./payment-celebration";
+import { PaymentCelebration } from "../payment-celebration";
 import {
   createRazorpayOrderApi,
   verifyRazorpayPaymentApi,

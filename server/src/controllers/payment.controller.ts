@@ -113,22 +113,32 @@ async function getOrCreateOrder(
 ) {
   if (existingOrderId) {
     const existing = await client.orders.fetch(existingOrderId);
-    if (
-      existing.currency !== "INR" ||
-      Number(existing.amount) !== amountPaise
-    ) {
-      throw new AppError(
-        "A payment for this balance is already being processed. Refresh and try again.",
-        409,
-      );
-    }
     if (existing.status === "paid") {
       throw new AppError(
         "This payment was received and is awaiting confirmation. Refresh your billing page.",
         409,
       );
     }
-    return existing;
+    if (
+      existing.currency === "INR" &&
+      Number(existing.amount) === amountPaise
+    ) {
+      return existing;
+    }
+
+    // A previously created order may have an outdated amount after an advance
+    // or another payment changed the balance. Rotate it only when Razorpay
+    // confirms there is no captured or currently authorizing payment attached.
+    const { items: payments } = await client.orders.fetchPayments(existing.id);
+    const paymentInProgress = payments.some((payment) =>
+      ["created", "authorized", "captured"].includes(payment.status),
+    );
+    if (paymentInProgress) {
+      throw new AppError(
+        "A payment attempt for this invoice is still active. Wait for it to finish, then refresh billing.",
+        409,
+      );
+    }
   }
 
   return client.orders.create({
@@ -197,7 +207,12 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
     const patientId = req.user?._id;
     if (!patientId) throw new AppError("Authentication required", 401);
     const client = getRazorpayClient();
-    let order: { id: string; amount: number; currency: string; status: string };
+    let order: {
+      id: string;
+      amount: number | string;
+      currency: string;
+      status: string;
+    };
 
     if (parsed.data.appointmentId) {
       const appointment = await Appointment.findOne({
@@ -386,7 +401,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
             invoice.paidAmount || 0,
           );
         appointment.paymentStatus =
-          appointment.paidAmount + (invoice?.insuranceCoverage || 0) >=
+          (appointment.paidAmount || 0) + (invoice?.insuranceCoverage || 0) >=
           appointment.amount
             ? PaymentStatus.PAID
             : PaymentStatus.PENDING_CASH;

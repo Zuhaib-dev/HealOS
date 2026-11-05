@@ -43,7 +43,7 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/store/use-auth-store";
 import { getSocket } from "@/lib/socket";
 import Image from "next/image";
-import { PaymentCelebration } from "./payment-celebration";
+import { PaymentCelebration } from "../payment-celebration";
 
 const allDepartments = { id: "all", label: "All departments" };
 

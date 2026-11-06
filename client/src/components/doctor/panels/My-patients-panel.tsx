@@ -18,6 +18,7 @@ import {
   AppointmentRecord,
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
+import { openProtectedReport } from "@/lib/api/reports";
 import { getPatientHistoryApi } from "@/lib/api/doctor";
 import { formatTimeRange } from "@/lib/time-format";
 import { AnimatePresence } from "motion/react";
@@ -434,8 +435,16 @@ export function RoundsPanel() {
                               <button
                                 onClick={() => {
                                   const url = r.fileUrl || r.reportUrl;
-                                  if (url) {
-                                    window.open(getFileUrl(url), "_blank");
+                                  if (url && r._id) {
+                                    openProtectedReport(r._id).catch(() =>
+                                      toast.error("Unable to open this report"),
+                                    );
+                                  } else if (url) {
+                                    window.open(
+                                      getFileUrl(url),
+                                      "_blank",
+                                      "noopener,noreferrer",
+                                    );
                                   } else {
                                     toast.error("Document file not available");
                                   }

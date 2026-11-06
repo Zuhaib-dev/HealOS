@@ -255,8 +255,10 @@ export interface AdminInventoryData {
   itemCode: string;
   category: string;
   currentStock: number;
+  reservedStock?: number;
   reorderThreshold: number;
   unit: string;
+  unitPrice?: number;
 }
 
 export async function fetchAdminInventoryApi() {

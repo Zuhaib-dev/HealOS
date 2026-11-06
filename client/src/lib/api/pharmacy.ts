@@ -1,5 +1,43 @@
 import apiClient from "../api-client";
 
+export interface PharmacyCatalogItem {
+  _id: string;
+  itemName: string;
+  itemCode: string;
+  category: string;
+  currentStock: number;
+  availableStock?: number;
+  unit: string;
+  unitPrice: number;
+}
+
+export interface PharmacySaleRecord {
+  _id: string;
+  consultation: string;
+  patient: { _id: string; name: string; phone?: string };
+  pharmacist?: { name: string };
+  dispensedBy?: { name: string };
+  invoice: {
+    _id: string;
+    status: string;
+    totalAmount: number;
+    paidAmount: number;
+    paymentMethod?: string;
+    paymentHistory?: { amount: number; method: string; paidAt: string }[];
+    createdAt?: string;
+  };
+  items: {
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    amount: number;
+  }[];
+  totalAmount: number;
+  status: "AWAITING_PAYMENT" | "DISPENSING" | "DISPENSED";
+  dispensedAt?: string;
+  createdAt: string;
+}
+
 export interface MedicineRecord {
   _id: string;
   name: string;
@@ -11,61 +49,56 @@ export interface MedicineRecord {
 }
 
 export interface PendingPrescriptionRecord {
-  _id: string; // Consultation ID
-  patient: {
-    _id: string;
-    name: string;
-    phone?: string;
-  };
-  doctor: {
-    _id: string;
-    name: string;
-  };
+  _id: string;
+  patient: { _id: string; name: string; phone?: string };
+  doctor: { _id: string; name: string };
   medicines: MedicineRecord[];
   createdAt: string;
+  sale?: PharmacySaleRecord;
 }
 
-export const fetchPendingPrescriptionsApi = async () => {
-  const response = await apiClient.get<{
+export async function fetchPharmacyCatalogApi() {
+  const { data } = await apiClient.get<{
+    success: boolean;
+    items: PharmacyCatalogItem[];
+  }>("/pharmacy/catalog");
+  return data;
+}
+
+export async function fetchPendingPrescriptionsApi() {
+  const { data } = await apiClient.get<{
     success: boolean;
     prescriptions: PendingPrescriptionRecord[];
   }>("/pharmacy/prescriptions/pending");
-  return response.data;
-};
+  return data;
+}
 
-export const fetchPharmacyHistoryApi = async () => {
-  const response = await apiClient.get<{
+export async function fetchPharmacyHistoryApi() {
+  const { data } = await apiClient.get<{
     success: boolean;
-    prescriptions: PendingPrescriptionRecord[];
+    sales: PharmacySaleRecord[];
   }>("/pharmacy/prescriptions/history");
-  return response.data;
-};
+  return data;
+}
 
-export const dispenseMedicineApi = async (
+export async function createPharmacyBillApi(
   consultationId: string,
-  medicineId: string,
-) => {
-  const response = await apiClient.patch<{
+  items: { medicineId?: string; inventoryItemId: string; quantity: number }[],
+) {
+  const { data } = await apiClient.post<{
     success: boolean;
-    message: string;
-  }>(`/pharmacy/prescriptions/${consultationId}/dispense`, {
-    medicineId,
-  });
-  return response.data;
-};
+    invoice: PharmacySaleRecord["invoice"];
+    sale: PharmacySaleRecord;
+  }>(`/pharmacy/prescriptions/${consultationId}/bill`, { items });
+  return data;
+}
 
-export const createPharmacyBillApi = async (
-  consultationId: string,
-  cartItems: any[],
-  totalAmount: number,
-) => {
-  const response = await apiClient.post<{
-    success: boolean;
-    message: string;
-    invoice: any;
-  }>(`/pharmacy/prescriptions/${consultationId}/bill`, {
-    cartItems,
-    totalAmount,
-  });
-  return response.data;
-};
+export async function recordPharmacyCashApi(saleId: string) {
+  const { data } = await apiClient.post(`/pharmacy/sales/${saleId}/cash`);
+  return data;
+}
+
+export async function dispensePharmacySaleApi(saleId: string) {
+  const { data } = await apiClient.post(`/pharmacy/sales/${saleId}/dispense`);
+  return data;
+}

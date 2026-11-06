@@ -7,10 +7,14 @@ import {
   DiagnosticReport,
   Invoice,
   InvoiceStatus,
-  InvoicePaymentMethod,
 } from "../models/index.js";
 import { AppError } from "../middleware/error-handler.js";
 import ImageKit from "imagekit";
+import {
+  createOrGetDiagnosticInvoice,
+  recordDiagnosticCashPayment,
+} from "../utils/diagnostic-billing.js";
+import { DiagnosticOrderStatus } from "../models/diagnostic-order.model.js";
 
 // Initialize ImageKit
 const imagekit = new ImageKit({
@@ -89,23 +93,15 @@ export const getOrders = async (
 export const createRadiologyBill = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { price } = req.body;
     const order = await DiagnosticOrder.findById(id);
     if (!order) throw new AppError("Order not found", 404);
-
-    const invoice = await Invoice.create({
-      patient: order.patient,
-      issuedBy: req.user?.id,
-      items: [{ description: order.testName, amount: price }],
-      totalAmount: price,
-      status: InvoiceStatus.PENDING,
-      payer: "self",
-      insuranceCoverage: 0,
-    });
-
-    const { getIO } = await import("../socket.js");
-    const io = getIO();
-    if (io) io.emit("invoice_created", { invoice });
+    if (order.testType !== "RADIOLOGY")
+      throw new AppError("This is not a radiology order", 400);
+    const invoice = await createOrGetDiagnosticInvoice(
+      order,
+      req.user?._id,
+      req.body.price,
+    );
 
     res.status(201).json({ success: true, invoice });
   } catch (error: any) {
@@ -122,42 +118,56 @@ export const createRadiologyBill = async (req: Request, res: Response) => {
 export const updateOrderStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, paymentMethod, price } = req.body;
+    const { status, price } = req.body;
 
-    if (!status) {
-      throw new AppError("Status is required", 400);
+    if (!Object.values(DiagnosticOrderStatus).includes(status)) {
+      throw new AppError("Choose a valid order status", 400);
     }
-
-    if (paymentMethod && price) {
-      await Invoice.create({
-        patient: (await DiagnosticOrder.findById(id))?.patient,
-        issuedBy: req.user?.id,
-        items: [
-          {
-            description:
-              (await DiagnosticOrder.findById(id))?.testName ||
-              "Radiology Scan",
-            amount: price,
-          },
-        ],
-        totalAmount: price,
-        status: InvoiceStatus.PAID,
-        paymentMethod: paymentMethod as InvoicePaymentMethod,
-        payer: "self",
-        insuranceCoverage: 0,
-        paidAt: new Date(),
-      });
-    }
-
-    const order = await DiagnosticOrder.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true },
-    );
-
+    const order = await DiagnosticOrder.findById(id);
     if (!order) {
       throw new AppError("Diagnostic order not found", 404);
     }
+    if (order.testType !== "RADIOLOGY")
+      throw new AppError("This is not a radiology order", 400);
+    if (
+      order.status === DiagnosticOrderStatus.CANCELLED &&
+      status !== DiagnosticOrderStatus.CANCELLED
+    )
+      throw new AppError("Cancelled orders cannot be reopened", 409);
+    if (status === DiagnosticOrderStatus.IN_PROGRESS) {
+      const invoice = order.invoice
+        ? await Invoice.findById(order.invoice)
+        : null;
+      if (
+        !invoice ||
+        invoice.status !== InvoiceStatus.PAID ||
+        (invoice.paidAmount || 0) + (invoice.insuranceCoverage || 0) <
+          invoice.totalAmount
+      ) {
+        throw new AppError(
+          "The patient invoice must be fully paid before the scan starts",
+          409,
+        );
+      }
+    }
+    if (status === DiagnosticOrderStatus.CANCELLED && order.invoice) {
+      const invoice = await Invoice.findById(order.invoice);
+      if (invoice?.status === InvoiceStatus.PAID)
+        throw new AppError(
+          "A paid order cannot be cancelled; issue a refund through billing",
+          409,
+        );
+      if (invoice) {
+        invoice.status = InvoiceStatus.CANCELLED;
+        await invoice.save();
+      }
+    }
+    // Legacy callers may still send a price here. That creates a pending invoice only;
+    // this route never records a cash or online payment.
+    if (price !== undefined && !order.invoice)
+      await createOrGetDiagnosticInvoice(order, req.user?._id, price);
+    order.status = status;
+    await order.save();
 
     res.status(200).json({
       status: "success",
@@ -168,6 +178,30 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       status: "error",
       message: error.message || "Failed to update order status",
     });
+  }
+};
+
+export const recordRadiologyCashPayment = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const order = await DiagnosticOrder.findById(req.params.id);
+    if (!order) throw new AppError("Diagnostic order not found", 404);
+    if (order.testType !== "RADIOLOGY")
+      throw new AppError("This is not a radiology order", 400);
+    const invoice = await recordDiagnosticCashPayment(
+      String(req.params.id || ""),
+      req.user?._id,
+    );
+    res.json({ success: true, invoice });
+  } catch (error: any) {
+    res
+      .status(error.statusCode || 500)
+      .json({
+        success: false,
+        message: error.message || "Unable to record cash payment",
+      });
   }
 };
 
@@ -193,15 +227,25 @@ export const uploadReport = async (req: Request, res: Response) => {
     }
 
     let fileUrl = "";
+    let localFileName: string | undefined;
     if (file) {
-      const fileBuffer = await fs.promises.readFile(file.path);
-      const uploadResponse = await imagekit.upload({
-        file: fileBuffer,
-        fileName: `radiology_report_${order._id}_${Date.now()}`,
-        folder: "/hms/reports",
-      });
-      fileUrl = uploadResponse.url;
-      fs.unlinkSync(file.path);
+      try {
+        const fileBuffer = await fs.promises.readFile(file.path);
+        const uploadResponse = await imagekit.upload({
+          file: fileBuffer,
+          fileName: `radiology_report_${order._id}_${Date.now()}`,
+          folder: "/hms/reports",
+        });
+        fileUrl = uploadResponse.url;
+        fs.unlinkSync(file.path);
+      } catch (uploadError) {
+        console.warn(
+          "Radiology cloud upload failed; keeping a private local copy",
+          uploadError,
+        );
+        localFileName = file.filename;
+        fileUrl = "/api/v1/reports/LOCAL_FILE_ID/file";
+      }
     }
 
     const report = await DiagnosticReport.create({
@@ -209,9 +253,14 @@ export const uploadReport = async (req: Request, res: Response) => {
       order: order._id,
       uploadedBy,
       fileUrl,
+      ...(localFileName ? { localFileName } : {}),
       fileName: file.originalname,
       comments,
     });
+    if (localFileName) {
+      report.fileUrl = `/api/v1/reports/${report._id}/file`;
+      await report.save();
+    }
 
     order.status = "REPORTED" as any;
     await order.save();
@@ -222,7 +271,7 @@ export const uploadReport = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     if (req.file) {
-      fs.unlinkSync(req.file.path); // cleanup on error
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     }
     res.status(error.statusCode || 500).json({
       status: "error",
@@ -239,7 +288,12 @@ export const getDocuments = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const documents = await DiagnosticReport.find()
+    const radiologyOrderIds = await DiagnosticOrder.find({
+      testType: "RADIOLOGY",
+    }).distinct("_id");
+    const documents = await DiagnosticReport.find({
+      order: { $in: radiologyOrderIds },
+    })
       .populate("patient", "name")
       .populate("radiologist", "name")
       .populate("order", "accessionNumber testName")

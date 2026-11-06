@@ -171,6 +171,7 @@ export const uploadPatientDocument = async (req: Request, res: Response) => {
     const fileSizeMB = (req.file.size / (1024 * 1024)).toFixed(2) + " MB";
 
     let fileUrl = "";
+    let localFileName: string | undefined;
     if (req.file) {
       try {
         const fileBuffer = await fs.promises.readFile(req.file.path);
@@ -186,7 +187,8 @@ export const uploadPatientDocument = async (req: Request, res: Response) => {
           "ImageKit upload failed, falling back to local storage:",
           err,
         );
-        fileUrl = `/uploads/reports/${req.file.filename}`;
+        localFileName = req.file.filename;
+        fileUrl = `/api/v1/reports/LOCAL_FILE_ID/file`;
       }
     }
 
@@ -197,6 +199,7 @@ export const uploadPatientDocument = async (req: Request, res: Response) => {
       title: title || req.file.originalname,
       uploadedBy: req.user?.name || "Patient",
       fileUrl,
+      ...(localFileName ? { localFileName } : {}),
       fileName: req.file.originalname,
       fileSize: fileSizeMB,
       kind: "Prior report",
@@ -204,6 +207,10 @@ export const uploadPatientDocument = async (req: Request, res: Response) => {
     });
 
     await report.save();
+    if (localFileName) {
+      report.fileUrl = `/api/v1/reports/${report._id}/file`;
+      await report.save();
+    }
 
     res.status(201).json({
       status: "success",

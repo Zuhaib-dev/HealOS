@@ -5,13 +5,15 @@ import {
   LabAnalyser,
   Invoice,
   InvoiceStatus,
-  InvoicePaymentMethod,
 } from "../models/index.js";
 import { getIO } from "../socket.js";
 import { AppError } from "../middleware/error-handler.js";
 import fs from "fs";
 import ImageKit from "imagekit";
-import { envConfig } from "../config/env.js";
+import {
+  createOrGetDiagnosticInvoice,
+  recordDiagnosticCashPayment,
+} from "../utils/diagnostic-billing.js";
 
 // Initialize ImageKit
 const imagekit = new ImageKit({
@@ -38,6 +40,7 @@ export const uploadLabReport = async (req: Request, res: Response) => {
     }
 
     let fileUrl = "";
+    let localFileName: string | undefined;
     if (file) {
       try {
         if (
@@ -54,11 +57,13 @@ export const uploadLabReport = async (req: Request, res: Response) => {
           fs.unlinkSync(file.path); // clean up local after cloud upload
         } else {
           // No ImageKit keys -> Fallback to serving the local file that Multer saved
-          fileUrl = `http://localhost:${envConfig.PORT || 5000}/uploads/reports/${file.filename}`;
+          localFileName = file.filename;
+          fileUrl = "/api/v1/reports/LOCAL_FILE_ID/file";
         }
       } catch (err) {
         console.warn("Cloud upload failed, falling back to local file...", err);
-        fileUrl = `http://localhost:${envConfig.PORT || 5000}/uploads/reports/${file.filename}`;
+        localFileName = file.filename;
+        fileUrl = "/api/v1/reports/LOCAL_FILE_ID/file";
       }
     }
 
@@ -67,10 +72,15 @@ export const uploadLabReport = async (req: Request, res: Response) => {
       order: order._id,
       uploadedBy,
       fileUrl,
+      ...(localFileName ? { localFileName } : {}),
       fileName: file.originalname,
       title: "Lab Result - " + order.testName,
       state: "pending sign",
     });
+    if (localFileName) {
+      report.fileUrl = `/api/v1/reports/${report._id}/file`;
+      await report.save();
+    }
 
     order.status = "REPORTED" as any;
     await order.save();
@@ -99,12 +109,15 @@ export const getLabHistory = async (req: Request, res: Response) => {
 
     // Optional: Filter by 'state: "released"' if you only want fully verified reports,
     // or just fetch all diagnostic reports.
-    let filter = {};
+    const pathologyOrderIds = await DiagnosticOrder.find({
+      testType: "PATHOLOGY",
+    }).distinct("_id");
+    let filter: Record<string, unknown> = { order: { $in: pathologyOrderIds } };
 
     // We cannot easily text search across populated fields in a single basic find,
     // but we can search by title or fileName. In a real app, you'd aggregate.
     if (search) {
-      filter = { title: { $regex: search, $options: "i" } };
+      filter = { ...filter, title: { $regex: search, $options: "i" } };
     }
 
     const totalCount = await DiagnosticReport.countDocuments(filter);
@@ -155,19 +168,11 @@ export const createLabBill = async (req: Request, res: Response) => {
     const { price } = req.body;
     const order = await DiagnosticOrder.findById(id);
     if (!order) throw new AppError("Order not found", 404);
-
-    const invoice = await Invoice.create({
-      patient: order.patient,
-      issuedBy: req.user?.id,
-      items: [{ description: order.testName, amount: price }],
-      totalAmount: price,
-      status: InvoiceStatus.PENDING,
-      payer: "self",
-      insuranceCoverage: 0,
-    });
-
-    const io = getIO();
-    if (io) io.emit("invoice_created", { invoice });
+    const invoice = await createOrGetDiagnosticInvoice(
+      order,
+      req.user?._id,
+      price,
+    );
 
     res.status(201).json({ success: true, invoice });
   } catch (error: any) {
@@ -181,35 +186,62 @@ export const createLabBill = async (req: Request, res: Response) => {
 export const markCollected = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { paymentMethod, price } = req.body;
-
-    const order = await DiagnosticOrder.findByIdAndUpdate(
-      id,
-      { status: "IN_PROGRESS" },
-      { new: true },
-    );
-
-    if (paymentMethod && price) {
-      await Invoice.create({
-        patient: order?.patient,
-        issuedBy: req.user?.id,
-        items: [{ description: order?.testName || "Lab Test", amount: price }],
-        totalAmount: price,
-        status: InvoiceStatus.PAID,
-        paymentMethod: paymentMethod as InvoicePaymentMethod,
-        payer: "self",
-        insuranceCoverage: 0,
-        paidAt: new Date(),
-      });
-      // Optional: emit invoice_created if we want to sync
+    const order = await DiagnosticOrder.findById(id);
+    if (!order) throw new AppError("Diagnostic order not found", 404);
+    if (order.testType !== "PATHOLOGY")
+      throw new AppError("Only pathology orders can be collected here", 400);
+    if (order.status === "CANCELLED")
+      throw new AppError("Cancelled orders cannot be collected", 409);
+    if (req.body?.price !== undefined) {
+      // Collection is not payment. Create/reuse a pending invoice for payment through billing.
+      await createOrGetDiagnosticInvoice(order, req.user?._id, req.body.price);
     }
+    const invoice = order.invoice
+      ? await Invoice.findById(order.invoice)
+      : null;
+    if (
+      !invoice ||
+      invoice.status !== InvoiceStatus.PAID ||
+      (invoice.paidAmount || 0) + (invoice.insuranceCoverage || 0) <
+        invoice.totalAmount
+    ) {
+      throw new AppError(
+        "The patient invoice must be fully paid before collection",
+        409,
+      );
+    }
+    if (order.status === "PENDING") order.status = "IN_PROGRESS" as any;
+    await order.save();
 
     const io = getIO();
     if (io) io.emit("lab_collection_updated", { order });
 
     res.status(200).json({ success: true, order });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    res
+      .status(error.statusCode || 500)
+      .json({ success: false, message: error.message || "Server error" });
+  }
+};
+
+export const recordLabCashPayment = async (req: Request, res: Response) => {
+  try {
+    const order = await DiagnosticOrder.findById(req.params.id);
+    if (!order) throw new AppError("Diagnostic order not found", 404);
+    if (order.testType !== "PATHOLOGY")
+      throw new AppError("This is not a pathology order", 400);
+    const invoice = await recordDiagnosticCashPayment(
+      String(req.params.id || ""),
+      req.user?._id,
+    );
+    res.json({ success: true, invoice });
+  } catch (error: any) {
+    res
+      .status(error.statusCode || 500)
+      .json({
+        success: false,
+        message: error.message || "Unable to record cash payment",
+      });
   }
 };
 

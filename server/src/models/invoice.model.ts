@@ -33,6 +33,8 @@ export interface IInvoice extends Document {
   patient: mongoose.Types.ObjectId;
   issuedBy: mongoose.Types.ObjectId; // User who generated the invoice
   appointment?: mongoose.Types.ObjectId; // Optional link to an appointment
+  pharmacySale?: mongoose.Types.ObjectId;
+  diagnosticOrder?: mongoose.Types.ObjectId;
   items: IInvoiceItem[];
   totalAmount: number;
   paidAmount?: number;
@@ -54,6 +56,8 @@ const invoiceSchema = new Schema<IInvoice>(
     patient: { type: Schema.Types.ObjectId, ref: "User", required: true },
     issuedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     appointment: { type: Schema.Types.ObjectId, ref: "Appointment" },
+    pharmacySale: { type: Schema.Types.ObjectId, ref: "PharmacySale" },
+    diagnosticOrder: { type: Schema.Types.ObjectId, ref: "DiagnosticOrder" },
     items: [
       {
         description: { type: String, required: true },
@@ -72,7 +76,11 @@ const invoiceSchema = new Schema<IInvoice>(
               enum: Object.values(InvoicePaymentMethod),
               required: true,
             },
-            source: { type: String, enum: ["RAZORPAY", "RECEPTION"], required: true },
+            source: {
+              type: String,
+              enum: ["RAZORPAY", "RECEPTION"],
+              required: true,
+            },
             orderId: { type: String },
             paymentId: { type: String },
             recordedBy: { type: Schema.Types.ObjectId, ref: "User" },
@@ -109,5 +117,6 @@ const invoiceSchema = new Schema<IInvoice>(
 invoiceSchema.index({ patient: 1, status: 1 });
 invoiceSchema.index({ status: 1 });
 invoiceSchema.index({ createdAt: -1 });
+invoiceSchema.index({ diagnosticOrder: 1 }, { unique: true, sparse: true });
 
 export const Invoice = mongoose.model<IInvoice>("Invoice", invoiceSchema);

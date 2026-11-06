@@ -12,6 +12,7 @@ import {
   getBookings,
   getStats,
   createRadiologyBill,
+  recordRadiologyCashPayment,
 } from "../controllers/radiology.controller.js";
 import { UserRole } from "../models/user.model.js";
 
@@ -24,6 +25,7 @@ router.use(requireRole([UserRole.RADIOLOGIST]));
 router.get("/orders", getOrders);
 router.put("/orders/:id/status", updateOrderStatus);
 router.post("/orders/:id/bill", createRadiologyBill);
+router.post("/orders/:id/cash", recordRadiologyCashPayment);
 router.post("/orders/:id/report", upload.single("reportFile"), uploadReport);
 
 router.get("/documents", getDocuments);

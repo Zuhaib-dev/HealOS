@@ -23,6 +23,7 @@ import {
 import { fetchLabValidationApi, validateLabReportApi } from "@/lib/api/lab";
 import { getSocket } from "@/lib/socket";
 import { toast } from "sonner";
+import { openProtectedReport } from "@/lib/api/reports";
 import { getFileUrl } from "@/lib/utils";
 import { Eye } from "lucide-react";
 
@@ -228,7 +229,9 @@ export function ValidationPanel() {
                   {p.fileUrl && (
                     <ActionButton
                       onClick={() =>
-                        window.open(getFileUrl(p.fileUrl), "_blank")
+                        openProtectedReport(p._id).catch(() =>
+                          toast.error("Unable to open this report"),
+                        )
                       }
                     >
                       <Eye className="mr-2 inline size-4" /> View PDF

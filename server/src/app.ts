@@ -51,8 +51,21 @@ app.use(morgan(envConfig.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Serve uploaded files statically
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+// Keep report documents private. Other application uploads remain available through
+// the existing static handler; reports are streamed by the authenticated report route.
+app.use(
+  "/uploads",
+  (req, res, next) =>
+    req.path.startsWith("/reports/")
+      ? res
+          .status(404)
+          .json({
+            success: false,
+            message: "Report files require authentication",
+          })
+      : next(),
+  express.static(path.join(process.cwd(), "uploads")),
+);
 
 // ---------------------------
 // Health Check

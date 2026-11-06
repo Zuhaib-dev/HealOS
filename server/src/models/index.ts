@@ -18,6 +18,7 @@ export * from "./doctor-availability.model.js";
 export * from "./vitals.model";
 export * from "./ward.model.js";
 export * from "./inventory.model.js";
+export * from "./pharmacy-sale.model.js";
 export * from "./audit-log.model.js";
 export * from "./integration.model.js";
 export * from "./fluid-balance.model.js";

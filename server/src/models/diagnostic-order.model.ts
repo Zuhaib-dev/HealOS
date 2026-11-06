@@ -27,6 +27,7 @@ export interface IDiagnosticOrder extends Document {
   priority: DiagnosticOrderPriority;
   clinicalNotes?: string; // Reason for test, e.g. "Rule out pneumonia"
   status: DiagnosticOrderStatus;
+  invoice?: mongoose.Types.ObjectId;
 
   // Radiology-specific fields
   accessionNumber?: string;
@@ -62,6 +63,7 @@ const diagnosticOrderSchema = new Schema<IDiagnosticOrder>(
       enum: Object.values(DiagnosticOrderStatus),
       default: DiagnosticOrderStatus.PENDING,
     },
+    invoice: { type: Schema.Types.ObjectId, ref: "Invoice" },
     accessionNumber: { type: String },
     modality: {
       type: String,

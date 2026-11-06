@@ -84,6 +84,7 @@ export function SuppliesPanel() {
     currentStock: 0,
     reorderThreshold: 10,
     unit: "units",
+    unitPrice: 0,
   });
 
   const loadInventory = useCallback(async () => {
@@ -114,6 +115,7 @@ export function SuppliesPanel() {
       currentStock: 0,
       reorderThreshold: 10,
       unit: "units",
+      unitPrice: 0,
     });
     setEditingId(null);
     setIsFormOpen(true);
@@ -254,6 +256,25 @@ export function SuppliesPanel() {
             </label>
             <label className="block">
               <span className="mono-label text-xs text-muted-foreground block mb-1">
+                Unit price (₹)
+              </span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                required
+                value={formData.unitPrice ?? 0}
+                onChange={(e) =>
+                  setFormData((d) => ({
+                    ...d,
+                    unitPrice: Number(e.target.value),
+                  }))
+                }
+                className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+            </label>
+            <label className="block">
+              <span className="mono-label text-xs text-muted-foreground block mb-1">
                 Current Stock
               </span>
               <input
@@ -288,7 +309,7 @@ export function SuppliesPanel() {
                 className="border border-border/60 rounded-lg w-full bg-background/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </label>
-            <div className="sm:col-span-2 lg:col-span-5 flex justify-end gap-3 mt-2 lg:col-start-2">
+            <div className="sm:col-span-2 lg:col-span-6 flex justify-end gap-3 mt-2">
               <button
                 type="button"
                 onClick={() => setIsFormOpen(false)}
@@ -318,6 +339,8 @@ export function SuppliesPanel() {
             <Th>Item</Th>
             <Th>Code</Th>
             <Th>On hand</Th>
+            <Th>Reserved</Th>
+            <Th>Unit price</Th>
             <Th>Reorder at</Th>
             <Th>Signal</Th>
             <Th>Actions</Th>
@@ -327,7 +350,7 @@ export function SuppliesPanel() {
           {loading ? (
             <tr>
               <td
-                colSpan={6}
+                colSpan={8}
                 className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse"
               >
                 Loading inventory data...
@@ -335,7 +358,8 @@ export function SuppliesPanel() {
             </tr>
           ) : dbInventory.length > 0 ? (
             dbInventory.map((s) => {
-              const low = s.currentStock < s.reorderThreshold;
+              const availableStock = s.currentStock - (s.reservedStock || 0);
+              const low = availableStock < s.reorderThreshold;
               return (
                 <tr
                   key={s._id}
@@ -361,6 +385,16 @@ export function SuppliesPanel() {
                     <span className="mono-label text-muted-foreground">
                       {s.unit}
                     </span>
+                  </Td>
+                  <Td>
+                    <span className="font-mono">{s.reservedStock || 0}</span>
+                    <span className="mono-label text-muted-foreground">
+                      {" "}
+                      / {s.unit}
+                    </span>
+                  </Td>
+                  <Td className="font-mono">
+                    ₹{Number(s.unitPrice || 0).toFixed(2)}
                   </Td>
                   <Td>
                     <span className="mono-label text-muted-foreground">
@@ -403,7 +437,7 @@ export function SuppliesPanel() {
             })
           ) : (
             <tr>
-              <td colSpan={6} className="p-16 text-center">
+              <td colSpan={8} className="p-16 text-center">
                 <div className="flex flex-col items-center justify-center gap-4">
                   <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
                     <Boxes className="size-6 text-muted-foreground/60" />

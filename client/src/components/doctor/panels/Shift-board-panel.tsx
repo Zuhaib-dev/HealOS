@@ -27,6 +27,7 @@ import {
   AppointmentRecord,
 } from "@/lib/api/appointment";
 import { toast } from "sonner";
+import { openProtectedReport } from "@/lib/api/reports";
 import { getDashboardStatsApi, getPatientHistoryApi } from "@/lib/api/doctor";
 import { AnimatePresence } from "motion/react";
 import { ConsultationForm } from "@/components/doctor/shared/consultation-form";
@@ -519,8 +520,16 @@ export function ShiftPanel() {
                               <button
                                 onClick={() => {
                                   const url = r.fileUrl || r.reportUrl;
-                                  if (url) {
-                                    window.open(getFileUrl(url), "_blank");
+                                  if (url && r._id) {
+                                    openProtectedReport(r._id).catch(() =>
+                                      toast.error("Unable to open this report"),
+                                    );
+                                  } else if (url) {
+                                    window.open(
+                                      getFileUrl(url),
+                                      "_blank",
+                                      "noopener,noreferrer",
+                                    );
                                   } else {
                                     toast.error("Document file not available");
                                   }

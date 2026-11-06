@@ -1,8 +1,133 @@
 import { Request, Response } from "express";
 import { GoogleGenAI } from "@google/genai";
 import { AppError } from "../middleware/error-handler";
+import { DiagnosticReport, UserRole } from "../models/index.js";
+import path from "path";
+import fs from "fs";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+async function getReportContent(
+  req: Request,
+  reportId?: string,
+  fileUrl?: string,
+) {
+  if (reportId) {
+    const report = await DiagnosticReport.findById(reportId).select(
+      "+localFileName fileUrl fileName patient",
+    );
+    if (!report) throw new AppError("Report not found", 404);
+    if (
+      req.user?.role !== UserRole.ADMIN &&
+      report.patient.toString() !== req.user?._id.toString()
+    )
+      throw new AppError("You do not have access to this report", 403);
+    if (report.localFileName) {
+      const safeName = path.basename(report.localFileName);
+      const reportPath = path.resolve(
+        process.cwd(),
+        "uploads",
+        "reports",
+        safeName,
+      );
+      const reportRoot =
+        path.resolve(process.cwd(), "uploads", "reports") + path.sep;
+      if (!reportPath.startsWith(reportRoot) || !fs.existsSync(reportPath))
+        throw new AppError("Report file is unavailable", 404);
+      return {
+        buffer: await fs.promises.readFile(reportPath),
+        mimeType: report.fileName?.toLowerCase().endsWith(".png")
+          ? "image/png"
+          : report.fileName?.toLowerCase().match(/\.jpe?g$/)
+            ? "image/jpeg"
+            : "application/pdf",
+      };
+    }
+    fileUrl = report.fileUrl;
+    if (fileUrl) {
+      let parsedFileUrl: URL;
+      try {
+        parsedFileUrl = new URL(fileUrl, "http://local.invalid");
+      } catch {
+        throw new AppError("Invalid report URL", 400);
+      }
+      if (parsedFileUrl.pathname.startsWith("/uploads/reports/")) {
+        const legacyName = path.basename(parsedFileUrl.pathname);
+        const reportPath = path.resolve(
+          process.cwd(),
+          "uploads",
+          "reports",
+          legacyName,
+        );
+        const reportRoot =
+          path.resolve(process.cwd(), "uploads", "reports") + path.sep;
+        if (!reportPath.startsWith(reportRoot) || !fs.existsSync(reportPath))
+          throw new AppError("Report file is unavailable", 404);
+        const ext = path.extname(reportPath).toLowerCase();
+        return {
+          buffer: await fs.promises.readFile(reportPath),
+          mimeType:
+            ext === ".png"
+              ? "image/png"
+              : ext === ".jpg" || ext === ".jpeg"
+                ? "image/jpeg"
+                : "application/pdf",
+        };
+      }
+    }
+  }
+  if (!fileUrl) throw new AppError("Report file is unavailable", 404);
+  let localUrlPath = "";
+  try {
+    const parsed = new URL(fileUrl, "http://local.invalid");
+    if (parsed.pathname.startsWith("/uploads/reports/"))
+      localUrlPath = parsed.pathname;
+  } catch {
+    /* handled as invalid URL below */
+  }
+  if (localUrlPath) {
+    const safeName = path.basename(localUrlPath);
+    const legacyReport = await DiagnosticReport.findOne({
+      $or: [
+        { localFileName: safeName },
+        {
+          fileUrl: {
+            $regex: `/uploads/reports/${safeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+          },
+        },
+      ],
+    }).select("+localFileName fileUrl fileName patient");
+    if (!legacyReport) throw new AppError("Report not found", 404);
+    if (
+      req.user?.role !== UserRole.ADMIN &&
+      legacyReport.patient.toString() !== req.user?._id.toString()
+    )
+      throw new AppError("You do not have access to this report", 403);
+    return getReportContent(req, legacyReport._id.toString());
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(fileUrl);
+  } catch {
+    throw new AppError("Invalid file URL", 400);
+  }
+  if (parsed.hostname !== "ik.imagekit.io")
+    throw new AppError("Only trusted report storage URLs are allowed", 403);
+  const response = await fetch(fileUrl);
+  if (!response.ok)
+    throw new AppError(
+      "Unable to retrieve the report",
+      response.status === 404 ? 404 : 400,
+    );
+  const extension = parsed.pathname.split(".").pop()?.toLowerCase();
+  const mimeType =
+    extension === "png"
+      ? "image/png"
+      : extension === "jpg" || extension === "jpeg"
+        ? "image/jpeg"
+        : "application/pdf";
+  return { buffer: Buffer.from(await response.arrayBuffer()), mimeType };
+}
 
 export const generateBio = async (req: Request, res: Response) => {
   try {
@@ -39,84 +164,11 @@ Keep it extremely concise. Do not use any formatting like bolding or bullet poin
 
 export const explainReport = async (req: Request, res: Response) => {
   try {
-    const { fileUrl } = req.body;
-    if (!fileUrl) {
-      throw new AppError("File URL is required", 400);
-    }
-
-    // Determine mimeType from extension
-    let ext = fileUrl.split(".").pop()?.toLowerCase() || "";
-    let mimeType = "application/pdf";
-    if (ext === "jpg" || ext === "jpeg") mimeType = "image/jpeg";
-    if (ext === "png") mimeType = "image/png";
-
-    let base64Data = "";
-
-    try {
-      let localPath = "";
-      if (fileUrl.startsWith("/uploads")) {
-        localPath = fileUrl;
-      } else if (fileUrl.includes("/uploads/")) {
-        try {
-          const urlObj = new URL(fileUrl);
-          if (urlObj.pathname.startsWith("/uploads")) {
-            localPath = urlObj.pathname;
-          }
-        } catch (e) {
-          // ignore parsing errors
-        }
-      }
-
-      if (localPath) {
-        // Read local file directly from filesystem
-        const fs = await import("fs");
-        const path = await import("path");
-        const fullLocalPath = path.join(process.cwd(), localPath);
-        if (!fs.existsSync(fullLocalPath)) {
-          throw new AppError(
-            "Report file no longer exists on the server (ephemeral storage wiped). Please re-upload.",
-            404,
-          );
-        }
-        const fileBuffer = await fs.promises.readFile(fullLocalPath);
-        base64Data = fileBuffer.toString("base64");
-      } else {
-        // Fetch remote file (e.g. ImageKit)
-        try {
-          const urlObj = new URL(fileUrl);
-          if (urlObj.hostname !== "ik.imagekit.io") {
-            throw new AppError(
-              "Invalid file URL domain. Only trusted storage providers are allowed.",
-              403,
-            );
-          }
-        } catch (e: any) {
-          throw new AppError(e.message || "Invalid file URL", 400);
-        }
-
-        const fileRes = await fetch(fileUrl);
-        if (!fileRes.ok) {
-          if (fileRes.status === 404) {
-            throw new AppError(
-              "Remote report file no longer exists. Please re-upload.",
-              404,
-            );
-          }
-          throw new AppError(
-            `Failed to fetch report file (Status: ${fileRes.status})`,
-            400,
-          );
-        }
-        const arrayBuffer = await fileRes.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        base64Data = buffer.toString("base64");
-      }
-    } catch (err: any) {
-      throw new AppError(
-        err.message || "Failed to process report file",
-        err.statusCode || 500,
-      );
-    }
+    const { reportId, fileUrl } = req.body;
+    if (!reportId && !fileUrl) throw new AppError("Report ID is required", 400);
+    const content = await getReportContent(req, reportId, fileUrl);
+    const base64Data = content.buffer.toString("base64");
+    const mimeType = content.mimeType;
 
     const prompt = `You are an empathetic, expert medical AI. Review this lab report or medical document. Explain the findings to the patient in simple, non-jargon terms.
     
@@ -151,16 +203,16 @@ CRITICAL FORMATTING RULES:
     });
   } catch (error: any) {
     console.error("AI Report Explanation Error:", error);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: error.stack || error.message || "Failed to explain report",
+      message: error.message || "Failed to explain report",
     });
   }
 };
 
 export const chatReport = async (req: Request, res: Response) => {
   try {
-    const { messages, fileUrl } = req.body;
+    const { messages, fileUrl, reportId } = req.body;
     if (!messages || !Array.isArray(messages)) {
       throw new AppError("Messages array is required", 400);
     }
@@ -169,41 +221,14 @@ export const chatReport = async (req: Request, res: Response) => {
 
     // Process the file if provided
     let filePart = null;
-    if (fileUrl) {
-      let ext = fileUrl.split(".").pop()?.toLowerCase() || "";
-      let mimeType = "application/pdf";
-      if (ext === "jpg" || ext === "jpeg") mimeType = "image/jpeg";
-      if (ext === "png") mimeType = "image/png";
-
-      try {
-        const urlObj = new URL(fileUrl);
-        if (
-          process.env.NODE_ENV === "development" &&
-          (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1")
-        ) {
-          if (!urlObj.pathname.startsWith("/uploads/"))
-            throw new AppError("Invalid local file path.", 403);
-        } else if (urlObj.hostname !== "ik.imagekit.io") {
-          throw new AppError(
-            "Invalid file URL domain. Only trusted storage providers are allowed.",
-            403,
-          );
-        }
-      } catch (e: any) {
-        throw new AppError(e.message || "Invalid file URL", 400);
-      }
-
-      const fileRes = await fetch(fileUrl);
-      if (fileRes.ok) {
-        const arrayBuffer = await fileRes.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        filePart = {
-          inlineData: {
-            data: buffer.toString("base64"),
-            mimeType: mimeType,
-          },
-        };
-      }
+    if (reportId || fileUrl) {
+      const content = await getReportContent(req, reportId, fileUrl);
+      filePart = {
+        inlineData: {
+          data: content.buffer.toString("base64"),
+          mimeType: content.mimeType,
+        },
+      };
     }
 
     // Map history to Gemini format
@@ -244,9 +269,9 @@ CRITICAL RULES:
     });
   } catch (error: any) {
     console.error("AI Chat Error:", error);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: error.stack || error.message || "Failed to process chat",
+      message: error.message || "Failed to process chat",
     });
   }
 };

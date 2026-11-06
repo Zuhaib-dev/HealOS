@@ -23,6 +23,7 @@ import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { getDiagnosticResultsApi } from "@/lib/api/doctor";
 import { getSocket } from "@/lib/socket";
 import { getFileUrl } from "@/lib/utils";
+import { openProtectedReport } from "@/lib/api/reports";
 
 /* ---------- primitives ---------- */
 
@@ -243,15 +244,24 @@ export function ResultsPanel() {
                     <Td>
                       <div className="flex items-center gap-2">
                         {r.fileUrl && (
-                          <a
-                            href={getFileUrl(r.fileUrl)}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            type="button"
+                            onClick={() =>
+                              r._id
+                                ? openProtectedReport(r._id).catch(() =>
+                                    toast.error("Unable to open this report"),
+                                  )
+                                : window.open(
+                                    getFileUrl(r.fileUrl),
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  )
+                            }
                             className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"
                             title="View Document"
                           >
                             <Eye className="size-4" />
-                          </a>
+                          </button>
                         )}
                         {isSigned ? (
                           <Pill tone="mute">signed</Pill>

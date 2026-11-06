@@ -97,20 +97,23 @@ export const fetchPendingOrdersApi = async () => {
 export const updateOrderStatusApi = async (
   id: string,
   status: "IN_PROGRESS" | "REPORTED" | "CANCELLED",
-  paymentMethod?: string,
-  price?: number,
 ) => {
   const response = await apiClient.put<{
     status: string;
     data: { order: DiagnosticOrderRecord };
-  }>(`/radiology/orders/${id}/status`, { status, paymentMethod, price });
+  }>(`/radiology/orders/${id}/status`, { status });
+  return response.data;
+};
+
+export const recordRadiologyCashPaymentApi = async (id: string) => {
+  const response = await apiClient.post(`/radiology/orders/${id}/cash`);
   return response.data;
 };
 
 export const createRadiologyBillApi = async (id: string, price: number) => {
   const response = await apiClient.post<{
-    status: string;
-    data: { invoice: any };
+    success: boolean;
+    invoice: { _id: string };
   }>(`/radiology/orders/${id}/bill`, { price });
   return response.data;
 };

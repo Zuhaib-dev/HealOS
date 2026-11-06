@@ -25,6 +25,7 @@ const inventorySchema = z.object({
   currentStock: z.number().int().nonnegative(),
   reorderThreshold: z.number().int().nonnegative().optional(),
   unit: z.string().min(1),
+  unitPrice: z.number().nonnegative().default(0),
 });
 
 const getPagination = (req: Request) => {
@@ -868,6 +869,25 @@ export const updateInventoryItem = async (
       return;
     }
     const { Inventory } = await import("../models/inventory.model.js");
+    const existing = await Inventory.findById(req.params.id);
+    if (!existing) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Item not found" });
+      return;
+    }
+    if (
+      parsed.data.currentStock !== undefined &&
+      parsed.data.currentStock < (existing.reservedStock || 0)
+    ) {
+      res
+        .status(StatusCodes.CONFLICT)
+        .json({
+          success: false,
+          message: `At least ${existing.reservedStock} ${existing.unit} are reserved for unpaid pharmacy bills`,
+        });
+      return;
+    }
     const item = await Inventory.findByIdAndUpdate(req.params.id, parsed.data, {
       new: true,
     });
@@ -901,6 +921,17 @@ export const deleteInventoryItem = async (
 ): Promise<void> => {
   try {
     const { Inventory } = await import("../models/inventory.model.js");
+    const existing = await Inventory.findById(req.params.id);
+    if (existing && existing.reservedStock > 0) {
+      res
+        .status(StatusCodes.CONFLICT)
+        .json({
+          success: false,
+          message:
+            "This item has quantities reserved for unpaid pharmacy bills",
+        });
+      return;
+    }
     const item = await Inventory.findByIdAndDelete(req.params.id);
     if (!item) {
       res

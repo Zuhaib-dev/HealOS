@@ -41,6 +41,7 @@ import {
 } from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
+import { openProtectedReport } from "@/lib/api/reports";
 
 /* ---------- primitives ---------- */
 
@@ -118,6 +119,7 @@ export function ReportsPanel() {
   const [selectedReportForAi, setSelectedReportForAi] = useState<{
     name: string;
     url: string;
+    reportId?: string;
   } | null>(null);
   const [aiExplanation, setAiExplanation] = useState<string>("");
   const [isExplaining, setIsExplaining] = useState(false);
@@ -140,8 +142,12 @@ export function ReportsPanel() {
     }
   }, [chatMessages, isChatting]);
 
-  const handleExplainReport = async (name: string, url: string) => {
-    setSelectedReportForAi({ name, url });
+  const handleExplainReport = async (
+    name: string,
+    url: string,
+    reportId?: string,
+  ) => {
+    setSelectedReportForAi({ name, url, reportId });
     setIsAiModalOpen(true);
     setAiExplanation("");
     setChatMessages([]);
@@ -158,7 +164,9 @@ export function ReportsPanel() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ fileUrl: url }),
+        body: JSON.stringify({
+          ...(reportId ? { reportId } : { fileUrl: url }),
+        }),
       });
 
       const json = await res.json();
@@ -205,7 +213,9 @@ export function ReportsPanel() {
         },
         body: JSON.stringify({
           messages: apiMessages,
-          fileUrl: selectedReportForAi.url,
+          ...(selectedReportForAi.reportId
+            ? { reportId: selectedReportForAi.reportId }
+            : { fileUrl: selectedReportForAi.url }),
         }),
       });
 
@@ -288,7 +298,19 @@ export function ReportsPanel() {
     return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
   };
 
-  const allRecords = [
+  const allRecords: {
+    id: string;
+    name: string;
+    kind: string;
+    dept: string;
+    date: string;
+    status: string;
+    flagged: boolean;
+    pages: number;
+    size: string;
+    fileUrl: string | null;
+    reportId?: string;
+  }[] = [
     ...orders
       .filter((o: any) => o.status !== "REPORTED")
       .map((o: any) => ({
@@ -318,6 +340,7 @@ export function ReportsPanel() {
       pages: 1,
       size: "PDF",
       fileUrl: getFullFileUrl(r.fileUrl),
+      reportId: r._id,
     })),
   ];
 
@@ -413,25 +436,47 @@ export function ReportsPanel() {
                     <div className="text-muted-foreground flex items-center gap-3">
                       {r.fileUrl ? (
                         <>
-                          <a
-                            href={r.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            type="button"
+                            onClick={() =>
+                              r.reportId
+                                ? openProtectedReport(r.reportId).catch(() =>
+                                    toast.error("Unable to open this report"),
+                                  )
+                                : window.open(
+                                    r.fileUrl || "",
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  )
+                            }
                             aria-label="View"
                             title="View Report"
                             className="hover:text-foreground"
                           >
                             <Eye className="size-3.5" />
-                          </a>
-                          <a
-                            href={r.fileUrl}
-                            download
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              r.reportId
+                                ? openProtectedReport(r.reportId, true).catch(
+                                    () =>
+                                      toast.error(
+                                        "Unable to download this report",
+                                      ),
+                                  )
+                                : window.open(
+                                    r.fileUrl || "",
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  )
+                            }
                             aria-label="Download"
                             title="Download Report"
                             className="hover:text-foreground"
                           >
                             <Download className="size-3.5" />
-                          </a>
+                          </button>
                         </>
                       ) : (
                         <>
@@ -460,7 +505,7 @@ export function ReportsPanel() {
                           title="Explain with AI"
                           className="hover:text-amber-500 text-amber-500/70 transition-colors flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-full"
                           onClick={() =>
-                            handleExplainReport(r.name, r.fileUrl!)
+                            handleExplainReport(r.name, r.fileUrl!, r.reportId)
                           }
                         >
                           <Sparkles className="size-3.5" />

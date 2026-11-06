@@ -11,6 +11,7 @@ import {
   getLabStats,
   createLabBill,
   getLabHistory,
+  recordLabCashPayment,
 } from "../controllers/lab.controller.js";
 import { UserRole } from "../models/user.model.js";
 
@@ -25,6 +26,7 @@ router.use(
 router.get("/collections", getCollections);
 router.patch("/collections/:id/collect", markCollected);
 router.post("/collections/:id/bill", createLabBill);
+router.post("/collections/:id/cash", recordLabCashPayment);
 
 router.get("/samples", getSamples);
 router.get("/validation", getPendingValidation);

@@ -12,15 +12,13 @@ export const fetchLabHistoryApi = async (page = 1, limit = 10, search = "") => {
   return response.data;
 };
 
-export const markLabCollectedApi = async (
-  id: string,
-  paymentMethod?: string,
-  price?: number,
-) => {
-  const response = await apiClient.patch(`/lab/collections/${id}/collect`, {
-    paymentMethod,
-    price,
-  });
+export const markLabCollectedApi = async (id: string) => {
+  const response = await apiClient.patch(`/lab/collections/${id}/collect`);
+  return response.data;
+};
+
+export const recordLabCashPaymentApi = async (id: string) => {
+  const response = await apiClient.post(`/lab/collections/${id}/cash`);
   return response.data;
 };
 

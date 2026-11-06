@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   CreditCard,
   Banknote,
-  QrCode,
   Smartphone,
   Loader2,
   ArrowRight,
@@ -30,6 +29,7 @@ import {
   fetchPendingOrdersApi,
   updateOrderStatusApi,
   createRadiologyBillApi,
+  recordRadiologyCashPaymentApi,
 } from "@/lib/api/radiology";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
@@ -98,6 +98,7 @@ export function WorklistPanel() {
   const [paymentStatus, setPaymentStatus] = useState<
     "IDLE" | "WAITING" | "PAID"
   >("IDLE");
+  const [activeInvoiceId, setActiveInvoiceId] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -120,14 +121,11 @@ export function WorklistPanel() {
       socket.on("radiology_order_updated", reload);
       socket.on("order_created", reload);
 
-      const onInvoicePaid = () => {
-        setPaymentStatus((prev) => {
-          if (prev === "WAITING") {
-            toast.success("Online payment verified by backend!");
-            return "PAID";
-          }
-          return prev;
-        });
+      const onInvoicePaid = (event: { invoiceId?: string }) => {
+        if (event.invoiceId && event.invoiceId === activeInvoiceId) {
+          toast.success("Invoice payment confirmed. The scan can now start.");
+          setPaymentStatus("PAID");
+        }
       };
       socket.on("invoice_paid", onInvoicePaid);
 
@@ -137,13 +135,14 @@ export function WorklistPanel() {
         socket.off("invoice_paid", onInvoicePaid);
       };
     }
-  }, []);
+  }, [activeInvoiceId]);
 
   const handleSelectOrder = (order: any) => {
     setSelectedOrder(order);
     setPaymentMode(null);
     setIsPaid(order.status === "IN_PROGRESS" || order.status === "REPORTED");
     setPaymentStatus("IDLE");
+    setActiveInvoiceId(null);
     setPrice("2500");
   };
 
@@ -152,7 +151,11 @@ export function WorklistPanel() {
     try {
       setPaymentStatus("WAITING");
       toast.info("Sending bill to patient portal...");
-      await createRadiologyBillApi(selectedOrder._id, Number(price));
+      const result = await createRadiologyBillApi(
+        selectedOrder._id,
+        Number(price),
+      );
+      setActiveInvoiceId(result.invoice?._id || null);
       toast.success("Bill sent! Waiting for patient to pay via HealOS app...");
     } catch (e) {
       toast.error("Failed to send bill.");
@@ -170,17 +173,13 @@ export function WorklistPanel() {
 
     setIsProcessing(true);
     try {
-      if (paymentMode === "ONLINE" && paymentStatus === "PAID") {
-        await updateOrderStatusApi(selectedOrder._id, "IN_PROGRESS");
-      } else {
-        await updateOrderStatusApi(
-          selectedOrder._id,
-          "IN_PROGRESS",
-          paymentMode === "ONLINE" ? "UPI" : paymentMode,
-          Number(price),
-        );
-      }
-      toast.success(`Payment processed and scan started!`);
+      if (!activeInvoiceId) throw new Error("Create a patient invoice first.");
+      if (paymentMode === "ONLINE" && paymentStatus !== "PAID")
+        throw new Error("Wait for the patient invoice to show as paid.");
+      if (paymentMode === "CASH")
+        await recordRadiologyCashPaymentApi(selectedOrder._id);
+      await updateOrderStatusApi(selectedOrder._id, "IN_PROGRESS");
+      toast.success("Payment verified and scan started.");
       setIsPaid(true);
 
       setTimeout(() => {
@@ -188,7 +187,9 @@ export function WorklistPanel() {
       }, 2000);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to complete checkout.");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to complete checkout.",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -226,9 +227,6 @@ export function WorklistPanel() {
       </div>
     );
   }
-
-  const upiUrl = `upi://pay?pa=radiology@healos&pn=HealOS%20Radiology&am=${price}&cu=INR`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUrl)}`;
 
   // Filter out reported orders from the queue for cleaner POS view
   const pendingQueue = orders.filter((o) => o.status !== "REPORTED");
@@ -540,26 +538,20 @@ export function WorklistPanel() {
                             exit={{ opacity: 0, height: 0 }}
                             className="bg-indigo-500/5 border border-indigo-500/20 rounded-2xl p-6 sm:p-8 mb-8 flex flex-col sm:flex-row items-center gap-8"
                           >
-                            <div className="bg-white p-3 rounded-2xl shadow-md shrink-0">
-                              <img
-                                src={qrCodeUrl}
-                                alt="UPI QR Code"
-                                className="size-32 rounded-lg"
-                              />
-                            </div>
                             <div className="text-center sm:text-left w-full">
                               <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-lg mb-2">
-                                Scan to Pay via UPI
+                                Patient online payment
                               </h4>
                               <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                                The patient can scan this dynamic QR code to
-                                instantly pay{" "}
+                                Send a real invoice to the patient billing page.
+                                They can pay securely there using the available
+                                payment methods. The scan stays blocked until
+                                payment is confirmed.{" "}
                                 <strong className="text-foreground">
                                   ₹{price}
-                                </strong>{" "}
-                                from their phone.
+                                </strong>
                               </p>
-                              {paymentStatus === "IDLE" && (
+                              {!activeInvoiceId && (
                                 <button
                                   type="button"
                                   onClick={handleSendBill}
@@ -599,9 +591,25 @@ export function WorklistPanel() {
                                 Collect Cash: ₹{price}
                               </h4>
                               <p className="text-sm text-muted-foreground">
-                                Ensure exact change is received or issue balance
-                                from the float register.
+                                Create the patient invoice first. After
+                                collecting cash, confirm below to record the
+                                payment and start the scan.
                               </p>
+                              {!activeInvoiceId && (
+                                <button
+                                  type="button"
+                                  onClick={handleSendBill}
+                                  className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
+                                >
+                                  Create invoice
+                                </button>
+                              )}
+                              {activeInvoiceId && paymentStatus !== "PAID" && (
+                                <p className="mt-3 text-xs font-medium text-emerald-700">
+                                  Invoice is ready. Confirm cash after it is
+                                  received.
+                                </p>
+                              )}
                             </div>
                           </motion.div>
                         )}
@@ -613,6 +621,7 @@ export function WorklistPanel() {
                           onClick={handleCheckout}
                           disabled={
                             isProcessing ||
+                            !activeInvoiceId ||
                             !paymentMode ||
                             Number(price) === 0 ||
                             (paymentMode === "ONLINE" &&
@@ -631,7 +640,7 @@ export function WorklistPanel() {
                             </>
                           ) : (
                             <>
-                              Collect & Start Scan{" "}
+                              Confirm Payment & Start Scan{" "}
                               <ArrowRight className="size-5 ml-2" />
                             </>
                           )}

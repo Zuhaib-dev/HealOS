@@ -17,7 +17,10 @@ import ImageKit from "imagekit";
 import fs from "fs";
 import { z } from "zod";
 import { getIO } from "../socket.js";
-import { getClinicDateKey } from "../utils/clinic-date.js";
+import {
+  getClinicDateKey,
+  getClinicMinutesOfDay,
+} from "../utils/clinic-date.js";
 
 // Initialize ImageKit
 const imagekit = new ImageKit({
@@ -477,7 +480,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const doctorId = req.user?._id;
 
     // Count today's appointments
-    const today = new Date().toISOString().split("T")[0];
+    const today = getClinicDateKey();
     const appointmentsToday = await Appointment.countDocuments({
       doctor: doctorId,
       date: today,
@@ -495,13 +498,42 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       followUpDate: { $gte: todayDate },
     });
 
+    const resultOrderIds = await DiagnosticOrder.find({
+      doctor: doctorId,
+      status: "REPORTED",
+    }).distinct("_id");
+    const resultsAwaiting = await DiagnosticReport.countDocuments({
+      order: { $in: resultOrderIds },
+      state: "pending sign",
+    });
+
+    const shift = await Schedule.findOne({
+      user: doctorId,
+      date: today,
+      shiftType: { $in: ["REGULAR", "ON_CALL"] },
+    }).sort({ startTime: 1 });
+    let elapsedMinutes = 0;
+    if (shift) {
+      const toMinutes = (value: string) => {
+        const [hours, minutes] = value.split(":").map(Number);
+        return (hours || 0) * 60 + (minutes || 0);
+      };
+      const start = toMinutes(shift.startTime);
+      const end = toMinutes(shift.endTime);
+      const now = getClinicMinutesOfDay();
+      const duration = end >= start ? end - start : 1440 - start + end;
+      const adjustedNow = now < start ? now + 1440 : now;
+      const elapsed = adjustedNow >= start ? adjustedNow - start : 0;
+      elapsedMinutes = Math.max(0, Math.min(duration, elapsed));
+    }
+
     res.status(200).json({
       status: "success",
       data: {
         appointmentsToday,
         activePatientsCount: activePatients.length,
-        resultsAwaiting: 0, // Mock for now
-        timeOnShift: "4h 12m", // Mock for now
+        resultsAwaiting,
+        timeOnShift: `${Math.floor(elapsedMinutes / 60)}h ${elapsedMinutes % 60}m`,
         followUpsCount,
       },
     });

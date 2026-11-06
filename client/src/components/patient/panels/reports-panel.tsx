@@ -344,7 +344,7 @@ export function ReportsPanel() {
       pages: 1,
       size: "PDF",
       fileUrl: getFullFileUrl(r.fileUrl),
-      reportId: r._id,
+      reportId: String(r._id),
     })),
   ];
 
@@ -502,7 +502,7 @@ export function ReportsPanel() {
                           </button>
                         </>
                       )}
-                      {r.fileUrl && (
+                      {r.fileUrl && r.reportId && (
                         <button
                           type="button"
                           aria-label="Explain with AI"

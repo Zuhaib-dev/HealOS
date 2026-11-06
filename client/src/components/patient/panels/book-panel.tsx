@@ -1,25 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V4
+ * genre: modern-minimal · macrostructure: Split Studio
+ * theme: Emerald Prestige · enrichment: none · nav: PatientShell · footer: none
+ * audience: patients · use: reserve a visit by paying the advance
+ * designed-as-app: HealOS Clinical Instrument
+ */
+
+import { useEffect, useMemo, useState } from "react";
 import {
   Check,
-  Calendar as CalendarIcon,
-  Clock,
-  Stethoscope,
-  CreditCard,
   Video,
   MapPin,
-  FileText,
   ChevronRight,
   ChevronLeft,
-  Activity,
-  BriefcaseMedical,
+  Search,
 } from "lucide-react";
 import { addDays, format, isSameDay } from "date-fns";
 import { formatTime12Hour, formatTimeRange } from "@/lib/time-format";
-import { ActionButton } from "@/components/admin/admin-shell";
 import { PatientHeader } from "@/components/patient/patient-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   fetchAvailableDoctorsApi,
   bookAppointmentApi,
@@ -36,9 +35,10 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/store/use-auth-store";
 import { getSocket } from "@/lib/socket";
 import Image from "next/image";
+import Link from "next/link";
 import { PaymentCelebration } from "../payment-celebration";
 
-const allDepartments = { id: "all", label: "All departments" };
+const allDepartments = { id: "all", label: "All" };
 
 declare global {
   interface Window {
@@ -60,9 +60,14 @@ const loadRazorpayScript = () => {
   });
 };
 
+function doctorLabel(name: string) {
+  return /^dr\.?\s/i.test(name) ? name : `Dr. ${name}`;
+}
+
 export function BookPanel() {
   const { user } = useAuthStore();
   const [dept, setDept] = useState(allDepartments);
+  const [query, setQuery] = useState("");
   const [doctorsList, setDoctorsList] = useState<DoctorListItem[]>([]);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
@@ -82,9 +87,7 @@ export function BookPanel() {
     slotDurationMinutes?: number;
   } | null>(null);
   const [mode, setMode] = useState<"IN_PERSON" | "TELECONSULT">("IN_PERSON");
-  const [paymentMethod, setPaymentMethod] = useState<"ONLINE" | "CASH">(
-    "ONLINE",
-  );
+  const [paymentMethod] = useState<"ONLINE" | "CASH">("ONLINE");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [paymentCelebration, setPaymentCelebration] = useState(false);
@@ -191,37 +194,52 @@ export function BookPanel() {
     loadRazorpayScript();
   }, []);
 
-  const filteredDoctors = doctorsList.filter(
-    (doctor) =>
-      doctor.role === "DOCTOR" &&
-      (dept.id === "all" ||
-        doctor.specialization.trim().toLowerCase() ===
-          dept.label.trim().toLowerCase()),
+  const departments = useMemo(
+    () => [
+      allDepartments,
+      ...Array.from(
+        new Set(
+          doctorsList
+            .filter((doctor) => doctor.role === "DOCTOR")
+            .map((doctor) => doctor.specialization.trim())
+            .filter(Boolean),
+        ),
+      ).map((label) => ({
+        id: label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        label,
+      })),
+    ],
+    [doctorsList],
   );
-  const departments = [
-    allDepartments,
-    ...Array.from(
-      new Set(
-        doctorsList
-          .filter((doctor) => doctor.role === "DOCTOR")
-          .map((doctor) => doctor.specialization.trim())
-          .filter(Boolean),
-      ),
-    ).map((label) => ({
-      id: label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      label,
-    })),
-  ];
 
-  // Auto-select first doctor when department changes
+  const filteredDoctors = doctorsList.filter((doctor) => {
+    if (doctor.role !== "DOCTOR") return false;
+    if (
+      dept.id !== "all" &&
+      doctor.specialization.trim().toLowerCase() !==
+        dept.label.trim().toLowerCase()
+    )
+      return false;
+    if (!query.trim()) return true;
+    const hay = `${doctor.name} ${doctor.specialization}`.toLowerCase();
+    return hay.includes(query.trim().toLowerCase());
+  });
+
   useEffect(() => {
     if (
-      filteredDoctors.length > 0 &&
-      !filteredDoctors.find((d) => d._id === selectedDoctorId)
+      selectedDoctorId &&
+      !doctorsList.some(
+        (d) =>
+          d._id === selectedDoctorId &&
+          (dept.id === "all" ||
+            d.specialization.trim().toLowerCase() ===
+              dept.label.trim().toLowerCase()),
+      )
     ) {
-      setSelectedDoctorId(filteredDoctors[0]!._id);
+      setSelectedDoctorId("");
+      setAvailability(null);
     }
-  }, [dept, filteredDoctors, selectedDoctorId]);
+  }, [dept, doctorsList, selectedDoctorId]);
 
   const handleBook = async () => {
     if (
@@ -242,7 +260,6 @@ export function BookPanel() {
         const razorpayReady = await loadRazorpayScript();
         if (!razorpayReady) throw new Error("Payment checkout could not load.");
 
-        // Reserve a unique appointment window before taking payment.
         const reservation = await bookAppointmentApi({
           doctorId: selectedDoctorId,
           date: format(date, "yyyy-MM-dd"),
@@ -253,7 +270,6 @@ export function BookPanel() {
         if (!reservation.success || !reservation.appointment)
           throw new Error("Could not reserve an appointment slot.");
 
-        // 1. Create Razorpay Order
         let orderRes;
         try {
           orderRes = await createRazorpayOrderApi({
@@ -269,7 +285,6 @@ export function BookPanel() {
           throw error;
         }
 
-        // 2. Open Razorpay Checkout
         let paymentCaptured = false;
         const advancePaidAmount = orderRes.order.amount / 100;
         const options = {
@@ -282,7 +297,6 @@ export function BookPanel() {
           handler: async function (response: any) {
             paymentCaptured = true;
             try {
-              // 3. Verify payment and confirm the reserved appointment.
               await verifyRazorpayPaymentApi({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
@@ -326,7 +340,7 @@ export function BookPanel() {
             email: user?.email,
           },
           theme: {
-            color: "#10b981", // Emerald 500
+            color: "#10b981",
           },
         };
         try {
@@ -346,7 +360,6 @@ export function BookPanel() {
           throw error;
         }
       } else {
-        // CASH Booking
         const res = await bookAppointmentApi({
           doctorId: selectedDoctorId,
           date: format(date, "yyyy-MM-dd"),
@@ -368,500 +381,452 @@ export function BookPanel() {
   };
 
   const selectedDoctorObj = doctorsList.find((d) => d._id === selectedDoctorId);
+  const reasonOk = reason.trim().length >= 3;
+  const canBook = Boolean(
+    availability?.available &&
+    date &&
+    selectedDoctorId &&
+    reasonOk &&
+    !submitting,
+  );
+  const advance = availability?.advanceFee;
+  const total = availability?.consultationFee;
+  const balance =
+    typeof advance === "number" && typeof total === "number"
+      ? Math.max(0, total - advance)
+      : null;
+
+  const blockReason = !selectedDoctorId
+    ? "Select a clinician first"
+    : !date
+      ? "Select a day"
+      : availability && !availability.available
+        ? "That day is full. Pick another."
+        : !reasonOk
+          ? "Add a visit reason (at least 3 characters)"
+          : submitting
+            ? "Opening payment…"
+            : null;
+
+  const pickDoctor = (id: string) => {
+    setSelectedDoctorId(id);
+    requestAnimationFrame(() => {
+      document
+        .getElementById("book-ticket")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const payButton = (
+    <button
+      type="button"
+      disabled={!canBook}
+      onClick={handleBook}
+      className={`flex w-full items-center justify-center gap-2 px-4 py-3.5 text-sm font-bold transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
+        canBook
+          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+          : "cursor-not-allowed border border-border/60 bg-muted text-muted-foreground"
+      }`}
+    >
+      {submitting
+        ? "Opening payment…"
+        : advance != null
+          ? `Pay ₹${advance} advance`
+          : "Pay advance"}
+      {!submitting ? <ChevronRight className="size-4" /> : null}
+    </button>
+  );
 
   return (
-    <section className="pb-24 lg:pb-12">
+    <section className="pb-28 lg:pb-0">
       <PatientHeader
-        title="Book an appointment"
-        note="Pick a department, clinician, and free slot."
+        title="Book a visit"
+        note="Pick a clinician. Their open days appear beside them. Time is assigned after the advance."
       />
 
       {bookedRecord ? (
-        <div className="p-4 sm:p-8">
-          <Card className="max-w-xl border-border/60 shadow-none">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <div className="mt-1 grid size-9 place-items-center bg-accent text-accent-foreground">
-                  <Check className="size-5" />
-                </div>
-                <div>
-                  <h3 className="font-display text-xl font-bold">
-                    Appointment confirmed
-                  </h3>
-                  <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                    Your appointment for{" "}
-                    <strong className="text-foreground">
-                      {bookedRecord.department}
-                    </strong>{" "}
-                    with{" "}
-                    <strong className="text-foreground">
-                      Dr. {bookedRecord.doctor.name}
-                    </strong>{" "}
-                    has been scheduled for{" "}
-                    <strong className="text-foreground">
-                      {format(
-                        new Date(`${bookedRecord.date}T12:00:00`),
-                        "EEEE, MMMM d, yyyy",
-                      )}
-                    </strong>{" "}
-                    at{" "}
-                    <strong className="text-foreground">
-                      arrive by{" "}
-                      {formatTime12Hour(
-                        bookedRecord.arrivalTime || bookedRecord.timeSlot,
-                      )}
-                      . Your appointment is{" "}
-                      {formatTimeRange(
-                        bookedRecord.timeSlot,
-                        bookedRecord.slotEndTime,
-                      )}
-                    </strong>
-                    .
-                  </p>
-                  {bookedRecord.queueNumber && (
-                    <div className="mt-4 inline-flex items-center gap-3 border border-border/60 bg-muted/30 px-4 py-3">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Queue number
-                      </span>
-                      <span className="font-mono text-2xl font-bold text-primary">
-                        {String(bookedRecord.queueNumber).padStart(2, "0")}
-                      </span>
-                    </div>
-                  )}
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Advance paid: ₹
-                    {bookedRecord.advanceAmount ??
-                      availability?.advanceFee ??
-                      20}
-                    . Balance due at the clinic: ₹
-                    {Math.max(
-                      0,
-                      bookedRecord.amount -
-                        (bookedRecord.advanceAmount ??
-                          availability?.advanceFee ??
-                          20),
-                    )}
-                    .
-                  </p>
-                  <div className="mt-4 inline-flex gap-2 items-center text-xs font-mono bg-background/50 px-3 py-1.5 rounded border border-border/50">
-                    <span className="text-amber-500 font-bold uppercase">
-                      {bookedRecord.status}
-                    </span>
-                    <span className="text-muted-foreground/40">•</span>
-                    <span className="text-muted-foreground">
-                      {bookedRecord.type}
-                    </span>
-                  </div>
-                  <div className="mt-6">
-                    <ActionButton
-                      tone="solid"
-                      onClick={() => {
-                        setBookedRecord(null);
-                        setReason("");
-                      }}
-                    >
-                      Book another visit
-                    </ActionButton>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <div className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-6xl mx-auto">
-          {/* Top Section: Departments (Scrollable) */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Activity className="size-4 text-primary" />
-              <h2 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
-                Select Department
-              </h2>
-            </div>
-            <div className="flex overflow-x-auto gap-3 pb-4 snap-x snap-mandatory hide-scrollbar">
-              {departments.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => setDept(d)}
-                  className={`flex min-w-35 shrink-0 snap-start flex-col gap-2 border px-4 py-4 text-left transition-colors ${
-                    dept.id === d.id
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border/60 bg-card hover:border-border hover:bg-muted"
-                  }`}
-                >
-                  <BriefcaseMedical
-                    className={`size-5 ${dept.id === d.id ? "text-primary-foreground" : "text-primary"}`}
-                  />
-                  <span className="font-semibold text-sm leading-tight">
-                    {d.label}
-                  </span>
-                </button>
-              ))}
+        <div className="grid min-h-[calc(100vh-8rem)] lg:grid-cols-2">
+          <div className="flex flex-col justify-center border-b border-border/60 px-5 py-10 sm:px-10 lg:border-r lg:border-b-0">
+            <p className="mono-label text-accent">Confirmed</p>
+            <h2 className="mt-3 max-w-md font-display text-3xl font-bold tracking-tight sm:text-4xl">
+              {doctorLabel(bookedRecord.doctor.name)}
+            </h2>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+              {format(
+                new Date(`${bookedRecord.date}T12:00:00`),
+                "EEEE, d MMMM yyyy",
+              )}
+              . Arrive by{" "}
+              {formatTime12Hour(
+                bookedRecord.arrivalTime || bookedRecord.timeSlot,
+              )}
+              . Visit{" "}
+              {formatTimeRange(bookedRecord.timeSlot, bookedRecord.slotEndTime)}
+              .
+            </p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Advance ₹
+              {bookedRecord.advanceAmount ?? availability?.advanceFee ?? "—"}
+              {typeof bookedRecord.amount === "number"
+                ? ` · ₹${Math.max(
+                    0,
+                    bookedRecord.amount -
+                      (bookedRecord.advanceAmount ??
+                        availability?.advanceFee ??
+                        0),
+                  )} due at the clinic`
+                : ""}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-2">
+              <Link
+                href="/patient/appointments"
+                prefetch
+                className="inline-flex items-center gap-2 bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Open visits <ChevronRight className="size-3.5" />
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setBookedRecord(null);
+                  setReason("");
+                }}
+                className="border border-border/60 px-4 py-2.5 text-xs font-semibold hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Book another visit
+              </button>
             </div>
           </div>
-
-          {/* Clinicians Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Stethoscope className="size-4 text-primary" />
-              <h2 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
-                Select Clinician
-              </h2>
-            </div>
-
-            {filteredDoctors.length === 0 ? (
-              <div className="border border-dashed border-border/60 p-8 text-center">
-                <p className="text-muted-foreground text-sm">
-                  {doctorsLoading
-                    ? "Loading verified clinicians and their schedules…"
-                    : `No verified clinicians with an active schedule are available for ${dept.label}.`}
-                </p>
+          <div className="flex flex-col items-start justify-center bg-muted/20 px-5 py-12 sm:px-10">
+            <p className="mono-label text-muted-foreground">Queue number</p>
+            <p className="mt-2 font-display text-7xl font-bold tracking-tight text-accent sm:text-8xl">
+              {bookedRecord.queueNumber
+                ? String(bookedRecord.queueNumber).padStart(2, "0")
+                : "—"}
+            </p>
+            <p className="mt-4 max-w-xs text-sm text-muted-foreground">
+              Show this at check-in. Keep the visits screen handy on the day.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid lg:min-h-[calc(100vh-8rem)] lg:grid-cols-2">
+          <div className="flex min-w-0 flex-col border-b border-border/60 lg:border-r lg:border-b-0">
+            <div className="border-b border-border/60 px-4 py-4 sm:px-6">
+              <div className="relative">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <label htmlFor="book-clinician-search" className="sr-only">
+                  Search clinicians
+                </label>
+                <input
+                  id="book-clinician-search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search by name or specialty"
+                  className="w-full border border-border/60 bg-transparent py-2.5 pr-3 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                />
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filteredDoctors.map((doc) => (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {departments.map((d) => (
                   <button
-                    key={doc._id}
+                    key={d.id}
                     type="button"
-                    onClick={() => setSelectedDoctorId(doc._id)}
-                    className={`group flex items-start gap-4 border p-4 text-left transition-colors ${
-                      selectedDoctorId === doc._id
-                        ? "border-primary bg-primary/5"
-                        : "border-border/60 bg-card hover:border-border hover:bg-muted/40"
+                    onClick={() => setDept(d)}
+                    className={`px-2.5 py-1.5 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
+                      dept.id === d.id
+                        ? "bg-foreground text-background"
+                        : "border border-border/60 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     }`}
                   >
-                    <div className="relative size-14 shrink-0 overflow-hidden border border-border/50 bg-muted">
-                      {doc.avatarUrl ? (
-                        <Image
-                          src={doc.avatarUrl}
-                          alt={doc.name || "Doctor profile picture"}
-                          fill
-                          sizes="56px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary font-bold">
-                          {doc.name.charAt(0)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <h3
-                          className={`font-bold truncate text-sm ${selectedDoctorId === doc._id ? "text-primary" : "text-foreground"}`}
-                        >
-                          {/^dr\.?\s/i.test(doc.name)
-                            ? doc.name
-                            : `Dr. ${doc.name}`}
-                        </h3>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {doc.specialization}
-                      </p>
-                      <div className="flex items-center gap-3 mt-2 text-[11px] font-mono text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="size-3" />{" "}
-                          {doc.experienceYears
-                            ? `${doc.experienceYears} Yrs`
-                            : "Experience not listed"}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <CreditCard className="size-3" /> ₹
-                          {doc.consultationFee ?? "—"}
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className={`mt-3 grid size-5 shrink-0 place-items-center border transition-colors ${
-                        selectedDoctorId === doc._id
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border/60 text-transparent"
-                      }`}
-                    >
-                      <Check className="size-3" strokeWidth={3} />
-                    </div>
+                    {d.label}
                   </button>
                 ))}
               </div>
-            )}
+            </div>
+
+            <div className="max-h-80 min-h-0 flex-1 overflow-y-auto lg:max-h-none">
+              {doctorsLoading ? (
+                <div className="space-y-px p-0">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-20 animate-pulse bg-foreground/4"
+                    />
+                  ))}
+                </div>
+              ) : filteredDoctors.length === 0 ? (
+                <div className="px-6 py-16 text-center">
+                  <p className="text-sm font-medium">No clinicians match</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Try another specialty or clear the search.
+                  </p>
+                </div>
+              ) : (
+                <ul>
+                  {filteredDoctors.map((doc) => {
+                    const selected = selectedDoctorId === doc._id;
+                    return (
+                      <li key={doc._id} className="border-b border-border/40">
+                        <button
+                          type="button"
+                          onClick={() => pickDoctor(doc._id)}
+                          className={`flex w-full min-w-0 items-center gap-3 px-4 py-4 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:px-6 ${
+                            selected ? "bg-primary/8" : "hover:bg-muted/40"
+                          }`}
+                        >
+                          <div className="relative size-12 shrink-0 overflow-hidden bg-muted">
+                            {doc.avatarUrl ? (
+                              <Image
+                                src={doc.avatarUrl}
+                                alt=""
+                                fill
+                                sizes="48px"
+                                className="object-cover"
+                              />
+                            ) : (
+                              <span className="grid h-full w-full place-items-center font-mono text-sm font-bold">
+                                {doc.name.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold">
+                              {doctorLabel(doc.name)}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {doc.specialization}
+                              {doc.experienceYears
+                                ? ` · ${doc.experienceYears} yrs`
+                                : ""}
+                            </p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="font-mono text-sm font-semibold">
+                              ₹{doc.consultationFee ?? "—"}
+                            </p>
+                            {selected ? (
+                              <Check className="ml-auto mt-1 size-3.5 text-primary" />
+                            ) : (
+                              <p className="mono-label mt-1 text-[10px] text-muted-foreground">
+                                Fee
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pt-4">
-            {/* Left Column: Preferences */}
-            <div className="lg:col-span-4 space-y-6">
-              <Card className="shadow-sm border-border/60">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Video className="size-4 text-primary" />
-                    Visit Preferences
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 block">
-                      Visit Mode
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {(["IN_PERSON", "TELECONSULT"] as const).map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          onClick={() => setMode(m)}
-                          className={`flex items-center justify-center gap-2 border px-3 py-3 text-xs font-medium transition-colors ${
-                            mode === m
-                              ? "bg-foreground text-background border-foreground shadow-sm"
-                              : "bg-background text-foreground hover:bg-muted border-border/60"
-                          }`}
-                        >
-                          {m === "IN_PERSON" ? (
-                            <MapPin className="size-3.5" />
-                          ) : (
-                            <Video className="size-3.5" />
-                          )}
-                          {m === "IN_PERSON" ? "In Person" : "Video"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+          <div
+            id="book-ticket"
+            className="flex min-w-0 flex-col bg-muted/15 scroll-mt-20"
+          >
+            {!selectedDoctorObj ? (
+              <div className="flex flex-1 flex-col justify-center px-6 py-16 sm:px-10">
+                <p className="font-display text-2xl font-bold tracking-tight">
+                  Choose who you will see
+                </p>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                  Open days, remaining appointments, and the advance amount
+                  appear here after you select a clinician.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="border-b border-border/60 px-5 py-5 sm:px-8">
+                  <p className="mono-label text-muted-foreground">
+                    {selectedDoctorObj.specialization}
+                  </p>
+                  <h2 className="mt-1 font-display text-2xl font-bold tracking-tight">
+                    {doctorLabel(selectedDoctorObj.name)}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Consultation ₹{selectedDoctorObj.consultationFee ?? "—"}
+                  </p>
+                </div>
 
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 block">
-                      Payment Method
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {(["ONLINE"] as const).map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => setPaymentMethod(p)}
-                          className={`flex flex-col items-center justify-center gap-1 border px-3 py-3 text-xs font-medium transition-colors ${
-                            paymentMethod === p
-                              ? "bg-foreground text-background border-foreground shadow-sm"
-                              : "bg-background text-foreground hover:bg-muted border-border/60"
-                          }`}
-                        >
-                          <span>
-                            {p === "ONLINE" ? "Pay Online" : "Pay at Desk"}
-                          </span>
-                          <span
-                            className={
-                              paymentMethod === p
-                                ? "text-background/70 font-mono text-[10px]"
-                                : "text-muted-foreground font-mono text-[10px]"
-                            }
-                          >
-                            Advance ₹{availability?.advanceFee ?? "—"} · Total ₹
-                            {availability?.consultationFee ?? "—"}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                <div className="grid grid-cols-2">
+                  {(["IN_PERSON", "TELECONSULT"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMode(m)}
+                      className={`flex items-center justify-center gap-2 border-b border-border/60 px-3 py-3 text-xs font-semibold focus-visible:ring-2 focus-visible:ring-ring ${
+                        mode === m
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:bg-background/80"
+                      } ${m === "TELECONSULT" ? "border-l border-border/60" : ""}`}
+                    >
+                      {m === "IN_PERSON" ? (
+                        <MapPin className="size-3.5" />
+                      ) : (
+                        <Video className="size-3.5" />
+                      )}
+                      {m === "IN_PERSON" ? "In person" : "Video"}
+                    </button>
+                  ))}
+                </div>
 
-            {/* Right Column: Date, Time, Reason */}
-            <div className="lg:col-span-8 space-y-6">
-              <Card className="shadow-sm border-border/60 overflow-hidden">
-                <CardHeader className="pb-4 border-b border-border/40 bg-muted/20">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <CalendarIcon className="size-4 text-primary" />
-                    Schedule Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border/40">
-                    {/* Compact weekday strip */}
-                    <div className="p-5 sm:p-6">
-                      <div className="mb-4 flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            Choose a day
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Only dates with open appointments can be selected.
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            aria-label="Previous week"
-                            disabled={weekOffset === 0}
-                            onClick={() =>
-                              setWeekOffset((value) => Math.max(0, value - 1))
-                            }
-                            className="rounded-md p-2 text-muted-foreground hover:bg-muted disabled:opacity-30"
-                          >
-                            <ChevronLeft className="size-4" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label="Next week"
-                            onClick={() => setWeekOffset((value) => value + 1)}
-                            className="rounded-md p-2 text-muted-foreground hover:bg-muted"
-                          >
-                            <ChevronRight className="size-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-                        {dateOptions.map((day) => {
-                          const selected = Boolean(
-                            date && isSameDay(day, date),
-                          );
-                          const key = format(day, "yyyy-MM-dd");
-                          const dayOpen = weekAvailability[key];
-                          return (
-                            <button
-                              key={key}
-                              type="button"
-                              disabled={dayOpen === false}
-                              onClick={() => setDate(day)}
-                              className={`flex min-w-0 flex-col items-center gap-2 border px-1 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border/60 bg-background hover:border-primary/50 hover:bg-muted/50"}`}
-                            >
-                              <span
-                                className={`text-[10px] font-semibold uppercase sm:text-xs ${selected ? "text-primary-foreground/75" : "text-muted-foreground"}`}
-                              >
-                                {format(day, "EEEEE")}
-                              </span>
-                              <span className="font-mono text-sm font-bold sm:text-base">
-                                {format(day, "d")}
-                              </span>
-                              <span
-                                className={`size-1.5 rounded-full ${dayOpen === undefined ? "bg-muted-foreground/30" : dayOpen ? (selected ? "bg-primary-foreground" : "bg-emerald-500") : "bg-transparent"}`}
-                                aria-hidden="true"
-                              />
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <p className="mt-3 text-center text-xs text-muted-foreground">
-                        {date ? format(date, "EEEE, MMMM d") : "Select a day"}
+                <div className="px-5 py-5 sm:px-8">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <p className="mono-label text-muted-foreground">Day</p>
+                      <p className="mt-1 text-sm font-medium">
+                        {date ? format(date, "EEEE, d MMMM") : "Select a day"}
                       </p>
                     </div>
-
-                    {/* Time Slots & Reason */}
-                    <div className="p-6 flex flex-col h-full">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <Clock className="size-3.5" />
-                        Automatic appointment slot
-                      </label>
-                      <div className="mb-6 rounded-lg border border-border/70 bg-muted/30 p-4 text-sm">
-                        {!availability ? (
-                          "Checking this doctor's schedule…"
-                        ) : availability.available ? (
-                          <>
-                            <strong>
-                              Appointment time assigned after booking
-                            </strong>
-                            <p className="mt-1 text-muted-foreground">
-                              {availability.slotsRemaining} appointment
-                              {availability.slotsRemaining === 1
-                                ? ""
-                                : "s"}{" "}
-                              remain for this day. Pay the advance to reserve
-                              your unique queue number and assigned visit time.
-                              We’ll show both after payment.
-                            </p>
-                          </>
-                        ) : (
-                          "This doctor has no remaining slots on this date. Choose another day."
-                        )}
-                      </div>
-
-                      <label
-                        htmlFor="appointment-visit-reason"
-                        className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2"
+                    <div className="flex">
+                      <button
+                        type="button"
+                        aria-label="Previous week"
+                        disabled={weekOffset === 0}
+                        onClick={() =>
+                          setWeekOffset((value) => Math.max(0, value - 1))
+                        }
+                        className="p-2 text-muted-foreground hover:bg-background disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <FileText className="size-3.5" />
-                        Visit Reason
-                      </label>
-                      <textarea
-                        id="appointment-visit-reason"
-                        aria-label="Visit Reason"
-                        title="Visit Reason"
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        rows={3}
-                        placeholder="Briefly describe symptoms..."
-                        className="w-full resize-none bg-background border border-border/70 p-3 text-sm outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all flex-1"
-                      />
+                        <ChevronLeft className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Next week"
+                        onClick={() => setWeekOffset((value) => value + 1)}
+                        className="p-2 text-muted-foreground hover:bg-background focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <ChevronRight className="size-4" />
+                      </button>
                     </div>
                   </div>
-                </CardContent>
-
-                {/* Action Footer */}
-                <div className="border-t border-border/40 bg-muted/30 p-4 sm:p-6">
-                  <div className="flex flex-col sm:flex-row items-center gap-4">
-                    <div className="flex-1 w-full flex items-center gap-4 bg-background p-3 rounded-lg border border-border/60">
-                      <div className="bg-primary/10 p-2 rounded-md">
-                        <CalendarIcon className="size-5 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
-                          Booking Summary
-                        </p>
-                        <p className="text-sm font-medium truncate text-foreground mt-0.5">
-                          {date ? format(date, "MMM do") : "No Date"}{" "}
-                          <span className="text-muted-foreground mx-1.5">
-                            •
+                  <div className="grid grid-cols-7 gap-1">
+                    {dateOptions.map((day) => {
+                      const selected = Boolean(date && isSameDay(day, date));
+                      const key = format(day, "yyyy-MM-dd");
+                      const dayOpen = weekAvailability[key];
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          disabled={dayOpen === false}
+                          onClick={() => setDate(day)}
+                          className={`flex min-w-0 flex-col items-center gap-1 border px-1 py-2.5 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-35 ${
+                            selected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border/50 bg-background hover:border-primary/40"
+                          }`}
+                        >
+                          <span
+                            className={`text-[10px] font-semibold uppercase ${
+                              selected
+                                ? "text-primary-foreground/80"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {format(day, "EEEEE")}
                           </span>
-                          {selectedDoctorObj
-                            ? `Dr. ${selectedDoctorObj.name}`
-                            : "No Doctor"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      disabled={
-                        !availability?.available ||
-                        !date ||
-                        !selectedDoctorId ||
-                        !reason ||
-                        submitting
-                      }
-                      onClick={handleBook}
-                      className={`flex w-full shrink-0 items-center justify-center gap-2 px-8 py-4 text-sm font-bold transition-colors sm:w-auto ${
-                        availability?.available &&
-                        date &&
-                        reason &&
-                        selectedDoctorId &&
-                        !submitting
-                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                          : "cursor-not-allowed border border-border/60 bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {submitting
-                        ? "Processing..."
-                        : paymentMethod === "ONLINE"
-                          ? "Pay & Book"
-                          : "Confirm Booking"}
-                      {!submitting && <ChevronRight className="size-4" />}
-                    </button>
+                          <span className="font-mono text-sm font-bold">
+                            {format(day, "d")}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    {!availability
+                      ? "Checking remaining appointments…"
+                      : availability.available
+                        ? `${availability.slotsRemaining} appointment${
+                            availability.slotsRemaining === 1 ? "" : "s"
+                          } left this day. Exact time is assigned after you pay.`
+                        : "No remaining appointments this day."}
+                  </p>
+
+                  <label
+                    htmlFor="appointment-visit-reason"
+                    className="mt-6 block text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                  >
+                    Why are you coming in?
+                  </label>
+                  <textarea
+                    id="appointment-visit-reason"
+                    aria-label="Visit reason"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    rows={3}
+                    placeholder="Symptoms, follow-up, or what you need seen"
+                    className="mt-2 w-full resize-none border border-border/60 bg-background p-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  />
                 </div>
-              </Card>
-            </div>
+
+                <div className="mt-auto hidden border-t border-border/60 px-5 py-5 sm:px-8 lg:block">
+                  <div className="mb-3 flex items-end justify-between gap-3">
+                    <div>
+                      <p className="mono-label text-muted-foreground">
+                        Pay now
+                      </p>
+                      <p className="mt-1 font-mono text-lg font-bold">
+                        ₹{advance ?? "—"}
+                        {balance !== null ? (
+                          <span className="ml-2 text-sm font-normal text-muted-foreground">
+                            · ₹{balance} at clinic
+                          </span>
+                        ) : null}
+                      </p>
+                    </div>
+                  </div>
+                  {payButton}
+                  {blockReason ? (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {blockReason}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Online advance only. Remaining balance is collected at the
+                      clinic.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
+
+      {!bookedRecord && selectedDoctorObj ? (
+        <div className="fixed right-0 bottom-16 left-0 z-40 border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur-md lg:hidden">
+          <div className="mx-auto flex max-w-lg items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">
+                {doctorLabel(selectedDoctorObj.name)}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {date ? format(date, "EEE d MMM") : "Pick a day"} · ₹
+                {advance ?? "—"}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={!canBook}
+              onClick={handleBook}
+              className={`shrink-0 px-4 py-2.5 text-xs font-bold focus-visible:ring-2 focus-visible:ring-ring ${
+                canBook
+                  ? "bg-primary text-primary-foreground"
+                  : "cursor-not-allowed border border-border/60 text-muted-foreground"
+              }`}
+            >
+              {submitting ? "…" : "Pay"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <PaymentCelebration
         active={paymentCelebration}
         onComplete={() => setPaymentCelebration(false)}
       />
-      <style jsx global>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </section>
   );
 }

@@ -1,5 +1,12 @@
 [
   {
+    "date": "2026-11-07",
+    "macrostructure": "Split Studio",
+    "theme": "Emerald Prestige",
+    "enrichment": "none",
+    "brief": "Patient book visit: clinician roster + ticket desk"
+  },
+  {
     "date": "2026-11-06",
     "macrostructure": "Workbench",
     "theme": "Emerald Prestige",

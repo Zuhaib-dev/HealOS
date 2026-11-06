@@ -1,12 +1,13 @@
 "use client";
 
-/* Hallmark · macrostructure: Bento Grid · genre: modern-minimal
- * states: hover, live data
- * contrast: pass
+/* Hallmark · macrostructure: Workbench · genre: modern-minimal
+ * theme: Emerald Prestige (locked HealOS tokens)
+ * audience: front-desk staff · use: scan desk load, jump to register/queue/collect
+ * tone: utilitarian
  */
 
-import { useEffect, useState, useCallback } from "react";
-import { motion } from "motion/react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   UserPlus,
   Activity,
@@ -15,72 +16,57 @@ import {
   RefreshCw,
   Clock,
   ArrowRight,
-  UserCheck,
+  Users,
+  Monitor,
 } from "lucide-react";
-import Link from "next/link";
 import {
   fetchReceptionOverviewApi,
-  ReceptionOverviewData,
+  type ReceptionOverviewData,
 } from "@/lib/api/reception";
 import { getSocket } from "@/lib/socket";
 import { formatTime12Hour, formatTimeRange } from "@/lib/time-format";
 
-// Reusable Cell Shell
-function MetricCard({
+function MetricCell({
   title,
   value,
   subValue,
   note,
   icon: Icon,
-  delay = 0,
-  className = "",
-  isLoading = false,
+  isLoading,
 }: {
   title: string;
   value: string;
   subValue?: string;
   note: string;
-  icon: any;
-  delay?: number;
-  className?: string;
-  isLoading?: boolean;
+  icon: typeof UserPlus;
+  isLoading: boolean;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay }}
-      className={`group relative flex flex-col p-6 rounded-3xl bg-card/60 border border-border/60 shadow-sm hover:shadow-md hover:bg-card/80 transition-all overflow-hidden ${className}`}
-    >
-      <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-      <div className="relative z-10 flex items-center justify-between mb-6">
-        <span className="mono-label text-muted-foreground uppercase tracking-wider font-semibold text-xs">
+    <div className="flex min-w-0 flex-col bg-background p-4 sm:p-5">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="mono-label text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
           {title}
         </span>
-        <Icon className="size-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+        <Icon className="size-3.5 shrink-0 text-muted-foreground/50" />
       </div>
-      <div
-        className="relative z-10 flex flex-col justify-end flex-1"
-        role="status"
-        aria-live="polite"
-      >
+      <div role="status" aria-live="polite">
         {isLoading ? (
-          <div className="h-12 w-28 bg-foreground/10 rounded-lg animate-pulse mb-2" />
+          <div className="mb-1 h-8 w-20 animate-pulse bg-foreground/10" />
         ) : (
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-5xl font-bold tracking-tight text-foreground">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-1.5">
+            <span className="font-display text-3xl font-bold tracking-tight text-foreground">
               {value}
             </span>
-            {subValue && (
-              <span className="font-mono text-sm font-semibold text-muted-foreground">
+            {subValue ? (
+              <span className="font-mono text-xs font-semibold text-muted-foreground">
                 {subValue}
               </span>
-            )}
+            ) : null}
           </div>
         )}
-        <p className="text-sm font-medium text-muted-foreground mt-4">{note}</p>
+        <p className="mt-2 text-xs text-muted-foreground">{note}</p>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -102,11 +88,11 @@ export default function ReceptionOverview() {
   }, []);
 
   useEffect(() => {
-    loadOverview();
+    void loadOverview();
 
     const socket = getSocket();
     const handleUpdate = () => {
-      loadOverview();
+      void loadOverview();
     };
 
     socket.on("reception:overview_updated", handleUpdate);
@@ -120,164 +106,198 @@ export default function ReceptionOverview() {
     };
   }, [loadOverview]);
 
-  // Dynamic Greeting based on client hour
   const currentHour = new Date().getHours();
   const greeting =
     currentHour < 12
-      ? "Good morning."
+      ? "Good morning"
       : currentHour < 17
-        ? "Good afternoon."
-        : "Good evening.";
+        ? "Good afternoon"
+        : "Good evening";
+
+  const insuranceValue = data?.insurance.value;
+  const insuranceSub = data?.insurance.subValue;
 
   return (
-    <section className="p-4 sm:p-6 lg:p-8 max-w-350 mx-auto min-h-[calc(100vh-4rem)] flex flex-col">
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-      >
-        <div>
-          <h1 className="font-display text-4xl font-bold tracking-tight text-foreground">
+    <section className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-350 flex-col px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             {greeting}
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Live patient registration, OPD token queue, and billing overview.
+          <p className="mt-1 text-sm text-muted-foreground">
+            Register walk-ins, call the OPD queue, and collect pending bills.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={loadOverview}
+            onClick={() => void loadOverview()}
             disabled={loading}
-            className="hairline bg-foreground/3 hover:bg-foreground/6 inline-flex items-center gap-2 px-3 py-2 text-xs font-mono rounded-none transition-colors"
+            className="hairline inline-flex items-center gap-2 px-3 py-2 font-mono text-xs transition-colors hover:bg-foreground/6 disabled:opacity-50"
           >
             <RefreshCw
               className={`size-3.5 ${loading ? "animate-spin" : ""}`}
             />
-            Sync Feed
+            Refresh
           </button>
           <Link
             href="/reception/new"
-            className="bg-accent text-background hover:bg-accent/90 inline-flex items-center gap-2 px-4 py-2 text-xs font-bold font-mono transition-colors shadow-xs"
+            prefetch
+            className="inline-flex items-center gap-2 bg-accent px-3 py-2 font-mono text-xs font-bold text-background transition-colors hover:bg-accent/90"
           >
             <UserPlus className="size-3.5" />
-            New Registration
+            New registration
           </Link>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Metric Bento Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[minmax(220px,auto)]">
-        <MetricCard
-          title="Registrations today"
+      <div className="grid grid-cols-2 gap-px bg-border/60 lg:grid-cols-4">
+        <MetricCell
+          title="Today"
           value={data ? String(data.registrations.total) : "0"}
-          note={data?.registrations.note || "Live patient intake"}
+          note={data?.registrations.note || "Registrations today"}
           icon={UserPlus}
-          delay={0.1}
           isLoading={loading}
-          className="lg:col-span-2"
         />
-
-        <MetricCard
-          title="Tokens waiting"
+        <MetricCell
+          title="Waiting"
           value={data ? String(data.tokens.waiting) : "0"}
-          note={data?.tokens.note || "Active in OPD queue"}
+          subValue={
+            data?.tokens.avgWaitMinutes
+              ? `${data.tokens.avgWaitMinutes}m avg`
+              : undefined
+          }
+          note={data?.tokens.note || "In OPD queue"}
           icon={Activity}
-          delay={0.2}
           isLoading={loading}
-          className="lg:col-span-1"
         />
-
-        <MetricCard
-          title="Collections"
+        <MetricCell
+          title="Collected"
           value={data?.collections.value || "₹0"}
           subValue={data?.collections.subValue}
-          note={data?.collections.note || "cash + card + UPI"}
+          note={data?.collections.note || "Cash, card, and UPI"}
           icon={Landmark}
-          delay={0.3}
           isLoading={loading}
-          className="lg:col-span-1"
         />
-
-        <MetricCard
-          title="Insurance captured"
-          value={data?.insurance.value || "96.4"}
-          subValue={data?.insurance.subValue || "%"}
-          note={data?.insurance.note || "target 95%"}
+        <MetricCell
+          title="Insurance"
+          value={insuranceValue || "—"}
+          subValue={insuranceValue ? insuranceSub : undefined}
+          note={data?.insurance.note || "Captured at check-in"}
           icon={ShieldCheck}
-          delay={0.4}
           isLoading={loading}
-          className="lg:col-span-4"
         />
       </div>
 
-      {/* Live Recent OPD Queue Strip */}
-      <div className="mt-8 rounded-3xl border border-border/60 bg-card/40 p-6 shadow-sm">
-        <div className="flex items-center justify-between border-b border-border/40 pb-4 mb-4">
-          <div>
-            <span className="mono-label text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-              Live OPD Queue
+      <div className="mt-4 grid grid-cols-1 gap-px bg-border/60 sm:grid-cols-3">
+        <Link
+          href="/reception/new"
+          prefetch
+          className="flex items-center gap-3 bg-background px-4 py-3 transition-colors hover:bg-foreground/3"
+        >
+          <UserPlus className="size-4 text-accent" />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium">Register patient</span>
+            <span className="block text-xs text-muted-foreground">
+              Issue an OPD token
             </span>
-            <h2 className="font-mono text-base font-bold mt-1">
-              Recent Waiting Patients
-            </h2>
+          </span>
+          <ArrowRight className="ml-auto size-3.5 shrink-0 text-muted-foreground" />
+        </Link>
+        <Link
+          href="/reception/queue"
+          prefetch
+          className="flex items-center gap-3 bg-background px-4 py-3 transition-colors hover:bg-foreground/3"
+        >
+          <Users className="size-4 text-accent" />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium">Call queue</span>
+            <span className="block text-xs text-muted-foreground">
+              Next token per department
+            </span>
+          </span>
+          <ArrowRight className="ml-auto size-3.5 shrink-0 text-muted-foreground" />
+        </Link>
+        <Link
+          href="/reception/counter"
+          prefetch
+          className="flex items-center gap-3 bg-background px-4 py-3 transition-colors hover:bg-foreground/3"
+        >
+          <Monitor className="size-4 text-accent" />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium">Collect payment</span>
+            <span className="block text-xs text-muted-foreground">
+              Pending invoices
+            </span>
+          </span>
+          <ArrowRight className="ml-auto size-3.5 shrink-0 text-muted-foreground" />
+        </Link>
+      </div>
+
+      <div className="mt-6 min-w-0 flex-1 border border-border/60">
+        <div className="flex items-center justify-between gap-3 border-b border-border/40 px-4 py-3 sm:px-5">
+          <div className="min-w-0">
+            <h2 className="font-display text-sm font-bold">Waiting now</h2>
+            <p className="text-xs text-muted-foreground">Live OPD queue</p>
           </div>
           <Link
             href="/reception/queue"
-            className="mono-label text-xs hover:text-accent inline-flex items-center gap-1 font-medium transition-colors"
+            prefetch
+            className="mono-label inline-flex shrink-0 items-center gap-1 text-[10px] font-medium transition-colors hover:text-accent"
           >
-            View Full Queue <ArrowRight className="size-3" />
+            Full queue <ArrowRight className="size-3" />
           </Link>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center mono-label text-muted-foreground animate-pulse text-xs">
-            Connecting to live reception OPD queue...
+          <div className="px-4 py-8 text-center font-mono text-xs text-muted-foreground">
+            Loading queue…
           </div>
         ) : !data?.recentQueue || data.recentQueue.length === 0 ? (
-          <div className="p-8 text-center mono-label text-muted-foreground text-xs">
-            No patients currently waiting in OPD queue.
+          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+            No patients waiting.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <ul className="divide-y divide-border/40">
             {data.recentQueue.map((item) => (
-              <div
+              <li
                 key={item.id}
-                className="hairline bg-foreground/2 p-4 flex flex-col justify-between rounded-xl hover:bg-foreground/4 transition-colors"
+                className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5"
               >
-                <div className="flex items-start justify-between">
-                  <span className="mono-label text-accent font-bold text-sm">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="font-mono text-sm font-bold text-accent">
                     {item.tokenNumber}
                   </span>
-                  <span className="mono-label text-xs bg-accent/10 text-accent px-2 py-0.5">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {item.patientName}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {item.department}
+                      {item.doctorName ? ` · ${item.doctorName}` : ""}
+                      {item.queueNumber
+                        ? ` · #${String(item.queueNumber).padStart(2, "0")}`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground sm:justify-end">
+                  <span className="truncate">
+                    {item.arrivalTime
+                      ? `Arrive ${formatTime12Hour(item.arrivalTime)} · `
+                      : ""}
+                    {formatTimeRange(item.timeSlot, item.slotEndTime)}
+                  </span>
+                  <span className="inline-flex shrink-0 items-center gap-1 font-mono">
+                    <Clock className="size-3" /> {item.waitMinutes}m
+                  </span>
+                  <span className="mono-label bg-accent/10 px-2 py-0.5 text-[10px] text-accent">
                     {item.status}
                   </span>
                 </div>
-                <div className="mt-2">
-                  <p className="font-medium text-sm text-foreground">
-                    {item.patientName}
-                  </p>
-                  <p className="mono-label text-xs text-muted-foreground mt-0.5">
-                    {item.department} · {item.doctorName}
-                    {item.queueNumber
-                      ? ` · Queue #${String(item.queueNumber).padStart(2, "0")}`
-                      : ""}
-                  </p>
-                </div>
-                <div className="mono-label text-muted-foreground mt-3 flex items-center justify-between text-xs border-t border-border/30 pt-2">
-                  <span>
-                    {item.arrivalTime
-                      ? `Arrive ${formatTime12Hour(item.arrivalTime)} · `
-                      : "Slot: "}
-                    {formatTimeRange(item.timeSlot, item.slotEndTime)}
-                  </span>
-                  <span className="inline-flex items-center gap-1 font-mono">
-                    <Clock className="size-3" /> {item.waitMinutes}m
-                  </span>
-                </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
     </section>

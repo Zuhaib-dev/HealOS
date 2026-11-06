@@ -44,6 +44,7 @@ const updateStatusSchema = z.object({
   status: z.enum([
     AppointmentStatus.PENDING,
     AppointmentStatus.CONFIRMED,
+    AppointmentStatus.IN_PROGRESS,
     AppointmentStatus.COMPLETED,
     AppointmentStatus.CANCELLED,
   ]),

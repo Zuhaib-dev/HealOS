@@ -1,7 +1,7 @@
 import apiClient from "../api-client";
 
 export type AppointmentStatus =
-  "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+  "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type AppointmentType = "IN_PERSON" | "TELECONSULT" | "EMERGENCY";
 export type PaymentMethod = "ONLINE" | "CASH";
 export type PaymentStatus = "PAID" | "PENDING_CASH" | "REFUNDED";

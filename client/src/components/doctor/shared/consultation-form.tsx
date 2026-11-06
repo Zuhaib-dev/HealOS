@@ -1,16 +1,25 @@
 "use client";
 
+/* Hallmark · component: consult-desk · genre: modern-minimal · theme: Emerald Prestige
+ * states: default · hover · focus · active · disabled · loading · error · success
+ */
+
 import { useState } from "react";
-import { motion } from "motion/react";
-import { X } from "lucide-react";
+import { X, Video } from "lucide-react";
 import { ActionButton } from "@/components/admin/admin-shell";
 import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { AppointmentRecord } from "@/lib/api/appointment";
 import { AnatomySelector } from "./anatomy-selector";
 import { TelemedicineWorkbench } from "../../video-call/telemedicine-workbench";
-import { Video } from "lucide-react";
 import { formatTimeRange } from "@/lib/time-format";
+
+const field =
+  "w-full border border-border/60 bg-background px-3 py-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50";
+
+const FREQ = ["OD", "BD", "TDS", "1-0-1", "1-0-0", "0-0-1", "SOS"];
+const DURATION = ["3 days", "5 days", "7 days", "14 days"];
+const INSTRUCT = ["After food", "Before food", "With water"];
 
 export function ConsultationForm({
   appointment,
@@ -36,7 +45,6 @@ export function ConsultationForm({
     diagnosis?: string;
   }>({});
 
-  // New Medicine Form
   const [newMed, setNewMed] = useState<IMedicine>({
     name: "",
     dosage: "",
@@ -45,7 +53,6 @@ export function ConsultationForm({
     instructions: "",
   });
 
-  // New Diagnostic Order Form
   const [newOrder, setNewOrder] = useState({
     testType: "PATHOLOGY" as "PATHOLOGY" | "RADIOLOGY",
     testName: "",
@@ -59,7 +66,7 @@ export function ConsultationForm({
       !newMed.frequency ||
       !newMed.duration
     ) {
-      toast.error("Please fill required medicine fields");
+      toast.error("Fill name, dose, frequency, and duration");
       return;
     }
     setMedicines([...medicines, newMed]);
@@ -78,7 +85,7 @@ export function ConsultationForm({
 
   const addOrder = () => {
     if (!newOrder.testName) {
-      toast.error("Please enter a test name");
+      toast.error("Enter a test name");
       return;
     }
     setDiagnosticOrders([...diagnosticOrders, newOrder]);
@@ -103,7 +110,7 @@ export function ConsultationForm({
       newMed.duration,
     ].every((value) => value.trim().length > 0);
     if (hasMedicineDraft && !medicineDraftComplete) {
-      toast.error("Finish or clear the medicine details before completing.");
+      toast.error("Finish or clear the medicine row before completing.");
       document.getElementById("new-med-name")?.focus();
       return;
     }
@@ -121,9 +128,7 @@ export function ConsultationForm({
     };
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) {
-      toast.error(
-        "Add the chief complaint and diagnosis to complete this visit.",
-      );
+      toast.error("Chief complaint and diagnosis are required.");
       document
         .getElementById(
           errors.chiefComplaint ? "chief-complaint" : "consultation-diagnosis",
@@ -157,7 +162,7 @@ export function ConsultationForm({
         status: "COMPLETED",
       });
       if (res.status === "success") {
-        toast.success("Consultation saved and completed");
+        toast.success("Visit completed");
         onComplete();
       }
     } catch {
@@ -173,268 +178,253 @@ export function ConsultationForm({
       : null
     : patient;
 
+  const chip = (active: boolean) =>
+    `px-2.5 py-1 text-[11px] font-semibold focus-visible:ring-2 focus-visible:ring-primary/40 ${
+      active
+        ? "bg-foreground text-background"
+        : "border border-border/60 text-muted-foreground hover:bg-muted/50"
+    }`;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-      className="fixed inset-0 z-100 flex h-dvh w-full flex-col overflow-y-auto bg-background"
-    >
-      <div className="sticky top-0 z-20 flex flex-col gap-3 border-b border-border/40 bg-background/95 px-3 py-3 shadow-sm backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <div className="fixed inset-0 z-100 flex h-dvh w-full flex-col bg-background">
+      <header className="flex shrink-0 flex-col gap-3 border-b border-border/60 bg-background/95 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="min-w-0">
-          <h2 className="truncate font-semibold text-foreground text-lg">
-            Consultation: {displayPat?.name || "Unknown"}
+          <h2 className="truncate font-display text-lg font-bold tracking-tight sm:text-xl">
+            {displayPat?.name || "Patient"}
           </h2>
           {appointment ? (
-            <p className="mono-label text-muted-foreground text-xs">
-              {appointment.date} |{" "}
-              {formatTimeRange(appointment.timeSlot, appointment.slotEndTime)} |{" "}
-              {appointment.department}
+            <p className="mono-label mt-0.5 text-[10px] text-muted-foreground">
               {appointment.queueNumber
-                ? ` · Queue #${String(appointment.queueNumber).padStart(2, "0")}`
+                ? `#${String(appointment.queueNumber).padStart(2, "0")} · `
                 : ""}
+              {formatTimeRange(appointment.timeSlot, appointment.slotEndTime)} ·{" "}
+              {appointment.department}
             </p>
           ) : (
-            <p className="mono-label text-muted-foreground text-xs">
-              Ad-Hoc Consultation • Shift Board
+            <p className="mono-label mt-0.5 text-[10px] text-muted-foreground">
+              Walk-in note · no booked slot
             </p>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-          {appointment?.type === "TELECONSULT" && !isVideoCallActive && (
+        <div className="flex flex-wrap items-center gap-2">
+          {appointment?.type === "TELECONSULT" && !isVideoCallActive ? (
             <ActionButton
               onClick={() => setIsVideoCallActive(true)}
-              className="bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 border-indigo-500/30 flex items-center gap-2"
+              className="flex items-center gap-2"
             >
-              <Video className="size-4" /> Start Video Call
+              <Video className="size-4" /> Start video
             </ActionButton>
-          )}
+          ) : null}
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={saving}
+            aria-label="Close consult"
+            className="flex size-10 items-center justify-center border border-border/60 hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <X className="size-4" />
+          </button>
         </div>
-      </div>
-      <div className="mx-auto w-full max-w-6xl space-y-5 p-3 pb-36 sm:space-y-7 sm:p-6 sm:pb-36 lg:p-8">
-        {/* Video Call Workspace */}
-        {isVideoCallActive && appointment && (
-          <div className="mb-8 w-full">
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-y-auto pb-28">
+        {isVideoCallActive && appointment ? (
+          <div className="border-b border-border/60 p-4 sm:p-6">
             <TelemedicineWorkbench
               appointmentId={appointment._id}
               isDoctor={true}
               onEndCall={() => setIsVideoCallActive(false)}
             />
           </div>
-        )}
+        ) : null}
 
-        {/* Vitals / Reason */}
-        {appointment?.reason && (
-          <div className="bg-muted/30 border border-border/60 rounded-xl p-4 shadow-sm">
-            <p className="mono-label text-muted-foreground mb-1 uppercase text-[10px] tracking-wider font-bold">
-              Reason for Visit
-            </p>
-            <p className="font-medium text-foreground">{appointment.reason}</p>
-          </div>
-        )}
+        {appointment?.reason ? (
+          <p className="border-b border-border/60 px-4 py-3 text-sm sm:px-6">
+            <span className="mono-label mr-2 text-[10px] text-muted-foreground">
+              Reason
+            </span>
+            {appointment.reason}
+          </p>
+        ) : null}
 
-        {/* Clinical Notes */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label
-                htmlFor="chief-complaint"
-                className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3"
-              >
-                Chief Complaint <span className="text-destructive">*</span>
-              </label>
-              <div className="flex flex-col xl:flex-row gap-4">
-                <div className="w-full xl:w-2/5 min-w-45 flex items-center justify-center">
-                  <AnatomySelector
-                    onSelect={(part) =>
-                      setChiefComplaint((prev) =>
-                        prev ? `${prev}, [${part}]` : `[${part}]`,
-                      )
+        <div className="grid lg:grid-cols-2 lg:min-h-full">
+          <div className="min-w-0 border-b border-border/60 lg:border-r lg:border-b-0">
+            <div className="grid gap-4 p-4 sm:p-6 xl:grid-cols-[minmax(0,9rem)_1fr]">
+              <AnatomySelector
+                onSelect={(part) =>
+                  setChiefComplaint((prev) =>
+                    prev ? `${prev}, [${part}]` : `[${part}]`,
+                  )
+                }
+              />
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="chief-complaint"
+                    className="mono-label text-[10px] text-muted-foreground"
+                  >
+                    Chief complaint
+                  </label>
+                  <textarea
+                    id="chief-complaint"
+                    value={chiefComplaint}
+                    required
+                    aria-required="true"
+                    aria-invalid={Boolean(validationErrors.chiefComplaint)}
+                    aria-describedby={
+                      validationErrors.chiefComplaint
+                        ? "chief-complaint-error"
+                        : undefined
                     }
+                    onChange={(e) => {
+                      setChiefComplaint(e.target.value);
+                      if (validationErrors.chiefComplaint)
+                        setValidationErrors((current) => ({
+                          ...current,
+                          chiefComplaint: undefined,
+                        }));
+                    }}
+                    className={`${field} mt-2 min-h-28 resize-y ${validationErrors.chiefComplaint ? "border-destructive" : ""}`}
+                    placeholder="What brought them in"
+                  />
+                  {validationErrors.chiefComplaint ? (
+                    <p
+                      id="chief-complaint-error"
+                      className="mt-2 text-sm text-destructive"
+                      role="alert"
+                    >
+                      {validationErrors.chiefComplaint}
+                    </p>
+                  ) : null}
+                </div>
+                <div>
+                  <label
+                    htmlFor="consultation-diagnosis"
+                    className="mono-label text-[10px] text-muted-foreground"
+                  >
+                    Diagnosis
+                  </label>
+                  <input
+                    id="consultation-diagnosis"
+                    type="text"
+                    required
+                    aria-required="true"
+                    aria-invalid={Boolean(validationErrors.diagnosis)}
+                    aria-describedby={
+                      validationErrors.diagnosis ? "diagnosis-error" : undefined
+                    }
+                    value={diagnosis}
+                    onChange={(e) => {
+                      setDiagnosis(e.target.value);
+                      if (validationErrors.diagnosis)
+                        setValidationErrors((current) => ({
+                          ...current,
+                          diagnosis: undefined,
+                        }));
+                    }}
+                    className={`${field} mt-2 ${validationErrors.diagnosis ? "border-destructive" : ""}`}
+                    placeholder="Working diagnosis"
+                  />
+                  {validationErrors.diagnosis ? (
+                    <p
+                      id="diagnosis-error"
+                      className="mt-2 text-sm text-destructive"
+                      role="alert"
+                    >
+                      {validationErrors.diagnosis}
+                    </p>
+                  ) : null}
+                </div>
+                <div>
+                  <label
+                    htmlFor="consultation-advice"
+                    className="mono-label text-[10px] text-muted-foreground"
+                  >
+                    Advice
+                  </label>
+                  <textarea
+                    id="consultation-advice"
+                    value={advice}
+                    onChange={(e) => setAdvice(e.target.value)}
+                    className={`${field} mt-2 min-h-20 resize-y`}
+                    placeholder="Rest, diet, warning signs"
                   />
                 </div>
-                <textarea
-                  id="chief-complaint"
-                  aria-label="Chief Complaint"
-                  title="Chief Complaint"
-                  value={chiefComplaint}
-                  required
-                  aria-required="true"
-                  aria-invalid={Boolean(validationErrors.chiefComplaint)}
-                  aria-describedby={
-                    validationErrors.chiefComplaint
-                      ? "chief-complaint-error"
-                      : undefined
-                  }
-                  onChange={(e) => {
-                    setChiefComplaint(e.target.value);
-                    if (validationErrors.chiefComplaint)
-                      setValidationErrors((current) => ({
-                        ...current,
-                        chiefComplaint: undefined,
-                      }));
-                  }}
-                  className={`w-full resize-none rounded-xl border bg-background p-3 min-h-32 outline-none transition-colors focus:border-primary/50 xl:w-3/5 ${validationErrors.chiefComplaint ? "border-destructive" : "border-border/60"}`}
-                  placeholder="Patient presents with... (Select anatomy areas to auto-tag)"
-                />
+                <div>
+                  <label
+                    htmlFor="consultation-followup"
+                    className="mono-label text-[10px] text-muted-foreground"
+                  >
+                    Follow-up date
+                  </label>
+                  <input
+                    id="consultation-followup"
+                    type="date"
+                    value={followUpDate}
+                    onChange={(e) => setFollowUpDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
+                    className={`${field} mt-2`}
+                  />
+                </div>
               </div>
-              {validationErrors.chiefComplaint && (
-                <p
-                  id="chief-complaint-error"
-                  className="mt-2 text-sm text-destructive"
-                  role="alert"
-                >
-                  {validationErrors.chiefComplaint}
-                </p>
-              )}
-            </div>
-            <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label
-                htmlFor="consultation-diagnosis"
-                className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3"
-              >
-                Diagnosis <span className="text-destructive">*</span>
-              </label>
-              <input
-                id="consultation-diagnosis"
-                aria-label="Diagnosis"
-                title="Diagnosis"
-                type="text"
-                required
-                aria-required="true"
-                aria-invalid={Boolean(validationErrors.diagnosis)}
-                aria-describedby={
-                  validationErrors.diagnosis ? "diagnosis-error" : undefined
-                }
-                value={diagnosis}
-                onChange={(e) => {
-                  setDiagnosis(e.target.value);
-                  if (validationErrors.diagnosis)
-                    setValidationErrors((current) => ({
-                      ...current,
-                      diagnosis: undefined,
-                    }));
-                }}
-                className={`w-full rounded-xl border bg-background p-3 outline-none transition-colors focus:border-primary/50 ${validationErrors.diagnosis ? "border-destructive" : "border-border/60"}`}
-                placeholder="e.g. Acute Viral Pharyngitis"
-              />
-              {validationErrors.diagnosis && (
-                <p
-                  id="diagnosis-error"
-                  className="mt-2 text-sm text-destructive"
-                  role="alert"
-                >
-                  {validationErrors.diagnosis}
-                </p>
-              )}
-            </div>
-            <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label
-                htmlFor="consultation-advice"
-                className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3"
-              >
-                Advice & Lifestyle
-              </label>
-              <textarea
-                id="consultation-advice"
-                aria-label="Advice & Lifestyle"
-                title="Advice & Lifestyle"
-                value={advice}
-                onChange={(e) => setAdvice(e.target.value)}
-                className="w-full bg-background border border-border/60 rounded-xl p-3 min-h-25 outline-none focus:border-primary/50 transition-colors"
-                placeholder="Dietary changes, rest..."
-              />
-            </div>
-            <div className="bg-card border border-border/60 p-5 rounded-2xl shadow-sm">
-              <label
-                htmlFor="consultation-followup"
-                className="text-xs uppercase tracking-wider font-bold text-muted-foreground block mb-3"
-              >
-                Next Follow-Up Date
-              </label>
-              <input
-                id="consultation-followup"
-                aria-label="Next Follow-Up Date"
-                title="Next Follow-Up Date"
-                type="date"
-                value={followUpDate}
-                onChange={(e) => setFollowUpDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                className="w-full bg-background border border-border/60 rounded-xl p-3 outline-none focus:border-primary/50 transition-colors cursor-text"
-              />
             </div>
           </div>
 
-          {/* Prescription Writer */}
-          <div className="space-y-4">
-            <h3 className="font-display font-bold text-xl border-b border-border/40 pb-3">
-              Rx: Prescription
-            </h3>
-
-            {/* Added Medicines */}
-            <div className="space-y-3 mb-4">
-              {medicines.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic bg-muted/20 p-4 rounded-xl border border-dashed border-border/60 text-center">
-                  No medicines added.
-                </p>
-              ) : (
-                medicines.map((m, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start justify-between bg-card p-4 border border-border/60 shadow-sm rounded-xl"
-                  >
-                    <div>
-                      <p className="font-bold text-base text-foreground">
-                        {m.name}{" "}
-                        <span className="text-muted-foreground text-sm font-normal">
-                          — {m.dosage}
-                        </span>
-                      </p>
-                      <p className="text-xs font-semibold text-muted-foreground mt-1 uppercase tracking-wider">
-                        {m.frequency} x {m.duration}
-                      </p>
-                      {m.instructions && (
-                        <p className="text-xs text-emerald-500 mt-2 bg-emerald-500/10 px-2 py-1 rounded inline-block">
-                          {m.instructions}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeMedicine(i)}
-                      aria-label={`Remove ${m.name} from prescription`}
-                      className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors border border-transparent hover:border-destructive/20"
-                    >
-                      <X className="size-4" />
-                    </button>
-                  </div>
-                ))
-              )}
+          <div className="min-w-0">
+            <div className="border-b border-border/40 px-4 py-3 sm:px-6">
+              <h3 className="font-display text-sm font-bold">Prescription</h3>
             </div>
+            {medicines.length === 0 ? (
+              <p className="px-4 py-4 text-sm text-muted-foreground sm:px-6">
+                No medicines yet. Add a row below.
+              </p>
+            ) : (
+              medicines.map((m, i) => (
+                <div
+                  key={`${m.name}-${i}`}
+                  className="flex items-start justify-between gap-3 border-b border-border/40 px-4 py-3 sm:px-6"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold">
+                      {m.name}{" "}
+                      <span className="font-normal text-muted-foreground">
+                        {m.dosage}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {m.frequency} · {m.duration}
+                      {m.instructions ? ` · ${m.instructions}` : ""}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeMedicine(i)}
+                    aria-label={`Remove ${m.name}`}
+                    className="flex size-8 shrink-0 items-center justify-center text-destructive hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-primary/40"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ))
+            )}
 
-            {/* Add New Medicine */}
-            <div className="border border-border/60 p-5 rounded-2xl bg-card shadow-sm">
+            <div className="space-y-3 p-4 sm:p-6">
               <label
                 htmlFor="new-med-name"
-                className="text-xs uppercase tracking-wider font-bold text-primary mb-4 block"
+                className="mono-label text-[10px] text-muted-foreground"
               >
-                Add Medicine (Free Text / Search)
+                Add medicine
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <input
                   id="new-med-name"
-                  aria-label="Drug Name"
-                  title="Drug Name"
                   type="text"
-                  required
-                  aria-required="true"
-                  placeholder="Drug Name (e.g. Paracetamol)"
+                  placeholder="Name"
                   value={newMed.name}
                   onChange={(e) =>
                     setNewMed({ ...newMed, name: e.target.value })
                   }
-                  className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
+                  className={field}
                   list="common-drugs"
                 />
                 <datalist id="common-drugs">
@@ -447,166 +437,193 @@ export function ConsultationForm({
                   <option value="Metformin" />
                   <option value="Amlodipine" />
                 </datalist>
-
                 <input
-                  aria-label="Dosage"
-                  title="Dosage"
                   type="text"
-                  required
-                  aria-required="true"
-                  placeholder="Dosage (e.g. 500mg)"
+                  placeholder="Dose"
                   value={newMed.dosage}
                   onChange={(e) =>
                     setNewMed({ ...newMed, dosage: e.target.value })
                   }
-                  className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
+                  className={field}
                 />
+              </div>
+              <div>
+                <p className="mb-1.5 text-[11px] text-muted-foreground">
+                  Frequency
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {FREQ.map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setNewMed({ ...newMed, frequency: f })}
+                      className={chip(newMed.frequency === f)}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
                 <input
-                  aria-label="Frequency"
-                  title="Frequency"
                   type="text"
-                  required
-                  aria-required="true"
-                  placeholder="Freq (e.g. 1-0-1)"
+                  placeholder="Or type frequency"
                   value={newMed.frequency}
                   onChange={(e) =>
                     setNewMed({ ...newMed, frequency: e.target.value })
                   }
-                  className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
+                  className={`${field} mt-2`}
                 />
+              </div>
+              <div>
+                <p className="mb-1.5 text-[11px] text-muted-foreground">
+                  Duration
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {DURATION.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setNewMed({ ...newMed, duration: d })}
+                      className={chip(newMed.duration === d)}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
                 <input
-                  aria-label="Duration"
-                  title="Duration"
                   type="text"
-                  required
-                  aria-required="true"
-                  placeholder="Duration (e.g. 5 days)"
+                  placeholder="Or type duration"
                   value={newMed.duration}
                   onChange={(e) =>
                     setNewMed({ ...newMed, duration: e.target.value })
                   }
-                  className="bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addMedicine();
+                    }
+                  }}
+                  className={`${field} mt-2`}
                 />
               </div>
+              <div className="flex flex-wrap gap-1.5">
+                {INSTRUCT.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setNewMed({ ...newMed, instructions: d })}
+                    className={chip(newMed.instructions === d)}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
               <input
-                aria-label="Instructions"
-                title="Instructions"
                 type="text"
-                placeholder="Instructions (e.g. After food) [Optional]"
+                placeholder="Instructions (optional)"
                 value={newMed.instructions}
                 onChange={(e) =>
                   setNewMed({ ...newMed, instructions: e.target.value })
                 }
-                className="w-full bg-background border border-border/60 rounded-lg p-2.5 text-sm outline-none focus:border-primary/50 mb-4"
+                className={field}
               />
               <button
                 type="button"
                 onClick={addMedicine}
-                className="w-full bg-primary/10 text-primary font-bold py-3 rounded-xl text-sm hover:bg-primary/20 transition-colors"
+                className="w-full border border-border/60 py-2.5 text-sm font-semibold hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                + Add to Prescription
+                Add to prescription
               </button>
             </div>
-          </div>
-        </div>
 
-        {/* Diagnostic Orders */}
-        <div className="bg-card border border-border/60 rounded-2xl p-6 mt-8 shadow-sm">
-          <h3 className="font-display font-bold text-xl border-b border-border/40 pb-3 mb-5">
-            Diagnostic Orders (Labs / Scans)
-          </h3>
-
-          {/* Added Orders */}
-          <div className="space-y-3 mb-5">
-            {diagnosticOrders.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic bg-muted/20 p-4 rounded-xl border border-dashed border-border/60 text-center">
-                No diagnostics ordered.
-              </p>
-            ) : (
-              diagnosticOrders.map((o, i) => (
-                <div
-                  key={i}
-                  className="flex items-start justify-between bg-background p-4 border border-border/60 shadow-sm rounded-xl"
-                >
-                  <div>
-                    <span className="text-[10px] uppercase font-bold bg-muted px-2 py-1 rounded-md mr-3">
-                      {o.testType}
-                    </span>
-                    <span className="font-bold text-base">{o.testName}</span>
-                    {o.clinicalNotes && (
-                      <p className="text-sm text-muted-foreground mt-2 border-l-2 border-primary/30 pl-2">
-                        {o.clinicalNotes}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeOrder(i)}
-                    aria-label={`Remove ${o.testName} from diagnostic orders`}
-                    className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors border border-transparent hover:border-destructive/20"
+            <div className="border-t border-border/60">
+              <div className="border-b border-border/40 px-4 py-3 sm:px-6">
+                <h3 className="font-display text-sm font-bold">
+                  Lab / imaging
+                </h3>
+              </div>
+              {diagnosticOrders.length === 0 ? (
+                <p className="px-4 py-4 text-sm text-muted-foreground sm:px-6">
+                  No tests ordered.
+                </p>
+              ) : (
+                diagnosticOrders.map((o, i) => (
+                  <div
+                    key={`${o.testName}-${i}`}
+                    className="flex items-start justify-between gap-3 border-b border-border/40 px-4 py-3 sm:px-6"
                   >
-                    <X className="size-4" />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Add New Order */}
-          <div className="border border-border/60 p-5 rounded-2xl bg-background/50">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-              <select
-                id="diagnostic-order-type"
-                aria-label="Test Type"
-                title="Test Type"
-                value={newOrder.testType}
-                onChange={(e) =>
-                  setNewOrder({ ...newOrder, testType: e.target.value as any })
-                }
-                className="bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50"
-              >
-                <option value="PATHOLOGY">Pathology (Lab Test)</option>
-                <option value="RADIOLOGY">Radiology (Scan/Imaging)</option>
-              </select>
-              <input
-                id="diagnostic-order-name"
-                aria-label="Test Name"
-                title="Test Name"
-                type="text"
-                placeholder="Test Name (e.g. CBC, MRI Brain)"
-                value={newOrder.testName}
-                onChange={(e) =>
-                  setNewOrder({ ...newOrder, testName: e.target.value })
-                }
-                className="sm:col-span-2 bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50"
-              />
+                    <div>
+                      <p className="text-sm font-semibold">{o.testName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {o.testType}
+                        {o.clinicalNotes ? ` · ${o.clinicalNotes}` : ""}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeOrder(i)}
+                      aria-label={`Remove ${o.testName}`}
+                      className="flex size-8 items-center justify-center text-destructive hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-primary/40"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+              <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-3 sm:p-6">
+                <select
+                  id="diagnostic-order-type"
+                  value={newOrder.testType}
+                  onChange={(e) =>
+                    setNewOrder({
+                      ...newOrder,
+                      testType: e.target.value as "PATHOLOGY" | "RADIOLOGY",
+                    })
+                  }
+                  className={field}
+                >
+                  <option value="PATHOLOGY">Pathology</option>
+                  <option value="RADIOLOGY">Radiology</option>
+                </select>
+                <input
+                  id="diagnostic-order-name"
+                  type="text"
+                  placeholder="Test name"
+                  value={newOrder.testName}
+                  onChange={(e) =>
+                    setNewOrder({ ...newOrder, testName: e.target.value })
+                  }
+                  className={`sm:col-span-2 ${field}`}
+                />
+                <input
+                  id="diagnostic-order-notes"
+                  type="text"
+                  placeholder="Indication (optional)"
+                  value={newOrder.clinicalNotes}
+                  onChange={(e) =>
+                    setNewOrder({
+                      ...newOrder,
+                      clinicalNotes: e.target.value,
+                    })
+                  }
+                  className={`sm:col-span-3 ${field}`}
+                />
+                <button
+                  type="button"
+                  onClick={addOrder}
+                  className="border border-border/60 py-2.5 text-sm font-semibold hover:bg-muted/50 sm:col-span-3 focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  Add test
+                </button>
+              </div>
             </div>
-            <input
-              id="diagnostic-order-notes"
-              aria-label="Clinical Notes or Indications"
-              title="Clinical Notes or Indications"
-              type="text"
-              placeholder="Clinical Notes / Indications [Optional]"
-              value={newOrder.clinicalNotes}
-              onChange={(e) =>
-                setNewOrder({ ...newOrder, clinicalNotes: e.target.value })
-              }
-              className="w-full bg-background border border-border/60 rounded-xl p-3 text-sm outline-none focus:border-primary/50 mb-4"
-            />
-            <button
-              type="button"
-              onClick={addOrder}
-              className="w-full bg-indigo-500/10 text-indigo-500 font-bold py-3 rounded-xl text-sm hover:bg-indigo-500/20 transition-colors"
-            >
-              + Add Diagnostic Order
-            </button>
           </div>
         </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/95 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:px-6">
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
           <p className="hidden text-xs text-muted-foreground sm:block">
-            Chief complaint and diagnosis are required to complete the visit.
+            Complaint and diagnosis are required.
           </p>
           <div className="ml-auto flex shrink-0 items-center gap-2">
             <ActionButton onClick={onBack} disabled={saving}>
@@ -618,11 +635,11 @@ export function ConsultationForm({
               disabled={saving}
               className="whitespace-nowrap"
             >
-              {saving ? "Saving…" : "Save & Complete"}
+              {saving ? "Saving…" : "Complete visit"}
             </ActionButton>
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

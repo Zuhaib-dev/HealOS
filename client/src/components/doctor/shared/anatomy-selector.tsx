@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "motion/react";
-import { Activity } from "lucide-react";
 
 export function AnatomySelector({
   onSelect,
@@ -32,62 +30,33 @@ export function AnatomySelector({
   ];
 
   return (
-    <div className="relative w-full h-full p-6 rounded-2xl border border-primary/20 bg-card/40 flex flex-col items-center justify-center shadow-inner">
-      <div className="absolute top-4 left-4 flex items-center gap-2">
-        <Activity className="size-4 text-primary animate-pulse" />
-        <span className="text-xs font-bold uppercase tracking-widest text-primary">
-          Biometric Scanner
-        </span>
-      </div>
-      <div className="absolute top-4 right-4">
-        <span className="text-[10px] mono-label text-muted-foreground">
-          Click to tag
-        </span>
-      </div>
-
-      <svg
-        viewBox="0 0 200 400"
-        className="w-full max-w-45 h-auto drop-shadow-[0_0_15px_rgba(16,185,129,0.2)] mt-6"
-      >
-        <defs>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
+    <div className="flex w-full flex-col items-center border border-border/60 bg-background p-3">
+      <p className="mono-label self-start text-[10px] text-muted-foreground">
+        Tap a region to tag
+      </p>
+      <svg viewBox="0 0 200 400" className="mt-2 h-auto w-full max-w-36">
         {parts.map((p) => {
           const isHovered = hovered === p.id;
           return (
-            <motion.path
+            <path
               key={p.id}
               d={p.d}
-              stroke={isHovered ? "currentColor" : "currentColor"}
-              strokeOpacity={isHovered ? 1 : 0.4}
-              strokeWidth={isHovered ? 3 : 1.5}
-              fill={isHovered ? "currentColor" : "transparent"}
-              fillOpacity={isHovered ? 0.2 : 0}
-              className="text-primary cursor-crosshair transition-all duration-300"
-              style={{ filter: isHovered ? "url(#glow)" : "none" }}
-              onHoverStart={() => setHovered(p.id)}
-              onHoverEnd={() => setHovered(null)}
+              stroke="currentColor"
+              strokeOpacity={isHovered ? 1 : 0.45}
+              strokeWidth={isHovered ? 2.5 : 1.5}
+              fill="currentColor"
+              fillOpacity={isHovered ? 0.18 : 0}
+              className="cursor-pointer text-primary"
+              onMouseEnter={() => setHovered(p.id)}
+              onMouseLeave={() => setHovered(null)}
               onClick={() => onSelect(p.id)}
-              initial={{ opacity: 0, pathLength: 0 }}
-              animate={{ opacity: 1, pathLength: 1 }}
-              transition={{ duration: 1.5, ease: "easeInOut" }}
             />
           );
         })}
       </svg>
-
-      <div className="mt-6 h-6 flex items-center justify-center w-full bg-primary/5 rounded-md border border-primary/10">
-        <p className="text-xs font-mono font-medium text-primary/80 tracking-wide">
-          {hovered ? `> TARGET: ${hovered.toUpperCase()}` : "> SYSTEM STANDBY"}
-        </p>
-      </div>
+      <p className="mt-2 min-h-4 text-center font-mono text-[10px] text-muted-foreground">
+        {hovered ?? " "}
+      </p>
     </div>
   );
 }

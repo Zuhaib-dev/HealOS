@@ -16,10 +16,43 @@ async function getReportContent(
   reportId?: string,
   fileUrl?: string,
 ) {
-  // A report ID is the canonical identity from the patient reports list and
-  // the protected download action. Only fall back to resolving the URL for
-  // older clients that do not send that ID.
+  const user = req.user;
+  if (!user) throw new AppError("Sign in to access this report", 401);
   let resolvedReportId = reportId;
+  let report = null;
+  if (user.role === UserRole.PATIENT) {
+    const reportCandidates: Record<string, unknown>[] = [];
+    if (reportId && /^[a-f\d]{24}$/i.test(reportId))
+      reportCandidates.push({ _id: reportId });
+    if (fileUrl) {
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(fileUrl, "http://local.invalid");
+      } catch {
+        throw new AppError("Invalid report URL", 400);
+      }
+      const protectedReportId = parsedUrl.pathname.match(
+        /\/api\/v1\/reports\/([a-f\d]{24})\/file\/?$/i,
+      )?.[1];
+      if (protectedReportId) reportCandidates.push({ _id: protectedReportId });
+      reportCandidates.push({ fileUrl });
+      if (parsedUrl.pathname.startsWith("/uploads/reports/")) {
+        const fileName = path.basename(parsedUrl.pathname);
+        reportCandidates.push({ localFileName: fileName });
+        reportCandidates.push({ fileUrl: parsedUrl.pathname });
+      }
+    }
+    if (reportCandidates.length) {
+      report = await DiagnosticReport.findOne({
+        patient: user._id,
+        state: "verified",
+        $or: reportCandidates,
+      }).select("+localFileName fileUrl fileName patient order uploadedBy");
+      if (report) resolvedReportId = String(report._id);
+    }
+    if (!report)
+      throw new AppError("You do not have access to this report", 403);
+  }
   if (!resolvedReportId && fileUrl) {
     // Older report rows/UI versions may send the stored URL instead of the
     // report ID. Resolve only URLs already attached to a report in our DB;
@@ -41,13 +74,12 @@ async function getReportContent(
       if (storedReport) resolvedReportId = String(storedReport._id);
     }
   }
-  if (resolvedReportId) {
-    const report = await DiagnosticReport.findById(resolvedReportId).select(
+  if (resolvedReportId && !report) {
+    report = await DiagnosticReport.findById(resolvedReportId).select(
       "+localFileName fileUrl fileName patient order uploadedBy",
     );
-    if (!report) throw new AppError("Report not found", 404);
-    const user = req.user;
-    if (!user) throw new AppError("Sign in to access this report", 401);
+  }
+  if (report) {
     const isAdmin = user.role === UserRole.ADMIN;
     const isPatientOwner =
       user.role === UserRole.PATIENT &&

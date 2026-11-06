@@ -20,38 +20,53 @@ async function getReportContent(
   if (!user) throw new AppError("Sign in to access this report", 401);
   let resolvedReportId = reportId;
   let report = null;
-  if (user.role === UserRole.PATIENT) {
-    const reportCandidates: Record<string, unknown>[] = [];
-    if (reportId && /^[a-f\d]{24}$/i.test(reportId))
-      reportCandidates.push({ _id: reportId });
-    if (fileUrl) {
-      let parsedUrl: URL;
-      try {
-        parsedUrl = new URL(fileUrl, "http://local.invalid");
-      } catch {
-        throw new AppError("Invalid report URL", 400);
-      }
-      const protectedReportId = parsedUrl.pathname.match(
-        /\/api\/v1\/reports\/([a-f\d]{24})\/file\/?$/i,
-      )?.[1];
-      if (protectedReportId) reportCandidates.push({ _id: protectedReportId });
-      reportCandidates.push({ fileUrl });
-      if (parsedUrl.pathname.startsWith("/uploads/reports/")) {
-        const fileName = path.basename(parsedUrl.pathname);
-        reportCandidates.push({ localFileName: fileName });
-        reportCandidates.push({ fileUrl: parsedUrl.pathname });
-      }
+  let isPatientOwnedReleasedReport = false;
+  const reportCandidates: Record<string, unknown>[] = [];
+  if (reportId && /^[a-f\d]{24}$/i.test(reportId))
+    reportCandidates.push({ _id: reportId });
+  if (fileUrl) {
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(fileUrl, "http://local.invalid");
+    } catch {
+      throw new AppError("Invalid report URL", 400);
     }
-    if (reportCandidates.length) {
-      report = await DiagnosticReport.findOne({
-        patient: user._id,
-        state: "verified",
-        $or: reportCandidates,
-      }).select("+localFileName fileUrl fileName patient order uploadedBy");
-      if (report) resolvedReportId = String(report._id);
+    const protectedReportId = parsedUrl.pathname.match(
+      /\/api\/v1\/reports\/([a-f\d]{24})\/file\/?$/i,
+    )?.[1];
+    if (protectedReportId) reportCandidates.push({ _id: protectedReportId });
+    reportCandidates.push({ fileUrl });
+    if (parsedUrl.pathname.startsWith("/uploads/reports/")) {
+      const fileName = path.basename(parsedUrl.pathname);
+      reportCandidates.push({ localFileName: fileName });
+      reportCandidates.push({ fileUrl: parsedUrl.pathname });
     }
-    if (!report)
-      throw new AppError("You do not have access to this report", 403);
+  }
+  const patientOrderIds = await DiagnosticOrder.find({
+    patient: user._id,
+  }).distinct("_id");
+  if (reportCandidates.length) {
+    report = await DiagnosticReport.findOne({
+      state: "verified",
+      $and: [
+        {
+          $or: [
+            { patient: user._id },
+            { uploadedBy: user._id.toString() },
+            { order: { $in: patientOrderIds } },
+          ],
+        },
+        { $or: reportCandidates },
+      ],
+    }).select("+localFileName fileUrl fileName patient order uploadedBy");
+    if (report) {
+      resolvedReportId = String(report._id);
+      isPatientOwnedReleasedReport = report.state === "verified";
+    }
+  }
+  if (!report && user.role === UserRole.PATIENT) {
+    if (!reportId && !fileUrl) throw new AppError("Report ID is required", 400);
+    else throw new AppError("You do not have access to this report", 403);
   }
   if (!resolvedReportId && fileUrl) {
     // Older report rows/UI versions may send the stored URL instead of the
@@ -85,8 +100,7 @@ async function getReportContent(
     // state: "verified" in the database query. That scoped lookup is the
     // ownership check; comparing hydrated ID representations again can
     // reject a report that the query has already proven belongs to them.
-    const isPatientOwner =
-      user.role === UserRole.PATIENT && report.state === "verified";
+    const isPatientOwner = isPatientOwnedReleasedReport;
     const isUploader = report.uploadedBy === user._id.toString();
     const isAssignedDoctor =
       user.role === UserRole.DOCTOR &&
@@ -114,8 +128,17 @@ async function getReportContent(
       isUploader ||
       isAssignedDoctor ||
       isDiagnosticStaff
-    ))
+    )) {
+      console.warn("AI report access denied", {
+        role: user.role,
+        released: report.state === "verified",
+        patientScopedMatch: isPatientOwnedReleasedReport,
+        uploaderMatch: isUploader,
+        assignedDoctorMatch: isAssignedDoctor,
+        diagnosticStaffMatch: isDiagnosticStaff,
+      });
       throw new AppError("You do not have access to this report", 403);
+    }
     if (
       !isAdmin &&
       !isUploader &&

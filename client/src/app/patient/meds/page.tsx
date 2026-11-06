@@ -1,4 +1,4 @@
-import { MedsPanel } from "@/components/patient/patient-panels";
+import { MedsPanel } from "@/components/patient/panels/meds-panel";
 
 export default function MedsPanelPage() {
   return <MedsPanel />;

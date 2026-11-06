@@ -1,45 +1,20 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { motion, AnimatePresence } from "motion/react";
 import {
-  Check,
   Download,
   Eye,
   FileText,
-  Share2,
   TriangleAlert,
-  Video,
-  MapPin,
   X,
   Send,
-  RefreshCw,
   UploadCloud,
   Sparkles,
   Loader2,
 } from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Badge } from "@/components/ui/badge";
-import {
-  fetchAvailableDoctorsApi,
-  bookAppointmentApi,
-  fetchPatientAppointmentsApi,
-  updateAppointmentStatusApi,
-  DoctorListItem,
-  AppointmentRecord,
-} from "@/lib/api/appointment";
-import {
-  fetchPatientProfileApi,
-  updatePatientProfileApi,
-  PatientProfileData,
-} from "@/lib/api/onboarding";
+import { PatientHeader } from "@/components/patient/patient-header";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import {
-  fetchPatientDashboardApi,
-  PatientDashboardData,
-} from "@/lib/api/patient";
-import { getSocket } from "@/lib/socket";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
 import { openProtectedReport } from "@/lib/api/reports";
 
@@ -75,42 +50,11 @@ function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
 }
 
-/** Animated trend line — drawn, never an image. */
-function Trend({ series }: { series: number[] }) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
-  const pts = series
-    .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
-      const y = 30 - ((v - min) / Math.max(0.001, max - min)) * 24 - 3;
-      return `${x},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  return (
-    <svg
-      viewBox="0 0 100 30"
-      preserveAspectRatio="none"
-      className="h-10 w-full"
-    >
-      <motion.polyline
-        points={pts}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="1.4"
-        vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.4, ease: "easeInOut" }}
-      />
-    </svg>
-  );
-}
-
 /* ---------- 04 reports ---------- */
 
 export function ReportsPanel() {
   const [q, setQ] = useState("");
-  const { data, isLoading, refetch } = usePatientDashboard();
+  const { data, refetch } = usePatientDashboard();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
 
@@ -353,12 +297,10 @@ export function ReportsPanel() {
   );
 
   return (
-    <section>
-      <PanelHeader
-        index="04 / records"
-        title="Reports &amp; records"
-        note="Lab and imaging reports, clinic letters, prescriptions and invoices — view, download or share with an outside doctor."
-        actions={<ActionButton tone="solid">Download all as ZIP</ActionButton>}
+    <section className="pb-24 lg:pb-0">
+      <PatientHeader
+        title="Records"
+        note="Lab and imaging reports, letters, and prescriptions."
       />
 
       <div className="hairline-b flex flex-wrap items-center gap-3 px-5 py-4 sm:px-8">
@@ -379,7 +321,85 @@ export function ReportsPanel() {
         </span>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="space-y-3 p-4 lg:hidden">
+        {rows.length === 0 ? (
+          <p className="border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
+            No records found.
+          </p>
+        ) : (
+          rows.map((r) => (
+            <article
+              key={r.id}
+              className="border border-border/60 bg-background p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-mono text-sm">{r.name}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {r.kind} · {r.dept} · {r.date}
+                  </p>
+                </div>
+                <Pill tone={r.status === "ready" ? "ok" : "warn"}>
+                  {r.status}
+                </Pill>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {r.fileUrl ? (
+                  <>
+                    <button
+                      type="button"
+                      className="border border-border/60 px-3 py-1.5 text-xs font-semibold"
+                      onClick={() =>
+                        r.reportId
+                          ? openProtectedReport(r.reportId).catch(() =>
+                              toast.error("Unable to open this report"),
+                            )
+                          : window.open(
+                              r.fileUrl || "",
+                              "_blank",
+                              "noopener,noreferrer",
+                            )
+                      }
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      className="border border-border/60 px-3 py-1.5 text-xs font-semibold"
+                      onClick={() =>
+                        r.reportId
+                          ? openProtectedReport(r.reportId, true).catch(() =>
+                              toast.error("Unable to download this report"),
+                            )
+                          : window.open(
+                              r.fileUrl || "",
+                              "_blank",
+                              "noopener,noreferrer",
+                            )
+                      }
+                    >
+                      Download
+                    </button>
+                  </>
+                ) : null}
+                {r.fileUrl && r.reportId ? (
+                  <button
+                    type="button"
+                    className="bg-accent/12 px-3 py-1.5 text-xs font-semibold text-brass"
+                    onClick={() =>
+                      handleExplainReport(r.name, r.fileUrl!, r.reportId)
+                    }
+                  >
+                    Explain
+                  </button>
+                ) : null}
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto lg:block">
         <table className="w-full min-w-215">
           <thead className="hairline-b">
             <tr>
@@ -396,7 +416,7 @@ export function ReportsPanel() {
               <tr>
                 <td colSpan={6} className="p-16 text-center">
                   <div className="flex flex-col items-center justify-center gap-3">
-                    <div className="bg-muted/40 p-4 rounded-full border border-dashed border-border/60">
+                    <div className="border border-dashed border-border/60 bg-muted/40 p-4">
                       <FileText className="size-6 text-muted-foreground/60" />
                     </div>
                     <p className="mono-label text-muted-foreground">
@@ -507,25 +527,17 @@ export function ReportsPanel() {
                           type="button"
                           aria-label="Explain with AI"
                           title="Explain with AI"
-                          className="hover:text-amber-500 text-amber-500/70 transition-colors flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-full"
+                          className="flex items-center gap-1 bg-accent/12 px-2 py-1 text-brass hover:bg-accent/20"
                           onClick={() =>
                             handleExplainReport(r.name, r.fileUrl!, r.reportId)
                           }
                         >
                           <Sparkles className="size-3.5" />
-                          <span className="text-[10px] uppercase font-bold tracking-wider">
+                          <span className="text-[10px] font-bold tracking-wider uppercase">
                             Explain
                           </span>
                         </button>
                       )}
-                      <button
-                        type="button"
-                        aria-label="Share"
-                        title="Share Report"
-                        className="hover:text-foreground"
-                      >
-                        <Share2 className="size-3.5" />
-                      </button>
                     </div>
                   </Td>
                 </tr>
@@ -563,7 +575,7 @@ export function ReportsPanel() {
             />
             <label
               htmlFor="patient-report-file-input"
-              className={`relative overflow-hidden cursor-pointer flex items-center justify-center px-4 py-2 bg-foreground text-background font-bold text-xs uppercase tracking-wider rounded-lg transition-all ${isUploading ? "opacity-70 cursor-wait" : "hover:bg-foreground/90"}`}
+              className={`relative flex cursor-pointer items-center justify-center overflow-hidden bg-foreground px-4 py-2 text-xs font-bold tracking-wider text-background uppercase transition-colors ${isUploading ? "cursor-wait opacity-70" : "hover:bg-foreground/90"}`}
             >
               {isUploading ? "Uploading..." : "Upload"}
               <input
@@ -581,145 +593,104 @@ export function ReportsPanel() {
         </div>
       </div>
 
-      {/* AI Explainer Modal */}
-      <AnimatePresence>
-        {isAiModalOpen && selectedReportForAi && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-100 bg-background/80 backdrop-blur-sm overflow-y-auto"
-          >
-            <div className="flex min-h-full items-center justify-center p-4 sm:p-6 text-center">
-              <button
-                type="button"
-                aria-label="Close dialog backdrop"
-                title="Close dialog backdrop"
-                onClick={() => setIsAiModalOpen(false)}
-                className="fixed inset-0 w-full h-full bg-transparent border-0 cursor-default outline-none"
-              />
+      {isAiModalOpen && selectedReportForAi ? (
+        <div className="fixed inset-0 z-100 overflow-y-auto bg-background/80">
+          <div className="flex min-h-full items-center justify-center p-4 sm:p-6 text-center">
+            <button
+              type="button"
+              aria-label="Close dialog backdrop"
+              title="Close dialog backdrop"
+              onClick={() => setIsAiModalOpen(false)}
+              className="fixed inset-0 h-full w-full cursor-default border-0 bg-transparent outline-none"
+            />
 
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="relative w-full max-w-2xl text-left bg-card rounded-2xl shadow-2xl border border-amber-500/30 flex flex-col z-10 overflow-hidden"
-              >
-                {/* Header */}
-                <div className="sticky top-0 bg-background/80 backdrop-blur-xl border-b border-border/50 p-5 sm:p-6 flex items-start justify-between z-50">
-                  <div className="flex gap-4 items-center">
-                    <div className="size-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0 shadow-inner">
-                      <Sparkles className="size-6" />
-                    </div>
-                    <div>
-                      <h2 className="font-display font-semibold text-xl text-foreground flex items-center gap-2">
-                        AI Lab Report Explainer
-                      </h2>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        Simplifying:{" "}
-                        <span className="font-medium text-foreground">
-                          {selectedReportForAi.name}
-                        </span>
-                      </p>
-                    </div>
+            <div className="relative z-10 flex w-full max-w-2xl flex-col overflow-hidden border border-border bg-card text-left">
+              <div className="sticky top-0 z-50 flex items-start justify-between border-b border-border/50 bg-background/90 p-5 sm:p-6">
+                <div className="flex items-center gap-4">
+                  <div className="grid size-12 shrink-0 place-items-center border border-border/60 bg-accent/12 text-brass">
+                    <Sparkles className="size-6" />
                   </div>
-                  <button
-                    onClick={() => setIsAiModalOpen(false)}
-                    className="size-8 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors mt-1"
-                  >
-                    <X className="size-4" />
-                  </button>
+                  <div>
+                    <h2 className="font-display text-xl font-semibold text-foreground">
+                      Lab report explainer
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      Simplifying:{" "}
+                      <span className="font-medium text-foreground">
+                        {selectedReportForAi.name}
+                      </span>
+                    </p>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAiModalOpen(false)}
+                  className="mt-1 grid size-8 place-items-center text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
 
-                {/* Content */}
-                <div className="p-6 sm:p-8 relative min-h-75 bg-linear-to-b from-background to-muted/20">
-                  {isExplaining ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl animate-pulse" />
-                        <Loader2 className="size-10 animate-spin text-amber-500 relative z-10" />
-                      </div>
-                      <p className="text-sm font-medium text-foreground/80 animate-pulse">
-                        Gemini is translating medical jargon...
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4 max-w-none text-foreground/90 leading-relaxed">
-                      {aiExplanation.split("\\n").map((line, i) => {
-                        const trimmedLine = line.trim();
-                        if (
-                          trimmedLine === "" ||
-                          trimmedLine.match(/^[-_*]{3,}$/)
-                        )
-                          return null; // Skip empty lines and horizontal rules
+              <div className="relative min-h-75 p-6 sm:p-8">
+                {isExplaining ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="size-8 animate-spin text-accent" />
+                    <p className="text-sm text-muted-foreground">
+                      Reading this report…
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-w-none text-foreground/90 leading-relaxed">
+                    {aiExplanation.split("\\n").map((line, i) => {
+                      const trimmedLine = line.trim();
+                      if (
+                        trimmedLine === "" ||
+                        trimmedLine.match(/^[-_*]{3,}$/)
+                      )
+                        return null; // Skip empty lines and horizontal rules
 
-                        if (trimmedLine.startsWith("### ")) {
-                          return (
-                            <h3
-                              key={i}
-                              className="text-lg font-display font-semibold text-foreground mt-8 mb-3 flex items-center gap-2"
-                            >
-                              {trimmedLine.replace("### ", "")}
-                            </h3>
-                          );
-                        }
-                        if (trimmedLine.startsWith("## ")) {
-                          return (
-                            <h2
-                              key={i}
-                              className="text-xl font-display font-bold text-foreground mt-8 mb-4 pb-2 border-b border-border/50"
-                            >
-                              {trimmedLine.replace("## ", "")}
-                            </h2>
-                          );
-                        }
-                        if (trimmedLine.startsWith("# ")) {
-                          return (
-                            <h1
-                              key={i}
-                              className="text-2xl font-display font-bold text-foreground mt-8 mb-4"
-                            >
-                              {trimmedLine.replace("# ", "")}
-                            </h1>
-                          );
-                        }
-                        if (
-                          trimmedLine.startsWith("* ") ||
-                          trimmedLine.startsWith("- ")
-                        ) {
-                          const listItemText = trimmedLine.substring(2);
-                          // Parse bold in lists
-                          const parts =
-                            listItemText.split(/(\\*\\*.*?\\*\\*)/g);
-                          return (
-                            <li
-                              key={i}
-                              className="ml-6 mb-2 list-disc pl-1 marker:text-amber-500"
-                            >
-                              {parts.map((part, j) => {
-                                if (
-                                  part.startsWith("**") &&
-                                  part.endsWith("**")
-                                ) {
-                                  return (
-                                    <strong
-                                      key={j}
-                                      className="text-foreground font-semibold"
-                                    >
-                                      {part.slice(2, -2)}
-                                    </strong>
-                                  );
-                                }
-                                return part;
-                              })}
-                            </li>
-                          );
-                        }
-
-                        // Basic bold parsing for paragraphs
-                        const parts = trimmedLine.split(/(\\*\\*.*?\\*\\*)/g);
+                      if (trimmedLine.startsWith("### ")) {
                         return (
-                          <p key={i} className="mb-3 text-[15px]">
+                          <h3
+                            key={i}
+                            className="text-lg font-display font-semibold text-foreground mt-8 mb-3 flex items-center gap-2"
+                          >
+                            {trimmedLine.replace("### ", "")}
+                          </h3>
+                        );
+                      }
+                      if (trimmedLine.startsWith("## ")) {
+                        return (
+                          <h2
+                            key={i}
+                            className="text-xl font-display font-bold text-foreground mt-8 mb-4 pb-2 border-b border-border/50"
+                          >
+                            {trimmedLine.replace("## ", "")}
+                          </h2>
+                        );
+                      }
+                      if (trimmedLine.startsWith("# ")) {
+                        return (
+                          <h1
+                            key={i}
+                            className="text-2xl font-display font-bold text-foreground mt-8 mb-4"
+                          >
+                            {trimmedLine.replace("# ", "")}
+                          </h1>
+                        );
+                      }
+                      if (
+                        trimmedLine.startsWith("* ") ||
+                        trimmedLine.startsWith("- ")
+                      ) {
+                        const listItemText = trimmedLine.substring(2);
+                        // Parse bold in lists
+                        const parts = listItemText.split(/(\\*\\*.*?\\*\\*)/g);
+                        return (
+                          <li
+                            key={i}
+                            className="mb-2 ml-6 list-disc pl-1 marker:text-accent"
+                          >
                             {parts.map((part, j) => {
                               if (
                                 part.startsWith("**") &&
@@ -736,88 +707,103 @@ export function ReportsPanel() {
                               }
                               return part;
                             })}
-                          </p>
+                          </li>
                         );
-                      })}
-                    </div>
-                  )}
+                      }
 
-                  {/* Chat History */}
-                  {!isExplaining &&
-                    aiExplanation &&
-                    chatMessages.length > 0 && (
-                      <div className="mt-8 space-y-4 border-t border-border/50 pt-6">
-                        {chatMessages.map((msg, idx) => (
-                          <div
-                            key={idx}
-                            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                          >
-                            <div
-                              className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                                msg.role === "user"
-                                  ? "bg-foreground text-background rounded-br-sm"
-                                  : "bg-muted border border-border/50 text-foreground/90 rounded-bl-sm"
-                              }`}
-                            >
-                              <p className="text-[15px] leading-relaxed">
-                                {msg.text}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                        {isChatting && (
-                          <div className="flex justify-start">
-                            <div className="bg-muted border border-border/50 rounded-2xl rounded-bl-sm px-4 py-4 flex items-center gap-2">
-                              <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                              <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                              <div className="size-1.5 bg-foreground/40 rounded-full animate-bounce" />
-                            </div>
-                          </div>
-                        )}
-                        <div ref={chatEndRef} />
-                      </div>
-                    )}
-                </div>
-
-                {/* Chat Input */}
-                {!isExplaining && aiExplanation && (
-                  <div className="p-4 sm:p-5 border-t border-border/50 bg-background/50 backdrop-blur-sm">
-                    <form
-                      onSubmit={handleSendChatMessage}
-                      className="flex items-center gap-3"
-                    >
-                      <input
-                        type="text"
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        placeholder="Ask a follow-up question..."
-                        className="flex-1 bg-muted/50 border border-border/50 rounded-full px-5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-shadow placeholder:text-muted-foreground/70"
-                        disabled={isChatting}
-                      />
-                      <button
-                        type="submit"
-                        disabled={!chatInput.trim() || isChatting}
-                        className="size-10 shrink-0 rounded-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:hover:bg-amber-500 text-white flex items-center justify-center transition-colors"
-                      >
-                        <Send className="size-4 -ml-0.5" />
-                      </button>
-                    </form>
+                      // Basic bold parsing for paragraphs
+                      const parts = trimmedLine.split(/(\\*\\*.*?\\*\\*)/g);
+                      return (
+                        <p key={i} className="mb-3 text-[15px]">
+                          {parts.map((part, j) => {
+                            if (part.startsWith("**") && part.endsWith("**")) {
+                              return (
+                                <strong
+                                  key={j}
+                                  className="text-foreground font-semibold"
+                                >
+                                  {part.slice(2, -2)}
+                                </strong>
+                              );
+                            }
+                            return part;
+                          })}
+                        </p>
+                      );
+                    })}
                   </div>
                 )}
 
-                {/* Footer Disclaimer */}
-                <div className="bg-muted/50 border-t border-border p-4 sm:p-5 flex items-center justify-center gap-2">
-                  <TriangleAlert className="size-4 text-amber-500/70" />
-                  <p className="text-xs text-muted-foreground font-medium">
-                    This explanation was generated by AI and is not medical
-                    advice. Always consult your doctor.
-                  </p>
+                {/* Chat History */}
+                {!isExplaining && aiExplanation && chatMessages.length > 0 && (
+                  <div className="mt-8 space-y-4 border-t border-border/50 pt-6">
+                    {chatMessages.map((msg, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-[85%] px-4 py-3 ${
+                            msg.role === "user"
+                              ? "bg-foreground text-background"
+                              : "border border-border/50 bg-muted text-foreground/90"
+                          }`}
+                        >
+                          <p className="text-[15px] leading-relaxed">
+                            {msg.text}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {isChatting && (
+                      <div className="flex justify-start">
+                        <div className="flex items-center gap-2 border border-border/50 bg-muted px-4 py-3">
+                          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                        </div>
+                      </div>
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+                )}
+              </div>
+
+              {/* Chat Input */}
+              {!isExplaining && aiExplanation && (
+                <div className="border-t border-border/50 bg-background p-4 sm:p-5">
+                  <form
+                    onSubmit={handleSendChatMessage}
+                    className="flex items-center gap-3"
+                  >
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Ask a follow-up question…"
+                      className="flex-1 border border-border/50 bg-transparent px-4 py-2.5 text-sm outline-none focus-visible:ring-1 focus-visible:ring-primary/40 placeholder:text-muted-foreground/70"
+                      disabled={isChatting}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!chatInput.trim() || isChatting}
+                      className="grid size-10 shrink-0 place-items-center bg-foreground text-background disabled:opacity-50"
+                    >
+                      <Send className="size-4" />
+                    </button>
+                  </form>
                 </div>
-              </motion.div>
+              )}
+
+              <div className="flex items-center justify-center gap-2 border-t border-border bg-muted/50 p-4 sm:p-5">
+                <TriangleAlert className="size-4 text-muted-foreground" />
+                <p className="text-xs font-medium text-muted-foreground">
+                  This explanation was generated by AI and is not medical
+                  advice. Always consult your doctor.
+                </p>
+              </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { OverviewPanel } from "@/components/patient/patient-panels";
+import { OverviewPanel } from "@/components/patient/panels/overview-panel";
 
 export default function OverviewPanelPage() {
   return <OverviewPanel />;

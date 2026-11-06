@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { useEffect, useState, type ReactNode } from "react";
+import { motion } from "motion/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   CalendarPlus,
@@ -14,9 +14,6 @@ import {
   MessagesSquare,
   UserRound,
   Search,
-  Bell,
-  Sparkles,
-  ShieldCheck,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -25,7 +22,6 @@ import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { NotificationBell } from "@/components/shared/notification-bell";
-import { useAuthStore } from "@/store/use-auth-store";
 import { useUIStore } from "@/store/use-ui-store";
 import {
   Drawer,
@@ -37,134 +33,101 @@ import {
 } from "@/components/ui/drawer";
 
 export const patientSections = [
-  { id: "overview", label: "Home", icon: LayoutDashboard },
-  { id: "book", label: "Book", icon: CalendarPlus },
-  { id: "appointments", label: "Visits", icon: History },
-  { id: "reports", label: "Records", icon: FileText },
-  { id: "meds", label: "Meds", icon: Pill },
-  { id: "billing", label: "Billing", icon: Receipt },
-  { id: "messages", label: "Chat", icon: MessagesSquare },
-  { id: "profile", label: "Profile", icon: UserRound },
+  { id: "overview", label: "Home", shortLabel: "Home", icon: LayoutDashboard },
+  { id: "book", label: "Book", shortLabel: "Book", icon: CalendarPlus },
+  { id: "appointments", label: "Visits", shortLabel: "Visits", icon: History },
+  { id: "reports", label: "Records", shortLabel: "Records", icon: FileText },
+  { id: "meds", label: "Meds", shortLabel: "Meds", icon: Pill },
+  { id: "billing", label: "Billing", shortLabel: "Bills", icon: Receipt },
+  { id: "messages", label: "Chat", shortLabel: "Chat", icon: MessagesSquare },
+  { id: "profile", label: "Profile", shortLabel: "Profile", icon: UserRound },
 ] as const;
 
 export type PatientSectionId = (typeof patientSections)[number]["id"];
 
-// Mobile Bottom Nav Layout
 const mainMobileTabs = ["overview", "book", "appointments", "messages"];
 const moreMobileTabs = ["reports", "meds", "billing", "profile"];
 
+const prefetchRoutes = [
+  "/patient",
+  "/patient/book",
+  "/patient/appointments",
+  "/patient/reports",
+  "/patient/meds",
+  "/patient/billing",
+  "/patient/messages",
+  "/patient/profile",
+];
+
 export function PatientShell({ children }: { children: ReactNode }) {
-  const [query, setQuery] = useState("");
-  const { user } = useAuthStore();
   const { isSidebarCollapsed, toggleSidebar } = useUIStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
-  const currentSection =
-    patientSections.find((s) =>
-      s.id === "overview"
-        ? pathname === "/patient"
-        : pathname.startsWith(`/patient/${s.id}`),
-    ) || patientSections[0];
+  useEffect(() => {
+    prefetchRoutes.forEach((href) => router.prefetch(href));
+  }, [router]);
 
-  // Helper to check if a section is active
-  const isSectionActive = (id: string) => {
-    return id === "overview"
+  const isSectionActive = (id: string) =>
+    id === "overview"
       ? pathname === "/patient"
       : pathname.startsWith(`/patient/${id}`);
-  };
+
+  const currentSection =
+    patientSections.find((s) => isSectionActive(s.id)) || patientSections[0];
 
   return (
-    <div className="bg-background text-foreground min-h-screen pb-24 md:pb-0">
-      {/* Top Instrument Header */}
-      <header className="bg-background/90 border-b border-border/60 sticky top-0 z-40 backdrop-blur-md transition-all">
-        <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-8">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="flex items-center gap-3 group"
-              aria-label="HealOS home"
-              title="HealOS home"
-            >
-              <HealOSLogo size={30} />
-            </Link>
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="hairline-b sticky top-0 z-40 bg-background/90 backdrop-blur-md">
+        <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
+          <Link
+            href="/"
+            className="flex items-center gap-3"
+            aria-label="HealOS home"
+            title="HealOS home"
+          >
+            <HealOSLogo size={28} />
+          </Link>
+          <span className="mono-label hairline-l hidden pl-4 text-muted-foreground md:inline">
+            Patient portal / {currentSection.label}
+          </span>
 
-            <div className="hidden md:flex items-center gap-2 border-l border-border/60 pl-4">
-              <span className="mono-label text-[11px] text-muted-foreground uppercase font-mono tracking-wider">
-                Patient Portal
-              </span>
-              <span className="text-muted-foreground/50">/</span>
-              <span className="mono-label text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <ShieldCheck className="size-3.5 text-emerald-500" />
-                {currentSection?.label}
-              </span>
-            </div>
-          </div>
-
-          {/* Search bar instrument */}
           <button
             type="button"
             onClick={() =>
               window.dispatchEvent(new CustomEvent("open-command-menu"))
             }
             aria-label="Search health records, doctors, prescriptions"
-            title="Search health records, doctors, prescriptions"
-            className="hidden lg:flex w-80 items-center gap-2.5 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:border-primary/50 transition-all text-left cursor-pointer"
+            className="hairline ml-auto hidden w-72 items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-primary/40 lg:flex"
           >
-            <Search className="text-muted-foreground size-3.5 shrink-0" />
-            <span className="mono-label text-muted-foreground/70 flex-1 text-xs truncate">
-              Search health records, doctors, prescriptions...
+            <Search className="size-3.5 text-muted-foreground" />
+            <span className="mono-label w-full truncate text-xs text-muted-foreground">
+              Search records, doctors, meds
             </span>
-            <kbd className="mono-label hidden xl:inline-block rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground border border-border">
-              ⌘K
-            </kbd>
           </button>
 
-          {/* Right Header Actions */}
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="ml-auto flex items-center gap-2 lg:ml-0">
             <NotificationBell />
-
             <ThemeToggle />
-
-            <div className="border-l border-border/60 pl-3 block">
+            <div className="hairline-l pl-3">
               <UserProfileMenu />
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Layout Container */}
       <div className="flex">
-        {/* Sidebar Navigation - Desktop Only */}
         <aside
-          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? "w-18 items-center px-2" : "w-64"}`}
+          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col overflow-y-auto border-r border-(--hairline) p-3 transition-all duration-300 ease-in-out md:flex ${
+            isSidebarCollapsed ? "w-18 items-center px-2" : "w-60"
+          }`}
         >
-          {isSidebarCollapsed ? (
-            <div className="mb-4 mt-2 flex justify-center">
-              <div className="size-8 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-xs uppercase">
-                {user?.name?.charAt(0) || "P"}
-              </div>
-            </div>
-          ) : (
-            <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5">
-              <Sparkles className="size-4 text-emerald-500 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">
-                  Welcome, {user?.name.split(" ")[0] || "Patient"}
-                </p>
-                <p className="mono-label text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-                  Verified Health Account
-                </p>
-              </div>
-            </div>
-          )}
-
           <nav
-            aria-label="Patient portal sidebar navigation"
-            title="Patient portal sidebar navigation"
-            className="flex flex-col gap-1 w-full"
+            aria-label="Patient portal sidebar"
+            className="flex w-full flex-col gap-0.5"
           >
-            {patientSections.map((s) => {
+            {patientSections.map((s, i) => {
               const Icon = s.icon;
               const isActive = isSectionActive(s.id);
               const href =
@@ -173,53 +136,67 @@ export function PatientShell({ children }: { children: ReactNode }) {
                 <Link
                   key={s.id}
                   href={href}
+                  prefetch
                   title={isSidebarCollapsed ? s.label : undefined}
-                  className={`mono-label group relative flex items-center ${isSidebarCollapsed ? "justify-center px-0 py-3" : "gap-3 px-3.5 py-2.5"} rounded-lg text-left transition-all cursor-pointer text-xs ${
+                  className={`mono-label group relative flex items-center text-left transition-colors ${
+                    isSidebarCollapsed
+                      ? "justify-center px-0 py-3"
+                      : "gap-3 px-3 py-2.5"
+                  } ${
                     isActive
-                      ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      ? "bg-accent/10 text-foreground"
+                      : "text-muted-foreground hover:bg-foreground/3 hover:text-foreground"
                   }`}
                 >
-                  <Icon
-                    className={`size-4 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === "settings" ? "group-hover:rotate-90" : "group-hover:scale-[1.15]"}`}`}
-                  />
-                  {!isSidebarCollapsed && <span>{s.label}</span>}
+                  {isActive && !isSidebarCollapsed ? (
+                    <motion.span
+                      layoutId="patient-nav-marker"
+                      className="absolute top-0 left-0 h-full w-0.5 bg-accent"
+                    />
+                  ) : null}
+                  {!isSidebarCollapsed ? (
+                    <span className="text-accent/60">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                  ) : null}
+                  <Icon className="size-3.5" />
+                  {!isSidebarCollapsed ? s.label : null}
                 </Link>
               );
             })}
           </nav>
 
           <div
-            className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-4"}`}
+            className={`hairline mt-auto overflow-hidden ${
+              isSidebarCollapsed ? "flex flex-col items-center p-2 py-3" : "p-3"
+            }`}
           >
             {isSidebarCollapsed ? (
               <span
-                className="size-2 rounded-full bg-emerald-500 animate-pulse"
-                title="Next Appointment Available"
+                className="size-1.5 animate-pulse rounded-full bg-accent"
+                title="Patient portal"
               />
             ) : (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-mono">
-                    Next Appointment
-                  </span>
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                <p className="mono-label text-muted-foreground">Portal</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="size-1.5 animate-pulse rounded-full bg-accent" />
+                  <span className="mono-label">Signed in</span>
                 </div>
-                <p className="font-semibold text-xs mt-2 text-foreground">
-                  Doctor Consultation
-                </p>
-                <p className="mono-label text-[11px] text-muted-foreground mt-1 font-mono">
-                  Available 24/7 in Book Tab
+                <p className="mono-label mt-2 text-muted-foreground">
+                  Book, records, and bills stay on this account
                 </p>
               </>
             )}
           </div>
 
           <button
+            type="button"
             onClick={toggleSidebar}
-            className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 ${isSidebarCollapsed ? "" : "w-full"}`}
+            className={`hairline mt-3 flex items-center justify-center p-2 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground ${
+              isSidebarCollapsed ? "" : "w-full"
+            }`}
             aria-label="Toggle sidebar"
-            title="Toggle sidebar"
           >
             {isSidebarCollapsed ? (
               <PanelLeftOpen className="size-4.5" />
@@ -229,41 +206,15 @@ export function PatientShell({ children }: { children: ReactNode }) {
           </button>
         </aside>
 
-        {/* Main Content Area */}
-        <main className="min-w-0 flex-1 relative">
-          {/* Mobile "Header" - just the title of the current section */}
-          <div className="md:hidden border-b border-border/60 bg-card/40 p-3 px-4 sticky top-0 z-30 backdrop-blur-md flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {currentSection && (
-                <currentSection.icon className="size-4 text-primary" />
-              )}
-              <h1 className="font-semibold text-sm">{currentSection?.label}</h1>
-            </div>
-            <UserProfileMenu />
-          </div>
-
-          <div className="mx-auto w-full max-w-5xl">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.15, ease: "easeInOut" }}
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+        <main className="relative min-w-0 flex-1 pb-24 md:pb-0">
+          {children}
         </main>
       </div>
 
-      {/* Persistent Bottom Navigation Bar - Mobile Only */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+      <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-border/60 bg-background/95 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] backdrop-blur-xl md:hidden dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
         <nav
           aria-label="Patient portal mobile navigation"
-          title="Patient portal mobile navigation"
-          className="flex justify-around items-center px-1.5 py-1 max-w-md mx-auto"
+          className="mx-auto flex max-w-md items-center justify-around px-1.5 py-1"
         >
           {patientSections
             .filter((s) => mainMobileTabs.includes(s.id))
@@ -276,63 +227,54 @@ export function PatientShell({ children }: { children: ReactNode }) {
                 <Link
                   key={s.id}
                   href={href}
+                  prefetch
                   onClick={() => setIsMoreOpen(false)}
-                  className="relative flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-lg group tap-highlight-transparent"
+                  className="tap-highlight-transparent group relative flex min-w-0 flex-1 flex-col items-center justify-center rounded-lg px-0.5 py-1 outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                 >
-                  <motion.div
-                    animate={
-                      isActive ? { scale: 1.12, y: -1 } : { scale: 1, y: 0 }
-                    }
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className={`relative flex items-center justify-center p-1 rounded-full transition-colors ${
-                      isActive
-                        ? "text-primary bg-primary/10"
-                        : "text-muted-foreground group-hover:text-foreground"
-                    }`}
-                  >
-                    <Icon
-                      className={`size-4.5 ${isActive ? "fill-primary/20" : ""}`}
-                      strokeWidth={isActive ? 2.5 : 2}
-                    />
-                  </motion.div>
                   <span
-                    className={`text-[10px] mt-0.5 font-medium transition-colors truncate max-w-full text-center tracking-tight leading-tight block ${
+                    className={`flex items-center justify-center p-1 ${
                       isActive
-                        ? "text-primary font-semibold"
+                        ? "bg-primary/10 text-primary"
                         : "text-muted-foreground"
                     }`}
                   >
-                    {s.label.split(" ")[0]}
+                    <Icon
+                      className="size-4.5"
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
+                  </span>
+                  <span
+                    className={`mt-0.5 block max-w-full truncate text-center text-[10px] leading-tight tracking-tight ${
+                      isActive
+                        ? "font-semibold text-primary"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {s.shortLabel}
                   </span>
                 </Link>
               );
             })}
 
-          {/* More / Menu Tab (Drawer) */}
           <Drawer open={isMoreOpen} onOpenChange={setIsMoreOpen}>
             <DrawerTrigger asChild>
               <button
                 type="button"
-                className="relative flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-lg group tap-highlight-transparent"
+                className="tap-highlight-transparent group relative flex min-w-0 flex-1 flex-col items-center justify-center rounded-lg px-0.5 py-1 outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
               >
-                <div
-                  className={`relative flex items-center justify-center p-1 rounded-full transition-colors ${
+                <span
+                  className={`flex items-center justify-center p-1 ${
                     moreMobileTabs.some((id) => isSectionActive(id))
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground group-hover:text-foreground"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground"
                   }`}
                 >
-                  <Menu
-                    className={`size-4.5 ${moreMobileTabs.some((id) => isSectionActive(id)) ? "fill-primary/20" : ""}`}
-                    strokeWidth={
-                      moreMobileTabs.some((id) => isSectionActive(id)) ? 2.5 : 2
-                    }
-                  />
-                </div>
+                  <Menu className="size-4.5" />
+                </span>
                 <span
-                  className={`text-[10px] mt-0.5 font-medium transition-colors truncate max-w-full text-center tracking-tight leading-tight block ${
+                  className={`mt-0.5 block text-[10px] ${
                     moreMobileTabs.some((id) => isSectionActive(id))
-                      ? "text-primary font-semibold"
+                      ? "font-semibold text-primary"
                       : "text-muted-foreground"
                   }`}
                 >
@@ -340,15 +282,15 @@ export function PatientShell({ children }: { children: ReactNode }) {
                 </span>
               </button>
             </DrawerTrigger>
-            <DrawerContent className="bg-background/95 backdrop-blur-xl border-t border-border/60">
-              <DrawerHeader className="border-b border-border/40 pb-4 text-left flex justify-between items-center px-6">
-                <DrawerTitle className="text-lg font-semibold flex items-center gap-2">
+            <DrawerContent className="border-t border-border/60 bg-background/95 backdrop-blur-xl">
+              <DrawerHeader className="flex items-center justify-between border-b border-border/40 px-6 pb-4 text-left">
+                <DrawerTitle className="flex items-center gap-2 text-lg font-semibold">
                   <Menu className="size-5 text-primary" />
                   Menu
                 </DrawerTitle>
                 <UserProfileMenu />
               </DrawerHeader>
-              <div className="p-4 grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-4 p-4">
                 {patientSections
                   .filter((s) => moreMobileTabs.includes(s.id))
                   .map((s) => {
@@ -361,27 +303,30 @@ export function PatientShell({ children }: { children: ReactNode }) {
                         key={s.id}
                         href={href}
                         onClick={() => setIsMoreOpen(false)}
-                        className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                        className={`flex flex-col items-center gap-2 border p-3 transition-colors ${
                           isActive
-                            ? "bg-primary/10 text-primary border border-primary/20"
-                            : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
+                            ? "border-primary/20 bg-primary/10 text-primary"
+                            : "border-border/40 bg-muted/40 text-muted-foreground"
                         }`}
                       >
                         <Icon
                           className="size-6"
                           strokeWidth={isActive ? 2.5 : 2}
                         />
-                        <span className="text-[11px] font-semibold tracking-wide">
-                          {s.label}
+                        <span className="max-w-full truncate text-center text-[11px] font-semibold">
+                          {s.shortLabel}
                         </span>
                       </Link>
                     );
                   })}
               </div>
-              <div className="p-4 pt-2 mt-auto">
+              <div className="mt-auto border-t border-border/40 p-4">
                 <DrawerClose asChild>
-                  <button className="w-full bg-muted/50 text-foreground py-3.5 rounded-xl text-sm font-semibold border border-border/50 active:bg-muted/80 transition-colors">
-                    Close Menu
+                  <button
+                    type="button"
+                    className="w-full border border-border/50 bg-muted/50 py-3.5 text-sm font-semibold"
+                  >
+                    Close menu
                   </button>
                 </DrawerClose>
               </div>

@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
 import {
   Check,
   Calendar as CalendarIcon,
   Clock,
-  User,
   Stethoscope,
   CreditCard,
   Video,
@@ -19,14 +17,9 @@ import {
 } from "lucide-react";
 import { addDays, format, isSameDay } from "date-fns";
 import { formatTime12Hour, formatTimeRange } from "@/lib/time-format";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { ActionButton } from "@/components/admin/admin-shell";
+import { PatientHeader } from "@/components/patient/patient-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   fetchAvailableDoctorsApi,
   bookAppointmentApi,
@@ -377,24 +370,23 @@ export function BookPanel() {
   const selectedDoctorObj = doctorsList.find((d) => d._id === selectedDoctorId);
 
   return (
-    <section className="pb-12">
-      <PanelHeader
-        index="02 / new visit"
+    <section className="pb-24 lg:pb-12">
+      <PatientHeader
         title="Book an appointment"
-        note="Pick a department, clinician, and free slot. You'll receive a confirmation and preparation instructions."
+        note="Pick a department, clinician, and free slot."
       />
 
       {bookedRecord ? (
         <div className="p-4 sm:p-8">
-          <Card className="max-w-xl border-emerald-500/20 bg-emerald-500/5 shadow-sm">
+          <Card className="max-w-xl border-border/60 shadow-none">
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
-                <div className="bg-emerald-500 rounded-full p-2 mt-1">
-                  <Check className="text-white size-5" />
+                <div className="mt-1 grid size-9 place-items-center bg-accent text-accent-foreground">
+                  <Check className="size-5" />
                 </div>
                 <div>
-                  <h3 className="font-mono text-xl font-bold text-emerald-700 dark:text-emerald-400">
-                    Appointment Confirmed
+                  <h3 className="font-display text-xl font-bold">
+                    Appointment confirmed
                   </h3>
                   <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
                     Your appointment for{" "}
@@ -427,7 +419,7 @@ export function BookPanel() {
                     .
                   </p>
                   {bookedRecord.queueNumber && (
-                    <div className="mt-4 inline-flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                    <div className="mt-4 inline-flex items-center gap-3 border border-border/60 bg-muted/30 px-4 py-3">
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Queue number
                       </span>
@@ -492,10 +484,10 @@ export function BookPanel() {
                   key={d.id}
                   type="button"
                   onClick={() => setDept(d)}
-                  className={`snap-start shrink-0 min-w-35 px-4 py-4 rounded-xl border transition-all text-left flex flex-col gap-2 ${
+                  className={`flex min-w-35 shrink-0 snap-start flex-col gap-2 border px-4 py-4 text-left transition-colors ${
                     dept.id === d.id
-                      ? "border-primary bg-primary text-primary-foreground shadow-md -translate-y-1"
-                      : "border-border/60 bg-card hover:bg-muted hover:border-border"
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border/60 bg-card hover:border-border hover:bg-muted"
                   }`}
                 >
                   <BriefcaseMedical
@@ -519,7 +511,7 @@ export function BookPanel() {
             </div>
 
             {filteredDoctors.length === 0 ? (
-              <div className="p-8 text-center border border-dashed rounded-xl border-border/60">
+              <div className="border border-dashed border-border/60 p-8 text-center">
                 <p className="text-muted-foreground text-sm">
                   {doctorsLoading
                     ? "Loading verified clinicians and their schedules…"
@@ -533,13 +525,13 @@ export function BookPanel() {
                     key={doc._id}
                     type="button"
                     onClick={() => setSelectedDoctorId(doc._id)}
-                    className={`flex items-start gap-4 p-4 rounded-xl border transition-all text-left group ${
+                    className={`group flex items-start gap-4 border p-4 text-left transition-colors ${
                       selectedDoctorId === doc._id
-                        ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-sm"
+                        ? "border-primary bg-primary/5"
                         : "border-border/60 bg-card hover:border-border hover:bg-muted/40"
                     }`}
                   >
-                    <div className="size-14 rounded-full bg-muted border border-border/50 shrink-0 overflow-hidden relative">
+                    <div className="relative size-14 shrink-0 overflow-hidden border border-border/50 bg-muted">
                       {doc.avatarUrl ? (
                         <Image
                           src={doc.avatarUrl}
@@ -581,9 +573,9 @@ export function BookPanel() {
                       </div>
                     </div>
                     <div
-                      className={`shrink-0 mt-3 size-5 rounded-full border flex items-center justify-center transition-colors ${
+                      className={`mt-3 grid size-5 shrink-0 place-items-center border transition-colors ${
                         selectedDoctorId === doc._id
-                          ? "bg-primary border-primary text-primary-foreground"
+                          ? "border-primary bg-primary text-primary-foreground"
                           : "border-border/60 text-transparent"
                       }`}
                     >
@@ -616,7 +608,7 @@ export function BookPanel() {
                           key={m}
                           type="button"
                           onClick={() => setMode(m)}
-                          className={`text-xs px-3 py-3 rounded-lg border transition-all font-medium flex items-center justify-center gap-2 ${
+                          className={`flex items-center justify-center gap-2 border px-3 py-3 text-xs font-medium transition-colors ${
                             mode === m
                               ? "bg-foreground text-background border-foreground shadow-sm"
                               : "bg-background text-foreground hover:bg-muted border-border/60"
@@ -643,7 +635,7 @@ export function BookPanel() {
                           key={p}
                           type="button"
                           onClick={() => setPaymentMethod(p)}
-                          className={`text-xs px-3 py-3 rounded-lg border transition-all font-medium flex flex-col items-center justify-center gap-1 ${
+                          className={`flex flex-col items-center justify-center gap-1 border px-3 py-3 text-xs font-medium transition-colors ${
                             paymentMethod === p
                               ? "bg-foreground text-background border-foreground shadow-sm"
                               : "bg-background text-foreground hover:bg-muted border-border/60"
@@ -727,7 +719,7 @@ export function BookPanel() {
                               type="button"
                               disabled={dayOpen === false}
                               onClick={() => setDate(day)}
-                              className={`flex min-w-0 flex-col items-center gap-2 rounded-xl border px-1 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border/60 bg-background hover:border-primary/50 hover:bg-muted/50"}`}
+                              className={`flex min-w-0 flex-col items-center gap-2 border px-1 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border/60 bg-background hover:border-primary/50 hover:bg-muted/50"}`}
                             >
                               <span
                                 className={`text-[10px] font-semibold uppercase sm:text-xs ${selected ? "text-primary-foreground/75" : "text-muted-foreground"}`}
@@ -833,14 +825,14 @@ export function BookPanel() {
                         submitting
                       }
                       onClick={handleBook}
-                      className={`shrink-0 w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 ${
+                      className={`flex w-full shrink-0 items-center justify-center gap-2 px-8 py-4 text-sm font-bold transition-colors sm:w-auto ${
                         availability?.available &&
                         date &&
                         reason &&
                         selectedDoctorId &&
                         !submitting
-                          ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
-                          : "bg-muted text-muted-foreground cursor-not-allowed border border-border/60"
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                          : "cursor-not-allowed border border-border/60 bg-muted text-muted-foreground"
                       }`}
                     >
                       {submitting

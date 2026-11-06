@@ -1,4 +1,4 @@
-import { MessagesPanel } from "@/components/patient/patient-panels";
+import { MessagesPanel } from "@/components/patient/panels/messages-panel";
 
 export default function MessagesPanelPage() {
   return <MessagesPanel />;

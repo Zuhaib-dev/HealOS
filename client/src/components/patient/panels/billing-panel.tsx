@@ -1,23 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
-import {
-  Check,
-  Download,
-  Eye,
-  FileText,
-  Share2,
-  TriangleAlert,
-  Video,
-  MapPin,
-  X,
-  Send,
-  RefreshCw,
-  UploadCloud,
-} from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Badge } from "@/components/ui/badge";
+import { ActionButton } from "@/components/admin/admin-shell";
+import { PatientHeader } from "@/components/patient/patient-header";
 import {
   Dialog,
   DialogContent,
@@ -26,26 +11,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  fetchAvailableDoctorsApi,
-  bookAppointmentApi,
-  fetchPatientAppointmentsApi,
-  updateAppointmentStatusApi,
-  DoctorListItem,
-  AppointmentRecord,
-} from "@/lib/api/appointment";
-import {
-  fetchPatientProfileApi,
-  updatePatientProfileApi,
-  PatientProfileData,
-} from "@/lib/api/onboarding";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import {
-  fetchPatientDashboardApi,
-  PatientDashboardData,
-} from "@/lib/api/patient";
-import { getSocket } from "@/lib/socket";
+import { PatientDashboardData } from "@/lib/api/patient";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
 import { PaymentCelebration } from "../payment-celebration";
 import {
@@ -105,12 +73,6 @@ function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
 }
 
-function stateTone(s: string) {
-  if (s === "confirmed" || s === "completed") return "ok";
-  if (s === "pending") return "warn";
-  return "bad";
-}
-
 function invoicePaidAmount(invoice: PatientDashboardData["invoices"][number]) {
   const recorded = Math.max(
     invoice.paidAmount || 0,
@@ -131,37 +93,6 @@ function invoiceBalanceDue(invoice: PatientDashboardData["invoices"][number]) {
     invoice.totalAmount -
       (invoice.insuranceCoverage || 0) -
       invoicePaidAmount(invoice),
-  );
-}
-
-/** Animated trend line — drawn, never an image. */
-function Trend({ series }: { series: number[] }) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
-  const pts = series
-    .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
-      const y = 30 - ((v - min) / Math.max(0.001, max - min)) * 24 - 3;
-      return `${x},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  return (
-    <svg
-      viewBox="0 0 100 30"
-      preserveAspectRatio="none"
-      className="h-10 w-full"
-    >
-      <motion.polyline
-        points={pts}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="1.4"
-        vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.4, ease: "easeInOut" }}
-      />
-    </svg>
   );
 }
 
@@ -299,11 +230,10 @@ export function BillingPanel() {
   );
 
   return (
-    <section>
-      <PanelHeader
-        index="06 / billing"
-        title="Bills &amp; insurance"
-        note="Every invoice with what your insurer covered and what is left for you to pay."
+    <section className="pb-24 lg:pb-0">
+      <PatientHeader
+        title="Bills"
+        note="What insurance covered and what is still due."
         actions={
           <ActionButton
             tone="solid"
@@ -354,15 +284,17 @@ export function BillingPanel() {
 
       <div id="patient-invoice-list" className="hairline-t scroll-mt-6">
         <div className="space-y-3 p-4 lg:hidden">
-          {invoiceRows.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
+          {isLoading ? (
+            <div className="h-32 animate-pulse bg-foreground/4" />
+          ) : invoiceRows.length === 0 ? (
+            <p className="border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
               No invoices yet.
             </p>
           ) : (
             invoiceRows.map((invoice) => (
               <article
                 key={invoice._id}
-                className="min-w-0 rounded-xl border border-border/60 bg-card p-4"
+                className="min-w-0 border border-border/60 bg-background p-4"
               >
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0">

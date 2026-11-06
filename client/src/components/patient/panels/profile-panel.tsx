@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import { ActionButton } from "@/components/admin/admin-shell";
+import { PatientHeader } from "@/components/patient/patient-header";
 import {
   Card,
   CardContent,
@@ -28,8 +29,6 @@ import { AIWriterButton } from "@/components/shared/ai-writer-button";
 export function ProfilePanel() {
   const { user, updateUser } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isPending = isSubmitting;
-  const saving = isSubmitting;
   const setSaving = setIsSubmitting;
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState<"MALE" | "FEMALE">("MALE");
@@ -104,12 +103,11 @@ export function ProfilePanel() {
   };
 
   return (
-    <section className="pb-12">
+    <section className="pb-24 lg:pb-12">
       <form onSubmit={handleSave}>
-        <PanelHeader
-          index="08 / profile"
-          title="Personal Profile"
-          note="Manage your contact details, emergency information, and account preferences securely."
+        <PatientHeader
+          title="Profile"
+          note="Contact details and emergency information."
           actions={
             <ActionButton tone="solid" type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Saving Changes..." : "Save Changes"}
@@ -121,7 +119,7 @@ export function ProfilePanel() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Left Column: Form */}
             <div className="lg:col-span-8">
-              <Card className="shadow-sm border-border/60">
+              <Card className="border-border/60 shadow-none">
                 <CardHeader className="pb-4 border-b border-border/40">
                   <CardTitle className="text-base flex items-center gap-2">
                     <UserCheck className="size-4 text-primary" />
@@ -404,34 +402,34 @@ export function ProfilePanel() {
 
             {/* Right Column: Status & Consent */}
             <div className="lg:col-span-4 space-y-6">
-              <Card className="shadow-sm border-border/60">
+              <Card className="border-border/60 shadow-none">
                 <CardHeader className="pb-4 border-b border-border/40">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <ShieldCheck className="size-4 text-emerald-500" />
+                    <ShieldCheck className="size-4 text-accent" />
                     Account Status
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="font-semibold text-sm text-emerald-800 dark:text-emerald-300">
+                  <div className="border border-border/60 p-4">
+                    <div className="mb-1 flex items-center justify-between">
+                      <p className="text-sm font-semibold">
                         Role: {user?.role}
                       </p>
-                      {user?.isEmailVerified && (
-                        <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
-                      )}
+                      {user?.isEmailVerified ? (
+                        <ShieldCheck className="size-4 text-accent" />
+                      ) : null}
                     </div>
-                    <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80 font-medium">
+                    <p className="text-xs font-medium text-muted-foreground">
                       Status:{" "}
                       {user?.isEmailVerified
-                        ? "Verified Identity"
-                        : "Pending Verification"}
+                        ? "Verified identity"
+                        : "Pending verification"}
                     </p>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-sm border-border/60 bg-muted/10">
+              <Card className="border-border/60 bg-muted/10 shadow-none">
                 <CardHeader className="pb-4">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Lock className="size-4 text-muted-foreground" />

@@ -4,28 +4,18 @@ import { useState } from "react";
 import { format } from "date-fns";
 import {
   Calendar,
-  Clock,
   Video,
   MapPin,
   XCircle,
   FileText,
   Building2,
   Stethoscope,
-  Loader2,
 } from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { PatientHeader } from "@/components/patient/patient-header";
 import { updateAppointmentStatusApi } from "@/lib/api/appointment";
 import { toast } from "sonner";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
 import { DashboardConsultation } from "@/lib/api/patient";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { OpdReceiptModal } from "@/components/doctor/shared/opd-receipt-modal";
 import { TelemedicineWorkbench } from "../../video-call/telemedicine-workbench";
 import {
@@ -58,7 +48,7 @@ export function AppointmentsPanel() {
         toast.success("Appointment cancelled");
         refetch();
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to cancel appointment");
     }
   };
@@ -146,237 +136,197 @@ export function AppointmentsPanel() {
   }
 
   return (
-    <section className="pb-12">
-      <PanelHeader
-        index="03 / visits"
-        title="Appointments Desk"
-        note="View scheduled visits, check past records, or cancel upcoming consultations."
+    <section className="pb-24 lg:pb-12">
+      <PatientHeader
+        title="Visits"
+        note="Upcoming and past appointments. Cancel if you no longer need the slot."
         actions={
-          <div className="flex bg-muted/50 p-1 rounded-md border border-border/40">
+          <div className="flex border border-border/60">
             <button
+              type="button"
               onClick={() => {
                 setTab("upcoming");
                 setPage(1);
               }}
-              className={`text-xs px-3 py-1.5 rounded transition-all ${
+              className={`px-3 py-2 text-xs font-semibold ${
                 tab === "upcoming"
-                  ? "bg-background shadow-sm font-semibold"
-                  : "text-muted-foreground"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-muted/50"
               }`}
             >
               Upcoming
             </button>
             <button
+              type="button"
               onClick={() => {
                 setTab("past");
                 setPage(1);
               }}
-              className={`text-xs px-3 py-1.5 rounded transition-all ${
+              className={`border-l border-border/60 px-3 py-2 text-xs font-semibold ${
                 tab === "past"
-                  ? "bg-background shadow-sm font-semibold"
-                  : "text-muted-foreground"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-muted/50"
               }`}
             >
-              Past / Cancelled
+              Past
             </button>
           </div>
         }
       />
 
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="px-4 py-5 sm:px-6 lg:px-8">
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-px bg-border/60">
             {[1, 2, 3, 4].map((i) => (
-              <Card
-                key={i}
-                className="animate-pulse shadow-none border-border/40"
-              >
-                <CardContent className="p-6 h-40 bg-muted/20" />
-              </Card>
+              <div key={i} className="h-28 animate-pulse bg-foreground/4" />
             ))}
           </div>
         ) : filteredLive.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className="flex flex-col gap-px bg-border/60">
               {paginatedAppointments.map((a) => (
-                <Card
+                <article
                   key={a._id}
-                  className="group relative shadow-sm border-border/60 hover:shadow-md hover:border-primary/20 transition-all overflow-hidden flex flex-col"
+                  className="flex flex-col gap-4 bg-background p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5"
                 >
-                  {/* Top color bar depending on status */}
-                  <div
-                    className={`h-1.5 w-full ${
-                      a.status === "CONFIRMED"
-                        ? "bg-emerald-500"
-                        : a.status === "COMPLETED"
-                          ? "bg-cyan-500"
-                          : a.status === "CANCELLED"
-                            ? "bg-destructive"
-                            : "bg-amber-500"
-                    }`}
-                  />
-                  <CardContent className="p-5 flex-1 flex flex-col">
-                    <div className="flex justify-between items-start mb-4">
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] px-2 py-0.5 font-bold tracking-wider uppercase border-0 ${
-                          a.status === "CONFIRMED"
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                            : a.status === "COMPLETED"
-                              ? "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400"
-                              : a.status === "CANCELLED"
-                                ? "bg-destructive/15 text-destructive"
-                                : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                        }`}
-                      >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="mono-label bg-foreground/6 px-2 py-1 text-[10px]">
                         {a.status}
-                      </Badge>
-
-                      <span className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         {a.type === "TELECONSULT" ? (
-                          <>
-                            <Video className="size-3 text-cyan-500" /> Video
-                            Call
-                          </>
+                          <Video className="size-3 text-accent" />
                         ) : (
-                          <>
-                            <MapPin className="size-3 text-emerald-500" /> In
-                            Person
-                          </>
+                          <MapPin className="size-3 text-accent" />
                         )}
+                        {a.type === "TELECONSULT" ? "Video" : "In person"}
                       </span>
                     </div>
-
-                    <h3 className="text-base font-semibold leading-tight text-foreground mb-1 line-clamp-1">
+                    <h3 className="mt-2 font-display text-base font-bold leading-tight">
                       {a.reason}
                     </h3>
-
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
-                      <Stethoscope className="size-3.5" />
-                      <span>Dr. {a.doctor.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1.5">
-                      <Building2 className="size-3.5" />
-                      <span>{a.department}</span>
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-2 gap-3 mb-4">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5">
-                          <Calendar className="size-3" /> Date
-                        </span>
-                        <span className="text-sm font-medium text-foreground">
+                    <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Stethoscope className="size-3.5" />
+                        Dr. {a.doctor.name}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Building2 className="size-3.5" />
+                        {a.department}
+                      </span>
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="mono-label text-[10px] text-muted-foreground">
+                          Date
+                        </p>
+                        <p className="mt-0.5 font-medium">
                           {format(
                             new Date(`${String(a.date).slice(0, 10)}T12:00:00`),
                             "EEE, MMM d, yyyy",
                           )}
-                        </span>
+                        </p>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5">
-                          <Clock className="size-3" /> Appointment window
-                        </span>
-                        <span className="text-sm font-semibold text-foreground">
+                      <div>
+                        <p className="mono-label text-[10px] text-muted-foreground">
+                          Window
+                        </p>
+                        <p className="mt-0.5 font-medium">
                           {formatTimeRange(
                             a.timeSlot,
                             a.slotEndTime || addMinutesToClock(a.timeSlot, 60),
                           )}
-                        </span>
-                        {a.arrivalTime && (
-                          <span className="mt-1 text-xs font-medium text-primary">
-                            Please arrive by {formatTime12Hour(a.arrivalTime)}
-                          </span>
-                        )}
+                        </p>
+                        {a.arrivalTime ? (
+                          <p className="mt-1 text-xs font-medium text-accent">
+                            Arrive by {formatTime12Hour(a.arrivalTime)}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
-                    {a.queueNumber && (
-                      <div className="mb-4 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Your queue number
-                          </p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            Keep this number ready at check-in.
-                          </p>
-                        </div>
-                        <span className="font-mono text-2xl font-bold text-primary">
-                          {String(a.queueNumber).padStart(2, "0")}
-                        </span>
-                      </div>
-                    )}
-                    {a.paidAmount !== undefined && a.paidAmount > 0 && (
-                      <div className="-mt-1 mb-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-muted-foreground">
-                        <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                          Advance paid ₹{a.paidAmount}
-                        </span>
-                        {a.amount > a.paidAmount && (
-                          <span>
-                            {" "}
-                            · Balance ₹{a.amount - a.paidAmount} due at clinic
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Actions footer anchored to bottom */}
-                    <div className="mt-auto pt-2 space-y-2">
-                      {a.type === "TELECONSULT" && a.status === "CONFIRMED" && (
-                        <button
-                          type="button"
-                          onClick={() => setActiveVideoCallId(a._id)}
-                          className="w-full flex items-center justify-center gap-2 text-xs font-bold text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500/20 border border-transparent hover:border-indigo-500/30 py-2.5 rounded-md transition-all shadow-sm"
-                        >
-                          <Video className="size-4" /> Join Video Call
-                        </button>
-                      )}
-                      {(a as any).isFollowUp ? (
-                        <div className="w-full text-center text-xs font-semibold text-indigo-500 bg-indigo-500/10 py-2 rounded-md">
-                          Walk-in Follow-Up Required
-                        </div>
-                      ) : a.status === "PENDING" || a.status === "CONFIRMED" ? (
-                        <button
-                          type="button"
-                          onClick={() => handleCancel(a._id)}
-                          className="w-full flex items-center justify-center gap-2 text-xs font-medium text-destructive bg-destructive/5 hover:bg-destructive/10 border border-transparent hover:border-destructive/20 py-2 rounded-md transition-all"
-                        >
-                          <XCircle className="size-3.5" /> Cancel Appointment
-                        </button>
-                      ) : a.status === "COMPLETED" ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const note = (a as any).isWalkIn
-                              ? (a as any).originalConsultation
-                              : consultations.find(
-                                  (c) =>
-                                    (c as any).appointment === a._id ||
-                                    (c as any).appointment?._id === a._id,
-                                );
-                            if (note) {
-                              // Attach the doctor info from the appointment so the receipt can display it
-                              setSelectedConsultation({
-                                ...note,
-                                doctor: a.doctor,
-                              } as any);
-                            } else {
-                              toast.info(
-                                "Clinical note not available yet for this appointment.",
+                    {a.queueNumber ? (
+                      <p className="mt-3 font-mono text-sm">
+                        Queue #{String(a.queueNumber).padStart(2, "0")}
+                      </p>
+                    ) : null}
+                    {a.paidAmount !== undefined && a.paidAmount > 0 ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Advance paid ₹{a.paidAmount}
+                        {a.amount > a.paidAmount
+                          ? ` · Balance ₹${a.amount - a.paidAmount} at clinic`
+                          : ""}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex w-full shrink-0 flex-col gap-2 sm:w-44">
+                    {a.type === "TELECONSULT" && a.status === "CONFIRMED" ? (
+                      <button
+                        type="button"
+                        onClick={() => setActiveVideoCallId(a._id)}
+                        className="inline-flex items-center justify-center gap-2 bg-primary px-3 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                      >
+                        <Video className="size-4" /> Join call
+                      </button>
+                    ) : null}
+                    {(a as { isFollowUp?: boolean }).isFollowUp ? (
+                      <p className="border border-border/60 px-3 py-2 text-center text-xs font-semibold">
+                        Walk-in follow-up
+                      </p>
+                    ) : a.status === "PENDING" || a.status === "CONFIRMED" ? (
+                      <button
+                        type="button"
+                        onClick={() => handleCancel(a._id)}
+                        className="inline-flex items-center justify-center gap-2 border border-destructive/30 px-3 py-2.5 text-xs font-medium text-destructive hover:bg-destructive/5"
+                      >
+                        <XCircle className="size-3.5" /> Cancel
+                      </button>
+                    ) : a.status === "COMPLETED" ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const note = (a as { isWalkIn?: boolean }).isWalkIn
+                            ? (
+                                a as {
+                                  originalConsultation?: DashboardConsultation;
+                                }
+                              ).originalConsultation
+                            : consultations.find(
+                                (c) =>
+                                  (
+                                    c as {
+                                      appointment?: string | { _id: string };
+                                    }
+                                  ).appointment === a._id ||
+                                  (
+                                    c as {
+                                      appointment?: { _id: string };
+                                    }
+                                  ).appointment?._id === a._id,
                               );
-                            }
-                          }}
-                          className="w-full flex items-center justify-center gap-2 text-xs font-medium text-cyan-600 dark:text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 py-2 rounded-md transition-all"
-                        >
-                          <FileText className="size-3.5" /> View Receipt
-                        </button>
-                      ) : null}
-                    </div>
-                  </CardContent>
-                </Card>
+                          if (note) {
+                            setSelectedConsultation({
+                              ...note,
+                              doctor: a.doctor,
+                            } as DashboardConsultation);
+                          } else {
+                            toast.info(
+                              "Clinical note not available yet for this appointment.",
+                            );
+                          }
+                        }}
+                        className="inline-flex items-center justify-center gap-2 border border-border/60 px-3 py-2.5 text-xs font-medium hover:bg-muted/50"
+                      >
+                        <FileText className="size-3.5" /> Receipt
+                      </button>
+                    ) : null}
+                  </div>
+                </article>
               ))}
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-8 pt-6 border-t border-border/40">
+              <div className="mt-6 flex items-center justify-between border-t border-border/40 pt-4">
                 <span className="mono-label text-xs text-muted-foreground">
                   Showing {(page - 1) * limit + 1} to{" "}
                   {Math.min(page * limit, filteredLive.length)} of{" "}
@@ -384,16 +334,18 @@ export function AppointmentsPanel() {
                 </span>
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     disabled={page === 1}
                     onClick={() => setPage(page - 1)}
-                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-border/60 hover:bg-muted disabled:opacity-50 transition-colors"
+                    className="border border-border/60 px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-muted disabled:opacity-50"
                   >
                     Prev
                   </button>
                   <button
+                    type="button"
                     disabled={page === totalPages}
                     onClick={() => setPage(page + 1)}
-                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-border/60 hover:bg-muted disabled:opacity-50 transition-colors"
+                    className="border border-border/60 px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-muted disabled:opacity-50"
                   >
                     Next
                   </button>
@@ -402,13 +354,11 @@ export function AppointmentsPanel() {
             )}
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-card/30 rounded-xl border border-dashed border-border/60">
-            <Calendar className="size-10 text-muted-foreground/30 mb-4" />
-            <p className="text-sm font-medium text-foreground">
-              No {tab} appointments
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-              You don't have any {tab} appointments in your schedule right now.
+          <div className="border border-dashed border-border/60 px-4 py-16 text-center">
+            <Calendar className="mx-auto mb-3 size-8 text-muted-foreground/40" />
+            <p className="text-sm font-medium">No {tab} appointments</p>
+            <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
+              Nothing in this list right now.
             </p>
           </div>
         )}

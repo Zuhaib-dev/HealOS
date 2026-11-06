@@ -163,13 +163,11 @@ export const createPharmacyBill = async (req: Request, res: Response) => {
       consultation: consultation._id,
     }).populate("invoice", "status totalAmount paidAmount");
     if (existingSale)
-      return res
-        .status(409)
-        .json({
-          success: false,
-          message: "This prescription already has a pharmacy sale",
-          sale: existingSale,
-        });
+      return res.status(409).json({
+        success: false,
+        message: "This prescription already has a pharmacy sale",
+        sale: existingSale,
+      });
 
     const requested = new Set<string>();
     const normalized: {
@@ -363,13 +361,11 @@ export const createPharmacyBill = async (req: Request, res: Response) => {
         consultation: req.params.consultationId,
       }).populate("invoice", "status totalAmount paidAmount");
       if (currentSale)
-        return res
-          .status(409)
-          .json({
-            success: false,
-            message: "This prescription already has a pharmacy sale",
-            sale: currentSale,
-          });
+        return res.status(409).json({
+          success: false,
+          message: "This prescription already has a pharmacy sale",
+          sale: currentSale,
+        });
     }
     console.error("createPharmacyBill failed", error);
     bad(res, 500, "Unable to create pharmacy bill");

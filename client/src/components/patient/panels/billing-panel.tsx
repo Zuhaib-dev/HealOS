@@ -41,7 +41,10 @@ import {
 } from "@/lib/api/onboarding";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import { fetchPatientDashboardApi, PatientDashboardData } from "@/lib/api/patient";
+import {
+  fetchPatientDashboardApi,
+  PatientDashboardData,
+} from "@/lib/api/patient";
 import { getSocket } from "@/lib/socket";
 import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
 import { PaymentCelebration } from "../payment-celebration";
@@ -196,11 +199,14 @@ export function BillingPanel() {
           return;
         }
         toast.info(
-          orderRes.message || "Previous payment recorded. Pay the remaining balance.",
+          orderRes.message ||
+            "Previous payment recorded. Pay the remaining balance.",
         );
       }
       if (!orderRes.order || !orderRes.keyId) {
-        throw new Error(orderRes.message || "No online payment order was created.");
+        throw new Error(
+          orderRes.message || "No online payment order was created.",
+        );
       }
 
       // 2. Open Razorpay
@@ -441,10 +447,14 @@ export function BillingPanel() {
                             className="flex justify-between gap-3 py-1"
                           >
                             <span>
-                              {payment.method} · {payment.source === "RAZORPAY" ? "Online" : "Counter"}
+                              {payment.method} ·{" "}
+                              {payment.source === "RAZORPAY"
+                                ? "Online"
+                                : "Counter"}
                             </span>
                             <span className="shrink-0">
-                              ₹{payment.amount} · {new Date(payment.paidAt).toLocaleDateString()}
+                              ₹{payment.amount} ·{" "}
+                              {new Date(payment.paidAt).toLocaleDateString()}
                             </span>
                           </div>
                         ))}
@@ -698,10 +708,16 @@ export function BillingPanel() {
                                       className="flex justify-between gap-3"
                                     >
                                       <span>
-                                        {payment.method} · {payment.source === "RAZORPAY" ? "Online" : "Counter"}
+                                        {payment.method} ·{" "}
+                                        {payment.source === "RAZORPAY"
+                                          ? "Online"
+                                          : "Counter"}
                                       </span>
                                       <span className="shrink-0">
-                                        ₹{payment.amount.toLocaleString()} · {new Date(payment.paidAt).toLocaleDateString()}
+                                        ₹{payment.amount.toLocaleString()} ·{" "}
+                                        {new Date(
+                                          payment.paidAt,
+                                        ).toLocaleDateString()}
                                       </span>
                                     </div>
                                   ))}

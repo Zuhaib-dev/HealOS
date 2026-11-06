@@ -250,7 +250,8 @@ export function BillingPanel() {
         sum +
         invoice.paymentHistory
           .filter(
-            (payment) => new Date(payment.paidAt).getTime() >= monthStart.getTime(),
+            (payment) =>
+              new Date(payment.paidAt).getTime() >= monthStart.getTime(),
           )
           .reduce((paid, payment) => paid + payment.amount, 0)
       );
@@ -261,8 +262,10 @@ export function BillingPanel() {
       : sum;
   }, 0);
 
-  const outstanding = invoicesData
-    .reduce((sum, invoice) => sum + invoiceBalanceDue(invoice), 0);
+  const outstanding = invoicesData.reduce(
+    (sum, invoice) => sum + invoiceBalanceDue(invoice),
+    0,
+  );
 
   return (
     <section>

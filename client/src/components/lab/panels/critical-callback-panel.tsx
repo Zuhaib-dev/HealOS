@@ -1,25 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "motion/react";
+import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
-  TestTube,
   PhoneCall,
   Check,
   X,
-  Barcode,
   TriangleAlert,
+  Clock,
+  ShieldAlert,
+  UserPlus,
+  RefreshCw,
+  Search,
+  Phone,
+  CheckCircle2,
+  AlertOctagon,
+  Users,
 } from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import {
-  Card,
-  LiveDot,
-  Pill,
-  StatGrid,
-  Td,
-  Th,
-  type Tone,
-} from "@/components/workspace/ui";
+import { PanelHeader } from "@/components/admin/admin-shell";
+import { Card, LiveDot } from "@/components/workspace/ui";
 import {
   fetchLabCriticalValuesApi,
   recordLabCriticalCallbackApi,
@@ -29,52 +28,15 @@ import {
 import { getSocket } from "@/lib/socket";
 import { toast } from "sonner";
 
-/** Animated tube-rack glyph — hand-drawn SVG, no raster assets. */
-function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
-  const flat = tubes
-    .flatMap((t) => Array.from({ length: t.count }, () => t.colour))
-    .slice(0, 8);
-  return (
-    <svg viewBox="0 0 120 48" className="h-12 w-full">
-      <line
-        x1="4"
-        y1="42"
-        x2="116"
-        y2="42"
-        stroke="var(--hairline)"
-        strokeWidth="1"
-      />
-      {flat.map((c, i) => (
-        <g key={i}>
-          <rect
-            x={8 + i * 13}
-            y="10"
-            width="8"
-            height="30"
-            fill="none"
-            stroke="var(--hairline)"
-          />
-          <motion.rect
-            x={8 + i * 13}
-            width="8"
-            fill={c}
-            opacity="0.7"
-            initial={{ y: 40, height: 0 }}
-            animate={{ y: 24, height: 16 }}
-            transition={{ duration: 0.6, delay: i * 0.08, ease: "easeOut" }}
-          />
-        </g>
-      ))}
-    </svg>
-  );
-}
-
-/* ---------- 05 critical callback ---------- */
-
 export function CriticalPanel() {
   const [rows, setRows] = useState<any[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isContactFormOpen, setIsContactFormOpen] = useState(false);
+  const [filter, setFilter] = useState<"OPEN" | "DOCUMENTED" | "ALL">("OPEN");
+  const [search, setSearch] = useState("");
+
   const [callbacks, setCallbacks] = useState<
     Record<string, { contactId: string; confirmed: boolean; note: string }>
   >({});
@@ -86,32 +48,36 @@ export function CriticalPanel() {
     priority: "1",
   });
 
-  const loadCriticals = async () => {
+  const loadCriticals = async (silent = false) => {
+    if (!silent) setLoading(true);
+    else setIsRefreshing(true);
     try {
       const [res, contactRes] = await Promise.all([
         fetchLabCriticalValuesApi(),
         fetchLabCriticalContactsApi(),
       ]);
-      if (res.success) setRows(res.criticalValues);
+      if (res.success) setRows(res.criticalValues || []);
       setContacts(contactRes.contacts || []);
-    } catch (e) {
+    } catch {
       toast.error("Failed to load critical values");
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     loadCriticals();
-    const refresh = window.setInterval(loadCriticals, 60_000);
+    const refresh = window.setInterval(() => loadCriticals(true), 60_000);
     const socket = getSocket();
     if (socket) {
-      socket.on("lab_report_validated", loadCriticals);
-      socket.on("lab_critical_callback_recorded", loadCriticals);
+      const reload = () => loadCriticals(true);
+      socket.on("lab_report_validated", reload);
+      socket.on("lab_critical_callback_recorded", reload);
       return () => {
         window.clearInterval(refresh);
-        socket.off("lab_report_validated", loadCriticals);
-        socket.off("lab_critical_callback_recorded", loadCriticals);
+        socket.off("lab_report_validated", reload);
+        socket.off("lab_critical_callback_recorded", reload);
       };
     }
     return () => window.clearInterval(refresh);
@@ -121,7 +87,7 @@ export function CriticalPanel() {
     const value = callbacks[id];
     if (!value?.contactId || !value.confirmed) {
       toast.error(
-        "Select an escalation contact and confirm the read-back first.",
+        "Select a clinician contact and confirm the verbal read-back.",
       );
       return;
     }
@@ -135,8 +101,10 @@ export function CriticalPanel() {
         report?.escalationLevel || 1,
         value.note,
       );
-      toast.success("Critical-result callback recorded.");
-      await loadCriticals();
+      toast.success(
+        "Critical read-back logged! Validation lock is now released.",
+      );
+      await loadCriticals(true);
     } catch (error: any) {
       toast.error(
         error?.response?.data?.message || "Unable to record callback.",
@@ -154,276 +122,537 @@ export function CriticalPanel() {
         priority: Number(contactForm.priority),
       });
       setContactForm({ name: "", role: "", phone: "", priority: "1" });
-      toast.success("Escalation contact saved.");
-      await loadCriticals();
+      setIsContactFormOpen(false);
+      toast.success("Escalation contact registered.");
+      await loadCriticals(true);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Unable to save contact.");
     }
   };
 
+  const openCount = useMemo(
+    () => rows.filter((r) => !r.criticalCallback?.readBackConfirmed).length,
+    [rows],
+  );
+  const documentedCount = useMemo(
+    () => rows.filter((r) => r.criticalCallback?.readBackConfirmed).length,
+    [rows],
+  );
+
+  const visible = rows.filter((c) => {
+    const isConfirmed = Boolean(c.criticalCallback?.readBackConfirmed);
+    if (filter === "OPEN" && isConfirmed) return false;
+    if (filter === "DOCUMENTED" && !isConfirmed) return false;
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const text =
+        `${c.patient?.name || ""} ${c.order?.testName || ""} ${c.order?.accessionNumber || ""} ${c.findings || ""}`.toLowerCase();
+      if (!text.includes(q)) return false;
+    }
+    return true;
+  });
+
   return (
-    <section>
+    <section className="flex flex-col min-h-[calc(100vh-4rem)]">
       <PanelHeader
-        index="05 / closed loop"
-        title="Critical-value callback"
-        note="15-minute callback target. Overdue results show escalation level and prioritized contacts configured below."
+        index="05 / panic safety loop"
+        title="Critical-Value Callbacks"
+        note="15-minute mandatory closed-loop notification. Report panic values immediately to attending physicians and document verbal read-back."
         actions={
-          <ActionButton tone="solid">
-            {rows.filter((r) => !r.criticalCallback?.readBackConfirmed).length}{" "}
-            open
-          </ActionButton>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => loadCriticals(true)}
+              disabled={isRefreshing}
+              aria-label="Refresh critical values"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 hover:bg-muted/50 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`size-3.5 ${isRefreshing ? "animate-spin text-primary" : ""}`}
+              />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsContactFormOpen((p) => !p)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-muted/60 text-xs font-semibold text-foreground transition-colors shadow-2xs"
+            >
+              <Users className="size-3.5" />
+              <span>Escalation Contacts ({contacts.length})</span>
+            </button>
+          </div>
         }
       />
 
-      <div
-        className="grid gap-px lg:grid-cols-3"
-        style={{ background: "var(--hairline)" }}
-      >
-        {loading ? (
-          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-3">
-            Loading critical values...
+      {/* Escalation Contact Directory Drawer */}
+      <AnimatePresence>
+        {isContactFormOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="p-4 sm:px-6 bg-card border-b border-border/70 space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-mono text-sm font-bold text-foreground">
+                  Clinical Escalation Directory
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Priority 1 is contacted first. If unreachable within 5
+                  minutes, escalate to Priority 2 or Attending.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsContactFormOpen(false)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Close
+              </button>
+            </div>
+
+            <form
+              onSubmit={saveContact}
+              className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5"
+            >
+              <input
+                required
+                aria-label="Contact name"
+                value={contactForm.name}
+                onChange={(e) =>
+                  setContactForm((p) => ({ ...p, name: e.target.value }))
+                }
+                placeholder="Clinician / Nurse Name"
+                className="rounded-lg border border-border/80 bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/25"
+              />
+              <input
+                required
+                aria-label="Contact role"
+                value={contactForm.role}
+                onChange={(e) =>
+                  setContactForm((p) => ({ ...p, role: e.target.value }))
+                }
+                placeholder="Role (e.g. ICU Charge Nurse, ER Attending)"
+                className="rounded-lg border border-border/80 bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/25"
+              />
+              <input
+                required
+                aria-label="Contact phone"
+                value={contactForm.phone}
+                onChange={(e) =>
+                  setContactForm((p) => ({ ...p, phone: e.target.value }))
+                }
+                placeholder="Direct Phone / Extension"
+                className="rounded-lg border border-border/80 bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/25"
+              />
+              <input
+                required
+                aria-label="Escalation priority"
+                type="number"
+                min="1"
+                max="10"
+                value={contactForm.priority}
+                onChange={(e) =>
+                  setContactForm((p) => ({ ...p, priority: e.target.value }))
+                }
+                placeholder="Priority (1-10)"
+                className="rounded-lg border border-border/80 bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/25"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-xs shadow-xs hover:bg-primary/90"
+              >
+                Add Clinician Contact
+              </button>
+            </form>
+
+            <div className="flex flex-wrap gap-2 pt-2">
+              {contacts.map((contact) => (
+                <div
+                  key={contact._id}
+                  className="px-3 py-1.5 rounded-lg border border-border/70 bg-background text-xs flex items-center gap-2"
+                >
+                  <span className="px-1.5 py-0.2 rounded bg-primary/10 text-primary font-mono text-[10px] font-bold">
+                    L{contact.priority}
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {contact.name}
+                  </span>
+                  <span className="text-muted-foreground font-mono text-[11px]">
+                    {contact.role} · {contact.phone}
+                  </span>
+                  <a
+                    href={`tel:${contact.phone}`}
+                    className="size-5 rounded flex items-center justify-center text-primary hover:bg-primary/10"
+                    title={`Call ${contact.name}`}
+                  >
+                    <Phone className="size-3" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Status Bar */}
+      <div className="p-4 sm:px-6 bg-card/40 border-b border-border/60">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-4xl">
+          <div className="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/5 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase font-mono tracking-wider text-rose-600 dark:text-rose-400 font-bold">
+                Awaiting Urgent Callback
+              </p>
+              <p className="font-mono text-2xl font-bold text-rose-600 dark:text-rose-400 mt-0.5">
+                {openCount}
+              </p>
+            </div>
+            <div className="size-10 rounded-xl bg-rose-500/20 text-rose-600 flex items-center justify-center">
+              <AlertOctagon className="size-5 animate-pulse" />
+            </div>
           </div>
-        ) : rows.length === 0 ? (
-          <div className="bg-background p-8 text-center text-muted-foreground lg:col-span-3">
-            No pending critical values.
+
+          <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase font-mono tracking-wider text-emerald-600 dark:text-emerald-400 font-bold">
+                Read-Back Documented
+              </p>
+              <p className="font-mono text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                {documentedCount}
+              </p>
+            </div>
+            <div className="size-10 rounded-xl bg-emerald-500/20 text-emerald-600 flex items-center justify-center">
+              <CheckCircle2 className="size-5" />
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-border/70 bg-card flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground font-bold">
+                Total Critical Orders
+              </p>
+              <p className="font-mono text-2xl font-bold text-foreground mt-0.5">
+                {rows.length}
+              </p>
+            </div>
+            <div className="size-10 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
+              <ShieldAlert className="size-5" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="p-4 sm:px-6 border-b border-border/60 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setFilter("OPEN")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              filter === "OPEN"
+                ? "bg-rose-600 text-white font-semibold shadow-xs"
+                : "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
+            }`}
+          >
+            Urgent Open ({openCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilter("DOCUMENTED")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              filter === "DOCUMENTED"
+                ? "bg-emerald-600 text-white font-semibold shadow-xs"
+                : "bg-background border border-border/70 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Documented ({documentedCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilter("ALL")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              filter === "ALL"
+                ? "bg-foreground text-background font-semibold shadow-xs"
+                : "bg-background border border-border/70 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            All Critical ({rows.length})
+          </button>
+        </div>
+
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <input
+            id="critical-search"
+            aria-label="Search critical reports"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search patient, accession, finding..."
+            className="w-full bg-background border border-border/80 rounded-lg pl-9 pr-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-primary/25"
+          />
+        </div>
+      </div>
+
+      {/* Critical Items Cards */}
+      <div className="flex-1 p-4 sm:p-6 bg-muted/15">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+            <RefreshCw className="size-8 animate-spin text-primary mb-3" />
+            <p className="font-mono text-sm">Loading panic callbacks...</p>
+          </div>
+        ) : visible.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center text-muted-foreground bg-card rounded-2xl border border-border/70 p-8">
+            <CheckCircle2 className="size-12 mb-3 text-emerald-600 opacity-60" />
+            <p className="font-bold text-foreground text-base">
+              {filter === "OPEN"
+                ? "No Outstanding Critical Callbacks"
+                : "No Critical Records Found"}
+            </p>
+            <p className="text-xs max-w-sm mt-1">
+              All critical lab findings have had physician read-backs documented
+              in accordance with hospital policy.
+            </p>
           </div>
         ) : (
-          rows.map((c) => {
-            const patientName = c.patient?.name || "Unknown Patient";
-            const accession =
-              c.order?.accessionNumber || c.order?._id?.slice(-8) || "N/A";
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {visible.map((c) => {
+              const isConfirmed = Boolean(
+                c.criticalCallback?.readBackConfirmed,
+              );
+              const patientName = c.patient?.name || "Unknown Patient";
+              const accession =
+                c.order?.accessionNumber || c.order?._id?.slice(-8) || "N/A";
+              const selectedContactId = callbacks[c._id]?.contactId;
+              const selectedContact = contacts.find(
+                (contact) => contact._id === selectedContactId,
+              );
 
-            return (
-              <div key={c._id} className="bg-background p-5">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="mono-label text-accent/80">{accession}</p>
-                  {!c.criticalCallback?.readBackConfirmed && (
-                    <LiveDot tone="bad" />
-                  )}
-                </div>
-                <p className="mt-1 font-mono text-lg font-bold">
-                  {patientName}
-                </p>
-                <p className="mono-label text-muted-foreground">
-                  {c.order?.testName}
-                </p>
+              return (
+                <div
+                  key={c._id}
+                  className={`bg-card rounded-2xl border p-5 shadow-xs flex flex-col justify-between transition-all ${
+                    !isConfirmed
+                      ? "border-rose-500/50 ring-1 ring-rose-500/20"
+                      : "border-border/80 hover:border-primary/40"
+                  }`}
+                >
+                  <div>
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3 border-b border-border/50 pb-3">
+                      <div>
+                        <span className="font-mono text-xs font-bold text-primary px-2 py-0.5 rounded bg-primary/10">
+                          {accession}
+                        </span>
+                        <h3 className="font-mono text-lg font-bold text-foreground mt-1">
+                          {patientName}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          {c.order?.testName}
+                        </p>
+                      </div>
 
-                <div className="hairline mt-4 p-4">
-                  <p className="mono-label text-muted-foreground">Findings</p>
-                  <p className="text-destructive mt-1 font-mono text-base font-bold">
-                    {c.findings || "See report"}
-                  </p>
-                  <p className="mono-label text-muted-foreground mt-1">
-                    detected{" "}
-                    {new Date(c.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}
-                  </p>
-                  <p
-                    className={`mt-2 text-sm font-semibold ${c.overdue ? "text-destructive" : "text-amber-700"}`}
-                  >
-                    {c.overdue
-                      ? `OVERDUE ${c.overdueMinutes} min · escalation level ${c.escalationLevel}`
-                      : `Callback due ${new Date(c.criticalDueAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true })}`}
-                  </p>
-                  {c.patient?.phone && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Patient contact: {c.patient.phone}
-                    </p>
-                  )}
-                </div>
-
-                {c.criticalCallback?.readBackConfirmed ? (
-                  <p className="mono-label text-brass mt-4">
-                    Called{" "}
-                    {c.criticalCallback.contact?.name ||
-                      c.criticalCallback.clinician}{" "}
-                    at {new Date(c.criticalCallback.calledAt).toLocaleString()}{" "}
-                    · read-back confirmed
-                    {c.criticalCallback.note
-                      ? ` · ${c.criticalCallback.note}`
-                      : ""}
-                  </p>
-                ) : (
-                  <div className="mt-4">
-                    <label
-                      className="mb-1 block text-xs font-medium"
-                      htmlFor={`critical-contact-${c._id}`}
-                    >
-                      Escalation contact
-                    </label>
-                    <select
-                      id={`critical-contact-${c._id}`}
-                      value={callbacks[c._id]?.contactId || ""}
-                      onChange={(e) =>
-                        setCallbacks((previous) => ({
-                          ...previous,
-                          [c._id]: {
-                            contactId: e.target.value,
-                            confirmed: previous[c._id]?.confirmed || false,
-                            note: previous[c._id]?.note || "",
-                          },
-                        }))
-                      }
-                      className="hairline mono-label w-full rounded-sm bg-background px-3 py-2"
-                    >
-                      <option value="">Choose contact</option>
-                      {contacts.map((contact) => (
-                        <option key={contact._id} value={contact._id}>
-                          L{contact.priority} · {contact.name} · {contact.role}{" "}
-                          · {contact.phone}
-                        </option>
-                      ))}
-                    </select>
-                    <textarea
-                      aria-label="Critical callback note"
-                      value={callbacks[c._id]?.note || ""}
-                      onChange={(e) =>
-                        setCallbacks((previous) => ({
-                          ...previous,
-                          [c._id]: {
-                            contactId: previous[c._id]?.contactId || "",
-                            confirmed: previous[c._id]?.confirmed || false,
-                            note: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder="Call outcome and escalation note"
-                      rows={2}
-                      className="hairline mono-label mt-2 w-full rounded-sm bg-background px-3 py-2"
-                    />
-                    <label className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
-                      <input
-                        type="checkbox"
-                        checked={callbacks[c._id]?.confirmed || false}
-                        onChange={(e) =>
-                          setCallbacks((previous) => ({
-                            ...previous,
-                            [c._id]: {
-                              contactId: previous[c._id]?.contactId || "",
-                              confirmed: e.target.checked,
-                              note: previous[c._id]?.note || "",
-                            },
-                          }))
-                        }
-                      />
-                      I confirmed the result by read-back with this clinician.
-                    </label>
-                    <div className="mt-2 flex gap-2">
-                      <ActionButton
-                        tone="solid"
-                        disabled={saving === c._id}
-                        onClick={() => recordCallback(c._id)}
-                      >
-                        <PhoneCall className="mr-1 inline size-3" /> Mark called
-                      </ActionButton>
+                      {!isConfirmed && (
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500 text-white animate-pulse">
+                          <TriangleAlert className="size-3" /> ACTION REQUIRED
+                        </span>
+                      )}
                     </div>
+
+                    {/* Panic Findings Box */}
+                    <div className="my-4 p-4 rounded-xl bg-rose-500/10 border border-rose-500/25">
+                      <p className="text-[10px] uppercase font-mono tracking-wider font-bold text-rose-700 dark:text-rose-300">
+                        Critical Lab Finding
+                      </p>
+                      <p className="text-rose-600 dark:text-rose-400 font-mono text-lg font-bold mt-1">
+                        {c.findings || "See structured results or report"}
+                      </p>
+
+                      <div className="mt-3 pt-2 border-t border-rose-500/20 flex flex-wrap items-center justify-between text-xs">
+                        <span className="text-muted-foreground">
+                          Detected:{" "}
+                          {new Date(c.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </span>
+                        <span
+                          className={`font-semibold font-mono ${
+                            c.overdue
+                              ? "text-destructive font-bold"
+                              : "text-amber-700 dark:text-amber-300"
+                          }`}
+                        >
+                          {c.overdue
+                            ? `OVERDUE ${c.overdueMinutes || 0}m · L${c.escalationLevel || 1}`
+                            : `Due ${new Date(c.criticalDueAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {c.patient?.phone && (
+                      <p className="text-xs text-muted-foreground mb-4">
+                        Patient Emergency Phone:{" "}
+                        <span className="font-mono">{c.patient.phone}</span>
+                      </p>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })
+
+                  {/* Callback Execution or Confirmation Display */}
+                  <div>
+                    {isConfirmed ? (
+                      <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs space-y-1">
+                        <p className="font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+                          <CheckCircle2 className="size-4" /> Verbal Read-Back
+                          Confirmed
+                        </p>
+                        <p className="text-muted-foreground">
+                          Spoke with{" "}
+                          <strong className="text-foreground">
+                            {c.criticalCallback.contact?.name ||
+                              c.criticalCallback.clinician ||
+                              "Clinician"}
+                          </strong>{" "}
+                          at{" "}
+                          {new Date(c.criticalCallback.calledAt).toLocaleString(
+                            [],
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              month: "short",
+                              day: "numeric",
+                            },
+                          )}
+                        </p>
+                        {c.criticalCallback.note && (
+                          <p className="text-muted-foreground italic mt-1">
+                            &quot;{c.criticalCallback.note}&quot;
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3 p-3.5 rounded-xl bg-muted/40 border border-border/80">
+                        <div>
+                          <label
+                            htmlFor={`critical-contact-${c._id}`}
+                            className="text-xs font-semibold text-foreground block mb-1"
+                          >
+                            Select Escalation Contact
+                          </label>
+                          <div className="flex gap-2">
+                            <select
+                              id={`critical-contact-${c._id}`}
+                              value={callbacks[c._id]?.contactId || ""}
+                              onChange={(e) =>
+                                setCallbacks((prev) => ({
+                                  ...prev,
+                                  [c._id]: {
+                                    contactId: e.target.value,
+                                    confirmed: prev[c._id]?.confirmed || false,
+                                    note: prev[c._id]?.note || "",
+                                  },
+                                }))
+                              }
+                              className="flex-1 bg-background border border-border/80 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-primary/25"
+                            >
+                              <option value="">
+                                Choose Physician / Nurse...
+                              </option>
+                              {contacts.map((contact) => (
+                                <option key={contact._id} value={contact._id}>
+                                  L{contact.priority} · {contact.name} (
+                                  {contact.role}) · {contact.phone}
+                                </option>
+                              ))}
+                            </select>
+
+                            {selectedContact?.phone && (
+                              <a
+                                href={`tel:${selectedContact.phone}`}
+                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1 shadow-xs cursor-pointer"
+                                title={`Dial ${selectedContact.name}`}
+                              >
+                                <PhoneCall className="size-3.5" />
+                                <span>Call</span>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        <textarea
+                          aria-label="Callback outcome and notes"
+                          value={callbacks[c._id]?.note || ""}
+                          onChange={(e) =>
+                            setCallbacks((prev) => ({
+                              ...prev,
+                              [c._id]: {
+                                contactId: prev[c._id]?.contactId || "",
+                                confirmed: prev[c._id]?.confirmed || false,
+                                note: e.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="Document read-back confirmation and clinician acknowledgment note..."
+                          rows={2}
+                          className="w-full bg-background border border-border/80 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-primary/25"
+                        />
+
+                        <label className="flex items-start gap-2 text-xs text-foreground cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={callbacks[c._id]?.confirmed || false}
+                            onChange={(e) =>
+                              setCallbacks((prev) => ({
+                                ...prev,
+                                [c._id]: {
+                                  contactId: prev[c._id]?.contactId || "",
+                                  confirmed: e.target.checked,
+                                  note: prev[c._id]?.note || "",
+                                },
+                              }))
+                            }
+                            className="mt-0.5 rounded"
+                          />
+                          <span>
+                            I verify that this critical lab value was read back
+                            and verified by the clinician named above.
+                          </span>
+                        </label>
+
+                        <button
+                          type="button"
+                          disabled={
+                            saving === c._id ||
+                            !callbacks[c._id]?.contactId ||
+                            !callbacks[c._id]?.confirmed
+                          }
+                          onClick={() => recordCallback(c._id)}
+                          className="w-full py-2.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                        >
+                          {saving === c._id ? (
+                            <>
+                              <RefreshCw className="size-3.5 animate-spin" />
+                              <span>Recording Read-Back...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="size-3.5" />
+                              <span>Log Completed Read-Back</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
-
-      <div className="p-5 sm:px-8">
-        <Card>
-          <p className="mono-label text-muted-foreground">
-            Current pending critical results
-          </p>
-          <div className="mt-3 grid gap-4 sm:grid-cols-3">
-            {[
-              [
-                "Awaiting callback",
-                rows.filter((r) => !r.criticalCallback?.readBackConfirmed)
-                  .length,
-              ],
-              [
-                "Callback documented",
-                rows.filter((r) => r.criticalCallback?.readBackConfirmed)
-                  .length,
-              ],
-              ["Open critical results", rows.length],
-            ].map(([k, v]) => (
-              <div key={k}>
-                <p className="font-mono text-2xl font-bold">{v}</p>
-                <p className="mono-label text-muted-foreground">{k}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      <form
-        onSubmit={saveContact}
-        className="mx-5 mb-5 rounded-xl border border-border bg-background p-4 sm:mx-8"
-      >
-        <h3 className="mb-1 font-semibold">Critical-result contact list</h3>
-        <p className="mb-3 text-xs text-muted-foreground">
-          Priority 1 is called first. Staff place calls; this list supports
-          escalation and callback documentation.
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-          <input
-            required
-            aria-label="Contact name"
-            value={contactForm.name}
-            onChange={(e) =>
-              setContactForm((p) => ({ ...p, name: e.target.value }))
-            }
-            placeholder="Name"
-            className="rounded-md border border-border px-3 py-2 text-sm"
-          />
-          <input
-            required
-            aria-label="Contact role"
-            value={contactForm.role}
-            onChange={(e) =>
-              setContactForm((p) => ({ ...p, role: e.target.value }))
-            }
-            placeholder="Role / team"
-            className="rounded-md border border-border px-3 py-2 text-sm"
-          />
-          <input
-            required
-            aria-label="Contact phone"
-            value={contactForm.phone}
-            onChange={(e) =>
-              setContactForm((p) => ({ ...p, phone: e.target.value }))
-            }
-            placeholder="Phone"
-            className="rounded-md border border-border px-3 py-2 text-sm"
-          />
-          <input
-            required
-            aria-label="Escalation priority"
-            type="number"
-            min="1"
-            max="20"
-            value={contactForm.priority}
-            onChange={(e) =>
-              setContactForm((p) => ({ ...p, priority: e.target.value }))
-            }
-            className="rounded-md border border-border px-3 py-2 text-sm"
-          />
-          <ActionButton type="submit" tone="solid">
-            Add contact
-          </ActionButton>
-        </div>
-        <ul className="mt-3 flex flex-wrap gap-2">
-          {contacts.map((contact) => (
-            <li
-              key={contact._id}
-              className="rounded-full bg-muted/50 px-3 py-1.5 text-xs"
-            >
-              L{contact.priority} · {contact.name} · {contact.role} ·{" "}
-              {contact.phone}
-            </li>
-          ))}
-        </ul>
-      </form>
     </section>
   );
 }

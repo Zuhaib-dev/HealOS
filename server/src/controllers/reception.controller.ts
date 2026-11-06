@@ -73,7 +73,9 @@ export const getReceptionOverview = async (
         { "paymentHistory.paidAt": { $gte: todayStart } },
         { paidAt: { $gte: todayStart } },
       ],
-    }).select("totalAmount paidAmount insuranceCoverage paymentMethod paidAt paymentHistory");
+    }).select(
+      "totalAmount paidAmount insuranceCoverage paymentMethod paidAt paymentHistory",
+    );
     const todayPayments = paidInvoicesToday.flatMap((invoice) => {
       const history = (invoice.paymentHistory || []).filter(
         (payment) => payment.paidAt >= todayStart,
@@ -360,8 +362,7 @@ export const getPendingBills = async (
       .sort({ createdAt: 1 });
 
     const dueInvoices = invoices.filter((invoice) => {
-      const appointmentPaid =
-        (invoice.appointment as any)?.paidAmount || 0;
+      const appointmentPaid = (invoice.appointment as any)?.paidAmount || 0;
       const paid = Math.max(invoice.paidAmount || 0, appointmentPaid);
       return invoice.totalAmount - (invoice.insuranceCoverage || 0) - paid > 0;
     });
@@ -410,9 +411,7 @@ export const payBill = async (req: Request, res: Response) => {
     );
     const due = Math.max(
       0,
-      invoice.totalAmount -
-        (invoice.insuranceCoverage || 0) -
-        paidSoFar,
+      invoice.totalAmount - (invoice.insuranceCoverage || 0) - paidSoFar,
     );
     if (due <= 0) throw new AppError("This invoice has no balance due", 409);
 

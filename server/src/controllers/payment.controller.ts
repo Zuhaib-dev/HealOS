@@ -171,7 +171,10 @@ async function verifyCapturedPayment(
     payment.status !== "captured" ||
     payment.captured !== true
   ) {
-    throw new AppError("The payment has not been captured for this balance", 409);
+    throw new AppError(
+      "The payment has not been captured for this balance",
+      409,
+    );
   }
   return payment;
 }
@@ -209,8 +212,7 @@ async function reconcilePaidInvoiceOrder(
     );
   }
   const alreadyRecorded = invoice.paymentHistory?.some(
-    (record) =>
-      record.orderId === orderId && record.paymentId === payment.id,
+    (record) => record.orderId === orderId && record.paymentId === payment.id,
   );
   if (alreadyRecorded) return 0;
 
@@ -218,8 +220,8 @@ async function reconcilePaidInvoiceOrder(
   const amount = amountPaise / 100;
   const alreadyReflectedOnAppointment = Boolean(
     appointment &&
-      appointment.razorpayOrderId === orderId &&
-      appointment.razorpayPaymentId === payment.id,
+    appointment.razorpayOrderId === orderId &&
+    appointment.razorpayPaymentId === payment.id,
   );
   const paidSoFar = Math.max(
     invoicePaidAmount(invoice),
@@ -228,9 +230,7 @@ async function reconcilePaidInvoiceOrder(
   const balancePaise = rupeesToPaise(
     Math.max(
       0,
-      invoice.totalAmount -
-        (invoice.insuranceCoverage || 0) -
-        paidSoFar,
+      invoice.totalAmount - (invoice.insuranceCoverage || 0) - paidSoFar,
     ),
   );
   if (
@@ -295,7 +295,10 @@ async function reconcilePaidInvoiceOrder(
   return amount;
 }
 
-function emitPaymentUpdates(invoiceId?: unknown, appointment?: InstanceType<typeof Appointment>) {
+function emitPaymentUpdates(
+  invoiceId?: unknown,
+  appointment?: InstanceType<typeof Appointment>,
+) {
   const io = getIO();
   if (invoiceId) {
     io?.emit("invoice_paid", { invoiceId });
@@ -349,9 +352,7 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
         appointment: appointment._id,
         patient: patientId,
       });
-      const linkedAppointment = invoice
-        ? appointment
-        : null;
+      const linkedAppointment = invoice ? appointment : null;
       const appointmentBalance = Math.max(
         0,
         appointment.amount - (appointment.paidAmount || 0),
@@ -372,13 +373,17 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
           : appointmentBalance,
       );
       const amountPaise = rupeesToPaise(amount);
-      if (!amountPaise) throw new AppError("No appointment balance is due", 400);
+      if (!amountPaise)
+        throw new AppError("No appointment balance is due", 400);
       order = await getOrCreateOrder(
         client,
         appointment.razorpayOrderId,
         amountPaise,
         `appt-${String(appointment._id).slice(-12)}-${Date.now()}`,
-        { appointmentId: String(appointment._id), patientId: String(patientId) },
+        {
+          appointmentId: String(appointment._id),
+          patientId: String(patientId),
+        },
       );
       appointment.razorpayOrderId = order.id;
       await appointment.save();
@@ -413,9 +418,9 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
       // a new order for the remaining invoice balance.
       let previousOrderWasApplied = Boolean(
         invoice.razorpayOrderId &&
-          invoice.paymentHistory?.some(
-            (payment) => payment.orderId === invoice.razorpayOrderId,
-          ),
+        invoice.paymentHistory?.some(
+          (payment) => payment.orderId === invoice.razorpayOrderId,
+        ),
       );
       // Older booking payments did not populate paymentHistory. In those
       // records, the same order is linked from the appointment and its paid
@@ -428,7 +433,9 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
         linkedAppointment.razorpayOrderId === invoice.razorpayOrderId &&
         (linkedAppointment.paidAmount || 0) > 0
       ) {
-        const previousOrder = await client.orders.fetch(invoice.razorpayOrderId);
+        const previousOrder = await client.orders.fetch(
+          invoice.razorpayOrderId,
+        );
         const previousPaymentAmount = Number(previousOrder.amount) / 100;
         const invoicePaid = invoice.paidAmount || 0;
         const appointmentPaid = linkedAppointment.paidAmount || 0;
@@ -569,13 +576,19 @@ export const verifyPayment = async (req: Request, res: Response) => {
         });
       }
       if (appointment.razorpayOrderId !== orderId) {
-        throw new AppError("Payment order does not belong to this appointment", 409);
+        throw new AppError(
+          "Payment order does not belong to this appointment",
+          409,
+        );
       }
       if (
         appointment.paymentStatus !== PaymentStatus.PENDING_ONLINE ||
         appointment.status !== AppointmentStatus.PENDING
       ) {
-        throw new AppError("This appointment is no longer awaiting payment", 409);
+        throw new AppError(
+          "This appointment is no longer awaiting payment",
+          409,
+        );
       }
 
       const appointmentBalance = Math.max(
@@ -608,12 +621,14 @@ export const verifyPayment = async (req: Request, res: Response) => {
 
       if (invoice) {
         if (paidAmount > invoiceBalanceDue(invoice)) {
-          throw new AppError("The invoice balance changed. Refresh and try again", 409);
+          throw new AppError(
+            "The invoice balance changed. Refresh and try again",
+            409,
+          );
         }
-        invoice.paidAmount = Math.max(
-          invoicePaidAmount(invoice),
-          appointment.paidAmount || 0,
-        ) + paidAmount;
+        invoice.paidAmount =
+          Math.max(invoicePaidAmount(invoice), appointment.paidAmount || 0) +
+          paidAmount;
         invoice.paymentHistory ??= [];
         invoice.paymentHistory.push({
           amount: paidAmount,
@@ -681,7 +696,10 @@ export const verifyPayment = async (req: Request, res: Response) => {
         });
       }
       if (invoice.razorpayOrderId !== orderId) {
-        throw new AppError("Payment order does not belong to this invoice", 409);
+        throw new AppError(
+          "Payment order does not belong to this invoice",
+          409,
+        );
       }
       const linkedAppointment = invoice.appointment
         ? await Appointment.findOne({
@@ -699,7 +717,8 @@ export const verifyPayment = async (req: Request, res: Response) => {
           ),
       );
       const expectedPaise = rupeesToPaise(due);
-      if (!expectedPaise) throw new AppError("This invoice has no balance due", 409);
+      if (!expectedPaise)
+        throw new AppError("This invoice has no balance due", 409);
       const payment = await verifyCapturedPayment(
         client,
         orderId,

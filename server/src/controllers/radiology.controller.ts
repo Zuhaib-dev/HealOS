@@ -196,12 +196,10 @@ export const recordRadiologyCashPayment = async (
     );
     res.json({ success: true, invoice });
   } catch (error: any) {
-    res
-      .status(error.statusCode || 500)
-      .json({
-        success: false,
-        message: error.message || "Unable to record cash payment",
-      });
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Unable to record cash payment",
+    });
   }
 };
 

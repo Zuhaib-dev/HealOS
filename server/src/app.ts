@@ -57,12 +57,10 @@ app.use(
   "/uploads",
   (req, res, next) =>
     req.path.startsWith("/reports/")
-      ? res
-          .status(404)
-          .json({
-            success: false,
-            message: "Report files require authentication",
-          })
+      ? res.status(404).json({
+          success: false,
+          message: "Report files require authentication",
+        })
       : next(),
   express.static(path.join(process.cwd(), "uploads")),
 );

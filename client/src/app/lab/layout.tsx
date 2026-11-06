@@ -13,6 +13,7 @@ import { RoleGuard } from "@/components/auth/role-guard";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 
 const sections = [
+  { id: "collection", label: "Sample Collection", icon: TestTube },
   { id: "accession", label: "Accessioning", icon: ListChecks },
   { id: "analysers", label: "Auto-Analyzers", icon: Activity },
   { id: "validation", label: "Result Validation", icon: CheckCircle },

@@ -880,12 +880,10 @@ export const updateInventoryItem = async (
       parsed.data.currentStock !== undefined &&
       parsed.data.currentStock < (existing.reservedStock || 0)
     ) {
-      res
-        .status(StatusCodes.CONFLICT)
-        .json({
-          success: false,
-          message: `At least ${existing.reservedStock} ${existing.unit} are reserved for unpaid pharmacy bills`,
-        });
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: `At least ${existing.reservedStock} ${existing.unit} are reserved for unpaid pharmacy bills`,
+      });
       return;
     }
     const item = await Inventory.findByIdAndUpdate(req.params.id, parsed.data, {
@@ -923,13 +921,10 @@ export const deleteInventoryItem = async (
     const { Inventory } = await import("../models/inventory.model.js");
     const existing = await Inventory.findById(req.params.id);
     if (existing && existing.reservedStock > 0) {
-      res
-        .status(StatusCodes.CONFLICT)
-        .json({
-          success: false,
-          message:
-            "This item has quantities reserved for unpaid pharmacy bills",
-        });
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: "This item has quantities reserved for unpaid pharmacy bills",
+      });
       return;
     }
     const item = await Inventory.findByIdAndDelete(req.params.id);

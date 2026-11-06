@@ -1,54 +1,41 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { motion } from "motion/react";
-import {
-  Check,
-  X,
-  PauseCircle,
-  TriangleAlert,
-  Droplets,
-  Bandage,
-  Bell,
-} from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import {
-  Card,
-  LiveDot,
-  Pill,
-  Sparkline,
-  StatGrid,
-  Td,
-  Th,
-  type Tone,
-} from "@/components/workspace/ui";
+/* Hallmark · macrostructure: Workbench · genre: modern-minimal */
+
+import { useCallback, useEffect, useState } from "react";
+import { Droplets, Loader2, RefreshCw } from "lucide-react";
+import { ActionButton } from "@/components/admin/admin-shell";
+import { Pill } from "@/components/workspace/ui";
 import { fetchFluidBalancesApi, type FluidBalance } from "@/lib/api/nurse";
 import { toast } from "sonner";
+import { NurseHeader } from "@/components/nurse/nurse-header";
 
-/* ---------- 03 fluid balance (real data) ---------- */
+const kinds = ["oral", "iv", "urine", "drain"] as const;
 
 export function FluidBalancePanel() {
   const [entries, setEntries] = useState<FluidBalance[]>([]);
   const [loading, setLoading] = useState(true);
   const [addTo, setAddTo] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
-  const [kind, setKind] = useState<"oral" | "iv" | "urine" | "drain">("oral");
+  const [kind, setKind] = useState<(typeof kinds)[number]>("oral");
+
+  const load = useCallback(() => {
+    fetchFluidBalancesApi()
+      .then((data) => setEntries(data.fluids))
+      .catch(() => toast.error("Could not load fluid balances"))
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
-    fetchFluidBalancesApi()
-      .then((data) => {
-        setEntries(data.fluids);
-        setLoading(false);
-      })
-      .catch((err) => {
-        toast.error("Failed to load fluid balances");
-        setLoading(false);
-      });
-  }, []);
+    load();
+  }, [load]);
 
   const commit = (bed: string) => {
     const v = Number(amount);
-    if (!v) return;
+    if (!v) {
+      toast.error("Enter a volume in mL");
+      return;
+    }
     setEntries((list) =>
       list.map((e) =>
         e.bed !== bed
@@ -64,113 +51,113 @@ export function FluidBalancePanel() {
     );
     setAmount("");
     setAddTo(null);
+    toast.success(`Logged ${v} mL ${kind}`);
   };
 
   return (
-    <section>
-      <PanelHeader
-        index="03 / balance"
+    <section className="flex min-h-[calc(100vh-4rem)] flex-col pb-24 lg:pb-0">
+      <NurseHeader
         title="Fluid balance"
-        note="Running 24-hour intake and output per bed, measured against the prescribed target and any restriction."
-        actions={<ActionButton tone="solid">Close 24h chart</ActionButton>}
+        note="Running intake and output per bed against the prescribed target."
+        actions={
+          <ActionButton
+            onClick={() => {
+              setLoading(true);
+              load();
+            }}
+            disabled={loading}
+          >
+            <RefreshCw className={`size-3 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </ActionButton>
+        }
       />
 
-      <div
-        className="grid gap-px lg:grid-cols-2"
-        style={{ background: "var(--hairline)" }}
-      >
-        {loading ? (
-          <div className="p-8 text-center text-sm text-muted-foreground col-span-2">
-            Loading fluid balances...
-          </div>
-        ) : entries.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground col-span-2">
-            No fluid balances found.
-          </div>
-        ) : (
-          entries.map((e) => {
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="size-5 animate-spin text-primary" />
+        </div>
+      ) : entries.length === 0 ? (
+        <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+          <Droplets className="mb-3 size-8 text-muted-foreground/30" />
+          <p className="font-medium">No fluid charts</p>
+        </div>
+      ) : (
+        <div className="grid gap-px bg-border/60 lg:grid-cols-2">
+          {entries.map((e) => {
             const intake = e.intakeOral + e.intakeIV;
             const output = e.outputUrine + e.outputDrain;
             const net = intake - output;
-            const onTarget =
-              e.target <= 0 ? net <= e.target + 250 : net >= e.target - 250;
-            const width = Math.min(100, (Math.abs(net) / 1800) * 100);
+            const denom = Math.max(Math.abs(e.target) || 1800, 1);
+            const width = Math.min(100, (Math.abs(net) / denom) * 100);
             return (
-              <div key={e.bed} className="bg-background p-5">
+              <article key={e.bed} className="min-w-0 bg-background p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <p className="mono-label text-accent/80">{e.bed}</p>
-                    <p className="mt-1 font-mono text-lg font-bold">
-                      {e.patient}
-                    </p>
+                    <p className="mt-1 truncate font-semibold">{e.patient}</p>
                   </div>
-                  <Pill tone={onTarget ? "ok" : "bad"}>
+                  <Pill tone={Math.abs(net - e.target) <= 250 ? "ok" : "bad"}>
                     net {net > 0 ? "+" : ""}
                     {net} mL
                   </Pill>
                 </div>
 
-                <div
-                  className="mono-label mt-4 grid grid-cols-4 gap-px"
-                  style={{ background: "var(--hairline)" }}
-                >
+                <div className="mt-4 grid grid-cols-4 gap-px bg-border/60">
                   {[
-                    ["Oral", `${e.intakeOral}`],
-                    ["IV", `${e.intakeIV}`],
-                    ["Urine", `${e.outputUrine}`],
-                    ["Drain", `${e.outputDrain}`],
+                    ["Oral", e.intakeOral],
+                    ["IV", e.intakeIV],
+                    ["Urine", e.outputUrine],
+                    ["Drain", e.outputDrain],
                   ].map(([k, v]) => (
                     <div
                       key={k}
-                      className="bg-background px-2 py-3 text-center"
+                      className="bg-background px-1 py-3 text-center"
                     >
-                      <p className="text-muted-foreground">{k}</p>
-                      <p className="text-foreground mt-1 font-mono text-base">
-                        {v}
+                      <p className="text-[10px] text-muted-foreground uppercase">
+                        {k}
                       </p>
+                      <p className="mt-1 font-mono text-sm">{v}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="hairline mt-4 h-2 w-full">
-                  <motion.div
-                    className={
-                      net >= 0 ? "bg-accent h-full" : "bg-destructive h-full"
-                    }
-                    initial={{ width: 0 }}
-                    animate={{ width: `${width}%` }}
-                    transition={{ duration: 0.9, ease: "easeOut" }}
+                <div className="mt-4 h-1.5 w-full bg-muted">
+                  <div
+                    className={`h-full ${net >= 0 ? "bg-accent" : "bg-destructive"}`}
+                    style={{ width: `${width}%` }}
                   />
                 </div>
-                <p className="mono-label text-muted-foreground mt-2">
-                  <Droplets className="mr-1 inline size-3" />
-                  target {e.target > 0 ? "+" : ""}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Target {e.target > 0 ? "+" : ""}
                   {e.target} mL
-                  {e.restriction
-                    ? ` · restriction ${e.restriction} mL/24h`
-                    : ""}
+                  {e.restriction ? ` · max ${e.restriction} mL/24h` : ""}
                 </p>
 
                 {addTo === e.bed ? (
                   <div className="mt-4 flex flex-wrap items-center gap-2">
-                    {(["oral", "iv", "urine", "drain"] as const).map((k) => (
+                    {kinds.map((k) => (
                       <button
                         key={k}
                         type="button"
                         onClick={() => setKind(k)}
-                        className={`mono-label px-2.5 py-1.5 ${kind === k ? "bg-foreground text-background" : "hairline"}`}
+                        className={`px-2.5 py-1.5 text-xs font-medium ${
+                          kind === k
+                            ? "bg-foreground text-background"
+                            : "border border-border/60"
+                        }`}
                       >
                         {k}
                       </button>
                     ))}
                     <input
-                      id={`fluid-amount-input-${e.bed}`}
+                      id={`fluid-amount-${e.bed}`}
                       aria-label="Fluid volume in milliliters"
-                      title="Fluid volume in milliliters"
                       value={amount}
                       onChange={(ev) => setAmount(ev.target.value)}
                       placeholder="mL"
-                      className="hairline w-20 bg-transparent px-2 py-1.5 font-mono text-sm outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
+                      inputMode="numeric"
+                      className="w-20 border border-border/60 bg-transparent px-2 py-1.5 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     />
                     <ActionButton tone="solid" onClick={() => commit(e.bed)}>
                       Log
@@ -183,11 +170,11 @@ export function FluidBalancePanel() {
                     </ActionButton>
                   </div>
                 )}
-              </div>
+              </article>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </section>
   );
 }

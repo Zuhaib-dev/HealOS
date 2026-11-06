@@ -1,32 +1,19 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { motion } from "motion/react";
+/* Hallmark · macrostructure: Workbench · genre: modern-minimal */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Bell, Loader2, RefreshCw } from "lucide-react";
+import { ActionButton } from "@/components/admin/admin-shell";
+import { LiveDot, Pill } from "@/components/workspace/ui";
 import {
-  Check,
-  X,
-  PauseCircle,
-  TriangleAlert,
-  Droplets,
-  Bandage,
-  Bell,
-} from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import {
-  Card,
-  LiveDot,
-  Pill,
-  Sparkline,
-  StatGrid,
-  Td,
-  Th,
-  type Tone,
-} from "@/components/workspace/ui";
-import { fetchCallBellsApi, type CallBell } from "@/lib/api/nurse";
+  fetchCallBellsApi,
+  resolveCallBellApi,
+  type CallBell,
+} from "@/lib/api/nurse";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
-
-/* ---------- 06 call bells (real data) ---------- */
+import { NurseHeader } from "@/components/nurse/nurse-header";
 
 function fmt(s: number) {
   return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
@@ -35,116 +22,159 @@ function fmt(s: number) {
 export function CallBellsPanel() {
   const [rows, setRows] = useState<CallBell[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  const loadCallBells = () => {
+  const loadCallBells = useCallback(() => {
     fetchCallBellsApi()
-      .then((data) => {
-        setRows(data.callBells);
-        setLoading(false);
-      })
-      .catch((err) => {
-        toast.error("Failed to load call bells");
-        setLoading(false);
-      });
-  };
+      .then((data) => setRows(data.callBells))
+      .catch(() => toast.error("Could not load call bells"))
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     loadCallBells();
     const socket = getSocket();
-    if (socket) {
-      socket.on("call_bell_updated", loadCallBells);
-      socket.on("call_bell_created", loadCallBells);
-      return () => {
-        socket.off("call_bell_updated", loadCallBells);
-        socket.off("call_bell_created", loadCallBells);
-      };
-    }
-  }, []);
+    if (!socket) return;
+    socket.on("call_bell_updated", loadCallBells);
+    socket.on("call_bell_created", loadCallBells);
+    return () => {
+      socket.off("call_bell_updated", loadCallBells);
+      socket.off("call_bell_created", loadCallBells);
+    };
+  }, [loadCallBells]);
+
   const waiting = useMemo(
     () => rows.filter((r) => r.state === "waiting"),
     [rows],
   );
+  const breaches = waiting.filter((r) => r.waitedSec > 180).length;
+  const medianWait = useMemo(() => {
+    if (!rows.length) return null;
+    const sorted = [...rows].map((r) => r.waitedSec).sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2
+      ? sorted[mid]
+      : Math.round(((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2);
+  }, [rows]);
+
+  const sorted = [...rows].sort((a, b) => {
+    const rank = (r: CallBell) =>
+      r.type === "emergency" && r.state === "waiting"
+        ? 0
+        : r.state === "waiting"
+          ? 1
+          : r.state === "accepted"
+            ? 2
+            : 3;
+    return rank(a) - rank(b) || b.waitedSec - a.waitedSec;
+  });
 
   return (
-    <section>
-      <PanelHeader
-        index="06 / call bells"
-        title="Call-bell queue"
-        note="Live queue by wait time. Emergency pulls rise above everything and record a response-time audit trail."
+    <section className="flex min-h-[calc(100vh-4rem)] flex-col pb-24 lg:pb-0">
+      <NurseHeader
+        title="Call bells"
+        note="Live queue by wait time. Emergencies stay at the top until someone answers."
         actions={
-          <ActionButton tone="solid">{waiting.length} waiting</ActionButton>
+          <ActionButton
+            onClick={() => {
+              setLoading(true);
+              loadCallBells();
+            }}
+            disabled={loading}
+          >
+            <RefreshCw className={`size-3 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </ActionButton>
         }
       />
 
-      <div
-        className="grid gap-px lg:grid-cols-3"
-        style={{ background: "var(--hairline)" }}
-      >
-        {loading ? (
-          <div className="p-8 text-center text-sm text-muted-foreground col-span-3">
-            Loading call bells...
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground col-span-3">
-            No call bells found.
-          </div>
-        ) : (
-          rows
-            .slice()
-            .sort((a, b) => {
-              const rank = (r: typeof a) =>
-                r.state === "waiting" ? 0 : r.state === "accepted" ? 1 : 2;
-              return rank(a) - rank(b) || b.waitedSec - a.waitedSec;
-            })
-            .map((c) => {
-              const emergency = c.type === "emergency";
-              return (
-                <div key={c._id} className="bg-background p-5">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="mono-label text-accent/80">{c.bed}</p>
-                    {c.state === "waiting" && (
-                      <LiveDot tone={emergency ? "bad" : "ok"} />
-                    )}
-                  </div>
-                  <p className="mt-1 font-mono text-lg font-bold">
-                    {c.patient}
-                  </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <Pill tone={emergency ? "bad" : "info"}>
-                      <Bell className="mr-1 inline size-3" />
-                      {c.type}
-                    </Pill>
-                    <Pill tone={c.waitedSec > 120 ? "bad" : "mute"}>
-                      {fmt(c.waitedSec)}
-                    </Pill>
-                    <Pill tone={c.state === "closed" ? "ok" : "warn"}>
-                      {c.state}
-                    </Pill>
-                  </div>
-                  <p className="mono-label text-muted-foreground mt-3">
-                    raised {c.raised}
-                    {c.acceptedBy ? ` · ${c.acceptedBy}` : ""}
-                  </p>
-                  <div className="mt-4 flex gap-2">
+      <div className="grid grid-cols-3 gap-px bg-border/60">
+        <div className="bg-background p-4">
+          <p className="text-[10px] tracking-wider text-muted-foreground uppercase">
+            Waiting
+          </p>
+          <p className="mt-1 font-display text-2xl font-bold">
+            {waiting.length}
+          </p>
+        </div>
+        <div className="bg-background p-4">
+          <p className="text-[10px] tracking-wider text-muted-foreground uppercase">
+            Over 3 min
+          </p>
+          <p className="mt-1 font-display text-2xl font-bold">{breaches}</p>
+        </div>
+        <div className="bg-background p-4">
+          <p className="text-[10px] tracking-wider text-muted-foreground uppercase">
+            Median wait
+          </p>
+          <p className="mt-1 font-display text-2xl font-bold">
+            {medianWait == null ? "—" : fmt(medianWait)}
+          </p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="size-5 animate-spin text-primary" />
+        </div>
+      ) : sorted.length === 0 ? (
+        <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+          <Bell className="mb-3 size-8 text-muted-foreground/30" />
+          <p className="font-medium">No bells</p>
+        </div>
+      ) : (
+        <div className="grid gap-px bg-border/60 sm:grid-cols-2 lg:grid-cols-3">
+          {sorted.map((c) => {
+            const emergency = c.type === "emergency";
+            return (
+              <article key={c._id} className="min-w-0 bg-background p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="mono-label text-accent/80">{c.bed}</p>
+                  {c.state === "waiting" ? (
+                    <LiveDot tone={emergency ? "bad" : "ok"} />
+                  ) : null}
+                </div>
+                <p className="mt-1 truncate font-semibold">{c.patient}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  <Pill tone={emergency ? "bad" : "info"}>
+                    <Bell className="mr-1 inline size-3" />
+                    {c.type}
+                  </Pill>
+                  <Pill tone={c.waitedSec > 120 ? "bad" : "mute"}>
+                    {fmt(c.waitedSec)}
+                  </Pill>
+                  <Pill tone={c.state === "closed" ? "ok" : "warn"}>
+                    {c.state}
+                  </Pill>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Raised {c.raised}
+                  {c.acceptedBy ? ` · ${c.acceptedBy}` : ""}
+                </p>
+                {c.state !== "closed" ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {c.state === "waiting" ? (
+                      <ActionButton
+                        tone="solid"
+                        disabled={busyId === c._id}
+                        onClick={() =>
+                          setRows((r) =>
+                            r.map((x) =>
+                              x._id === c._id
+                                ? { ...x, state: "accepted", acceptedBy: "You" }
+                                : x,
+                            ),
+                          )
+                        }
+                      >
+                        Accept
+                      </ActionButton>
+                    ) : null}
                     <ActionButton
-                      tone="solid"
-                      onClick={() =>
-                        setRows((r) =>
-                          r.map((x) =>
-                            x._id === c._id
-                              ? { ...x, state: "accepted", acceptedBy: "You" }
-                              : x,
-                          ),
-                        )
-                      }
-                    >
-                      Accept
-                    </ActionButton>
-                    <ActionButton
+                      disabled={busyId === c._id}
                       onClick={async () => {
+                        setBusyId(c._id);
                         try {
-                          const { resolveCallBellApi } =
-                            await import("@/lib/api/nurse");
                           const res = await resolveCallBellApi(c._id);
                           if (res.success) {
                             setRows((r) =>
@@ -152,41 +182,24 @@ export function CallBellsPanel() {
                                 x._id === c._id ? { ...x, state: "closed" } : x,
                               ),
                             );
-                            toast.success("Call bell resolved");
+                            toast.success("Bell closed");
                           }
-                        } catch (err) {
-                          toast.error("Failed to resolve call bell");
+                        } catch {
+                          toast.error("Could not close this bell");
+                        } finally {
+                          setBusyId(null);
                         }
                       }}
                     >
                       Close
                     </ActionButton>
                   </div>
-                </div>
-              );
-            })
-        )}
-      </div>
-
-      <div className="hairline-t p-5 sm:px-8">
-        <Card>
-          <p className="mono-label text-muted-foreground">
-            Response-time audit · this shift
-          </p>
-          <div className="mt-3 grid gap-4 sm:grid-cols-3">
-            {[
-              ["Median response", "48 s"],
-              ["Breaches > 3 min", "1"],
-              ["Bells answered", "37"],
-            ].map(([k, v]) => (
-              <div key={k}>
-                <p className="font-mono text-2xl font-bold">{v}</p>
-                <p className="mono-label text-muted-foreground">{k}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

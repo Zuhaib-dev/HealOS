@@ -1,12 +1,8 @@
 "use client";
 
-/* Hallmark · macrostructure: Stacked Cards · genre: modern-minimal
- * states: hover, loading, error, success
- * contrast: pass
- */
+/* Hallmark · macrostructure: Workbench · genre: modern-minimal */
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Check,
   X,
@@ -16,30 +12,44 @@ import {
   Loader2,
   Clock,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { fetchMarDosesApi, type MarDose } from "@/lib/api/nurse";
+import { ActionButton } from "@/components/admin/admin-shell";
+import {
+  administerMarDoseApi,
+  fetchMarDosesApi,
+  type MarDose,
+} from "@/lib/api/nurse";
 import { toast } from "sonner";
+import { NurseHeader } from "@/components/nurse/nurse-header";
+
+const filters = [
+  { id: "all", label: "All" },
+  { id: "due", label: "Due" },
+  { id: "high", label: "High-alert" },
+  { id: "controlled", label: "Controlled" },
+] as const;
 
 export function EmarPanel() {
   const [rows, setRows] = useState<MarDose[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "due" | "high" | "controlled">(
-    "all",
-  );
+  const [filter, setFilter] = useState<(typeof filters)[number]["id"]>("all");
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     fetchMarDosesApi()
       .then((data) => {
         setRows(data.doses);
-        setLoading(false);
       })
       .catch(() => {
-        toast.error("Failed to load medication records");
-        setLoading(false);
-      });
+        toast.error("Could not load the medication record");
+      })
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const visible = rows.filter((d) =>
     filter === "all"
@@ -55,225 +65,179 @@ export function EmarPanel() {
     setProcessingId(id);
     if (state === "given") {
       try {
-        const { administerMarDoseApi } = await import("@/lib/api/nurse");
         await administerMarDoseApi(id);
-        toast.success("Dose administered and logged.");
-      } catch (err) {
-        toast.error("Failed to log administration.");
+        toast.success("Dose given");
+      } catch {
+        toast.error("Could not log this dose");
         setProcessingId(null);
         return;
       }
+    } else {
+      toast.success(state === "held" ? "Dose held" : "Dose refused");
     }
     setRows((r) => r.map((d) => (d._id === id ? { ...d, state } : d)));
     setProcessingId(null);
   };
 
-  const getStateStyles = (state: MarDose["state"]) => {
-    switch (state) {
-      case "due":
-        return "bg-primary/10 text-primary border-primary/20";
-      case "overdue":
-        return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20";
-      case "given":
-        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
-      case "held":
-        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
-      case "refused":
-        return "bg-destructive/10 text-destructive border-destructive/20";
-      default:
-        return "bg-muted text-muted-foreground border-border";
-    }
-  };
-
   return (
-    <section className="pb-24 lg:pb-0 min-h-[calc(100vh-4rem)] flex flex-col">
-      <PanelHeader
-        index="02 / eMAR"
-        title="Medication Administration"
-        note="Barcode-ready administration record. High-alert and controlled drugs demand a second signature before the dose closes."
+    <section className="flex min-h-[calc(100vh-4rem)] flex-col pb-24 lg:pb-0">
+      <NurseHeader
+        title="Medication round"
+        note="Give, hold, or refuse due doses. High-alert and controlled drugs stay flagged until they close."
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {[
-              { id: "all", label: "All" },
-              { id: "due", label: "Due / Overdue" },
-              { id: "high", label: "High-alert" },
-              { id: "controlled", label: "Controlled" },
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id as any)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 border ${
-                  filter === f.id
-                    ? "bg-foreground text-background border-foreground shadow-sm scale-105"
-                    : "bg-background text-muted-foreground border-border/60 hover:bg-muted/50"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          <ActionButton
+            onClick={() => {
+              setLoading(true);
+              load();
+            }}
+            disabled={loading}
+          >
+            <RefreshCw className={`size-3 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </ActionButton>
         }
       />
 
-      <div className="flex-1 bg-background/50 p-4 sm:p-6 lg:p-10 overflow-y-auto">
-        <div className="max-w-6xl mx-auto">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-              <Loader2 className="size-8 animate-spin mb-4 text-primary" />
-              <p className="mono-label">Loading medication records...</p>
-            </div>
-          ) : visible.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border/60 rounded-3xl bg-card/30">
-              <Check className="size-10 text-emerald-500/50 mb-4" />
-              <p className="font-medium text-foreground">All caught up</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                No medication records match this filter.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
-              <AnimatePresence>
-                {visible.map((d) => (
-                  <motion.div
-                    layout
-                    key={d._id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className={`relative flex flex-col overflow-hidden rounded-2xl border transition-all ${
-                      d.state === "given"
-                        ? "bg-emerald-500/5 border-emerald-500/20"
-                        : d.state === "overdue"
-                          ? "bg-rose-500/5 border-rose-500/30 ring-1 ring-rose-500/10 shadow-sm"
-                          : "bg-card/50 border-border/60 hover:border-primary/30"
-                    }`}
-                  >
-                    {/* Header */}
-                    <div className="p-5 border-b border-border/40 flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="size-10 rounded-full bg-muted flex items-center justify-center font-mono text-xs font-bold text-foreground">
-                          {d.bed}
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-foreground">
-                            {d.patient}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="mono-label text-[10px] text-muted-foreground bg-background border border-border/60 px-2 py-0.5 rounded flex items-center gap-1">
-                              <Clock className="size-3" /> {d.time}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+      <div className="flex flex-wrap gap-2 border-b border-border/60 px-4 py-3 sm:px-6 lg:px-8">
+        {filters.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => setFilter(f.id)}
+            className={`border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              filter === f.id
+                ? "border-foreground bg-foreground text-background"
+                : "border-border/60 bg-background text-muted-foreground hover:bg-muted/50"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
 
-                      <div
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1.5 ${getStateStyles(d.state)}`}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="size-5 animate-spin text-primary" />
+          </div>
+        ) : visible.length === 0 ? (
+          <div className="flex flex-col items-center justify-center border border-dashed border-border/60 px-4 py-16 text-center">
+            <Check className="mb-3 size-8 text-success/50" />
+            <p className="font-medium">Nothing in this filter</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              No doses match the current view.
+            </p>
+          </div>
+        ) : (
+          <ul className="grid grid-cols-1 gap-px bg-border/60 lg:grid-cols-2 xl:grid-cols-3">
+            {visible.map((d) => (
+              <li
+                key={d._id}
+                className={`flex min-w-0 flex-col bg-background ${
+                  d.state === "overdue" ? "ring-1 ring-destructive/30" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3 border-b border-border/40 p-4">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-accent">{d.bed}</p>
+                    <h3 className="truncate font-semibold">{d.patient}</h3>
+                    <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="size-3" /> {d.time}
+                      {d.window ? ` · ${d.window}` : ""}
+                    </p>
+                  </div>
+                  <span className="mono-label shrink-0 border border-border/50 px-2 py-1 text-[10px] uppercase">
+                    {d.state === "given" ? (
+                      <Check className="mr-1 inline size-3 text-success" />
+                    ) : null}
+                    {d.state === "overdue" ? (
+                      <AlertCircle className="mr-1 inline size-3 text-destructive" />
+                    ) : null}
+                    {d.state}
+                  </span>
+                </div>
+
+                <div className="flex flex-1 gap-3 p-4">
+                  <PillIcon
+                    className={`size-5 shrink-0 ${d.highAlert ? "text-destructive" : "text-primary"}`}
+                  />
+                  <div className="min-w-0">
+                    <p className="font-semibold leading-tight">{d.drug}</p>
+                    <p className="mt-1 font-mono text-sm">
+                      {d.dose}{" "}
+                      <span className="text-muted-foreground">{d.route}</span>
+                    </p>
+                    {d.note ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {d.note}
+                      </p>
+                    ) : null}
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {d.highAlert ? (
+                        <span className="inline-flex items-center gap-1 border border-destructive/30 px-2 py-0.5 text-[10px] font-bold tracking-wider text-destructive uppercase">
+                          <TriangleAlert className="size-3" /> High-alert
+                        </span>
+                      ) : null}
+                      {d.controlled ? (
+                        <span className="border border-border/60 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase">
+                          Controlled
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border/40 p-3">
+                  {d.state === "due" || d.state === "overdue" ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        disabled={processingId === d._id}
+                        onClick={() => void setDoseState(d._id, "given")}
+                        className="flex flex-col items-center gap-1 py-2 text-success hover:bg-success/10 disabled:opacity-50"
                       >
-                        {d.state === "given" && <Check className="size-3" />}
-                        {d.state === "overdue" && (
-                          <AlertCircle className="size-3" />
+                        {processingId === d._id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Check className="size-4" />
                         )}
-                        {d.state}
-                      </div>
+                        <span className="text-[10px] font-bold uppercase">
+                          Give
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={processingId === d._id}
+                        onClick={() => void setDoseState(d._id, "held")}
+                        className="flex flex-col items-center gap-1 py-2 text-muted-foreground hover:bg-muted disabled:opacity-50"
+                      >
+                        <PauseCircle className="size-4" />
+                        <span className="text-[10px] font-bold uppercase">
+                          Hold
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={processingId === d._id}
+                        onClick={() => void setDoseState(d._id, "refused")}
+                        className="flex flex-col items-center gap-1 py-2 text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                      >
+                        <X className="size-4" />
+                        <span className="text-[10px] font-bold uppercase">
+                          Refuse
+                        </span>
+                      </button>
                     </div>
-
-                    {/* Body */}
-                    <div className="p-5 flex-1 flex flex-col justify-center">
-                      <div className="flex items-start gap-4">
-                        <div
-                          className={`p-2 rounded-xl shrink-0 ${d.highAlert ? "bg-rose-500/10 text-rose-500" : "bg-primary/10 text-primary"}`}
-                        >
-                          <PillIcon className="size-6" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-lg text-foreground leading-tight">
-                            {d.drug}
-                          </p>
-                          <p className="font-mono text-sm text-primary mt-1">
-                            {d.dose}{" "}
-                            <span className="text-muted-foreground ml-1">
-                              {d.route}
-                            </span>
-                          </p>
-                          {d.note && (
-                            <p className="text-xs text-muted-foreground mt-2 italic bg-background/50 p-2 rounded-lg border border-border/40">
-                              Note: {d.note}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 mt-5">
-                        {d.highAlert && (
-                          <span className="px-2 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
-                            <TriangleAlert className="size-3" /> High-Alert
-                          </span>
-                        )}
-                        {d.controlled && (
-                          <span className="px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
-                            CD Register
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Footer Actions */}
-                    <div className="p-4 bg-background/30 border-t border-border/40">
-                      {d.state === "due" || d.state === "overdue" ? (
-                        <div className="grid grid-cols-3 gap-2">
-                          <button
-                            disabled={processingId === d._id}
-                            onClick={() => setDoseState(d._id, "given")}
-                            className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
-                          >
-                            {processingId === d._id ? (
-                              <Loader2 className="size-4 animate-spin" />
-                            ) : (
-                              <Check className="size-4" />
-                            )}
-                            <span className="text-[10px] font-bold uppercase tracking-wider">
-                              Give
-                            </span>
-                          </button>
-
-                          <button
-                            disabled={processingId === d._id}
-                            onClick={() => setDoseState(d._id, "held")}
-                            className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
-                          >
-                            <PauseCircle className="size-4" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">
-                              Hold
-                            </span>
-                          </button>
-
-                          <button
-                            disabled={processingId === d._id}
-                            onClick={() => setDoseState(d._id, "refused")}
-                            className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
-                          >
-                            <X className="size-4" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">
-                              Refuse
-                            </span>
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2 py-2.5 text-muted-foreground">
-                          <Check className="size-4 opacity-50" />
-                          <span className="text-xs font-semibold">
-                            Processed
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
-        </div>
+                  ) : (
+                    <p className="py-2 text-center text-xs text-muted-foreground">
+                      Closed
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </section>
   );

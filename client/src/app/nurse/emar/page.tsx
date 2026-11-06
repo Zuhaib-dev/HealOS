@@ -1,4 +1,4 @@
-import { EmarPanel } from "@/components/nurse/nurse-panels";
+import { EmarPanel } from "@/components/nurse/panels/eMAR-panel";
 
 export default function EmarPanelPage() {
   return <EmarPanel />;

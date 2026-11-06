@@ -1,5 +1,5 @@
-import { WoundPanel } from "@/components/nurse/nurse-panels";
+import { WoundCarePanel } from "@/components/nurse/panels/wound-care-panel";
 
 export default function WoundPanelPage() {
-  return <WoundPanel />;
+  return <WoundCarePanel />;
 }

@@ -1,5 +1,5 @@
-import { CallBellPanel } from "@/components/nurse/nurse-panels";
+import { CallBellsPanel } from "@/components/nurse/panels/call-bells-panel";
 
 export default function CallBellPanelPage() {
-  return <CallBellPanel />;
+  return <CallBellsPanel />;
 }

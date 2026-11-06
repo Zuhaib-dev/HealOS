@@ -1,5 +1,5 @@
-import { FluidPanel } from "@/components/nurse/nurse-panels";
+import { FluidBalancePanel } from "@/components/nurse/panels/fluid-balance-panel";
 
 export default function FluidPanelPage() {
-  return <FluidPanel />;
+  return <FluidBalancePanel />;
 }

@@ -59,7 +59,7 @@ async function getReportContent(
         },
         { $or: reportCandidates },
       ],
-    }).select("+localFileName fileUrl fileName patient order uploadedBy");
+    }).select("+localFileName fileUrl fileName patient order uploadedBy state");
     if (report) {
       resolvedReportId = String(report._id);
       isPatientOwnedReleasedReport = report.state === "verified";
@@ -88,7 +88,7 @@ async function getReportContent(
   }
   if (resolvedReportId && !report) {
     report = await DiagnosticReport.findById(resolvedReportId).select(
-      "+localFileName fileUrl fileName patient order uploadedBy",
+      "+localFileName fileUrl fileName patient order uploadedBy state",
     );
   }
   if (report) {
@@ -185,7 +185,7 @@ async function getReportContent(
           },
         },
       ],
-    }).select("+localFileName fileUrl fileName patient");
+    }).select("+localFileName fileUrl fileName patient state");
     if (!legacyReport) throw new AppError("Report not found", 404);
     if (req.user?.role !== UserRole.ADMIN && legacyReport.state !== "verified")
       throw new AppError("This report has not been released", 403);

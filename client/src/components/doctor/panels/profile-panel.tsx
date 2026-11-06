@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import { DoctorHeader } from "@/components/doctor/doctor-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCheck, FileText, Activity, Save } from "lucide-react";
+import { UserCheck, Activity, Save } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
 import { AIWriterButton } from "@/components/shared/ai-writer-button";
@@ -14,8 +14,6 @@ import { DoctorIDCard } from "./doctor-id-card";
 export function ProfilePanel() {
   const { user, updateUser } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isPending = isSubmitting;
-  const saving = isSubmitting;
   const setSaving = setIsSubmitting;
 
   const [department, setDepartment] = useState("");
@@ -102,17 +100,15 @@ export function ProfilePanel() {
 
   return (
     <section className="pb-24">
-      <PanelHeader
-        index="08 / profile"
-        title="My Professional Profile"
-        note="Manage your public avatar, clinical details, and department association."
+      <DoctorHeader
+        title="Profile"
+        note="Name, photo, and clinical details patients see when they book."
       />
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-8">
           <div className="xl:col-span-2">
             <form onSubmit={handleSave} className="space-y-6 lg:space-y-8">
-              <Card className="border-border/60 shadow-sm bg-card/60 backdrop-blur-sm overflow-hidden">
-                <div className="h-1.5 w-full bg-primary" />
+              <Card className="overflow-hidden border-border/60 bg-background shadow-none">
                 <CardHeader className="pb-4">
                   <div className="flex items-center gap-2">
                     <UserCheck className="size-5 text-primary" />
@@ -204,7 +200,7 @@ export function ProfilePanel() {
                 </CardContent>
               </Card>
 
-              <Card className="border-border/60 shadow-sm bg-card/60 backdrop-blur-sm">
+              <Card className="border-border/60 bg-background shadow-none">
                 <CardHeader className="pb-4">
                   <div className="flex items-center gap-2">
                     <Activity className="size-5 text-primary" />

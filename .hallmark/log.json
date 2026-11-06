@@ -1,6 +1,13 @@
 [
   {
     "date": "2026-11-07",
+    "macrostructure": "Workbench",
+    "theme": "Emerald Prestige",
+    "enrichment": "none",
+    "brief": "Doctor panel: shift, clinic, notes, results"
+  },
+  {
+    "date": "2026-11-07",
     "macrostructure": "Split Studio",
     "theme": "Emerald Prestige",
     "enrichment": "none",

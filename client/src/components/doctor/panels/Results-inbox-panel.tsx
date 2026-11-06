@@ -3,15 +3,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Eye } from "lucide-react";
-import { PanelHeader } from "@/components/admin/admin-shell";
-import { useAuthStore } from "@/store/use-auth-store";
-import {
-  fetchDoctorAppointmentsApi,
-  updateAppointmentStatusApi,
-  AppointmentRecord,
-} from "@/lib/api/appointment";
+import { DoctorHeader } from "@/components/doctor/doctor-header";
 import { toast } from "sonner";
-import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { getDiagnosticResultsApi } from "@/lib/api/doctor";
 import { getSocket } from "@/lib/socket";
 import { openProtectedReport } from "@/lib/api/reports";
@@ -48,48 +41,6 @@ function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
 }
 
-/** Animated vitals sparkline — drawn, never an image. */
-function Vitals({ series }: { series: number[] }) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
-  const pts = series
-    .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
-      const y = 30 - ((v - min) / Math.max(1, max - min)) * 26 - 2;
-      return `${x},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  return (
-    <svg
-      viewBox="0 0 100 32"
-      preserveAspectRatio="none"
-      className="h-8 w-24 shrink-0"
-    >
-      <motion.polyline
-        points={pts}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="1.6"
-        vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-      />
-    </svg>
-  );
-}
-
-function acuityPill(a: "critical" | "guarded" | "stable") {
-  return a === "critical" ? (
-    <Pill tone="bad">critical</Pill>
-  ) : a === "guarded" ? (
-    <Pill tone="warn">guarded</Pill>
-  ) : (
-    <Pill tone="ok">stable</Pill>
-  );
-}
-
 /* ---------- 04 · Results inbox ---------- */
 
 export function ResultsPanel() {
@@ -122,11 +73,10 @@ export function ResultsPanel() {
   );
 
   return (
-    <div>
-      <PanelHeader
-        index="04 / results"
-        title="Results inbox"
-        note="Released results ordered by you. Critical flags come from the lab; doctor acknowledgement is not tracked here."
+    <div className="pb-24">
+      <DoctorHeader
+        title="Results"
+        note="Released reports from labs you ordered. Critical flags come from the lab."
       />
       <div className="hairline-b flex gap-1 px-5 py-3 sm:px-8">
         {(

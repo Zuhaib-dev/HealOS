@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V3
+ * genre: modern-minimal · macrostructure: Workbench
+ * theme: Emerald Prestige · designed-as-app
+ * audience: clinicians · use: see today's list and open a visit
+ */
+
+import { useEffect, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   Stethoscope,
@@ -14,13 +20,10 @@ import {
   MessagesSquare,
   CalendarDays,
   Search,
-  Bell,
-  ShieldCheck,
-  Sparkles,
+  Menu,
   PanelLeftClose,
   PanelLeftOpen,
-  ChevronRight,
-  ChevronLeft,
+  UserCircle,
 } from "lucide-react";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -36,137 +39,121 @@ import {
   DrawerHeader,
   DrawerClose,
 } from "@/components/ui/drawer";
-import { UserCircle, MoreHorizontal } from "lucide-react";
-import { AnimatePresence } from "motion/react";
 
 export const doctorSections = [
-  { id: "shift", label: "Shift Board", icon: Activity },
-  { id: "rounds", label: "My Patients", icon: Stethoscope },
-  { id: "clinic", label: "Clinic List", icon: CalendarClock },
-  { id: "results", label: "Results Inbox", icon: FlaskConical },
-  { id: "orders", label: "Orders & Meds", icon: Pill },
-  { id: "notes", label: "Documentation", icon: FileSignature },
-  { id: "handover", label: "Handover", icon: MessagesSquare },
-  { id: "rota", label: "My Rota", icon: CalendarDays },
-  { id: "profile", label: "My Profile", icon: UserCircle },
+  { id: "shift", label: "Shift", shortLabel: "Shift", icon: Activity },
+  {
+    id: "rounds",
+    label: "Patients",
+    shortLabel: "Patients",
+    icon: Stethoscope,
+  },
+  { id: "clinic", label: "Clinic", shortLabel: "Clinic", icon: CalendarClock },
+  {
+    id: "results",
+    label: "Results",
+    shortLabel: "Results",
+    icon: FlaskConical,
+  },
+  { id: "orders", label: "Orders", shortLabel: "Orders", icon: Pill },
+  { id: "notes", label: "Notes", shortLabel: "Notes", icon: FileSignature },
+  {
+    id: "handover",
+    label: "Handover",
+    shortLabel: "Handover",
+    icon: MessagesSquare,
+  },
+  { id: "rota", label: "Rota", shortLabel: "Rota", icon: CalendarDays },
+  { id: "profile", label: "Profile", shortLabel: "Profile", icon: UserCircle },
 ] as const;
 
-const mainMobileTabs = ["shift", "clinic", "rounds", "profile"];
+const mainMobileTabs = ["shift", "clinic", "rounds", "results"];
+const moreMobileTabs = ["orders", "notes", "handover", "rota", "profile"];
 
 export type DoctorSectionId = (typeof doctorSections)[number]["id"];
 
+const prefetchRoutes = [
+  "/doctor",
+  "/doctor/rounds",
+  "/doctor/clinic",
+  "/doctor/results",
+  "/doctor/orders",
+  "/doctor/notes",
+  "/doctor/handover",
+  "/doctor/rota",
+  "/doctor/profile",
+];
+
 export function DoctorShell({ children }: { children: ReactNode }) {
-  const [query, setQuery] = useState("");
   const { user } = useAuthStore();
   const { isSidebarCollapsed, toggleSidebar } = useUIStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
-  const currentSection =
-    doctorSections.find((s) =>
-      s.id === "shift"
-        ? pathname === "/doctor"
-        : pathname.startsWith(`/doctor/${s.id}`),
-    ) || doctorSections[0];
+  useEffect(() => {
+    prefetchRoutes.forEach((href) => router.prefetch(href));
+  }, [router]);
 
-  // Helper to check if a section is active
-  const isSectionActive = (id: string) => {
-    return id === "shift"
+  const isSectionActive = (id: string) =>
+    id === "shift"
       ? pathname === "/doctor"
       : pathname.startsWith(`/doctor/${id}`);
-  };
+
+  const currentSection =
+    doctorSections.find((s) => isSectionActive(s.id)) || doctorSections[0];
 
   return (
-    <div className="bg-background text-foreground min-h-screen">
-      {/* Top Glassmorphic Header */}
-      <header className="bg-background/90 border-b border-border/60 sticky top-0 z-40 backdrop-blur-md transition-all">
-        <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-8">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="flex items-center gap-3 group"
-              aria-label="HealOS home"
-              title="HealOS home"
-            >
-              <HealOSLogo size={30} />
-            </Link>
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="hairline-b sticky top-0 z-40 bg-background/90 backdrop-blur-md">
+        <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
+          <Link
+            href="/"
+            className="flex items-center gap-3"
+            aria-label="HealOS home"
+            title="HealOS home"
+          >
+            <HealOSLogo size={28} />
+          </Link>
+          <span className="mono-label hairline-l hidden pl-4 text-muted-foreground md:inline">
+            Clinician / {currentSection.label}
+          </span>
 
-            <div className="hidden md:flex items-center gap-2 border-l border-border/60 pl-4">
-              <span className="mono-label text-[11px] text-muted-foreground uppercase font-mono tracking-wider">
-                Clinician Portal
-              </span>
-              <span className="text-muted-foreground/50">/</span>
-              <span className="mono-label text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <ShieldCheck className="size-3.5 text-emerald-500" />
-                {currentSection?.label}
-              </span>
-            </div>
-          </div>
-
-          {/* Search bar instrument */}
           <button
             type="button"
             onClick={() =>
               window.dispatchEvent(new CustomEvent("open-command-menu"))
             }
-            aria-label="Search patients, MRN, lab results, prescriptions"
-            title="Search patients, MRN, lab results, prescriptions"
-            className="hidden lg:flex w-80 items-center gap-2.5 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:border-primary/50 transition-all text-left cursor-pointer"
+            aria-label="Search patients, MRN, lab results"
+            className="hairline ml-auto hidden w-72 items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-primary/40 lg:flex"
           >
-            <Search className="text-muted-foreground size-3.5 shrink-0" />
-            <span className="mono-label text-muted-foreground/70 flex-1 text-xs truncate">
-              Search patients, MRN, lab results...
+            <Search className="size-3.5 text-muted-foreground" />
+            <span className="mono-label w-full truncate text-xs text-muted-foreground">
+              Search patients, MRN, results
             </span>
-            <kbd className="mono-label hidden xl:inline-block rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground border border-border">
-              ⌘K
-            </kbd>
           </button>
 
-          {/* Right Header Actions */}
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="ml-auto flex items-center gap-2 lg:ml-0">
             <NotificationBell />
-
             <ThemeToggle />
-
-            <div className="border-l border-border/60 pl-3">
+            <div className="hairline-l pl-3">
               <UserProfileMenu />
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Layout Container */}
       <div className="flex">
-        {/* Sidebar Navigation */}
         <aside
-          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? "w-18 items-center px-2" : "w-64"}`}
+          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col overflow-y-auto border-r border-(--hairline) p-3 transition-all duration-300 ease-in-out md:flex ${
+            isSidebarCollapsed ? "w-18 items-center px-2" : "w-60"
+          }`}
         >
-          {isSidebarCollapsed ? (
-            <div className="mb-4 mt-2 flex justify-center">
-              <div className="size-8 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-xs">
-                {user?.name?.charAt(0) || "D"}
-              </div>
-            </div>
-          ) : (
-            <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5">
-              <Sparkles className="size-4 text-emerald-500 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">
-                  Dr. {user?.name || "Clinician"}
-                </p>
-                <p className="mono-label text-[10px] text-emerald-600 dark:text-emerald-400 font-mono uppercase">
-                  {user?.role || "DOCTOR"} · Active Duty
-                </p>
-              </div>
-            </div>
-          )}
-
           <nav
-            aria-label="Doctor portal sidebar navigation"
-            title="Doctor portal sidebar navigation"
-            className="flex flex-col gap-1 w-full"
+            aria-label="Clinician sidebar"
+            className="flex w-full flex-col gap-0.5"
           >
-            {doctorSections.map((s) => {
+            {doctorSections.map((s, i) => {
               const Icon = s.icon;
               const isActive = isSectionActive(s.id);
               const href = s.id === "shift" ? "/doctor" : `/doctor/${s.id}`;
@@ -174,53 +161,69 @@ export function DoctorShell({ children }: { children: ReactNode }) {
                 <Link
                   key={s.id}
                   href={href}
+                  prefetch
                   title={isSidebarCollapsed ? s.label : undefined}
-                  className={`mono-label group relative flex items-center ${isSidebarCollapsed ? "justify-center px-0 py-3" : "gap-3 px-3.5 py-2.5"} rounded-lg text-left transition-all cursor-pointer text-xs ${
+                  className={`mono-label group relative flex items-center text-left transition-colors ${
+                    isSidebarCollapsed
+                      ? "justify-center px-0 py-3"
+                      : "gap-3 px-3 py-2.5"
+                  } ${
                     isActive
-                      ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      ? "bg-accent/10 text-foreground"
+                      : "text-muted-foreground hover:bg-foreground/3 hover:text-foreground"
                   }`}
                 >
-                  <Icon
-                    className={`size-4 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === "settings" ? "group-hover:rotate-90" : "group-hover:scale-[1.15]"}`}`}
-                  />
-                  {!isSidebarCollapsed && <span>{s.label}</span>}
+                  {isActive && !isSidebarCollapsed ? (
+                    <motion.span
+                      layoutId="doctor-nav-marker"
+                      className="absolute top-0 left-0 h-full w-0.5 bg-accent"
+                    />
+                  ) : null}
+                  {!isSidebarCollapsed ? (
+                    <span className="text-accent/60">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                  ) : null}
+                  <Icon className="size-3.5" />
+                  {!isSidebarCollapsed ? s.label : null}
                 </Link>
               );
             })}
           </nav>
 
           <div
-            className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3.5"}`}
+            className={`hairline mt-auto overflow-hidden ${
+              isSidebarCollapsed ? "flex flex-col items-center p-2 py-3" : "p-3"
+            }`}
           >
             {isSidebarCollapsed ? (
               <span
-                className="size-2 rounded-full bg-emerald-500 animate-pulse"
-                title="On Shift & Available"
+                className="size-1.5 animate-pulse rounded-full bg-accent"
+                title="Signed in"
               />
             ) : (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-mono">
-                    Duty Status
+                <p className="mono-label text-muted-foreground">Clinician</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="size-1.5 animate-pulse rounded-full bg-accent" />
+                  <span className="mono-label truncate">
+                    {user?.name ? `Dr. ${user.name}` : "Signed in"}
                   </span>
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
-                <p className="font-semibold text-xs mt-1.5 text-foreground">
-                  On Shift &amp; Available
-                </p>
-                <p className="mono-label text-[10px] text-muted-foreground mt-0.5 font-mono">
-                  MongoDB Atlas Sync Active
+                <p className="mono-label mt-2 text-muted-foreground">
+                  Shift, clinic, and notes stay on this account
                 </p>
               </>
             )}
           </div>
 
           <button
+            type="button"
             onClick={toggleSidebar}
-            className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 ${isSidebarCollapsed ? "" : "w-full"}`}
+            className={`hairline mt-3 flex items-center justify-center p-2 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground ${
+              isSidebarCollapsed ? "" : "w-full"
+            }`}
             aria-label="Toggle sidebar"
-            title="Toggle sidebar"
           >
             {isSidebarCollapsed ? (
               <PanelLeftOpen className="size-4.5" />
@@ -230,38 +233,15 @@ export function DoctorShell({ children }: { children: ReactNode }) {
           </button>
         </aside>
 
-        {/* Main Content Area */}
-        <main className="min-w-0 flex-1 relative pb-20 md:pb-0">
-          {/* Mobile "Header" - just the title of the current section */}
-          <div className="md:hidden border-b border-border/60 bg-card/40 p-4 sticky top-16 z-30 backdrop-blur-md flex items-center gap-2">
-            {currentSection && (
-              <currentSection.icon className="size-4 text-primary" />
-            )}
-            <h1 className="font-semibold text-sm">{currentSection?.label}</h1>
-          </div>
-
-          <div className="mx-auto w-full">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.15, ease: "easeInOut" }}
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+        <main className="relative min-w-0 flex-1 pb-24 md:pb-0">
+          {children}
         </main>
       </div>
 
-      {/* Persistent Bottom Navigation Bar - Mobile Only */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+      <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-border/60 bg-background/95 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] backdrop-blur-xl md:hidden dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
         <nav
-          aria-label="Doctor portal mobile navigation"
-          title="Doctor portal mobile navigation"
-          className="flex justify-around items-center px-1.5 py-1 max-w-md mx-auto"
+          aria-label="Clinician mobile navigation"
+          className="mx-auto flex max-w-md items-center justify-around px-1.5 py-1"
         >
           {doctorSections
             .filter((s) => mainMobileTabs.includes(s.id))
@@ -273,68 +253,54 @@ export function DoctorShell({ children }: { children: ReactNode }) {
                 <Link
                   key={s.id}
                   href={href}
+                  prefetch
                   onClick={() => setIsMoreOpen(false)}
-                  className="relative flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-lg group tap-highlight-transparent"
+                  className="tap-highlight-transparent group relative flex min-w-0 flex-1 flex-col items-center justify-center px-0.5 py-1 outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                 >
-                  <motion.div
-                    animate={
-                      isActive ? { scale: 1.12, y: -1 } : { scale: 1, y: 0 }
-                    }
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className={`relative flex items-center justify-center p-1 rounded-full transition-colors ${
-                      isActive
-                        ? "text-primary bg-primary/10"
-                        : "text-muted-foreground group-hover:text-foreground"
-                    }`}
-                  >
-                    <Icon
-                      className={`size-4.5 ${isActive ? "fill-primary/20" : ""}`}
-                      strokeWidth={isActive ? 2.5 : 2}
-                    />
-                  </motion.div>
                   <span
-                    className={`text-[10px] mt-0.5 font-medium transition-colors truncate max-w-full text-center tracking-tight leading-tight block ${
+                    className={`flex items-center justify-center p-1 ${
                       isActive
-                        ? "text-primary font-semibold"
+                        ? "bg-primary/10 text-primary"
                         : "text-muted-foreground"
                     }`}
                   >
-                    {s.label.split(" ")[0]}
+                    <Icon
+                      className="size-4.5"
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
+                  </span>
+                  <span
+                    className={`mt-0.5 block max-w-full truncate text-center text-[10px] leading-tight tracking-tight ${
+                      isActive
+                        ? "font-semibold text-primary"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {s.shortLabel}
                   </span>
                 </Link>
               );
             })}
 
-          {/* More / Menu Tab (Drawer) */}
           <Drawer open={isMoreOpen} onOpenChange={setIsMoreOpen}>
             <DrawerTrigger asChild>
               <button
                 type="button"
-                className="relative flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-lg group tap-highlight-transparent"
+                className="tap-highlight-transparent relative flex min-w-0 flex-1 flex-col items-center justify-center px-0.5 py-1 outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
               >
-                <div
-                  className={`relative flex items-center justify-center p-1 rounded-full transition-colors ${
-                    isMoreOpen ||
-                    !mainMobileTabs.some((id) => isSectionActive(id))
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground group-hover:text-foreground"
+                <span
+                  className={`flex items-center justify-center p-1 ${
+                    moreMobileTabs.some((id) => isSectionActive(id))
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground"
                   }`}
                 >
-                  <MoreHorizontal
-                    className="size-4.5"
-                    strokeWidth={
-                      isMoreOpen ||
-                      !mainMobileTabs.some((id) => isSectionActive(id))
-                        ? 2.5
-                        : 2
-                    }
-                  />
-                </div>
+                  <Menu className="size-4.5" />
+                </span>
                 <span
-                  className={`text-[10px] mt-0.5 font-medium transition-colors truncate max-w-full text-center tracking-tight leading-tight block ${
-                    isMoreOpen ||
-                    !mainMobileTabs.some((id) => isSectionActive(id))
-                      ? "text-primary font-semibold"
+                  className={`mt-0.5 block text-[10px] ${
+                    moreMobileTabs.some((id) => isSectionActive(id))
+                      ? "font-semibold text-primary"
                       : "text-muted-foreground"
                   }`}
                 >
@@ -342,17 +308,17 @@ export function DoctorShell({ children }: { children: ReactNode }) {
                 </span>
               </button>
             </DrawerTrigger>
-            <DrawerContent className="pb-6 bg-background/95 backdrop-blur-xl border-t border-border/60">
-              <DrawerHeader className="border-b border-border/40 pb-4 flex justify-between items-center px-6">
-                <DrawerTitle className="text-lg font-semibold flex items-center gap-2">
-                  <MoreHorizontal className="size-5 text-primary" />
+            <DrawerContent className="border-t border-border/60 bg-background/95 backdrop-blur-xl">
+              <DrawerHeader className="flex items-center justify-between border-b border-border/40 px-6 pb-4 text-left">
+                <DrawerTitle className="flex items-center gap-2 text-lg font-semibold">
+                  <Menu className="size-5 text-primary" />
                   Menu
                 </DrawerTitle>
                 <UserProfileMenu />
               </DrawerHeader>
-              <div className="grid grid-cols-4 gap-y-6 gap-x-2 p-6 pt-8">
+              <div className="grid grid-cols-4 gap-4 p-4">
                 {doctorSections
-                  .filter((s) => !mainMobileTabs.includes(s.id))
+                  .filter((s) => moreMobileTabs.includes(s.id))
                   .map((s) => {
                     const Icon = s.icon;
                     const isActive = isSectionActive(s.id);
@@ -363,29 +329,32 @@ export function DoctorShell({ children }: { children: ReactNode }) {
                         key={s.id}
                         href={href}
                         onClick={() => setIsMoreOpen(false)}
-                        className="flex flex-col items-center justify-start gap-2 group tap-highlight-transparent"
+                        className={`flex flex-col items-center gap-2 border p-3 transition-colors ${
+                          isActive
+                            ? "border-primary/20 bg-primary/10 text-primary"
+                            : "border-border/40 bg-muted/40 text-muted-foreground"
+                        }`}
                       >
-                        <div
-                          className={`flex items-center justify-center size-12 rounded-full transition-all ${
-                            isActive
-                              ? "bg-primary/10 text-primary border border-primary/20"
-                              : "bg-muted/50 text-muted-foreground border border-transparent group-hover:bg-muted group-hover:text-foreground"
-                          }`}
-                        >
-                          <Icon className="size-5" />
-                        </div>
-                        <span
-                          className={`text-xs text-center leading-tight ${
-                            isActive
-                              ? "font-semibold text-foreground"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {s.label}
+                        <Icon
+                          className="size-6"
+                          strokeWidth={isActive ? 2.5 : 2}
+                        />
+                        <span className="max-w-full truncate text-center text-[11px] font-semibold">
+                          {s.shortLabel}
                         </span>
                       </Link>
                     );
                   })}
+              </div>
+              <div className="mt-auto border-t border-border/40 p-4">
+                <DrawerClose asChild>
+                  <button
+                    type="button"
+                    className="w-full border border-border/50 bg-muted/50 py-3.5 text-sm font-semibold"
+                  >
+                    Close menu
+                  </button>
+                </DrawerClose>
               </div>
             </DrawerContent>
           </Drawer>

@@ -160,7 +160,7 @@ export function ConsultationForm({
         toast.success("Consultation saved and completed");
         onComplete();
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to save consultation");
     } finally {
       setSaving(false);

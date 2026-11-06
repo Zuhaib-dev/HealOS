@@ -1,24 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
-import {
-  Check,
-  TriangleAlert,
-  PenLine,
-  Send,
-  X,
-  CheckCircle2,
-} from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { useAuthStore } from "@/store/use-auth-store";
-import {
-  fetchDoctorAppointmentsApi,
-  updateAppointmentStatusApi,
-  AppointmentRecord,
-} from "@/lib/api/appointment";
+import { DoctorHeader } from "@/components/doctor/doctor-header";
 import { toast } from "sonner";
-import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { getScheduleApi } from "@/lib/api/doctor";
 import { getSocket } from "@/lib/socket";
 import { formatTimeRange } from "@/lib/time-format";
@@ -53,48 +37,6 @@ function Th({ children }: { children: React.ReactNode }) {
 
 function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
-
-/** Animated vitals sparkline — drawn, never an image. */
-function Vitals({ series }: { series: number[] }) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
-  const pts = series
-    .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
-      const y = 30 - ((v - min) / Math.max(1, max - min)) * 26 - 2;
-      return `${x},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  return (
-    <svg
-      viewBox="0 0 100 32"
-      preserveAspectRatio="none"
-      className="h-8 w-24 shrink-0"
-    >
-      <motion.polyline
-        points={pts}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="1.6"
-        vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-      />
-    </svg>
-  );
-}
-
-function acuityPill(a: "critical" | "guarded" | "stable") {
-  return a === "critical" ? (
-    <Pill tone="bad">critical</Pill>
-  ) : a === "guarded" ? (
-    <Pill tone="warn">guarded</Pill>
-  ) : (
-    <Pill tone="ok">stable</Pill>
-  );
 }
 
 /* ---------- 08 · Rota ---------- */
@@ -137,14 +79,12 @@ export function RotaPanel() {
   });
 
   return (
-    <div>
-      <PanelHeader
-        index="08 / rota"
-        title="My rota"
-        note="Your weekly clinic pattern, as configured by the hospital scheduler, plus booked patients."
-        actions={<ActionButton>Request change</ActionButton>}
+    <div className="pb-24">
+      <DoctorHeader
+        title="Rota"
+        note="Your weekly clinic hours and the patients already booked."
       />
-      <section className="mx-4 rounded-xl border border-border/60 bg-card p-5 sm:mx-8 sm:p-6">
+      <section className="border-b border-border/60 bg-background p-4 sm:px-6 lg:px-8 sm:py-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="mono-label text-muted-foreground">
@@ -173,7 +113,7 @@ export function RotaPanel() {
                   return (
                     <div
                       key={day}
-                      className={`rounded-lg border px-1 py-3 text-center ${working ? "border-accent/30 bg-accent/8" : "border-border/50 bg-muted/20"}`}
+                      className={`border px-1 py-3 text-center ${working ? "border-accent/30 bg-accent/8" : "border-border/50 bg-muted/20"}`}
                     >
                       <p className="text-[10px] font-semibold uppercase text-muted-foreground sm:text-xs">
                         {day}
@@ -190,7 +130,7 @@ export function RotaPanel() {
               )}
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-lg bg-muted/30 p-3">
+              <div className="bg-muted/30 p-3">
                 <p className="mono-label text-muted-foreground">Hours</p>
                 <p className="mt-1 font-mono font-semibold">
                   {formatTimeRange(
@@ -199,13 +139,13 @@ export function RotaPanel() {
                   )}
                 </p>
               </div>
-              <div className="rounded-lg bg-muted/30 p-3">
+              <div className="bg-muted/30 p-3">
                 <p className="mono-label text-muted-foreground">Visit length</p>
                 <p className="mt-1 font-mono font-semibold">
                   {availability.slotDurationMinutes} min
                 </p>
               </div>
-              <div className="rounded-lg bg-muted/30 p-3">
+              <div className="bg-muted/30 p-3">
                 <p className="mono-label text-muted-foreground">
                   Daily capacity
                 </p>
@@ -213,7 +153,7 @@ export function RotaPanel() {
                   {availability.maxPatientsPerDay} patients
                 </p>
               </div>
-              <div className="rounded-lg bg-muted/30 p-3">
+              <div className="bg-muted/30 p-3">
                 <p className="mono-label text-muted-foreground">
                   Consultation fee
                 </p>
@@ -251,7 +191,7 @@ export function RotaPanel() {
               {queueAppointments.map((appointment) => (
                 <article
                   key={appointment._id}
-                  className="flex min-w-0 items-start gap-3 rounded-xl border border-border/60 bg-card p-4"
+                  className="flex min-w-0 items-start gap-3 border border-border/60 bg-background p-4"
                 >
                   <div className="grid size-12 shrink-0 place-items-center rounded-lg bg-primary/10 font-mono text-lg font-bold text-primary">
                     {appointment.queueNumber

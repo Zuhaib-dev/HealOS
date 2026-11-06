@@ -2,23 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import {
-  Check,
-  TriangleAlert,
-  PenLine,
-  Send,
-  X,
-  CheckCircle2,
-} from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { useAuthStore } from "@/store/use-auth-store";
-import {
-  fetchDoctorAppointmentsApi,
-  updateAppointmentStatusApi,
-  AppointmentRecord,
-} from "@/lib/api/appointment";
+import { Send } from "lucide-react";
+import { DoctorHeader } from "@/components/doctor/doctor-header";
 import { toast } from "sonner";
-import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { getHandoversApi, createHandoverApi } from "@/lib/api/doctor";
 
 /* ---------- primitives ---------- */
@@ -41,64 +27,9 @@ function Pill({
   );
 }
 
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
-      {children}
-    </th>
-  );
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
-
-/** Animated vitals sparkline — drawn, never an image. */
-function Vitals({ series }: { series: number[] }) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
-  const pts = series
-    .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
-      const y = 30 - ((v - min) / Math.max(1, max - min)) * 26 - 2;
-      return `${x},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  return (
-    <svg
-      viewBox="0 0 100 32"
-      preserveAspectRatio="none"
-      className="h-8 w-24 shrink-0"
-    >
-      <motion.polyline
-        points={pts}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="1.6"
-        vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-      />
-    </svg>
-  );
-}
-
-function acuityPill(a: "critical" | "guarded" | "stable") {
-  return a === "critical" ? (
-    <Pill tone="bad">critical</Pill>
-  ) : a === "guarded" ? (
-    <Pill tone="warn">guarded</Pill>
-  ) : (
-    <Pill tone="ok">stable</Pill>
-  );
-}
-
 /* ---------- 07 · Handover ---------- */
 
 export function HandoverPanel() {
-  const { user } = useAuthStore();
   const [draft, setDraft] = useState("");
   const [handoversList, setHandoversList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,17 +55,16 @@ export function HandoverPanel() {
       });
       setDraft("");
       fetchHandovers();
-    } catch (err) {
+    } catch {
       toast.error("Failed to post handover");
     }
   };
 
   return (
-    <div>
-      <PanelHeader
-        index="07 / handover"
-        title="Handover & messages"
-        note="Everything the outgoing team flagged, plus what you want the next shift to know."
+    <div className="pb-24">
+      <DoctorHeader
+        title="Handover"
+        note="What the last shift flagged, and what you want the next one to know."
       />
       <div className="grid lg:grid-cols-[1fr_360px]">
         <div className="hairline-l px-5 py-6 sm:px-8">

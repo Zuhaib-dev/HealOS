@@ -1,4 +1,4 @@
-import { ResultsPanel } from "@/components/doctor/doctor-panels";
+import { ResultsPanel } from "@/components/doctor/panels/Results-inbox-panel";
 
 export default function ResultsPanelPage() {
   return <ResultsPanel />;

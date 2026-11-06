@@ -1,18 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
-  Check,
-  TriangleAlert,
-  PenLine,
-  Send,
   X,
-  CheckCircle2,
-  Calendar,
   FileText,
   ChevronRight,
-  User as UserIcon,
   Activity,
   Pill as PillIcon,
   FileDigit,
@@ -20,94 +13,16 @@ import {
   FileCheck,
   Loader2,
 } from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import { ActionButton } from "@/components/admin/admin-shell";
+import { DoctorHeader } from "@/components/doctor/doctor-header";
 import { useAuthStore } from "@/store/use-auth-store";
-import {
-  updateAppointmentStatusApi,
-  AppointmentRecord,
-} from "@/lib/api/appointment";
 import { toast } from "sonner";
 import { openProtectedReport } from "@/lib/api/reports";
 import { getDashboardStatsApi, getPatientHistoryApi } from "@/lib/api/doctor";
-import { AnimatePresence } from "motion/react";
 import { ConsultationForm } from "@/components/doctor/shared/consultation-form";
 import { OpdReceiptModal } from "@/components/doctor/shared/opd-receipt-modal";
 import { getSocket } from "@/lib/socket";
 import { getFileUrl } from "@/lib/utils";
-
-/* ---------- primitives ---------- */
-
-function Pill({
-  children,
-  tone,
-}: {
-  children: React.ReactNode;
-  tone: "ok" | "warn" | "bad" | "mute";
-}) {
-  const map = {
-    ok: "bg-accent/12 text-brass",
-    warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
-    mute: "bg-foreground/[0.04] text-muted-foreground",
-  } as const;
-  return (
-    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
-  );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
-      {children}
-    </th>
-  );
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
-
-/** Animated vitals sparkline — drawn, never an image. */
-function Vitals({ series }: { series: number[] }) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
-  const pts = series
-    .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
-      const y = 30 - ((v - min) / Math.max(1, max - min)) * 26 - 2;
-      return `${x},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  return (
-    <svg
-      viewBox="0 0 100 32"
-      preserveAspectRatio="none"
-      className="h-8 w-24 shrink-0"
-    >
-      <motion.polyline
-        points={pts}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="1.6"
-        vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-      />
-    </svg>
-  );
-}
-
-function acuityPill(a: "critical" | "guarded" | "stable") {
-  return a === "critical" ? (
-    <Pill tone="bad">critical</Pill>
-  ) : a === "guarded" ? (
-    <Pill tone="warn">guarded</Pill>
-  ) : (
-    <Pill tone="ok">stable</Pill>
-  );
-}
 
 /* ---------- 01 · Shift board ---------- */
 
@@ -121,7 +36,7 @@ export function ShiftPanel() {
       .then((res) => {
         setStats(res.data);
       })
-      .catch((err) => {
+      .catch(() => {
         toast.error("Failed to load dashboard stats");
       })
       .finally(() => {
@@ -158,7 +73,6 @@ export function ShiftPanel() {
       label: "Pending Follow-ups",
       value: stats?.followUpsCount || 0,
       note: "Scheduled target dates",
-      highlight: true,
     },
     {
       label: "Time on shift",
@@ -184,7 +98,7 @@ export function ShiftPanel() {
       if (res.status === "success") {
         setHistoryData(res.data);
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to load patient history");
     } finally {
       setHistoryLoading(false);
@@ -202,153 +116,80 @@ export function ShiftPanel() {
 
   return (
     <div>
-      <PanelHeader
-        index="01 / shift"
-        title={`Shift Board — Dr. ${user?.name || "Clinician"}`}
-        note={`Duty Designation: ${user?.role || "DOCTOR"} · Email: ${user?.email || "N/A"}`}
-        actions={
-          <>
-            <ActionButton>Print round sheet</ActionButton>
-            <ActionButton tone="solid">Start ward round</ActionButton>
-          </>
-        }
+      <DoctorHeader
+        title={user?.name ? `Dr. ${user.name}` : "Shift"}
+        note="Today's caseload. Open a patient to review history or write a note."
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statCards.map((s, i) => (
-          <motion.div
-            key={i}
-            whileHover={{ y: -2 }}
-            className={`border border-border/60 rounded-2xl flex flex-col justify-between p-5 min-h-30 transition-all shadow-sm ${
-              s.highlight
-                ? "bg-primary/5 border-primary/20"
-                : "bg-card hover:bg-muted/30"
-            }`}
-          >
-            <span
-              className={`mono-label text-xs ${s.highlight ? "text-primary font-bold" : "text-muted-foreground"}`}
-            >
+      <div className="grid grid-cols-2 gap-px bg-border/60 lg:grid-cols-4">
+        {statCards.map((s) => (
+          <div key={s.label} className="bg-background p-4 sm:p-5">
+            <p className="mono-label text-[10px] text-muted-foreground uppercase">
               {s.label}
-            </span>
-            <div>
-              <div
-                className={`text-3xl font-display font-bold tracking-tight mt-3 ${s.highlight ? "text-primary" : "text-foreground"}`}
-              >
-                {loading ? (
-                  <Loader2 className="size-6 animate-spin opacity-50" />
-                ) : (
-                  s.value
-                )}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1 opacity-80">
-                {loading ? "Loading..." : s.note}
-              </div>
-            </div>
-          </motion.div>
+            </p>
+            <p className="mt-1 font-display text-2xl font-bold">
+              {loading ? "—" : s.value}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{s.note}</p>
+          </div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6 pb-12">
-        <div className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b border-border/40 bg-muted/30 flex items-center justify-between">
-            <p className="font-bold text-sm uppercase tracking-wider flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-emerald-500" /> Recent
-              Patients
+      <div className="grid gap-px bg-border/60 pb-24 lg:grid-cols-2">
+        <div className="bg-background">
+          <p className="border-b border-border/40 px-4 py-3 font-display text-sm font-bold sm:px-6">
+            Assigned patients
+          </p>
+          {patients.length > 0 ? (
+            patients.slice(0, 8).map((p) => (
+              <button
+                key={p._id}
+                type="button"
+                onClick={() => handleViewPatient(p)}
+                className="flex w-full items-center justify-between gap-4 border-b border-border/40 px-4 py-3 text-left hover:bg-muted/40 sm:px-6"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">{p.name}</span>
+                  <span className="mono-label text-[10px] text-muted-foreground">
+                    {p.phone || p.email}
+                  </span>
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+              </button>
+            ))
+          ) : (
+            <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+              No assigned patients yet.
             </p>
-          </div>
-          <div className="p-2 space-y-1">
-            {patients.length > 0 ? (
-              patients.slice(0, 5).map((p) => (
-                <motion.div
-                  key={p._id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  onClick={() => handleViewPatient(p)}
-                  className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                      {p.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-foreground">{p.name}</p>
-                      <p className="mono-label text-muted-foreground text-[10px]">
-                        {p.email} • {p.phone || "No phone"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="size-8 rounded-full bg-background border border-border/60 flex items-center justify-center text-muted-foreground group-hover:border-primary/50 group-hover:text-primary transition-colors">
-                    <ChevronRight className="size-4" />
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="p-8 text-center text-sm text-muted-foreground flex flex-col items-center justify-center">
-                <UserIcon className="size-8 opacity-20 mb-3" />
-                No active patients found.
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
-        <div className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b border-border/40 bg-muted/30 flex items-center justify-between">
-            <p className="font-bold text-sm uppercase tracking-wider flex items-center gap-2">
-              <Calendar className="size-4 text-indigo-500" /> Today's Follow-Ups
+        <div className="bg-background">
+          <p className="border-b border-border/40 px-4 py-3 font-display text-sm font-bold sm:px-6">
+            Follow-ups today
+          </p>
+          {todayFollowUps.length > 0 ? (
+            todayFollowUps.map((p, i) => (
+              <button
+                key={p._id || i}
+                type="button"
+                onClick={() => handleViewPatient(p)}
+                className="flex w-full items-center justify-between gap-4 border-b border-border/40 px-4 py-3 text-left hover:bg-muted/40 sm:px-6"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">{p.name}</span>
+                  <span className="mono-label text-[10px] text-muted-foreground">
+                    Walk-in expected
+                  </span>
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+              </button>
+            ))
+          ) : (
+            <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+              No follow-ups scheduled today.
             </p>
-          </div>
-          <div className="p-2 space-y-1">
-            {todayFollowUps.length > 0 ? (
-              todayFollowUps.map((p, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  onClick={() => handleViewPatient(p)}
-                  className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors group border-l-2 border-transparent hover:border-indigo-500"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="size-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold">
-                      {p.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-foreground">{p.name}</p>
-                      <p className="mono-label text-muted-foreground text-[10px]">
-                        Walk-in Expected
-                      </p>
-                    </div>
-                  </div>
-                  <div className="size-8 rounded-full bg-background border border-border/60 flex items-center justify-center text-muted-foreground group-hover:border-indigo-500 group-hover:text-indigo-500 transition-colors">
-                    <ChevronRight className="size-4" />
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="p-8 text-center text-sm text-muted-foreground flex flex-col items-center justify-center">
-                <Calendar className="size-8 opacity-20 mb-3" />
-                No follow-ups scheduled for today.
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b border-border/40 bg-muted/30 flex items-center justify-between">
-            <p className="font-bold text-sm uppercase tracking-wider flex items-center gap-2 text-muted-foreground">
-              <PenLine className="size-4" /> Pending Actions
-            </p>
-          </div>
-          <div className="p-12 flex flex-col items-center justify-center text-center h-75">
-            <div className="size-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">
-              <Check className="size-8" strokeWidth={3} />
-            </div>
-            <h3 className="font-display font-bold text-lg mb-1">
-              You're all caught up!
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-50">
-              No pending labs to review or documents to sign.
-            </p>
-          </div>
+          )}
         </div>
       </div>
 
@@ -367,7 +208,7 @@ export function ShiftPanel() {
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
               className="fixed top-0 right-0 h-full w-full sm:w-125 lg:w-150 bg-background border-l border-border/60 shadow-2xl z-50 flex flex-col"
             >
               <div className="p-6 border-b border-border/40 flex items-center justify-between bg-card">

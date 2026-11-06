@@ -1,19 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
-  Check,
-  TriangleAlert,
-  PenLine,
-  Send,
   X,
-  CheckCircle2,
+  Loader2,
+  Activity,
+  FileText,
+  Pill as PillIcon,
+  FileDigit,
+  ChevronRight,
+  Clock,
+  Eye,
+  FileCheck,
 } from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import { ActionButton } from "@/components/admin/admin-shell";
+import { DoctorHeader } from "@/components/doctor/doctor-header";
 import { useAuthStore } from "@/store/use-auth-store";
 import {
-  updateAppointmentStatusApi,
   fetchDoctorAppointmentsApi,
   AppointmentRecord,
 } from "@/lib/api/appointment";
@@ -21,97 +25,10 @@ import { toast } from "sonner";
 import { openProtectedReport } from "@/lib/api/reports";
 import { getPatientHistoryApi } from "@/lib/api/doctor";
 import { formatTimeRange } from "@/lib/time-format";
-import { AnimatePresence } from "motion/react";
-import {
-  Loader2,
-  Activity,
-  FileText,
-  Pill as PillIcon,
-  FileDigit,
-  ChevronRight,
-  User as UserIcon,
-  Clock,
-  Eye,
-  FileCheck,
-} from "lucide-react";
 import { ConsultationForm } from "@/components/doctor/shared/consultation-form";
 import { OpdReceiptModal } from "@/components/doctor/shared/opd-receipt-modal";
 import { getSocket } from "@/lib/socket";
 import { getFileUrl } from "@/lib/utils";
-
-/* ---------- primitives ---------- */
-
-function Pill({
-  children,
-  tone,
-}: {
-  children: React.ReactNode;
-  tone: "ok" | "warn" | "bad" | "mute";
-}) {
-  const map = {
-    ok: "bg-accent/12 text-brass",
-    warn: "bg-foreground/[0.06] text-foreground",
-    bad: "bg-destructive/12 text-destructive",
-    mute: "bg-foreground/[0.04] text-muted-foreground",
-  } as const;
-  return (
-    <span className={`mono-label px-2 py-1 ${map[tone]}`}>{children}</span>
-  );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="mono-label text-muted-foreground px-4 py-3 text-left font-normal">
-      {children}
-    </th>
-  );
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
-}
-
-/** Animated vitals sparkline — drawn, never an image. */
-function Vitals({ series }: { series: number[] }) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
-  const pts = series
-    .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
-      const y = 30 - ((v - min) / Math.max(1, max - min)) * 26 - 2;
-      return `${x},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  return (
-    <svg
-      viewBox="0 0 100 32"
-      preserveAspectRatio="none"
-      className="h-8 w-24 shrink-0"
-    >
-      <motion.polyline
-        points={pts}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="1.6"
-        vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-      />
-    </svg>
-  );
-}
-
-function acuityPill(a: "critical" | "guarded" | "stable") {
-  return a === "critical" ? (
-    <Pill tone="bad">critical</Pill>
-  ) : a === "guarded" ? (
-    <Pill tone="warn">guarded</Pill>
-  ) : (
-    <Pill tone="ok">stable</Pill>
-  );
-}
 
 /* ---------- 02 · My patients ---------- */
 
@@ -139,7 +56,7 @@ export function RoundsPanel() {
           res.appointments.filter((a: any) => a.status === "CONFIRMED"),
         );
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to load waiting room");
     } finally {
       setLoading(false);
@@ -171,7 +88,7 @@ export function RoundsPanel() {
       if (res.status === "success") {
         setHistoryData(res.data);
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to load patient history");
     } finally {
       setHistoryLoading(false);
@@ -179,29 +96,22 @@ export function RoundsPanel() {
   };
 
   return (
-    <div className="pb-12">
-      <PanelHeader
-        index="02 / waiting room"
-        title="Today's Patients"
-        note="Patients whose appointments you have accepted. Click to review history and start consultation."
+    <div className="pb-24">
+      <DoctorHeader
+        title="Patients"
+        note="Accepted visits. Open a row to review history or start the note."
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2">
+      <div className="flex flex-col gap-px bg-border/60">
         {loading ? (
-          <div className="col-span-full p-12 flex flex-col items-center justify-center text-muted-foreground">
-            <Loader2 className="size-8 animate-spin mb-4" />
-            Loading waiting room...
+          <div className="bg-background px-4 py-16 text-center text-sm text-muted-foreground">
+            Loading today’s list…
           </div>
         ) : appointments.length === 0 ? (
-          <div className="col-span-full p-16 flex flex-col items-center justify-center bg-card border border-dashed border-border/60 rounded-2xl">
-            <div className="size-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
-              <UserIcon className="size-8 text-muted-foreground/50" />
-            </div>
-            <h3 className="font-display font-bold text-lg mb-1">
-              Waiting Room is empty
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Accept pending requests from the Clinic List to see them here.
+          <div className="bg-background px-4 py-16 text-center">
+            <h3 className="font-display text-lg font-bold">No patients yet</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Accept a visit from Clinic to see it here.
             </p>
           </div>
         ) : (
@@ -211,51 +121,26 @@ export function RoundsPanel() {
                 ? apt.patient
                 : { name: "Unknown", _id: apt.patient, email: "" };
             return (
-              <motion.article
+              <button
                 key={apt._id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ y: -4 }}
+                type="button"
                 onClick={() => handleViewPatient(apt)}
-                className="bg-card border border-border/60 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-40"
+                className="flex w-full items-center justify-between gap-4 bg-background px-4 py-4 text-left hover:bg-muted/40 sm:px-6"
               >
-                <div>
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-display font-bold text-lg">
-                        {p.name?.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h3 className="font-display text-lg font-bold group-hover:text-primary transition-colors">
-                          {p.name}
-                        </h3>
-                        <p className="mono-label text-muted-foreground text-[10px] uppercase">
-                          {p.email || "No email"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-muted/30 rounded-lg p-3 border border-border/40">
-                    <p className="text-xs font-semibold flex items-center gap-1.5 text-foreground">
-                      <Clock className="size-3 text-emerald-500" />{" "}
-                      {formatTimeRange(apt.timeSlot, apt.slotEndTime)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                      {apt.reason}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-border/40 flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                    Ready for consult
+                <span className="min-w-0">
+                  <span className="block truncate font-display text-base font-bold">
+                    {p.name}
                   </span>
-                  <div className="size-8 rounded-full bg-background border border-border/60 flex items-center justify-center text-muted-foreground group-hover:border-primary/50 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                    <ChevronRight className="size-4" />
-                  </div>
-                </div>
-              </motion.article>
+                  <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1 font-mono text-foreground">
+                      <Clock className="size-3" />
+                      {formatTimeRange(apt.timeSlot, apt.slotEndTime)}
+                    </span>
+                    <span className="line-clamp-1">{apt.reason}</span>
+                  </span>
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+              </button>
             );
           })
         )}
@@ -276,7 +161,7 @@ export function RoundsPanel() {
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
               className="fixed top-0 right-0 h-full w-full sm:w-125 lg:w-150 bg-background border-l border-border/60 shadow-2xl z-50 flex flex-col"
             >
               <div className="p-6 border-b border-border/40 flex items-center justify-between bg-card">

@@ -11,7 +11,8 @@ import {
   Clock3,
   CheckCircle2,
 } from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import { ActionButton } from "@/components/admin/admin-shell";
+import { DoctorHeader } from "@/components/doctor/doctor-header";
 import {
   updateAppointmentStatusApi,
   AppointmentRecord,
@@ -151,7 +152,7 @@ export function ClinicPanel() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative pb-24">
       <AnimatePresence>
         {activeConsultation && (
           <ConsultationForm
@@ -165,18 +166,17 @@ export function ClinicPanel() {
           />
         )}
       </AnimatePresence>
-      <PanelHeader
-        index="03 / clinic"
-        title="Clinic appointments"
-        note="Your patient list, sorted by most recently booked. Search and filter it to find the right visit."
+      <DoctorHeader
+        title="Clinic"
+        note="Search, confirm, and start visits. Newest bookings first."
         actions={
           <ActionButton tone="solid" onClick={() => loadAppointments(page)}>
-            <RefreshCw className="mr-2 size-3.5" /> Refresh list
+            <RefreshCw className="mr-2 size-3.5" /> Refresh
           </ActionButton>
         }
       />
 
-      <section className="mx-4 mb-6 rounded-xl border border-border/60 bg-card p-4 shadow-sm sm:mx-6 sm:p-5 lg:mx-8">
+      <section className="border-b border-border/60 bg-background p-4 sm:px-6 lg:px-8">
         <div className="mb-4 flex items-center gap-2">
           <SlidersHorizontal className="size-4 text-primary" />
           <h2 className="text-sm font-semibold">Find appointments</h2>
@@ -197,7 +197,7 @@ export function ClinicPanel() {
                 setPage(1);
               }}
               placeholder="Patient name, phone, or reason"
-              className="w-full rounded-lg border border-border/70 bg-background py-2.5 pl-9 pr-3 text-sm outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/15"
+              className="w-full border border-border/70 bg-background py-2.5 pl-9 pr-3 text-sm outline-none transition placeholder:text-muted-foreground/70 focus-visible:ring-2 focus-visible:ring-primary/40"
             />
           </label>
           <label className="relative">
@@ -209,7 +209,7 @@ export function ClinicPanel() {
                 setStatusFilter(event.target.value);
                 setPage(1);
               }}
-              className="w-full appearance-none rounded-lg border border-border/70 bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+              className="w-full appearance-none border border-border/70 bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <option value="ALL">All statuses</option>
               <option value="PENDING">Pending</option>
@@ -227,7 +227,7 @@ export function ClinicPanel() {
                 setPeriodFilter(event.target.value);
                 setPage(1);
               }}
-              className="w-full appearance-none rounded-lg border border-border/70 bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+              className="w-full appearance-none border border-border/70 bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <option value="ALL">All dates</option>
               <option value="UPCOMING">Upcoming</option>
@@ -243,7 +243,7 @@ export function ClinicPanel() {
               setPeriodFilter("ALL");
               setPage(1);
             }}
-            className="rounded-lg border border-border/70 px-4 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+            className="min-h-10 border border-border/70 px-4 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
           >
             Clear filters
           </button>
@@ -262,8 +262,8 @@ export function ClinicPanel() {
 
       {/* Dashboard Visualizations */}
       {!loading && appointments.length > 0 && (
-        <div className="px-4 sm:px-6 lg:px-8 pb-8 pt-4">
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="border-b border-border/60 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <div className="xl:col-span-1">
               <QueueRadar appointments={appointments} />
             </div>
@@ -293,13 +293,13 @@ export function ClinicPanel() {
         </div>
       )}
 
-      <div className="space-y-3 px-4 pb-4 xl:hidden sm:px-6">
+      <div className="flex flex-col gap-px bg-border/60 pb-4 xl:hidden">
         {loading ? (
-          <div className="rounded-xl border border-border/60 p-8 text-center text-sm text-muted-foreground">
+          <div className="bg-background p-8 text-center text-sm text-muted-foreground">
             Loading appointments…
           </div>
         ) : appointments.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border p-8 text-center">
+          <div className="bg-background p-8 text-center">
             <p className="font-medium">No matching appointments</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Try clearing a filter or searching for another patient.
@@ -321,10 +321,7 @@ export function ClinicPanel() {
                     : "mute";
             const isBusy = busyId === appointment._id;
             return (
-              <article
-                key={appointment._id}
-                className="rounded-xl border border-border/60 bg-card p-4 shadow-sm"
-              >
+              <article key={appointment._id} className="bg-background p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-start gap-3">
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary">
@@ -382,7 +379,7 @@ export function ClinicPanel() {
                         onClick={() =>
                           handleUpdateStatus(appointment._id, "CONFIRMED")
                         }
-                        className="min-h-10 rounded-lg bg-emerald-600 px-3.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                        className="min-h-10 bg-foreground px-3.5 text-xs font-semibold text-background transition hover:opacity-90 disabled:opacity-50"
                       >
                         {isBusy ? "Saving…" : "Confirm visit"}
                       </button>
@@ -392,7 +389,7 @@ export function ClinicPanel() {
                         onClick={() =>
                           handleUpdateStatus(appointment._id, "CANCELLED")
                         }
-                        className="min-h-10 rounded-lg border border-border px-3.5 text-xs font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50"
+                        className="min-h-10 border border-border px-3.5 text-xs font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50"
                       >
                         Cancel
                       </button>
@@ -405,7 +402,7 @@ export function ClinicPanel() {
                       onClick={() =>
                         handleUpdateStatus(appointment._id, "COMPLETED")
                       }
-                      className="min-h-10 rounded-lg bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
+                      className="min-h-10 bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
                     >
                       Start consultation
                     </button>

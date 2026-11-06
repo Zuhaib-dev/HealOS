@@ -1,16 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
-import {
-  Check,
-  TriangleAlert,
-  PenLine,
-  Send,
-  X,
-  CheckCircle2,
-} from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import { ActionButton } from "@/components/admin/admin-shell";
+import { DoctorHeader } from "@/components/doctor/doctor-header";
 import { toast } from "sonner";
 import {
   getClinicalNotesApi,
@@ -46,7 +38,7 @@ export function NotesPanel() {
       ]);
       setNotes(notesRes.data?.notes || []);
       setPatients(patientsRes.data?.patients || []);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load clinical notes or patients");
     } finally {
       setLoading(false);
@@ -81,7 +73,7 @@ export function NotesPanel() {
         );
         loadData();
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to save clinical note.");
     } finally {
       setSaving(false);
@@ -89,18 +81,17 @@ export function NotesPanel() {
   };
 
   return (
-    <div>
-      <PanelHeader
-        index="06 / documentation"
-        title="Clinical notes"
-        note="Structured note capture with templates, so what you write once lands in the record, the ledger and the discharge letter."
+    <div className="pb-24">
+      <DoctorHeader
+        title="Notes"
+        note="Pick a patient, write the note, then sign it into the record."
         actions={
           <ActionButton
             tone="solid"
             onClick={handleSaveNote}
             disabled={saving || !selectedPatientId}
           >
-            {saving ? "Signing..." : "Sign note"}
+            {saving ? "Signing…" : "Sign note"}
           </ActionButton>
         }
       />

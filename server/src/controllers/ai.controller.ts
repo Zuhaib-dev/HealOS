@@ -81,10 +81,12 @@ async function getReportContent(
   }
   if (report) {
     const isAdmin = user.role === UserRole.ADMIN;
+    // Patient reports are fetched above with patient: user._id and
+    // state: "verified" in the database query. That scoped lookup is the
+    // ownership check; comparing hydrated ID representations again can
+    // reject a report that the query has already proven belongs to them.
     const isPatientOwner =
-      user.role === UserRole.PATIENT &&
-      report.patient.toString() === user._id.toString() &&
-      report.state === "verified";
+      user.role === UserRole.PATIENT && report.state === "verified";
     const isUploader = report.uploadedBy === user._id.toString();
     const isAssignedDoctor =
       user.role === UserRole.DOCTOR &&

@@ -176,6 +176,125 @@ async function verifyCapturedPayment(
   return payment;
 }
 
+async function reconcilePaidInvoiceOrder(
+  client: Razorpay,
+  invoice: InstanceType<typeof Invoice>,
+  appointment: InstanceType<typeof Appointment> | null,
+) {
+  const orderId = invoice.razorpayOrderId;
+  if (!orderId) return 0;
+
+  const order = await client.orders.fetch(orderId);
+  if (order.status !== "paid") return 0;
+
+  const { items: payments } = await client.orders.fetchPayments(orderId);
+  const capturedPayments = payments.filter(
+    (payment) =>
+      payment.order_id === orderId &&
+      payment.status === "captured" &&
+      payment.captured === true,
+  );
+  if (capturedPayments.length !== 1) {
+    throw new AppError(
+      "Razorpay received this payment, but its details could not be confirmed yet. Refresh shortly or contact support.",
+      409,
+    );
+  }
+
+  const payment = capturedPayments[0];
+  if (!payment) {
+    throw new AppError(
+      "Razorpay received this payment, but its details could not be confirmed yet. Refresh shortly or contact support.",
+      409,
+    );
+  }
+  const alreadyRecorded = invoice.paymentHistory?.some(
+    (record) =>
+      record.orderId === orderId && record.paymentId === payment.id,
+  );
+  if (alreadyRecorded) return 0;
+
+  const amountPaise = Number(payment.amount);
+  const amount = amountPaise / 100;
+  const alreadyReflectedOnAppointment = Boolean(
+    appointment &&
+      appointment.razorpayOrderId === orderId &&
+      appointment.razorpayPaymentId === payment.id,
+  );
+  const paidSoFar = Math.max(
+    invoicePaidAmount(invoice),
+    appointment?.paidAmount || 0,
+  );
+  const balancePaise = rupeesToPaise(
+    Math.max(
+      0,
+      invoice.totalAmount -
+        (invoice.insuranceCoverage || 0) -
+        paidSoFar,
+    ),
+  );
+  if (
+    order.currency !== "INR" ||
+    Number(order.amount) !== amountPaise ||
+    Number(order.amount_paid) < amountPaise ||
+    payment.currency !== "INR" ||
+    !Number.isFinite(amount) ||
+    amountPaise <= 0 ||
+    (!alreadyReflectedOnAppointment && amountPaise > balancePaise)
+  ) {
+    throw new AppError(
+      "A captured payment needs manual billing review. Please contact support before paying again.",
+      409,
+    );
+  }
+
+  invoice.paidAmount = alreadyReflectedOnAppointment
+    ? paidSoFar
+    : paidSoFar + amount;
+  invoice.paymentHistory ??= [];
+  invoice.paymentHistory.push({
+    amount,
+    method:
+      payment.method === "upi"
+        ? InvoicePaymentMethod.UPI
+        : InvoicePaymentMethod.CARD,
+    source: "RAZORPAY",
+    orderId,
+    paymentId: payment.id,
+    paidAt: new Date(payment.created_at * 1000),
+  });
+  invoice.paymentMethod =
+    payment.method === "upi"
+      ? InvoicePaymentMethod.UPI
+      : InvoicePaymentMethod.CARD;
+  invoice.razorpayPaymentId = payment.id;
+  invoice.paidAt = new Date(payment.created_at * 1000);
+  updateInvoiceStatus(invoice);
+  await invoice.save();
+
+  if (appointment) {
+    appointment.paidAmount = Math.max(
+      appointment.paidAmount || 0,
+      invoice.paidAmount,
+    );
+    appointment.paymentStatus =
+      appointment.paidAmount + (invoice.insuranceCoverage || 0) >=
+      appointment.amount
+        ? PaymentStatus.PAID
+        : PaymentStatus.PENDING_CASH;
+    if (
+      appointment.status === AppointmentStatus.PENDING &&
+      appointment.paymentMethod === "ONLINE"
+    ) {
+      appointment.status = AppointmentStatus.CONFIRMED;
+    }
+    await appointment.save();
+  }
+
+  emitPaymentUpdates(invoice._id, appointment || undefined);
+  return amount;
+}
+
 function emitPaymentUpdates(invoiceId?: unknown, appointment?: InstanceType<typeof Appointment>) {
   const io = getIO();
   if (invoiceId) {
@@ -213,6 +332,7 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
       currency: string;
       status: string;
     };
+    let paymentApplied = false;
 
     if (parsed.data.appointmentId) {
       const appointment = await Appointment.findOne({
@@ -277,7 +397,7 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
             patient: patientId,
           })
         : null;
-      const amountPaise = rupeesToPaise(
+      let amountPaise = rupeesToPaise(
         Math.max(
           0,
           invoice.totalAmount -
@@ -288,7 +408,6 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
             ),
         ),
       );
-      if (!amountPaise) throw new AppError("This invoice has no balance due", 400);
       // A booking advance used to be stored as the invoice's current Razorpay
       // order too. Once its payment is recorded, that paid order must not block
       // a new order for the remaining invoice balance.
@@ -320,6 +439,39 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
           previousPaymentAmount <= invoicePaid &&
           previousPaymentAmount <= appointmentPaid;
       }
+      if (!previousOrderWasApplied && invoice.razorpayOrderId) {
+        const recoveredAmount = await reconcilePaidInvoiceOrder(
+          client,
+          invoice,
+          linkedAppointment,
+        );
+        if (recoveredAmount > 0) {
+          paymentApplied = true;
+          previousOrderWasApplied = true;
+          amountPaise = rupeesToPaise(
+            Math.max(
+              0,
+              invoice.totalAmount -
+                (invoice.insuranceCoverage || 0) -
+                Math.max(
+                  invoicePaidAmount(invoice),
+                  linkedAppointment?.paidAmount || 0,
+                ),
+            ),
+          );
+        }
+      }
+      if (!amountPaise) {
+        if (paymentApplied) {
+          return res.status(200).json({
+            success: true,
+            paymentApplied: true,
+            message:
+              "Your previous payment has been confirmed and applied to this bill.",
+          });
+        }
+        throw new AppError("This invoice has no balance due", 400);
+      }
       order = await getOrCreateOrder(
         client,
         previousOrderWasApplied ? undefined : invoice.razorpayOrderId,
@@ -333,6 +485,10 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
+      paymentApplied,
+      message: paymentApplied
+        ? "Your previous payment was confirmed. The remaining balance is ready."
+        : undefined,
       keyId: envConfig.RAZORPAY_KEY_ID,
       order,
     });

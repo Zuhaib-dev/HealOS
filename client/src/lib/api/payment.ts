@@ -7,8 +7,10 @@ export interface CreateOrderPayload {
 
 export interface CreateOrderResponse {
   success: boolean;
-  keyId: string;
-  order: {
+  keyId?: string;
+  paymentApplied?: boolean;
+  message?: string;
+  order?: {
     id: string;
     entity: string;
     amount: number;

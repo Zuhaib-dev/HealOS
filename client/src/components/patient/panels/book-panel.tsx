@@ -266,7 +266,9 @@ export function BookPanel() {
           orderRes = await createRazorpayOrderApi({
             appointmentId: reservation.appointment._id,
           });
-          if (!orderRes.success) throw new Error("Failed to create order");
+          if (!orderRes.success || !orderRes.order || !orderRes.keyId) {
+            throw new Error(orderRes.message || "Failed to create order");
+          }
         } catch (error) {
           await cancelAppointmentApi(reservation.appointment._id).catch(
             () => {},

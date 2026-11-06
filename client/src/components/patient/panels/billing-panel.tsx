@@ -185,6 +185,23 @@ export function BillingPanel() {
         invoiceId: id,
       });
       if (!orderRes.success) throw new Error("Failed to create Razorpay order");
+      if (orderRes.paymentApplied) {
+        await refetch();
+        if (!orderRes.order) {
+          setPaymentCelebration(true);
+          toast.success(
+            orderRes.message || "Your previous payment has been confirmed.",
+          );
+          setProcessing(null);
+          return;
+        }
+        toast.info(
+          orderRes.message || "Previous payment recorded. Pay the remaining balance.",
+        );
+      }
+      if (!orderRes.order || !orderRes.keyId) {
+        throw new Error(orderRes.message || "No online payment order was created.");
+      }
 
       // 2. Open Razorpay
       const options = {

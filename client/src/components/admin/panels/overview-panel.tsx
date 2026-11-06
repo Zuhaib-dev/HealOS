@@ -24,9 +24,9 @@ const RResponsiveContainer = ResponsiveContainer as any;
 const RPieChart = PieChart as any;
 const RPie = Pie as any;
 const RCell = Cell as any;
-import { ArrowUpRight } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
-import { ActionButton, PanelHeader } from "../admin-shell";
+import { ActionButton } from "../admin-shell";
+import { AdminHeader } from "../admin-header";
 import {
   AdminAuditLogData,
   AdminInventoryData,
@@ -46,40 +46,20 @@ import { useAdminRealtime } from "../use-admin-realtime";
 function Metric({
   label,
   value,
-  delta,
-  suffix,
-  delay = 0,
+  note,
 }: {
   label: string;
   value: string;
-  delta?: string;
-  suffix?: string;
-  delay?: number;
+  note: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay, ease: "easeOut" }}
-      className="bg-card/40 border border-border/60 rounded-2xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm group"
-    >
-      <p className="mono-label text-muted-foreground">{label}</p>
-      <p className="mt-3 font-mono text-3xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
+    <div className="bg-background p-4 sm:p-5">
+      <p className="mono-label text-[10px] text-muted-foreground">{label}</p>
+      <p className="mt-2 font-display text-3xl font-bold tracking-tight">
         {value}
-        {suffix ? (
-          <span className="text-muted-foreground text-base font-normal">
-            {" "}
-            {suffix}
-          </span>
-        ) : null}
       </p>
-      {delta ? (
-        <p className="mono-label text-brass mt-4 flex items-center gap-1.5 bg-accent/10 w-fit px-2.5 py-1 rounded-md">
-          <ArrowUpRight className="size-3.5" />
-          {delta}
-        </p>
-      ) : null}
-    </motion.div>
+      <p className="mt-1 text-xs text-muted-foreground">{note}</p>
+    </div>
   );
 }
 
@@ -324,8 +304,8 @@ export function OverviewPanel() {
       if (inventoryRes.success && inventoryRes.inventory)
         setInventory(inventoryRes.inventory);
       if (auditRes.success && auditRes.logs) setAuditLogs(auditRes.logs);
-    } catch (err) {
-      console.error("Failed to load facility overview", err);
+    } catch {
+      console.error("Failed to load facility overview");
     }
   }, []);
 
@@ -369,49 +349,34 @@ export function OverviewPanel() {
     label: dept.label,
     value: dept.total > 0 ? Math.round((dept.approved / dept.total) * 100) : 0,
   }));
-  const throughputValues = [
-    stats?.totalUsers || 0,
-    stats?.totalPatients || 0,
-    stats?.totalClinicians || 0,
-    stats?.totalAppointments || 0,
-    stats?.pendingApprovals || 0,
-  ];
-
   return (
-    <section>
-      <PanelHeader
-        index="01 / OVERVIEW"
-        title={`Facility command - ${user?.name || "Superadmin"}`}
-        note={`Role: ${user?.role || "ADMIN"} · System Administrator: ${user?.email || "N/A"}`}
-        actions={
-          <ActionButton onClick={loadOverview}>Refresh live data</ActionButton>
-        }
+    <section className="pb-24">
+      <AdminHeader
+        title={user?.name || "Overview"}
+        note="Counts, beds, and the queues that need you."
+        actions={<ActionButton onClick={loadOverview}>Refresh</ActionButton>}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-5 py-6 sm:px-8">
+      <div className="grid grid-cols-2 gap-px bg-border/60 lg:grid-cols-4">
         <Metric
-          label="Registered users"
-          value={stats ? String(stats.totalUsers) : "..."}
-          delta="MongoDB Atlas live"
-          delay={0.1}
+          label="Users"
+          value={stats ? String(stats.totalUsers) : "—"}
+          note="Accounts on this facility"
         />
         <Metric
-          label="Active patients"
-          value={stats ? String(stats.totalPatients) : "..."}
-          delta="Health profiles complete"
-          delay={0.2}
+          label="Patients"
+          value={stats ? String(stats.totalPatients) : "—"}
+          note="Registered profiles"
         />
         <Metric
-          label="Approved clinicians"
-          value={stats ? String(stats.totalClinicians) : "..."}
-          delta="Doctors & Radiologists"
-          delay={0.3}
+          label="Clinicians"
+          value={stats ? String(stats.totalClinicians) : "—"}
+          note="Approved doctors and imaging"
         />
         <Metric
-          label="Total appointments"
-          value={stats ? String(stats.totalAppointments) : "..."}
-          delta="Booked consultations"
-          delay={0.4}
+          label="Appointments"
+          value={stats ? String(stats.totalAppointments) : "—"}
+          note="All booked visits"
         />
       </div>
 

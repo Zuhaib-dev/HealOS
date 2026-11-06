@@ -2,52 +2,24 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
+import { LogOut } from "lucide-react";
+import { ActionButton } from "../admin-shell";
+import { AdminHeader } from "../admin-header";
 import {
-  LogOut,
-  KeyRound,
-  ShieldCheck,
-  ShieldOff,
-  Copy,
-  Plus,
-  UserCog,
-  HeartPulse,
-} from "lucide-react";
-import { ActionButton, PanelHeader } from "../admin-shell";
-import {
-  fetchAdminUsersApi,
-  fetchAdminPatientsApi,
   fetchAdminScheduleApi,
   createScheduleApi,
   fetchDoctorAvailabilitiesApi,
   saveDoctorAvailabilityApi,
   fetchAdminStaffApi,
-  fetchAdminIntegrationsApi,
-  fetchAdminRolesApi,
-  updateUserRoleApi,
-  AdminUserData,
-  AdminPatientData,
   AdminAppointmentData,
   AdminScheduleData,
   AdminStaffData,
-  AdminIntegrationData,
-  AdminRoleData,
-  PaginationMeta,
 } from "@/lib/api/admin";
 import { toast } from "sonner";
 import { useAdminRealtime } from "../use-admin-realtime";
 import { formatTimeRange } from "@/lib/time-format";
 import { formatTime12Hour } from "@/lib/time-format";
 import { TimePicker12Hour } from "@/components/shared/time-picker-12h";
-
-import {
-  getApiErrorMessage,
-  Th,
-  Td,
-  Pill,
-  PaginationControls,
-  initials,
-  Avatar,
-} from "./shared";
 
 export function SchedulePanel() {
   const [loading, setLoading] = useState(true);
@@ -222,22 +194,20 @@ export function SchedulePanel() {
 
   return (
     <div>
-      <PanelHeader
-        index="05 / scheduling"
-        title="Theatre & Clinic Shifts"
-        note="Today's operating list and staff shifts across departments."
+      <AdminHeader
+        title="Theatre"
+        note="Clinic and theatre shifts across departments."
         actions={
           <>
-            <ActionButton>Print list</ActionButton>
             <ActionButton tone="solid" onClick={() => setIsFormOpen(true)}>
-              Add Shift
+              Add shift
             </ActionButton>
           </>
         }
       />
 
-      <section className="mx-4 mb-7 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm sm:mx-8">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/50 bg-muted/20 px-5 py-4 sm:px-6">
+      <section className="hairline-b">
+        <div className="flex flex-wrap items-start justify-between gap-4 hairline-b px-5 py-4 sm:px-8">
           <div>
             <p className="mono-label text-muted-foreground">
               Patient booking rules

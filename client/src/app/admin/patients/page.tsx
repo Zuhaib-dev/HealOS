@@ -1,4 +1,4 @@
-import { PatientsPanel } from "@/components/admin/admin-people-panels";
+import { PatientsPanel } from "@/components/admin/panels/patients-panel";
 
 export default function AdminPatientsPanelPage() {
   return <PatientsPanel />;

@@ -1,48 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { Copy, KeyRound } from "lucide-react";
+import { AdminHeader } from "../admin-header";
 import {
-  LogOut,
-  KeyRound,
-  ShieldCheck,
-  ShieldOff,
-  Copy,
-  Plus,
-  UserCog,
-  HeartPulse,
-} from "lucide-react";
-import { ActionButton, PanelHeader } from "../admin-shell";
-import {
-  fetchAdminUsersApi,
-  fetchAdminPatientsApi,
-  fetchAdminScheduleApi,
-  createScheduleApi,
-  fetchAdminStaffApi,
   fetchAdminIntegrationsApi,
-  fetchAdminRolesApi,
-  updateUserRoleApi,
-  AdminUserData,
-  AdminPatientData,
-  AdminAppointmentData,
-  AdminScheduleData,
-  AdminStaffData,
   AdminIntegrationData,
-  AdminRoleData,
-  PaginationMeta,
 } from "@/lib/api/admin";
-import { toast } from "sonner";
 import { useAdminRealtime } from "../use-admin-realtime";
 
-import {
-  getApiErrorMessage,
-  Th,
-  Td,
-  Pill,
-  PaginationControls,
-  initials,
-  Avatar,
-} from "./shared";
+import { Pill } from "./shared";
 
 export function IntegrationsPanel() {
   const [copied, setCopied] = useState<string | null>(null);
@@ -76,17 +43,9 @@ export function IntegrationsPanel() {
 
   return (
     <div>
-      <PanelHeader
-        index="11 / interop"
-        title="Integrations & API keys"
-        note="Every system HealOS speaks to, its health right now, and the credentials your own services use."
-        actions={
-          <ActionButton tone="solid">
-            <span className="flex items-center gap-2">
-              <Plus className="size-3" /> Add integration
-            </span>
-          </ActionButton>
-        }
+      <AdminHeader
+        title="Keys"
+        note="Connected systems and the credentials they use."
       />
 
       <div className="hairline-b grid sm:grid-cols-2 xl:grid-cols-3">
@@ -126,7 +85,7 @@ export function IntegrationsPanel() {
                   }`}
                 />
                 <span className="mono-label text-muted-foreground">
-                  {i.status === "off" ? "not exchanging data" : "heartbeat 30s"}
+                  {i.status === "off" ? "not exchanging data" : i.status}
                 </span>
               </div>
             </div>

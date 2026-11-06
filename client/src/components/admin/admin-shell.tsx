@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V3
+ * genre: modern-minimal · macrostructure: Workbench
+ * theme: Emerald Prestige · designed-as-app
+ * audience: hospital admins · use: see facility load and act on queues
+ */
+
+import { useEffect, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   BedDouble,
@@ -19,9 +25,6 @@ import {
   KeySquare,
   Plug,
   Search,
-  Bell,
-  ShieldCheck,
-  Sparkles,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -42,195 +45,198 @@ import {
   DrawerTrigger,
   DrawerClose,
 } from "@/components/ui/drawer";
+import { AdminHeader } from "./admin-header";
 
 export const sections = [
-  { id: "overview", label: "Overview", icon: Activity },
-  { id: "approvals", label: "Clinicians", icon: ClipboardCheck },
-  { id: "users", label: "Users", icon: UserCog },
-  { id: "broadcast", label: "Broadcast", icon: Send },
-  { id: "patients", label: "Patient Registry", icon: HeartPulse },
-  { id: "schedule", label: "Theatre Schedule", icon: CalendarClock },
-  { id: "staff", label: "Staff & Access", icon: Users },
-  { id: "roles", label: "Roles & Permissions", icon: KeySquare },
-  { id: "wards", label: "Wards & Beds", icon: BedDouble },
-  { id: "billing", label: "Revenue Ledger", icon: Receipt },
-  { id: "supplies", label: "Supplies", icon: Boxes },
-  { id: "audit", label: "Audit & Security", icon: ShieldAlert },
-  { id: "integrations", label: "Integrations & Keys", icon: Plug },
-  { id: "system", label: "System Health", icon: Server },
-  { id: "settings", label: "Facility Settings", icon: Settings2 },
+  { id: "overview", label: "Overview", shortLabel: "Home", icon: Activity },
+  {
+    id: "approvals",
+    label: "Clinicians",
+    shortLabel: "Staff",
+    icon: ClipboardCheck,
+  },
+  { id: "users", label: "Users", shortLabel: "Users", icon: UserCog },
+  { id: "broadcast", label: "Broadcast", shortLabel: "Alerts", icon: Send },
+  {
+    id: "patients",
+    label: "Patients",
+    shortLabel: "Patients",
+    icon: HeartPulse,
+  },
+  {
+    id: "schedule",
+    label: "Theatre",
+    shortLabel: "Theatre",
+    icon: CalendarClock,
+  },
+  { id: "staff", label: "Access", shortLabel: "Access", icon: Users },
+  { id: "roles", label: "Roles", shortLabel: "Roles", icon: KeySquare },
+  { id: "wards", label: "Wards", shortLabel: "Wards", icon: BedDouble },
+  { id: "billing", label: "Ledger", shortLabel: "Ledger", icon: Receipt },
+  { id: "supplies", label: "Supplies", shortLabel: "Stock", icon: Boxes },
+  { id: "audit", label: "Audit", shortLabel: "Audit", icon: ShieldAlert },
+  { id: "integrations", label: "Keys", shortLabel: "Keys", icon: Plug },
+  { id: "system", label: "Health", shortLabel: "Health", icon: Server },
+  { id: "settings", label: "Settings", shortLabel: "Setup", icon: Settings2 },
 ] as const;
 
 export type SectionId = (typeof sections)[number]["id"];
 
+const mainMobileTabs = [
+  "overview",
+  "approvals",
+  "patients",
+  "billing",
+] as const satisfies readonly SectionId[];
+const moreMobileTabs = sections
+  .map((s) => s.id)
+  .filter((id) => !(mainMobileTabs as readonly string[]).includes(id));
+
+const prefetchRoutes = [
+  "/admin",
+  ...sections.filter((s) => s.id !== "overview").map((s) => `/admin/${s.id}`),
+];
+
 export function AdminShell({ children }: { children: ReactNode }) {
-  const [query, setQuery] = useState("");
   const { user } = useAuthStore();
   const { isSidebarCollapsed, toggleSidebar } = useUIStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
-  // Determine current section based on URL
+  useEffect(() => {
+    prefetchRoutes.forEach((href) => router.prefetch(href));
+  }, [router]);
+
+  const isSectionActive = (id: string) =>
+    id === "overview"
+      ? pathname === "/admin"
+      : pathname.startsWith(`/admin/${id}`);
+
   const currentSection =
-    sections.find((s) =>
-      s.id === "overview"
-        ? pathname === "/admin"
-        : pathname.startsWith(`/admin/${s.id}`),
-    ) || sections[0];
-
-  const mainMobileTabs = sections.slice(0, 4);
-  const moreMobileTabs = sections.slice(4);
+    sections.find((s) => isSectionActive(s.id)) || sections[0];
 
   return (
-    <div className="bg-background text-foreground min-h-screen">
-      {/* Top Glassmorphic Header */}
-      <header className="bg-background/90 border-b border-border/60 sticky top-0 z-40 backdrop-blur-md transition-all">
-        <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-8">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="flex items-center gap-3 group"
-              aria-label="HealOS home"
-              title="HealOS home"
-            >
-              <HealOSLogo size={30} />
-            </Link>
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="hairline-b sticky top-0 z-40 bg-background/90 backdrop-blur-md">
+        <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
+          <Link
+            href="/"
+            className="flex items-center gap-3"
+            aria-label="HealOS home"
+            title="HealOS home"
+          >
+            <HealOSLogo size={28} />
+          </Link>
+          <span className="mono-label hairline-l hidden pl-4 text-muted-foreground md:inline">
+            Admin / {currentSection.label}
+          </span>
 
-            <div className="hidden md:flex items-center gap-2 border-l border-border/60 pl-4">
-              <span className="mono-label text-[11px] text-muted-foreground uppercase font-mono tracking-wider">
-                Admin Console
-              </span>
-              <span className="text-muted-foreground/50">/</span>
-              <span className="mono-label text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <ShieldCheck className="size-3.5 text-amber-500" />
-                {currentSection?.label}
-              </span>
-            </div>
-          </div>
-
-          {/* Search bar instrument */}
           <button
             type="button"
             onClick={() =>
               window.dispatchEvent(new CustomEvent("open-command-menu"))
             }
-            aria-label="Search patients, staff, invoices, approvals"
-            title="Search patients, staff, invoices, approvals"
-            className="hidden lg:flex w-80 items-center gap-2.5 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:border-primary/50 transition-all text-left cursor-pointer"
+            aria-label="Search patients, staff, invoices"
+            className="hairline ml-auto hidden w-72 items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-primary/40 lg:flex"
           >
-            <Search className="text-muted-foreground size-3.5 shrink-0" />
-            <span className="mono-label text-muted-foreground/70 flex-1 text-xs truncate">
-              Search patients, staff, invoices...
+            <Search className="size-3.5 text-muted-foreground" />
+            <span className="mono-label w-full truncate text-xs text-muted-foreground">
+              Search patients, staff, invoices
             </span>
-            <kbd className="mono-label hidden xl:inline-block rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground border border-border">
-              ⌘K
-            </kbd>
           </button>
 
-          {/* Right Header Actions */}
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="ml-auto flex items-center gap-2 lg:ml-0">
             <NotificationBell />
-
             <ThemeToggle />
-
-            <div className="border-l border-border/60 pl-3">
+            <div className="hairline-l pl-3">
               <UserProfileMenu />
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Layout Container */}
       <div className="flex">
-        {/* Sidebar Navigation - Desktop Only */}
         <aside
-          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border/60 bg-card/20 p-4 md:flex overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? "w-18 items-center px-2" : "w-64"}`}
+          className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 flex-col overflow-y-auto border-r border-(--hairline) p-3 transition-all duration-300 ease-in-out md:flex ${
+            isSidebarCollapsed ? "w-18 items-center px-2" : "w-60"
+          }`}
         >
-          {isSidebarCollapsed ? (
-            <div className="mb-4 mt-2 flex justify-center">
-              <div className="size-8 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-xs uppercase">
-                {user?.name?.charAt(0) || "A"}
-              </div>
-            </div>
-          ) : (
-            <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5">
-              <Sparkles className="size-4 text-emerald-500 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">
-                  {user?.name || "Administrator"}
-                </p>
-                <p className="mono-label text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-                  Master Control Panel
-                </p>
-              </div>
-            </div>
-          )}
-
           <nav
-            aria-label="Admin sidebar navigation"
-            title="Admin sidebar navigation"
-            className="flex flex-col gap-1 w-full"
+            aria-label="Admin sidebar"
+            className="flex w-full flex-col gap-0.5"
           >
-            {sections.map((s) => {
+            {sections.map((s, i) => {
               const Icon = s.icon;
-              const isActive =
-                s.id === "overview"
-                  ? pathname === "/admin"
-                  : pathname.startsWith(`/admin/${s.id}`);
+              const isActive = isSectionActive(s.id);
               const href = s.id === "overview" ? "/admin" : `/admin/${s.id}`;
               return (
                 <Link
                   key={s.id}
                   href={href}
+                  prefetch
                   title={isSidebarCollapsed ? s.label : undefined}
-                  className={`mono-label group relative flex items-center ${isSidebarCollapsed ? "justify-center px-0 py-3" : "gap-3 px-3.5 py-2"} rounded-lg text-left transition-all cursor-pointer text-xs ${
+                  className={`mono-label group relative flex items-center text-left transition-colors ${
+                    isSidebarCollapsed
+                      ? "justify-center px-0 py-3"
+                      : "gap-3 px-3 py-2.5"
+                  } ${
                     isActive
-                      ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      ? "bg-accent/10 text-foreground"
+                      : "text-muted-foreground hover:bg-foreground/3 hover:text-foreground"
                   }`}
                 >
-                  <Icon
-                    className={`size-3.5 ${isActive ? "text-primary-foreground" : `text-primary/70 group-hover:text-primary transition-all duration-300 ease-out ${String(s.id) === "settings" ? "group-hover:rotate-90" : "group-hover:scale-[1.15]"}`}`}
-                  />
-                  {!isSidebarCollapsed && (
-                    <span className="truncate">{s.label}</span>
-                  )}
+                  {isActive && !isSidebarCollapsed ? (
+                    <motion.span
+                      layoutId="admin-nav-marker"
+                      className="absolute top-0 left-0 h-full w-0.5 bg-accent"
+                    />
+                  ) : null}
+                  {!isSidebarCollapsed ? (
+                    <span className="text-accent/60">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                  ) : null}
+                  <Icon className="size-3.5" />
+                  {!isSidebarCollapsed ? s.label : null}
                 </Link>
               );
             })}
           </nav>
 
           <div
-            className={`mt-auto rounded-xl border border-border/70 bg-card/60 shadow-sm transition-all overflow-hidden ${isSidebarCollapsed ? "p-2 py-3 flex flex-col items-center" : "p-3"}`}
+            className={`hairline mt-auto overflow-hidden ${
+              isSidebarCollapsed ? "flex flex-col items-center p-2 py-3" : "p-3"
+            }`}
           >
             {isSidebarCollapsed ? (
               <span
-                className="size-2 rounded-full bg-emerald-500 animate-pulse"
-                title="System Status: All Nominal"
+                className="size-1.5 animate-pulse rounded-full bg-accent"
+                title="Signed in"
               />
             ) : (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="mono-label text-[10px] text-muted-foreground uppercase tracking-wider font-mono">
-                    System Status
+                <p className="mono-label text-muted-foreground">Admin</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="size-1.5 animate-pulse rounded-full bg-accent" />
+                  <span className="mono-label truncate">
+                    {user?.name || "Signed in"}
                   </span>
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
-                <p className="font-semibold text-xs mt-1 text-foreground">
-                  All Systems Nominal
-                </p>
-                <p className="mono-label text-[10px] text-muted-foreground mt-0.5 font-mono">
-                  MongoDB Atlas Cloud Connected
+                <p className="mono-label mt-2 text-muted-foreground">
+                  Approvals, ledger, and wards stay on this account
                 </p>
               </>
             )}
           </div>
 
           <button
+            type="button"
             onClick={toggleSidebar}
-            className={`mt-3 flex items-center justify-center p-2 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40 ${isSidebarCollapsed ? "" : "w-full"}`}
+            className={`hairline mt-3 flex items-center justify-center p-2 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground ${
+              isSidebarCollapsed ? "" : "w-full"
+            }`}
             aria-label="Toggle sidebar"
-            title="Toggle sidebar"
           >
             {isSidebarCollapsed ? (
               <PanelLeftOpen className="size-4.5" />
@@ -240,146 +246,131 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </button>
         </aside>
 
-        {/* Main Content Area */}
-        <main className="min-w-0 flex-1 pb-24 md:pb-0">{children}</main>
+        <main className="relative min-w-0 flex-1 pb-24 md:pb-0">
+          {children}
+        </main>
       </div>
 
-      {/* Persistent Bottom Navigation Bar - Mobile Only */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+      <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-border/60 bg-background/95 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] backdrop-blur-xl md:hidden dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
         <nav
           aria-label="Admin mobile navigation"
-          title="Admin mobile navigation"
-          className="flex justify-around items-center px-1.5 py-1 max-w-md mx-auto"
+          className="mx-auto flex max-w-md items-center justify-around px-1.5 py-1"
         >
-          {mainMobileTabs.map((s) => {
-            const Icon = s.icon;
-            const isActive =
-              s.id === "overview"
-                ? pathname === "/admin"
-                : pathname.startsWith(`/admin/${s.id}`);
-            const href = s.id === "overview" ? "/admin" : `/admin/${s.id}`;
-            return (
-              <Link
-                key={s.id}
-                href={href}
-                onClick={() => setIsMoreOpen(false)}
-                className="relative flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-lg group tap-highlight-transparent"
-              >
-                <motion.div
-                  animate={
-                    isActive ? { scale: 1.12, y: -1 } : { scale: 1, y: 0 }
-                  }
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className={`relative flex items-center justify-center p-1 rounded-full transition-colors ${
-                    isActive
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground group-hover:text-foreground"
-                  }`}
+          {sections
+            .filter((s) => (mainMobileTabs as readonly string[]).includes(s.id))
+            .map((s) => {
+              const Icon = s.icon;
+              const isActive = isSectionActive(s.id);
+              const href = s.id === "overview" ? "/admin" : `/admin/${s.id}`;
+              return (
+                <Link
+                  key={s.id}
+                  href={href}
+                  prefetch
+                  onClick={() => setIsMoreOpen(false)}
+                  className="tap-highlight-transparent group relative flex min-w-0 flex-1 flex-col items-center justify-center px-0.5 py-1 outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                 >
-                  <Icon
-                    className={`size-4.5 ${isActive ? "fill-primary/20" : ""}`}
-                    strokeWidth={isActive ? 2.5 : 2}
-                  />
-                </motion.div>
-                <span
-                  className={`text-[10px] mt-0.5 font-medium transition-colors truncate max-w-full text-center tracking-tight leading-tight block ${
-                    isActive
-                      ? "text-primary font-semibold"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {s.label.split(" ")[0]}
-                </span>
-              </Link>
-            );
-          })}
-
-          {/* More / Menu Tab (Drawer) */}
-          {moreMobileTabs.length > 0 && (
-            <Drawer open={isMoreOpen} onOpenChange={setIsMoreOpen}>
-              <DrawerTrigger asChild>
-                <button
-                  type="button"
-                  className="relative flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-lg group tap-highlight-transparent"
-                >
-                  <div
-                    className={`relative flex items-center justify-center p-1 rounded-full transition-colors ${
-                      moreMobileTabs.some((s) =>
-                        pathname.startsWith(`/admin/${s.id}`),
-                      )
-                        ? "text-primary bg-primary/10"
-                        : "text-muted-foreground group-hover:text-foreground"
-                    }`}
-                  >
-                    <Menu
-                      className={`size-4.5 ${moreMobileTabs.some((s) => pathname.startsWith(`/admin/${s.id}`)) ? "fill-primary/20" : ""}`}
-                      strokeWidth={
-                        moreMobileTabs.some((s) =>
-                          pathname.startsWith(`/admin/${s.id}`),
-                        )
-                          ? 2.5
-                          : 2
-                      }
-                    />
-                  </div>
                   <span
-                    className={`text-[10px] mt-0.5 font-medium transition-colors truncate max-w-full text-center tracking-tight leading-tight block ${
-                      moreMobileTabs.some((s) =>
-                        pathname.startsWith(`/admin/${s.id}`),
-                      )
-                        ? "text-primary font-semibold"
+                    className={`flex items-center justify-center p-1 ${
+                      isActive
+                        ? "bg-primary/10 text-primary"
                         : "text-muted-foreground"
                     }`}
                   >
-                    More
+                    <Icon
+                      className="size-4.5"
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
                   </span>
-                </button>
-              </DrawerTrigger>
-              <DrawerContent className="bg-background/95 backdrop-blur-xl border-t border-border/60 h-[85vh]">
-                <DrawerHeader className="border-b border-border/40 pb-4 text-left flex justify-between items-center px-6">
-                  <DrawerTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Menu className="size-5 text-primary" />
-                    Menu
-                  </DrawerTitle>
-                  <UserProfileMenu />
-                </DrawerHeader>
-                <div className="p-4 grid grid-cols-3 sm:grid-cols-4 gap-4 overflow-y-auto">
-                  {moreMobileTabs.map((s) => {
+                  <span
+                    className={`mt-0.5 block max-w-full truncate text-center text-[10px] leading-tight tracking-tight ${
+                      isActive
+                        ? "font-semibold text-primary"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {s.shortLabel}
+                  </span>
+                </Link>
+              );
+            })}
+
+          <Drawer open={isMoreOpen} onOpenChange={setIsMoreOpen}>
+            <DrawerTrigger asChild>
+              <button
+                type="button"
+                className="tap-highlight-transparent relative flex min-w-0 flex-1 flex-col items-center justify-center px-0.5 py-1 outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+              >
+                <span
+                  className={`flex items-center justify-center p-1 ${
+                    moreMobileTabs.some((id) => isSectionActive(id))
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <Menu className="size-4.5" />
+                </span>
+                <span
+                  className={`mt-0.5 block text-[10px] ${
+                    moreMobileTabs.some((id) => isSectionActive(id))
+                      ? "font-semibold text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  More
+                </span>
+              </button>
+            </DrawerTrigger>
+            <DrawerContent className="border-t border-border/60 bg-background/95 backdrop-blur-xl">
+              <DrawerHeader className="flex items-center justify-between border-b border-border/40 px-6 pb-4 text-left">
+                <DrawerTitle className="flex items-center gap-2 text-lg font-semibold">
+                  <Menu className="size-5 text-primary" />
+                  Menu
+                </DrawerTitle>
+                <UserProfileMenu />
+              </DrawerHeader>
+              <div className="grid grid-cols-4 gap-3 overflow-y-auto p-4">
+                {sections
+                  .filter((s) => moreMobileTabs.includes(s.id))
+                  .map((s) => {
                     const Icon = s.icon;
-                    const isActive = pathname.startsWith(`/admin/${s.id}`);
-                    const href = `/admin/${s.id}`;
+                    const isActive = isSectionActive(s.id);
+                    const href =
+                      s.id === "overview" ? "/admin" : `/admin/${s.id}`;
                     return (
                       <Link
                         key={s.id}
                         href={href}
                         onClick={() => setIsMoreOpen(false)}
-                        className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                        className={`flex flex-col items-center gap-2 border p-3 transition-colors ${
                           isActive
-                            ? "bg-primary/10 text-primary border border-primary/20"
-                            : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
+                            ? "border-primary/20 bg-primary/10 text-primary"
+                            : "border-border/40 bg-muted/40 text-muted-foreground"
                         }`}
                       >
                         <Icon
-                          className="size-6"
+                          className="size-5"
                           strokeWidth={isActive ? 2.5 : 2}
                         />
-                        <span className="text-[10px] font-semibold tracking-wide text-center leading-tight">
-                          {s.label}
+                        <span className="max-w-full truncate text-center text-[11px] font-semibold">
+                          {s.shortLabel}
                         </span>
                       </Link>
                     );
                   })}
-                </div>
-                <div className="p-4 pt-2 mt-auto border-t border-border/40">
-                  <DrawerClose asChild>
-                    <button className="w-full bg-muted/50 text-foreground py-3.5 rounded-xl text-sm font-semibold border border-border/50 active:bg-muted/80 transition-colors">
-                      Close Menu
-                    </button>
-                  </DrawerClose>
-                </div>
-              </DrawerContent>
-            </Drawer>
-          )}
+              </div>
+              <div className="mt-auto border-t border-border/40 p-4">
+                <DrawerClose asChild>
+                  <button
+                    type="button"
+                    className="w-full border border-border/50 bg-muted/50 py-3.5 text-sm font-semibold"
+                  >
+                    Close menu
+                  </button>
+                </DrawerClose>
+              </div>
+            </DrawerContent>
+          </Drawer>
         </nav>
       </div>
 
@@ -396,28 +387,16 @@ export function AdminShell({ children }: { children: ReactNode }) {
 }
 
 export function PanelHeader({
-  index,
   title,
   note,
   actions,
 }: {
-  index: string;
+  index?: string;
   title: string;
   note: string;
   actions?: ReactNode;
 }) {
-  return (
-    <div className="hairline-b flex flex-wrap items-end justify-between gap-4 px-5 py-6 sm:px-8">
-      <div>
-        <p className="mono-label text-accent/80">{index}</p>
-        <h1 className="mt-2 font-mono text-2xl font-bold tracking-tight sm:text-3xl">
-          {title}
-        </h1>
-        <p className="text-muted-foreground mt-1 max-w-xl text-sm">{note}</p>
-      </div>
-      {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
-    </div>
-  );
+  return <AdminHeader title={title} note={note} actions={actions} />;
 }
 
 export function ActionButton({

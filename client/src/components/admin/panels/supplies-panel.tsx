@@ -3,7 +3,8 @@
 import { useCallback, useState, useEffect } from "react";
 import { TriangleAlert, Plus, Pencil, Trash2, X, Boxes } from "lucide-react";
 import { toast } from "sonner";
-import { ActionButton, PanelHeader } from "../admin-shell";
+import { ActionButton } from "../admin-shell";
+import { AdminHeader } from "../admin-header";
 
 /* ---------- shared primitives ---------- */
 
@@ -51,10 +52,8 @@ function Pill({
 
 function TablePanel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-200 border-collapse">{children}</table>
-      </div>
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[48rem] border-collapse">{children}</table>
     </div>
   );
 }
@@ -134,7 +133,7 @@ export function SuppliesPanel() {
       await deleteInventoryItemApi(id);
       toast.success("Inventory item deleted successfully");
       loadInventory();
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete inventory item");
     }
   };
@@ -152,7 +151,7 @@ export function SuppliesPanel() {
       }
       setIsFormOpen(false);
       loadInventory();
-    } catch (err) {
+    } catch {
       toast.error("Failed to save inventory item");
     } finally {
       setIsSubmitting(false);
@@ -161,13 +160,11 @@ export function SuppliesPanel() {
 
   return (
     <section>
-      <PanelHeader
-        index="06 / SUPPLY"
-        title="Pharmacy & stores"
-        note="Consumption against reorder thresholds for controlled and critical stock."
+      <AdminHeader
+        title="Supplies"
+        note="Stock against reorder thresholds."
         actions={
           <>
-            <ActionButton>Create purchase order</ActionButton>
             <ActionButton tone="solid" onClick={handleOpenNew}>
               <span className="flex items-center gap-2">
                 <Plus className="size-3" /> Add Item
@@ -178,7 +175,7 @@ export function SuppliesPanel() {
       />
 
       {isFormOpen && (
-        <div className="mx-5 sm:mx-8 mb-8 p-6 bg-card/40 rounded-2xl border border-border/60 shadow-sm backdrop-blur-sm">
+        <div className="hairline-b px-5 py-5 sm:px-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="mono-label font-bold text-foreground">
               {editingId ? "Edit Inventory Item" : "Add New Item"}
@@ -320,7 +317,7 @@ export function SuppliesPanel() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-primary text-primary-foreground mono-label rounded-lg px-4 py-2 font-bold hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                className="bg-foreground text-background mono-label px-4 py-2 font-bold hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {isSubmitting
                   ? "Saving..."
@@ -411,7 +408,7 @@ export function SuppliesPanel() {
                     )}
                   </Td>
                   <Td className="text-right">
-                    <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2 justify-end">
                       <button
                         type="button"
                         onClick={() => handleEdit(s)}

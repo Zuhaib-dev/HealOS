@@ -1,39 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { GazeBlobatar as Blobatar } from "@/components/ui/gaze-blobatar";
-import {
-  LogOut,
-  KeyRound,
-  ShieldCheck,
-  ShieldOff,
-  Copy,
-  Plus,
-  UserCog,
-  HeartPulse,
-} from "lucide-react";
-import { ActionButton, PanelHeader } from "../admin-shell";
-import {
-  fetchAdminUsersApi,
-  fetchAdminPatientsApi,
-  fetchAdminScheduleApi,
-  createScheduleApi,
-  fetchAdminStaffApi,
-  fetchAdminIntegrationsApi,
-  fetchAdminRolesApi,
-  updateUserRoleApi,
-  AdminUserData,
-  AdminPatientData,
-  AdminAppointmentData,
-  AdminScheduleData,
-  AdminStaffData,
-  AdminIntegrationData,
-  AdminRoleData,
-  PaginationMeta,
-} from "@/lib/api/admin";
-import { toast } from "sonner";
-import { useAdminRealtime } from "../use-admin-realtime";
+import { PaginationMeta } from "@/lib/api/admin";
 
 /* ---------- local primitives ---------- */
 
@@ -42,9 +11,23 @@ export function getApiErrorMessage(error: unknown, fallback: string) {
   return maybeError.response?.data?.message || fallback;
 }
 
+export function TableWrap({
+  children,
+  minWidth = "min-w-[48rem]",
+}: {
+  children: React.ReactNode;
+  minWidth?: string;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className={`w-full border-collapse ${minWidth}`}>{children}</table>
+    </div>
+  );
+}
+
 export function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="mono-label text-muted-foreground bg-muted/40 px-5 py-4 text-left font-semibold border-b border-border/60 backdrop-blur-md sticky top-0">
+    <th className="mono-label text-muted-foreground bg-background px-5 py-3 text-left font-semibold border-b border-border/60 sticky top-0">
       {children}
     </th>
   );

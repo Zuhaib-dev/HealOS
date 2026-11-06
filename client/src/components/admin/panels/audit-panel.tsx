@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useEffect } from "react";
 import { ArrowUpRight } from "lucide-react";
-import { ActionButton, PanelHeader } from "../admin-shell";
+import { AdminHeader } from "../admin-header";
 
 /* ---------- shared primitives ---------- */
 
@@ -75,17 +75,18 @@ export function AuditPanel() {
 
   return (
     <section>
-      <PanelHeader
-        index="07 / AUDIT"
-        title="Audit trail & security"
-        note="Every privileged action, immutable and timestamped for compliance review."
-        actions={<ActionButton>Download 30-day log</ActionButton>}
+      <AdminHeader
+        title="Audit"
+        note="Privileged actions on this facility, newest first."
       />
       <div className="hairline-b grid grid-cols-2 lg:grid-cols-4">
         <Metric label="Events loaded" value={String(totalEvents)} />
         <Metric label="Privileged actions" value={String(privActions)} />
         <Metric label="Blocked attempts" value={String(blockedAttempts)} />
-        <Metric label="Open incidents" value="1" />
+        <Metric
+          label="Critical"
+          value={String(dbLogs.filter((l) => l.level === "crit").length)}
+        />
       </div>
       {loading ? (
         <div className="p-8 text-center mono-label text-xs text-muted-foreground animate-pulse">

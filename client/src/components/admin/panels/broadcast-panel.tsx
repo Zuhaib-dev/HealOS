@@ -1,18 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "motion/react";
-import {
-  Send,
-  Clock,
-  Users,
-  Activity,
-  Loader2,
-  CheckCircle2,
-} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Send, Clock, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import { PanelHeader, ActionButton } from "../admin-shell";
+import { AdminHeader } from "../admin-header";
+
+type BroadcastItem = {
+  _id: string;
+  title: string;
+  message: string;
+  targetGroup?: string;
+  createdAt: string;
+  readBy?: unknown[];
+};
+
+const fieldClass =
+  "w-full hairline bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-primary/40";
 
 export function BroadcastPanel() {
   const { token } = useAuthStore();
@@ -21,10 +25,10 @@ export function BroadcastPanel() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<BroadcastItem[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
@@ -40,11 +44,11 @@ export function BroadcastPanel() {
     } finally {
       setIsLoadingHistory(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    void fetchHistory();
+  }, [fetchHistory]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +72,7 @@ export function BroadcastPanel() {
 
       const json = await res.json();
       if (res.ok && json.success) {
-        toast.success("Broadcast sent successfully!");
+        toast.success("Broadcast sent.");
         setTitle("");
         setMessage("");
         setTargetEmail("");
@@ -76,184 +80,138 @@ export function BroadcastPanel() {
       } else {
         throw new Error(json.message || "Failed to send broadcast");
       }
-    } catch (err: any) {
-      toast.error(err.message || "An error occurred");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsSending(false);
     }
   };
 
   return (
-    <section className="pb-12 h-full flex flex-col">
-      <PanelHeader
-        index="ADM / 07"
+    <section>
+      <AdminHeader
         title="Broadcast"
-        note="Push real-time notifications to users and partners."
+        note="Send a notice to a role, or to everyone on this facility."
       />
 
-      <div className="grid lg:grid-cols-2 gap-8 px-5 py-6 sm:px-8 flex-1">
-        {/* Compose Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card border border-border/60 rounded-3xl p-6 shadow-sm flex flex-col"
+      <div className="grid lg:grid-cols-2">
+        <form
+          onSubmit={handleSend}
+          className="hairline-b hairline-l flex flex-col gap-4 px-5 py-6 sm:px-8"
         >
-          <div className="flex items-center gap-2 mb-6">
-            <span className="text-primary">
-              <Send className="size-5" />
+          <p className="mono-label text-muted-foreground flex items-center gap-2">
+            <Send className="size-3.5" /> Compose
+          </p>
+          <label className="block">
+            <span className="mono-label text-muted-foreground mb-1.5 block">
+              Recipients
             </span>
-            <h2 className="font-display font-semibold text-lg tracking-tight">
-              Compose Message
-            </h2>
-          </div>
-
-          <form
-            onSubmit={handleSend}
-            className="space-y-5 flex-1 flex flex-col"
-          >
-            <div>
-              <label className="mono-label text-muted-foreground block mb-1.5 text-xs">
-                Recipient Target
-              </label>
-              <select
-                value={targetGroup}
-                onChange={(e) => setTargetGroup(e.target.value)}
-                className="w-full bg-background border border-border/60 rounded-xl px-4 py-2.5 text-sm focus:outline-hidden focus:border-primary/50 transition-colors"
-              >
-                <option value="EVERYONE">
-                  Everyone (All Users & Partners)
-                </option>
-                <option value="PATIENTS">All Patients</option>
-                <option value="DOCTORS">All Doctors & Nurses</option>
-                <option value="SPECIFIC">Specific User</option>
-              </select>
-            </div>
-
-            {targetGroup === "SPECIFIC" && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-              >
-                <label className="mono-label text-muted-foreground block mb-1.5 text-xs">
-                  Target Email
-                </label>
-                <input
-                  type="email"
-                  value={targetEmail}
-                  onChange={(e) => setTargetEmail(e.target.value)}
-                  placeholder="patient@healos.com"
-                  className="w-full bg-background border border-border/60 rounded-xl px-4 py-2.5 text-sm focus:outline-hidden focus:border-primary/50 transition-colors"
-                />
-              </motion.div>
-            )}
-
-            <div>
-              <label className="mono-label text-muted-foreground block mb-1.5 text-xs">
-                Notification Title
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. System Update or Promo Offer"
-                className="w-full bg-background border border-border/60 rounded-xl px-4 py-2.5 text-sm focus:outline-hidden focus:border-primary/50 transition-colors"
-              />
-            </div>
-
-            <div className="flex-1 min-h-30">
-              <label className="mono-label text-muted-foreground block mb-1.5 text-xs">
-                Message Body
-              </label>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Enter the notification details here..."
-                className="w-full h-full min-h-30 bg-background border border-border/60 rounded-xl px-4 py-3 text-sm focus:outline-hidden focus:border-primary/50 transition-colors resize-none"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSending}
-              className="mt-auto w-full flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground py-3 text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-70"
+            <select
+              value={targetGroup}
+              onChange={(e) => setTargetGroup(e.target.value)}
+              className={fieldClass}
             >
-              {isSending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Send className="size-4" />
-              )}
-              Send Notification
-            </button>
-          </form>
-        </motion.div>
+              <option value="EVERYONE">Everyone</option>
+              <option value="PATIENTS">Patients</option>
+              <option value="DOCTORS">Doctors and nurses</option>
+              <option value="SPECIFIC">Specific email</option>
+            </select>
+          </label>
 
-        {/* Transmission History */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-card border border-border/60 rounded-3xl p-6 shadow-sm flex flex-col overflow-hidden"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <span className="text-primary">
-                <Clock className="size-5" />
+          {targetGroup === "SPECIFIC" ? (
+            <label className="block">
+              <span className="mono-label text-muted-foreground mb-1.5 block">
+                Email
               </span>
-              <h2 className="font-display font-semibold text-lg tracking-tight">
-                Transmission History
-              </h2>
-            </div>
-          </div>
+              <input
+                type="email"
+                value={targetEmail}
+                onChange={(e) => setTargetEmail(e.target.value)}
+                placeholder="name@facility.org"
+                className={fieldClass}
+              />
+            </label>
+          ) : null}
 
-          <div className="flex-1 overflow-y-auto pr-2 -mr-2">
-            {isLoadingHistory ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="size-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : history.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
-                <Activity className="size-8 opacity-20" />
-                <p className="text-sm">No recent broadcasts</p>
-              </div>
+          <label className="block">
+            <span className="mono-label text-muted-foreground mb-1.5 block">
+              Title
+            </span>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ward 3 water outage"
+              className={fieldClass}
+            />
+          </label>
+
+          <label className="block flex-1">
+            <span className="mono-label text-muted-foreground mb-1.5 block">
+              Message
+            </span>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="What should they know, and by when."
+              className={`${fieldClass} min-h-32 resize-y`}
+            />
+          </label>
+
+          <button
+            type="submit"
+            disabled={isSending}
+            className="mono-label inline-flex items-center justify-center gap-2 bg-foreground px-3 py-2 text-background transition-colors hover:bg-foreground/90 disabled:opacity-70"
+          >
+            {isSending ? (
+              <Loader2 className="size-4 animate-spin" />
             ) : (
-              <div className="space-y-4">
-                {history.map((n) => (
-                  <div
-                    key={n._id}
-                    className="p-4 rounded-2xl border border-border/40 bg-background/50 hover:bg-background/80 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h4 className="font-semibold text-sm text-foreground">
-                          {n.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {n.message}
-                        </p>
-                      </div>
-                      <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 text-accent font-mono text-[10px] font-medium uppercase">
-                        <Users className="size-3" /> {n.targetGroup}
-                      </span>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                      <span>
-                        {new Date(n.createdAt).toLocaleString([], {
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                        })}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <CheckCircle2 className="size-3 text-emerald-500" />{" "}
-                        {n.readBy?.length || 0} read
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <Send className="size-4" />
             )}
-          </div>
-        </motion.div>
+            Send notice
+          </button>
+        </form>
+
+        <div className="hairline-b px-5 py-6 sm:px-8">
+          <p className="mono-label text-muted-foreground flex items-center gap-2">
+            <Clock className="size-3.5" /> Sent
+          </p>
+          {isLoadingHistory ? (
+            <p className="mt-8 text-center mono-label text-muted-foreground">
+              Loading history…
+            </p>
+          ) : history.length === 0 ? (
+            <p className="mt-8 text-sm text-muted-foreground">
+              No broadcasts yet.
+            </p>
+          ) : (
+            <ol className="mt-4">
+              {history.map((n) => (
+                <li key={n._id} className="hairline-b py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium">{n.title}</p>
+                    <span className="mono-label shrink-0 text-muted-foreground">
+                      {n.targetGroup || "EVERYONE"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                    {n.message}
+                  </p>
+                  <p className="mono-label mt-2 text-muted-foreground">
+                    {new Date(n.createdAt).toLocaleString([], {
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
+                    {typeof n.readBy?.length === "number"
+                      ? ` · ${n.readBy.length} read`
+                      : ""}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       </div>
     </section>
   );

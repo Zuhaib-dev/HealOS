@@ -1,4 +1,4 @@
-import { BillingPanel } from "@/components/admin/admin-panels";
+import { BillingPanel } from "@/components/admin/panels/billing-panel";
 
 export default function AdminBillingPanelPage() {
   return <BillingPanel />;

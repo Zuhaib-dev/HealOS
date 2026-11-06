@@ -9,7 +9,7 @@ import {
 } from "@/lib/api/onboarding";
 import { toast } from "sonner";
 import { Check, X, ClipboardCheck } from "lucide-react";
-import { ActionButton, PanelHeader } from "../admin-shell";
+import { AdminHeader } from "../admin-header";
 import { useAdminRealtime } from "../use-admin-realtime";
 
 /* ---------- shared primitives ---------- */
@@ -43,10 +43,8 @@ function Td({
 
 function TablePanel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-200 border-collapse">{children}</table>
-      </div>
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[48rem] border-collapse">{children}</table>
     </div>
   );
 }
@@ -120,11 +118,9 @@ export function ApprovalsPanel() {
 
   return (
     <section>
-      <PanelHeader
-        index="02 / APPROVALS"
-        title="Credential queue"
-        note="Verify licences and grant scoped access before a clinician touches a record."
-        actions={<ActionButton>Verification policy</ActionButton>}
+      <AdminHeader
+        title="Clinicians"
+        note="Verify a licence before that clinician can touch a record."
       />
       <TablePanel>
         <thead className="hairline-b">
@@ -194,7 +190,7 @@ export function ApprovalsPanel() {
                         type="button"
                         disabled={isBusy}
                         onClick={() => handleApprove(reqItem._id)}
-                        className="hairline mono-label bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 flex items-center gap-1.5 px-3 py-1.5 hover:opacity-75 hover:-translate-y-0.5 cursor-pointer rounded-md transition-all disabled:opacity-50"
+                        className="hairline mono-label bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 flex items-center gap-1.5 px-3 py-1.5 hover:opacity-80 cursor-pointer transition-colors disabled:opacity-50"
                       >
                         <Check className="size-3" /> Approve
                       </button>
@@ -202,7 +198,7 @@ export function ApprovalsPanel() {
                         type="button"
                         disabled={isBusy}
                         onClick={() => handleReject(reqItem._id)}
-                        className="hairline mono-label text-destructive bg-destructive/10 border-destructive/30 flex items-center gap-1.5 px-3 py-1.5 hover:opacity-75 hover:-translate-y-0.5 cursor-pointer rounded-md transition-all disabled:opacity-50"
+                        className="hairline mono-label text-destructive bg-destructive/10 border-destructive/30 flex items-center gap-1.5 px-3 py-1.5 hover:opacity-80 cursor-pointer transition-colors disabled:opacity-50"
                       >
                         <X className="size-3" /> Reject
                       </button>

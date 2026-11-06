@@ -2,7 +2,8 @@
 
 import { useCallback, useState, useEffect } from "react";
 import { ArrowUpRight } from "lucide-react";
-import { ActionButton, PanelHeader } from "../admin-shell";
+import { ActionButton } from "../admin-shell";
+import { AdminHeader } from "../admin-header";
 import {
   Dialog,
   DialogContent,
@@ -90,10 +91,8 @@ function Pill({
 
 function TablePanel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-200 border-collapse">{children}</table>
-      </div>
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[48rem] border-collapse">{children}</table>
     </div>
   );
 }
@@ -269,16 +268,14 @@ export function BillingPanel() {
 
   return (
     <section>
-      <PanelHeader
-        index="05 / REVENUE"
-        title="Revenue ledger"
-        note="Claims, payer mix and disputes with the exposure each one carries."
+      <AdminHeader
+        title="Ledger"
+        note="Invoices, payer mix, and overdue exposure."
         actions={
           <>
             <ActionButton onClick={() => setExportModalOpen(true)}>
               Export ledger
             </ActionButton>
-            <ActionButton tone="solid">Raise invoice</ActionButton>
           </>
         }
       />
@@ -324,15 +321,21 @@ export function BillingPanel() {
       <div className="hairline-b grid grid-cols-2 lg:grid-cols-4">
         <Metric
           label="Collected MTD"
-          value={`₹${(totalCollected / 1000).toFixed(1)}k`}
-          delta="+Live"
+          value={`₹${Math.round(totalCollected).toLocaleString()}`}
         />
         <Metric
           label="Outstanding"
-          value={`₹${(outstanding / 1000).toFixed(1)}k`}
+          value={`₹${Math.round(outstanding).toLocaleString()}`}
         />
-        <Metric label="Total Invoices" value={String(invoicesData.length)} />
-        <Metric label="Days in A/R" value="31" suffix="days" />
+        <Metric label="Total invoices" value={String(invoicesData.length)} />
+        <Metric
+          label="Open invoices"
+          value={String(
+            invoicesData.filter(
+              (i) => i.status !== "PAID" && i.status !== "CANCELLED",
+            ).length,
+          )}
+        />
       </div>
       <TablePanel>
         <thead className="hairline-b">

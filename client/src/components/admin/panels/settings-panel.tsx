@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
-import { ActionButton, PanelHeader } from "../admin-shell";
+import { ActionButton } from "../admin-shell";
+import { AdminHeader } from "../admin-header";
 
 /* ---------- 08 settings ---------- */
 
@@ -33,7 +34,7 @@ function Toggle({
         <motion.span
           className={`absolute top-0.75 size-4 ${on ? "bg-accent" : "bg-muted-foreground/60"}`}
           animate={{ left: on ? 24 : 4 }}
-          transition={{ type: "spring", stiffness: 420, damping: 30 }}
+          transition={{ duration: 0.16, ease: "easeOut" }}
         />
       </button>
     </div>
@@ -58,10 +59,9 @@ export function SettingsPanel() {
 
   return (
     <section>
-      <PanelHeader
-        index="08 / CONFIG"
-        title="Facility settings"
-        note="Governance switches that apply hospital-wide the moment they are changed."
+      <AdminHeader
+        title="Settings"
+        note="Hospital-wide switches. They apply as soon as you save."
         actions={
           <ActionButton tone="solid" onClick={handleSave}>
             Save changes

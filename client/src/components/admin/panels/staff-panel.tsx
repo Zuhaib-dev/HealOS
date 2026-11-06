@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Users } from "lucide-react";
-import { ActionButton, PanelHeader } from "../admin-shell";
+import { AdminHeader } from "../admin-header";
 
 /* ---------- shared primitives ---------- */
 
@@ -51,10 +51,8 @@ function Pill({
 
 function TablePanel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-5 sm:mx-8 mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card/40 shadow-sm backdrop-blur-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-200 border-collapse">{children}</table>
-      </div>
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[48rem] border-collapse">{children}</table>
     </div>
   );
 }
@@ -100,11 +98,9 @@ export function StaffPanel() {
 
   return (
     <section>
-      <PanelHeader
-        index="03 / STAFF"
-        title="Staff & access control"
-        note="Roles, scoped permissions and live workload per member of the establishment."
-        actions={<ActionButton tone="solid">Invite staff</ActionButton>}
+      <AdminHeader
+        title="Access"
+        note="Staff members, departments, and approval state."
       />
       <div className="hairline-b flex flex-wrap gap-1 px-5 py-3 sm:px-8">
         {depts.map((d) => (
@@ -139,7 +135,7 @@ export function StaffPanel() {
                 colSpan={5}
                 className="p-12 text-center mono-label text-xs text-muted-foreground animate-pulse"
               >
-                Loading staff from MongoDB Atlas...
+                Loading staff…
               </td>
             </tr>
           ) : rows.length === 0 ? (

@@ -165,7 +165,8 @@ export function ReportsPanel() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          ...(reportId ? { reportId } : { fileUrl: url }),
+          ...(reportId ? { reportId: String(reportId) } : {}),
+          ...(url ? { fileUrl: url } : {}),
         }),
       });
 
@@ -214,8 +215,11 @@ export function ReportsPanel() {
         body: JSON.stringify({
           messages: apiMessages,
           ...(selectedReportForAi.reportId
-            ? { reportId: selectedReportForAi.reportId }
-            : { fileUrl: selectedReportForAi.url }),
+            ? { reportId: String(selectedReportForAi.reportId) }
+            : {}),
+          ...(selectedReportForAi.url
+            ? { fileUrl: selectedReportForAi.url }
+            : {}),
         }),
       });
 

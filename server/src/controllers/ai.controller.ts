@@ -16,8 +16,8 @@ async function getReportContent(
   reportId?: string,
   fileUrl?: string,
 ) {
-  let resolvedReportId = reportId;
-  if (!resolvedReportId && fileUrl) {
+  let resolvedReportId: string | undefined;
+  if (fileUrl) {
     // Older report rows/UI versions may send the stored URL instead of the
     // report ID. Resolve only URLs already attached to a report in our DB;
     // the report's normal ownership and release checks still apply below.
@@ -38,6 +38,10 @@ async function getReportContent(
       if (storedReport) resolvedReportId = String(storedReport._id);
     }
   }
+  // Keep compatibility with clients that send only a report ID. When both
+  // are present, resolve from the report's protected URL first so a stale
+  // row identifier cannot select a different report.
+  if (!resolvedReportId) resolvedReportId = reportId;
   if (resolvedReportId) {
     const report = await DiagnosticReport.findById(resolvedReportId).select(
       "+localFileName fileUrl fileName patient order uploadedBy",

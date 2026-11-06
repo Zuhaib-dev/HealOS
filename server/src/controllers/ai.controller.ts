@@ -22,6 +22,8 @@ async function getReportContent(
       report.patient.toString() !== req.user?._id.toString()
     )
       throw new AppError("You do not have access to this report", 403);
+    if (req.user?.role !== UserRole.ADMIN && report.state !== "verified")
+      throw new AppError("This report has not been released", 403);
     if (report.localFileName) {
       const safeName = path.basename(report.localFileName);
       const reportPath = path.resolve(
@@ -76,6 +78,13 @@ async function getReportContent(
       }
     }
   }
+  if (
+    req.user?.role !== UserRole.ADMIN &&
+    !reportId &&
+    fileUrl &&
+    !fileUrl.startsWith("/uploads/reports/")
+  )
+    throw new AppError("Select a released report from your account", 403);
   if (!fileUrl) throw new AppError("Report file is unavailable", 404);
   let localUrlPath = "";
   try {
@@ -98,6 +107,8 @@ async function getReportContent(
       ],
     }).select("+localFileName fileUrl fileName patient");
     if (!legacyReport) throw new AppError("Report not found", 404);
+    if (req.user?.role !== UserRole.ADMIN && legacyReport.state !== "verified")
+      throw new AppError("This report has not been released", 403);
     if (
       req.user?.role !== UserRole.ADMIN &&
       legacyReport.patient.toString() !== req.user?._id.toString()

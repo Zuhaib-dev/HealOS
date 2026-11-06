@@ -91,8 +91,7 @@ export function AnalyserPanel() {
       <PanelHeader
         index="03 / bench"
         title="Analyser worklist"
-        note="Instrument state, queue depth, throughput and QC currency. A failed QC blocks release from that analyser."
-        actions={<ActionButton tone="solid">Run QC on all</ActionButton>}
+        note="Manual analyser records only. Instrument telemetry, worklist allocation and QC control are not connected yet."
       />
 
       <div
@@ -109,7 +108,6 @@ export function AnalyserPanel() {
           </div>
         ) : (
           analysers.map((a) => {
-            const running = a.state === "running";
             return (
               <div key={a._id} className="bg-background p-5">
                 <div className="flex items-start justify-between gap-3">
@@ -128,7 +126,9 @@ export function AnalyserPanel() {
                         ? "bad"
                         : a.state === "qc-due"
                           ? "warn"
-                          : "ok"
+                          : a.state === "running"
+                            ? "ok"
+                            : "mute"
                     }
                   >
                     {a.state}
@@ -155,51 +155,30 @@ export function AnalyserPanel() {
                       stroke="var(--hairline)"
                     />
                   ))}
-                  {running && (
-                    <motion.rect
-                      y="10"
-                      width="14"
-                      height="36"
-                      fill="var(--color-accent)"
-                      opacity="0.18"
-                      animate={{ x: [4, 182, 4] }}
-                      transition={{
-                        duration: 4,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    />
-                  )}
                 </svg>
 
                 <dl className="mono-label mt-3 space-y-1.5">
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Queue</dt>
-                    <dd>{a.queue || 0} samples</dd>
+                    <dd>Not connected</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Throughput</dt>
+                    <dt className="text-muted-foreground">
+                      Configured throughput
+                    </dt>
                     <dd>{a.throughput || "—"}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Last QC pass</dt>
+                    <dt className="text-muted-foreground">
+                      Configured QC note
+                    </dt>
                     <dd>{a.qcLastPass || "—"}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Uptime 30d</dt>
-                    <dd>{a.uptime || "100%"}</dd>
+                    <dt className="text-muted-foreground">Configured uptime</dt>
+                    <dd>{a.uptime ?? "—"}</dd>
                   </div>
                 </dl>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <ActionButton>Open worklist</ActionButton>
-                  {a.state === "qc-due" && (
-                    <ActionButton tone="solid">Run QC</ActionButton>
-                  )}
-                  {a.state === "fault" && (
-                    <ActionButton tone="solid">Log service call</ActionButton>
-                  )}
-                </div>
               </div>
             );
           })

@@ -31,9 +31,9 @@ export default function WorkspaceLayout({
         searchPlaceholder="Search accession, MRN, panel"
         sections={sections}
 
-        statusTitle="Bench"
-        statusLine="LIS ↔ analysers linked"
-        statusNote="128 samples in lab · 2 critical open"
+        statusTitle="Laboratory"
+        statusLine="Live diagnostic queues"
+        statusNote="Queue and result status update from lab records"
       >
         {children}
       </WorkspaceShell>

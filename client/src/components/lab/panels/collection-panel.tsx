@@ -173,9 +173,13 @@ export function CollectionPanel() {
     setSelectedOrder(order);
     setPaymentMode(null);
     setIsPaid(order.status === "IN_PROGRESS");
-    setPaymentStatus("IDLE");
-    setActiveInvoiceId(null);
-    setPrice("500"); // Default test price
+    const invoice =
+      order.invoice && typeof order.invoice === "object" ? order.invoice : null;
+    setPaymentStatus(
+      invoice?.status === "PAID" ? "PAID" : invoice ? "WAITING" : "IDLE",
+    );
+    setActiveInvoiceId(invoice?._id || null);
+    setPrice(String(invoice?.totalAmount ?? 500));
   };
 
   const handleSendBill = async () => {
@@ -185,7 +189,17 @@ export function CollectionPanel() {
       toast.info("Sending bill to patient portal...");
       const result = await createLabBillApi(selectedOrder._id, Number(price));
       setActiveInvoiceId(result.invoice?._id || null);
-      toast.success("Bill sent! Waiting for patient to pay via HealOS app...");
+      if (result.invoice?.totalAmount !== undefined)
+        setPrice(String(result.invoice.totalAmount));
+      if (result.invoice?.status === "PAID") {
+        setPaymentStatus("PAID");
+        toast.success("This diagnostic invoice is already paid.");
+      } else {
+        setPaymentStatus("WAITING");
+        toast.success(
+          "Bill sent! Waiting for patient to pay via HealOS app...",
+        );
+      }
     } catch (e) {
       toast.error("Failed to send bill.");
       setPaymentStatus("IDLE");
@@ -205,7 +219,7 @@ export function CollectionPanel() {
       if (!activeInvoiceId) throw new Error("Create a patient invoice first.");
       if (paymentMode === "ONLINE" && paymentStatus !== "PAID")
         throw new Error("Wait for the patient invoice to show as paid.");
-      if (paymentMode === "CASH")
+      if (paymentMode === "CASH" && paymentStatus !== "PAID")
         await recordLabCashPaymentApi(selectedOrder._id);
       await markLabCollectedApi(selectedOrder._id);
       toast.success("Payment verified and sample collected.");
@@ -232,17 +246,14 @@ export function CollectionPanel() {
     if (!file) return;
 
     const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-    const validExts = [
-      ".pdf",
-      ".jpg",
-      ".jpeg",
-      ".png",
-      ".doc",
-      ".docx",
-      ".webp",
-    ];
-    if (!validExts.includes(ext) && !file.type.startsWith("image/")) {
-      toast.error("Please upload a PDF, Image, or Word document.");
+    const validTypes: Record<string, string[]> = {
+      ".pdf": ["application/pdf"],
+      ".jpg": ["image/jpeg"],
+      ".jpeg": ["image/jpeg"],
+      ".png": ["image/png"],
+    };
+    if (!validTypes[ext]?.includes(file.type)) {
+      toast.error("Upload a PDF, JPG, or PNG report.");
       return;
     }
 
@@ -865,12 +876,14 @@ export function CollectionPanel() {
                                 </div>
                                 <div>
                                   <h4 className="font-bold text-emerald-600 dark:text-emerald-400 text-lg mb-1">
-                                    Collect Cash: ₹{price}
+                                    {paymentStatus === "PAID"
+                                      ? "Invoice already paid"
+                                      : `Collect Cash: ₹${price}`}
                                   </h4>
                                   <p className="text-sm text-muted-foreground">
-                                    Create the patient invoice first. After
-                                    collecting cash, confirm below to record the
-                                    payment and collect the sample.
+                                    {paymentStatus === "PAID"
+                                      ? "Payment is already recorded on this invoice. Confirm collection to move the sample into processing."
+                                      : "Create the patient invoice first. After collecting cash, confirm below to record the payment and collect the sample."}
                                   </p>
                                   {!activeInvoiceId && (
                                     <button

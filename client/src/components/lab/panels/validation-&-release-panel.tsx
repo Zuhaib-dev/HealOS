@@ -91,8 +91,10 @@ export function ValidationPanel() {
     const socket = getSocket();
     if (socket) {
       socket.on("lab_report_validated", loadValidation);
+      socket.on("lab_critical_callback_recorded", loadValidation);
       return () => {
         socket.off("lab_report_validated", loadValidation);
+        socket.off("lab_critical_callback_recorded", loadValidation);
       };
     }
   }, []);
@@ -114,8 +116,7 @@ export function ValidationPanel() {
       <PanelHeader
         index="04 / validation"
         title="Validation &amp; release"
-        note="Technical validation with delta checks against the previous result. Critical flags cannot be released without a callback."
-        actions={<ActionButton tone="solid">Auto-verify normals</ActionButton>}
+        note="Review the uploaded report before release. Critical results require a recorded clinician read-back."
       />
 
       <div className="grid gap-px" style={{ background: "var(--hairline)" }}>
@@ -133,17 +134,6 @@ export function ValidationPanel() {
             const patientName = p.patient?.name || "Unknown Patient";
             const accession =
               p.order?.accessionNumber || p.order?._id?.slice(-8) || "N/A";
-            const lines = [
-              {
-                analyte: p.order?.testName || "Analyte",
-                value: p.findings || "See report",
-                unit: "",
-                ref: "—",
-                delta: "—",
-                flag: p.isCritical ? "critical" : "normal",
-              },
-            ];
-
             return (
               <div key={p._id} className="bg-background p-5 sm:p-8">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -164,64 +154,18 @@ export function ValidationPanel() {
                   )}
                 </div>
 
-                <div className="hairline mt-4 overflow-x-auto">
-                  <table className="w-full min-w-160">
-                    <thead className="hairline-b">
-                      <tr>
-                        <Th>Analyte</Th>
-                        <Th>Result</Th>
-                        <Th>Reference</Th>
-                        <Th>Delta</Th>
-                        <Th>Flag</Th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {lines.map((l) => (
-                        <tr
-                          key={l.analyte}
-                          className="hairline-b last:border-b-0"
-                        >
-                          <Td>{l.analyte}</Td>
-                          <Td>
-                            <span
-                              className={`font-mono text-base ${l.flag === "critical" ? "text-destructive" : ""}`}
-                            >
-                              {l.value}
-                            </span>
-                            <span className="mono-label text-muted-foreground ml-1">
-                              {l.unit}
-                            </span>
-                          </Td>
-                          <Td>
-                            <span className="mono-label text-muted-foreground">
-                              {l.ref}
-                            </span>
-                          </Td>
-                          <Td>
-                            <span className="mono-label">{l.delta}</span>
-                          </Td>
-                          <Td>
-                            <Pill
-                              tone={
-                                l.flag === "critical"
-                                  ? "bad"
-                                  : l.flag === "normal"
-                                    ? "ok"
-                                    : "warn"
-                              }
-                            >
-                              {l.flag}
-                            </Pill>
-                          </Td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="hairline mt-4 rounded-lg p-4 text-sm text-muted-foreground">
+                  Review the attached report document for its test values and
+                  reference ranges. Structured analyte and delta checks are not
+                  available for uploaded documents.
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   <ActionButton
                     tone="solid"
+                    disabled={Boolean(
+                      p.isCritical && !p.criticalCallback?.readBackConfirmed,
+                    )}
                     onClick={() => handleValidate(p._id)}
                   >
                     Validate & release
@@ -237,8 +181,6 @@ export function ValidationPanel() {
                       <Eye className="mr-2 inline size-4" /> View PDF
                     </ActionButton>
                   )}
-                  <ActionButton>Repeat on analyser</ActionButton>
-                  <ActionButton>Add interpretive comment</ActionButton>
                 </div>
               </div>
             );

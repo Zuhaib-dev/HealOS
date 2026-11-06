@@ -306,7 +306,10 @@ export const orderDiagnostic = async (req: Request, res: Response) => {
 
     const io = getIO();
     if (io) {
-      io.emit("order_created", { order });
+      const event = { orderId: order._id };
+      io.to(
+        order.testType === "PATHOLOGY" ? "lab_technician" : "radiologist",
+      ).emit("order_created", event);
     }
 
     res.status(201).json({
@@ -353,8 +356,9 @@ export const getPatientHistory = async (req: Request, res: Response) => {
 
     const diagnosticReports = await DiagnosticReport.find({
       patient: patientId,
+      state: "verified",
     })
-      .populate("radiologist", "firstName lastName")
+      .populate("order", "testName testType status")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -586,14 +590,14 @@ export const getAssignedPatients = async (req: Request, res: Response) => {
 export const getDiagnosticResults = async (req: Request, res: Response) => {
   try {
     const doctorId = req.user?._id;
-    const patientIds = await Appointment.distinct("patient", {
-      doctor: doctorId,
-    });
-
+    const orderIds = await DiagnosticOrder.find({ doctor: doctorId }).distinct(
+      "_id",
+    );
     const results = await DiagnosticReport.find({
-      patient: { $in: patientIds },
+      order: { $in: orderIds },
+      state: "verified",
     })
-      .select("patient order state isCritical createdAt")
+      .select("patient order state isCritical findings fileUrl createdAt")
       .populate("patient", "name")
       .populate("order", "testName testType status")
       .sort({ createdAt: -1 })

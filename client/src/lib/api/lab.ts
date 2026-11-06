@@ -44,6 +44,18 @@ export const validateLabReportApi = async (id: string) => {
   return response.data;
 };
 
+export const recordLabCriticalCallbackApi = async (
+  id: string,
+  clinician: string,
+  readBackConfirmed: boolean,
+) => {
+  const response = await apiClient.patch(`/lab/critical/${id}/callback`, {
+    clinician,
+    readBackConfirmed,
+  });
+  return response.data;
+};
+
 export const fetchLabAnalysersApi = async () => {
   const response = await apiClient.get("/lab/analysers");
   return response.data;

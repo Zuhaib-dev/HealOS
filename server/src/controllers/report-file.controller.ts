@@ -31,11 +31,13 @@ export async function getDiagnosticReportFile(
 
     const isPatientOwner =
       user.role === UserRole.PATIENT &&
-      report.patient.toString() === user._id.toString();
+      report.patient.toString() === user._id.toString() &&
+      report.state === "verified";
     const isAdmin = user.role === UserRole.ADMIN;
     const uploadedByUser = report.uploadedBy === user._id.toString();
     const isAssignedDoctor =
       user.role === UserRole.DOCTOR &&
+      report.state === "verified" &&
       report.order &&
       Boolean(
         await DiagnosticOrder.exists({ _id: report.order, doctor: user._id }),
@@ -56,12 +58,10 @@ export async function getDiagnosticReportFile(
       isAssignedDoctor ||
       isDiagnosticStaff
     )) {
-      res
-        .status(403)
-        .json({
-          success: false,
-          message: "You do not have access to this report",
-        });
+      res.status(403).json({
+        success: false,
+        message: "You do not have access to this report",
+      });
       return;
     }
 
@@ -82,12 +82,10 @@ export async function getDiagnosticReportFile(
         !filePath.startsWith(`${reportsDirectory}${path.sep}`) ||
         !fs.existsSync(filePath)
       ) {
-        res
-          .status(404)
-          .json({
-            success: false,
-            message: "The locally stored report is unavailable",
-          });
+        res.status(404).json({
+          success: false,
+          message: "The locally stored report is unavailable",
+        });
         return;
       }
       const ext = path.extname(safeName).toLowerCase();

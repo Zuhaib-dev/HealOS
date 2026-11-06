@@ -38,6 +38,32 @@ export const uploadLabReport = async (req: Request, res: Response) => {
       fs.unlinkSync(file.path);
       throw new AppError("Diagnostic order not found", 404);
     }
+    if (order.testType !== "PATHOLOGY") {
+      fs.unlinkSync(file.path);
+      throw new AppError("Only pathology orders can be reported here", 400);
+    }
+    if (order.status !== "IN_PROGRESS") {
+      fs.unlinkSync(file.path);
+      throw new AppError(
+        "Collect and process this sample before uploading a result",
+        409,
+      );
+    }
+    const invoice = order.invoice
+      ? await Invoice.findById(order.invoice)
+      : null;
+    if (
+      !invoice ||
+      invoice.status !== InvoiceStatus.PAID ||
+      (invoice.paidAmount || 0) + (invoice.insuranceCoverage || 0) <
+        invoice.totalAmount
+    ) {
+      fs.unlinkSync(file.path);
+      throw new AppError(
+        "A fully paid invoice is required before reporting",
+        409,
+      );
+    }
 
     let fileUrl = "";
     let localFileName: string | undefined;
@@ -83,7 +109,11 @@ export const uploadLabReport = async (req: Request, res: Response) => {
     }
 
     order.status = "REPORTED" as any;
+    order.reportedAt = new Date();
     await order.save();
+    getIO()
+      .to("lab_technician")
+      .emit("lab_collection_updated", { orderId: order._id });
 
     res.status(201).json({
       status: "success",
@@ -102,9 +132,17 @@ export const uploadLabReport = async (req: Request, res: Response) => {
 
 export const getLabHistory = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const search = (req.query.search as string) || "";
+    const page = Math.max(
+      1,
+      Math.min(100_000, Number.parseInt(req.query.page as string, 10) || 1),
+    );
+    const limit = Math.max(
+      1,
+      Math.min(100, Number.parseInt(req.query.limit as string, 10) || 10),
+    );
+    const search = String(req.query.search || "")
+      .trim()
+      .slice(0, 100);
     const skip = (page - 1) * limit;
 
     // Optional: Filter by 'state: "released"' if you only want fully verified reports,
@@ -117,7 +155,8 @@ export const getLabHistory = async (req: Request, res: Response) => {
     // We cannot easily text search across populated fields in a single basic find,
     // but we can search by title or fileName. In a real app, you'd aggregate.
     if (search) {
-      filter = { ...filter, title: { $regex: search, $options: "i" } };
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      filter = { ...filter, title: { $regex: escapedSearch, $options: "i" } };
     }
 
     const totalCount = await DiagnosticReport.countDocuments(filter);
@@ -153,9 +192,24 @@ export const getCollections = async (_req: Request, res: Response) => {
       status: { $in: ["PENDING", "IN_PROGRESS"] },
     })
       .populate("patient", "name mrn phone")
-      .sort({ priority: -1, createdAt: 1 })
+      .populate(
+        "invoice",
+        "totalAmount paidAmount insuranceCoverage status paymentMethod",
+      )
+      .sort({ createdAt: 1 })
       .lean();
 
+    const priorityRank: Record<string, number> = {
+      STAT: 0,
+      URGENT: 1,
+      ROUTINE: 2,
+    };
+    orders.sort(
+      (a, b) =>
+        (priorityRank[String(a.priority)] ?? 3) -
+          (priorityRank[String(b.priority)] ?? 3) ||
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
     res.status(200).json({ success: true, collections: orders });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error" });
@@ -168,6 +222,15 @@ export const createLabBill = async (req: Request, res: Response) => {
     const { price } = req.body;
     const order = await DiagnosticOrder.findById(id);
     if (!order) throw new AppError("Order not found", 404);
+    if (
+      order.testType !== "PATHOLOGY" ||
+      order.status === "CANCELLED" ||
+      order.status === "REPORTED"
+    )
+      throw new AppError(
+        "This order cannot be billed from the lab collection queue",
+        409,
+      );
     const invoice = await createOrGetDiagnosticInvoice(
       order,
       req.user?._id,
@@ -190,8 +253,8 @@ export const markCollected = async (req: Request, res: Response) => {
     if (!order) throw new AppError("Diagnostic order not found", 404);
     if (order.testType !== "PATHOLOGY")
       throw new AppError("Only pathology orders can be collected here", 400);
-    if (order.status === "CANCELLED")
-      throw new AppError("Cancelled orders cannot be collected", 409);
+    if (!["PENDING", "IN_PROGRESS"].includes(order.status))
+      throw new AppError("This order is no longer awaiting collection", 409);
     if (req.body?.price !== undefined) {
       // Collection is not payment. Create/reuse a pending invoice for payment through billing.
       await createOrGetDiagnosticInvoice(order, req.user?._id, req.body.price);
@@ -211,10 +274,12 @@ export const markCollected = async (req: Request, res: Response) => {
       );
     }
     if (order.status === "PENDING") order.status = "IN_PROGRESS" as any;
+    if (!order.collectedAt) order.collectedAt = new Date();
     await order.save();
 
-    const io = getIO();
-    if (io) io.emit("lab_collection_updated", { order });
+    getIO()
+      .to("lab_technician")
+      .emit("lab_collection_updated", { orderId: order._id });
 
     res.status(200).json({ success: true, order });
   } catch (error: any) {
@@ -230,18 +295,18 @@ export const recordLabCashPayment = async (req: Request, res: Response) => {
     if (!order) throw new AppError("Diagnostic order not found", 404);
     if (order.testType !== "PATHOLOGY")
       throw new AppError("This is not a pathology order", 400);
+    if (!["PENDING", "IN_PROGRESS"].includes(order.status))
+      throw new AppError("Cash cannot be recorded for a closed order", 409);
     const invoice = await recordDiagnosticCashPayment(
       String(req.params.id || ""),
       req.user?._id,
     );
     res.json({ success: true, invoice });
   } catch (error: any) {
-    res
-      .status(error.statusCode || 500)
-      .json({
-        success: false,
-        message: error.message || "Unable to record cash payment",
-      });
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Unable to record cash payment",
+    });
   }
 };
 
@@ -249,7 +314,7 @@ export const getSamples = async (_req: Request, res: Response) => {
   try {
     const samples = await DiagnosticOrder.find({
       testType: "PATHOLOGY",
-      status: { $in: ["IN_PROGRESS", "REPORTED"] },
+      status: { $in: ["IN_PROGRESS", "REPORTED", "CANCELLED"] },
     })
       .populate("patient", "name")
       .sort({ createdAt: -1 })
@@ -281,18 +346,110 @@ export const getPendingValidation = async (_req: Request, res: Response) => {
 export const validateReport = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const report = await DiagnosticReport.findByIdAndUpdate(
-      id,
-      { state: "verified" },
+    const report = await DiagnosticReport.findById(id);
+    if (!report) throw new AppError("Report not found", 404);
+    if (report.state !== "pending sign")
+      throw new AppError("Only pending reports can be released", 409);
+    const order = report.order
+      ? await DiagnosticOrder.findById(report.order)
+      : null;
+    if (!order || order.testType !== "PATHOLOGY" || order.status !== "REPORTED")
+      throw new AppError(
+        "Only completed pathology reports can be released here",
+        409,
+      );
+    if (
+      report.isCritical &&
+      (!report.criticalCallback?.readBackConfirmed ||
+        !report.criticalCallback.clinician?.trim())
+    )
+      throw new AppError(
+        "Record and confirm the critical-result read-back before release",
+        409,
+      );
+    const releasedReport = await DiagnosticReport.findOneAndUpdate(
+      { _id: id, state: "pending sign" },
+      { $set: { state: "verified" } },
       { new: true },
     );
+    if (!releasedReport)
+      throw new AppError("This report was already released", 409);
 
     const io = getIO();
-    if (io) io.emit("lab_report_validated", { report });
+    io.to("lab_technician").emit("lab_report_validated", {
+      reportId: releasedReport._id,
+    });
+    io.to(`user:${releasedReport.patient}`).emit("lab_report_validated", {
+      reportId: releasedReport._id,
+    });
+    io.to(`user:${order.doctor}`).emit("lab_report_validated", {
+      reportId: releasedReport._id,
+    });
 
+    res.status(200).json({ success: true, report: releasedReport });
+  } catch (error: any) {
+    res
+      .status(error.statusCode || 500)
+      .json({ success: false, message: error.message || "Server error" });
+  }
+};
+
+export const recordCriticalCallback = async (req: Request, res: Response) => {
+  try {
+    const clinician =
+      typeof req.body?.clinician === "string" ? req.body.clinician.trim() : "";
+    if (
+      !clinician ||
+      clinician.length > 160 ||
+      req.body?.readBackConfirmed !== true
+    )
+      throw new AppError("Enter the clinician and confirm read-back", 400);
+    const candidate = await DiagnosticReport.findById(req.params.id).select(
+      "order isCritical state",
+    );
+    const order = candidate?.order
+      ? await DiagnosticOrder.findById(candidate.order).select("testType")
+      : null;
+    if (
+      !candidate ||
+      !candidate.isCritical ||
+      candidate.state !== "pending sign" ||
+      order?.testType !== "PATHOLOGY"
+    )
+      throw new AppError("Pending critical pathology result not found", 404);
+    const report = await DiagnosticReport.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        isCritical: true,
+        state: "pending sign",
+        "criticalCallback.calledAt": { $exists: false },
+      },
+      {
+        $set: {
+          criticalCallback: {
+            clinician,
+            readBackConfirmed: true,
+            calledAt: new Date(),
+            recordedBy: req.user?._id,
+          },
+        },
+      },
+      { new: true, runValidators: true },
+    );
+    if (!report)
+      throw new AppError(
+        "Critical result not found, already released, or callback already recorded",
+        409,
+      );
+    getIO()
+      .to("lab_technician")
+      .emit("lab_critical_callback_recorded", { reportId: report._id });
     res.status(200).json({ success: true, report });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Unable to record callback",
+    });
   }
 };
 
@@ -335,9 +492,13 @@ export const getLabStats = async (_req: Request, res: Response) => {
       testType: "PATHOLOGY",
       status: "IN_PROGRESS",
     });
+    const pathologyOrderIds = await DiagnosticOrder.find({
+      testType: "PATHOLOGY",
+    }).distinct("_id");
     const criticalCount = await DiagnosticReport.countDocuments({
       isCritical: true,
       state: "pending sign",
+      order: { $in: pathologyOrderIds },
     });
 
     res.status(200).json({

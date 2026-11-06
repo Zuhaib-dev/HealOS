@@ -2,14 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import {
-  TestTube,
-  PhoneCall,
-  Check,
-  X,
-  Barcode,
-  TriangleAlert,
-} from "lucide-react";
+import { PhoneCall, Check, X, Barcode, TriangleAlert } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import {
   Card,
@@ -69,7 +62,8 @@ function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
 export function AccessioningPanel() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "open" | "rejected">("all");
+  const [filter, setFilter] = useState<"all" | "open" | "cancelled">("all");
+  const [now, setNow] = useState(() => Date.now());
 
   const loadSamples = async () => {
     try {
@@ -86,23 +80,26 @@ export function AccessioningPanel() {
 
   useEffect(() => {
     loadSamples();
+    const clock = window.setInterval(() => setNow(Date.now()), 60_000);
     const socket = getSocket();
     if (socket) {
       socket.on("lab_collection_updated", loadSamples);
       socket.on("lab_report_validated", loadSamples);
       return () => {
+        window.clearInterval(clock);
         socket.off("lab_collection_updated", loadSamples);
         socket.off("lab_report_validated", loadSamples);
       };
     }
+    return () => window.clearInterval(clock);
   }, []);
 
   const visible = rows.filter((s) =>
     filter === "all"
       ? true
-      : filter === "rejected"
+      : filter === "cancelled"
         ? s.status === "CANCELLED"
-        : s.status !== "REPORTED",
+        : s.status === "IN_PROGRESS",
   );
 
   return (
@@ -110,15 +107,15 @@ export function AccessioningPanel() {
       <PanelHeader
         index="02 / accessioning"
         title="Accessioning &amp; sample flow"
-        note="Every sample from receipt to release, with discipline routing, analyser allocation and turnaround against discipline SLA."
+        note="Pathology samples in progress, reported or cancelled. Analyzer assignment is not connected; turnaround uses recorded collection and result times."
         actions={
           <>
             <ActionButton onClick={() => setFilter("all")}>All</ActionButton>
             <ActionButton onClick={() => setFilter("open")}>
               In progress
             </ActionButton>
-            <ActionButton tone="solid" onClick={() => setFilter("rejected")}>
-              Rejected
+            <ActionButton tone="solid" onClick={() => setFilter("cancelled")}>
+              Cancelled
             </ActionButton>
           </>
         }
@@ -131,18 +128,17 @@ export function AccessioningPanel() {
               <Th>Accession</Th>
               <Th>Patient</Th>
               <Th>Discipline / panel</Th>
-              <Th>Analyser</Th>
-              <Th>Received</Th>
+              <Th>Assignment</Th>
+              <Th>Collected</Th>
               <Th>TAT / SLA</Th>
               <Th>Stage</Th>
-              <Th>Action</Th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={7}
                   className="p-8 text-center text-muted-foreground"
                 >
                   Loading samples...
@@ -151,7 +147,7 @@ export function AccessioningPanel() {
             ) : visible.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={7}
                   className="p-8 text-center text-muted-foreground"
                 >
                   No samples found.
@@ -159,9 +155,17 @@ export function AccessioningPanel() {
               </tr>
             ) : (
               visible.map((s) => {
-                const tat = s.tatMin || 0;
-                const sla = s.slaMin || 60;
-                const breach = tat > sla;
+                const start = s.collectedAt
+                  ? new Date(s.collectedAt).getTime()
+                  : null;
+                const end = s.reportedAt
+                  ? new Date(s.reportedAt).getTime()
+                  : now;
+                const tat = start
+                  ? Math.max(0, Math.floor((end - start) / 60_000))
+                  : null;
+                const sla = s.slaMin;
+                const breach = tat !== null && sla !== undefined && tat > sla;
                 const patientName = s.patient?.name || "Unknown";
                 return (
                   <tr key={s._id} className="hairline-b hover:bg-foreground/2">
@@ -183,26 +187,29 @@ export function AccessioningPanel() {
                       </p>
                     </Td>
                     <Td>
-                      <span className="mono-label">—</span>
+                      <span className="mono-label text-muted-foreground">
+                        Not assigned
+                      </span>
                     </Td>
                     <Td>
                       <span className="font-mono">
-                        {new Date(s.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: true,
-                        })}
+                        {s.collectedAt
+                          ? new Date(s.collectedAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })
+                          : "Not collected"}
                       </span>
                     </Td>
                     <Td>
                       <span
                         className={`font-mono ${breach ? "text-destructive" : ""}`}
                       >
-                        {tat}′
+                        {tat === null ? "—" : `${tat}′`}
                       </span>
                       <span className="mono-label text-muted-foreground">
-                        {" "}
-                        / {sla}′
+                        {sla !== undefined ? ` / ${sla}′` : " / SLA —"}
                       </span>
                     </Td>
                     <Td>
@@ -220,17 +227,6 @@ export function AccessioningPanel() {
                           {s.status}
                         </Pill>
                       </span>
-                    </Td>
-                    <Td>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="hairline mono-label px-2.5 py-1.5"
-                          disabled
-                        >
-                          <TestTube className="mr-1 inline size-3" /> Load
-                        </button>
-                      </div>
                     </Td>
                   </tr>
                 );

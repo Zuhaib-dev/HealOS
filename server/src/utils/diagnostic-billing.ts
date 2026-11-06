@@ -42,7 +42,11 @@ export async function createOrGetDiagnosticInvoice(
     });
     order.invoice = invoice._id;
     await order.save();
-    getIO()?.emit("invoice_created", { invoice });
+    const io = getIO();
+    const invoiceId = invoice._id;
+    io.to(`user:${order.patient}`).emit("invoice_updated", { invoiceId });
+    io.to("admin").emit("invoice_created", { invoiceId });
+    io.to("receptionist").emit("invoice_created", { invoiceId });
     return invoice;
   } catch (error: any) {
     if (error?.code === 11000) {
@@ -134,8 +138,20 @@ export async function recordDiagnosticCashPayment(
       { statusCode: 409 },
     );
   }
-  getIO()?.emit("invoice_paid", { invoiceId: currentInvoice._id });
-  getIO()?.emit("invoice_updated", { invoiceId: currentInvoice._id });
-  getIO()?.emit("admin:data_changed", { types: ["invoices", "billing"] });
+  const io = getIO();
+  io.to(`user:${currentInvoice.patient}`).emit("invoice_paid", {
+    invoiceId: currentInvoice._id,
+  });
+  io.to(`user:${currentInvoice.patient}`).emit("invoice_updated", {
+    invoiceId: currentInvoice._id,
+  });
+  io.to("receptionist").emit("invoice_updated", {
+    invoiceId: currentInvoice._id,
+  });
+  io.to(order.testType === "PATHOLOGY" ? "lab_technician" : "radiologist").emit(
+    "invoice_paid",
+    { invoiceId: currentInvoice._id },
+  );
+  io.to("admin").emit("admin:data_changed", { types: ["invoices", "billing"] });
   return currentInvoice;
 }

@@ -2,16 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import {
-  Check,
-  TriangleAlert,
-  PenLine,
-  Send,
-  X,
-  CheckCircle2,
-  Eye,
-} from "lucide-react";
-import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
+import { Eye } from "lucide-react";
+import { PanelHeader } from "@/components/admin/admin-shell";
 import { useAuthStore } from "@/store/use-auth-store";
 import {
   fetchDoctorAppointmentsApi,
@@ -22,7 +14,6 @@ import { toast } from "sonner";
 import { saveConsultationApi, IMedicine } from "@/lib/api/doctor";
 import { getDiagnosticResultsApi } from "@/lib/api/doctor";
 import { getSocket } from "@/lib/socket";
-import { getFileUrl } from "@/lib/utils";
 import { openProtectedReport } from "@/lib/api/reports";
 
 /* ---------- primitives ---------- */
@@ -104,8 +95,7 @@ function acuityPill(a: "critical" | "guarded" | "stable") {
 export function ResultsPanel() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [signed, setSigned] = useState<string[]>([]);
-  const [filter, setFilter] = useState<"all" | "critical" | "unsigned">("all");
+  const [filter, setFilter] = useState<"all" | "critical">("all");
 
   const loadResults = () => {
     getDiagnosticResultsApi()
@@ -119,18 +109,16 @@ export function ResultsPanel() {
     const socket = getSocket();
     if (socket) {
       socket.on("report_ready", loadResults);
+      socket.on("lab_report_validated", loadResults);
       return () => {
         socket.off("report_ready", loadResults);
+        socket.off("lab_report_validated", loadResults);
       };
     }
   }, []);
 
   const rows = results.filter((r) =>
-    filter === "critical"
-      ? r.flag === "critical"
-      : filter === "unsigned"
-        ? !signed.includes(r._id)
-        : true,
+    filter === "critical" ? r.isCritical : true,
   );
 
   return (
@@ -138,22 +126,13 @@ export function ResultsPanel() {
       <PanelHeader
         index="04 / results"
         title="Results inbox"
-        note="Labs, imaging and pathology waiting on your signature — criticals surface at the top."
-        actions={
-          <ActionButton
-            tone="solid"
-            onClick={() => setSigned(results.map((r) => r._id))}
-          >
-            Sign all normal
-          </ActionButton>
-        }
+        note="Released results ordered by you. Critical flags come from the lab; doctor acknowledgement is not tracked here."
       />
       <div className="hairline-b flex gap-1 px-5 py-3 sm:px-8">
         {(
           [
             ["all", "All"],
             ["critical", "Critical"],
-            ["unsigned", "Unsigned"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -180,7 +159,7 @@ export function ResultsPanel() {
               <Th>Kind</Th>
               <Th>Value</Th>
               <Th>Flag</Th>
-              <Th>Action</Th>
+              <Th>Report</Th>
             </tr>
           </thead>
           <tbody>
@@ -204,7 +183,6 @@ export function ResultsPanel() {
               </tr>
             ) : (
               rows.map((r) => {
-                const isSigned = signed.includes(r._id);
                 const patName =
                   typeof r.patient === "object" ? r.patient?.name : "Unknown";
                 const testName = r.order?.testName || "Unknown Test";
@@ -227,18 +205,16 @@ export function ResultsPanel() {
                     </Td>
                     <Td>
                       <span
-                        className={`mono-label ${r.flag === "critical" ? "text-destructive" : ""}`}
+                        className={`mono-label ${r.isCritical ? "text-destructive" : ""}`}
                       >
-                        {r.findings || "Pending"}
+                        {r.findings || "Open report to review"}
                       </span>
                     </Td>
                     <Td>
-                      {r.flag === "critical" ? (
+                      {r.isCritical ? (
                         <Pill tone="bad">critical</Pill>
-                      ) : r.flag === "abnormal" ? (
-                        <Pill tone="warn">abnormal</Pill>
                       ) : (
-                        <Pill tone="ok">normal</Pill>
+                        <Pill tone="mute">released</Pill>
                       )}
                     </Td>
                     <Td>
@@ -247,31 +223,14 @@ export function ResultsPanel() {
                           <button
                             type="button"
                             onClick={() =>
-                              r._id
-                                ? openProtectedReport(r._id).catch(() =>
-                                    toast.error("Unable to open this report"),
-                                  )
-                                : window.open(
-                                    getFileUrl(r.fileUrl),
-                                    "_blank",
-                                    "noopener,noreferrer",
-                                  )
+                              openProtectedReport(r._id).catch(() =>
+                                toast.error("Unable to open this report"),
+                              )
                             }
                             className="size-8 rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 transition-colors"
                             title="View Document"
                           >
                             <Eye className="size-4" />
-                          </button>
-                        )}
-                        {isSigned ? (
-                          <Pill tone="mute">signed</Pill>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setSigned((s) => [...s, r._id])}
-                            className="mono-label hairline px-3 py-1.5"
-                          >
-                            acknowledge
                           </button>
                         )}
                       </div>

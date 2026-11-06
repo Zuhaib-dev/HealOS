@@ -20,7 +20,10 @@ import {
   Th,
   type Tone,
 } from "@/components/workspace/ui";
-import { fetchLabCriticalValuesApi } from "@/lib/api/lab";
+import {
+  fetchLabCriticalValuesApi,
+  recordLabCriticalCallbackApi,
+} from "@/lib/api/lab";
 import { getSocket } from "@/lib/socket";
 import { toast } from "sonner";
 
@@ -69,7 +72,10 @@ function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
 export function CriticalPanel() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [target, setTarget] = useState("");
+  const [callbacks, setCallbacks] = useState<
+    Record<string, { clinician: string; confirmed: boolean }>
+  >({});
+  const [saving, setSaving] = useState<string | null>(null);
 
   const loadCriticals = async () => {
     try {
@@ -89,11 +95,33 @@ export function CriticalPanel() {
     const socket = getSocket();
     if (socket) {
       socket.on("lab_report_validated", loadCriticals);
+      socket.on("lab_critical_callback_recorded", loadCriticals);
       return () => {
         socket.off("lab_report_validated", loadCriticals);
+        socket.off("lab_critical_callback_recorded", loadCriticals);
       };
     }
   }, []);
+
+  const recordCallback = async (id: string) => {
+    const value = callbacks[id];
+    if (!value?.clinician.trim() || !value.confirmed) {
+      toast.error("Enter the clinician and confirm the read-back first.");
+      return;
+    }
+    setSaving(id);
+    try {
+      await recordLabCriticalCallbackApi(id, value.clinician.trim(), true);
+      toast.success("Critical-result callback recorded.");
+      await loadCriticals();
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Unable to record callback.",
+      );
+    } finally {
+      setSaving(null);
+    }
+  };
 
   return (
     <section>
@@ -103,7 +131,8 @@ export function CriticalPanel() {
         note="Every critical result must be phoned, read back and signed. Open items age visibly until the loop closes."
         actions={
           <ActionButton tone="solid">
-            {rows.filter((r) => !r.readBack).length} open
+            {rows.filter((r) => !r.criticalCallback?.readBackConfirmed).length}{" "}
+            open
           </ActionButton>
         }
       />
@@ -130,7 +159,9 @@ export function CriticalPanel() {
               <div key={c._id} className="bg-background p-5">
                 <div className="flex items-center justify-between gap-2">
                   <p className="mono-label text-accent/80">{accession}</p>
-                  {!c.readBack && <LiveDot tone="bad" />}
+                  {!c.criticalCallback?.readBackConfirmed && (
+                    <LiveDot tone="bad" />
+                  )}
                 </div>
                 <p className="mt-1 font-mono text-lg font-bold">
                   {patientName}
@@ -154,9 +185,11 @@ export function CriticalPanel() {
                   </p>
                 </div>
 
-                {c.readBack ? (
+                {c.criticalCallback?.readBackConfirmed ? (
                   <p className="mono-label text-brass mt-4">
-                    Called {c.calledTo} at {c.calledAt} · read-back confirmed
+                    Called {c.criticalCallback.clinician} at{" "}
+                    {new Date(c.criticalCallback.calledAt).toLocaleString()} ·
+                    read-back confirmed
                   </p>
                 ) : (
                   <div className="mt-4">
@@ -164,28 +197,40 @@ export function CriticalPanel() {
                       id={`clinician-called-${c._id}`}
                       aria-label="Clinician called"
                       title="Clinician called"
-                      value={target}
-                      onChange={(e) => setTarget(e.target.value)}
+                      value={callbacks[c._id]?.clinician || ""}
+                      onChange={(e) =>
+                        setCallbacks((previous) => ({
+                          ...previous,
+                          [c._id]: {
+                            clinician: e.target.value,
+                            confirmed: previous[c._id]?.confirmed || false,
+                          },
+                        }))
+                      }
                       placeholder="Clinician called"
                       className="hairline mono-label w-full bg-transparent px-3 py-2 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
                     />
+                    <label className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={callbacks[c._id]?.confirmed || false}
+                        onChange={(e) =>
+                          setCallbacks((previous) => ({
+                            ...previous,
+                            [c._id]: {
+                              clinician: previous[c._id]?.clinician || "",
+                              confirmed: e.target.checked,
+                            },
+                          }))
+                        }
+                      />
+                      I confirmed the result by read-back with this clinician.
+                    </label>
                     <div className="mt-2 flex gap-2">
                       <ActionButton
                         tone="solid"
-                        onClick={() =>
-                          setRows((r) =>
-                            r.map((x) =>
-                              x._id === c._id
-                                ? {
-                                    ...x,
-                                    readBack: true,
-                                    calledTo: target || "on-call MO",
-                                    calledAt: "now",
-                                  }
-                                : x,
-                            ),
-                          )
-                        }
+                        disabled={saving === c._id}
+                        onClick={() => recordCallback(c._id)}
                       >
                         <PhoneCall className="mr-1 inline size-3" /> Mark called
                       </ActionButton>
@@ -201,13 +246,21 @@ export function CriticalPanel() {
       <div className="p-5 sm:px-8">
         <Card>
           <p className="mono-label text-muted-foreground">
-            Callback compliance · rolling 30 days
+            Current pending critical results
           </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-3">
             {[
-              ["Called within 15 min", "98.2%"],
-              ["Read-back documented", "100%"],
-              ["Median time to call", "6m 12s"],
+              [
+                "Awaiting callback",
+                rows.filter((r) => !r.criticalCallback?.readBackConfirmed)
+                  .length,
+              ],
+              [
+                "Callback documented",
+                rows.filter((r) => r.criticalCallback?.readBackConfirmed)
+                  .length,
+              ],
+              ["Open critical results", rows.length],
             ].map(([k, v]) => (
               <div key={k}>
                 <p className="font-mono text-2xl font-bold">{v}</p>

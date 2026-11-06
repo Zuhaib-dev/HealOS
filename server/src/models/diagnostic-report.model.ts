@@ -14,6 +14,12 @@ export interface IDiagnosticReport extends Document {
   comments?: string;
   findings?: string; // Summary of results
   isCritical?: boolean; // Flag to alert doctor immediately
+  criticalCallback?: {
+    clinician: string;
+    readBackConfirmed: boolean;
+    calledAt: Date;
+    recordedBy: mongoose.Types.ObjectId;
+  };
 
   // Radiology specific fields for documents
   kind?:
@@ -44,6 +50,12 @@ const diagnosticReportSchema = new Schema<IDiagnosticReport>(
     comments: { type: String },
     findings: { type: String },
     isCritical: { type: Boolean, default: false },
+    criticalCallback: {
+      clinician: { type: String, trim: true },
+      readBackConfirmed: { type: Boolean, default: false },
+      calledAt: { type: Date },
+      recordedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    },
     kind: {
       type: String,
       enum: [

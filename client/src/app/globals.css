@@ -456,12 +456,35 @@
   }
 }
 
-html[data-route-loading="true"] a[data-route-pending="true"] {
-  opacity: 0.72;
+.healos-route-bar {
+  transform: scaleX(0.1);
+  animation: healos-route-crawl 8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  box-shadow: 0 0 18px color-mix(in oklab, var(--color-accent) 80%, transparent);
+}
+
+.healos-route-bar[data-complete] {
+  animation: none;
+  transform: scaleX(1);
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes healos-route-crawl {
+  from {
+    transform: scaleX(0.08);
+  }
+  to {
+    transform: scaleX(0.9);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-route-loading="true"] [data-route-progress-veil] {
-    display: none;
+  .healos-route-bar {
+    animation: none;
+    transform: scaleX(0.72);
+  }
+
+  .healos-route-bar[data-complete] {
+    transition: none;
+    transform: scaleX(1);
   }
 }

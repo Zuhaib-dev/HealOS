@@ -4,6 +4,10 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 const START_EVENT = "healos:route-start";
+/** Fast hops finish inside this window — no paint, no layout work. */
+const SHOW_AFTER_MS = 280;
+const HIDE_AFTER_MS = 160;
+const FAILSAFE_MS = 12000;
 
 export function startRouteProgress() {
   if (typeof window === "undefined") return;
@@ -19,65 +23,55 @@ function sameDestination(url: URL) {
 
 function RouteProgressBar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const search = searchParams.toString();
-  const [active, setActive] = useState(false);
-  const [veil, setVeil] = useState(false);
-  const [scale, setScale] = useState(0);
+  const search = useSearchParams().toString();
+  const [phase, setPhase] = useState<"idle" | "run" | "done">("idle");
+  const [token, setToken] = useState(0);
+  const pendingRef = useRef(false);
+  const shownRef = useRef(false);
   const timers = useRef<number[]>([]);
-  const activeRef = useRef(false);
-  const startRef = useRef<(anchor?: HTMLAnchorElement) => void>(() => {});
+  const startRef = useRef<() => void>(() => {});
+  const finishRef = useRef<() => void>(() => {});
 
   const clearTimers = () => {
     timers.current.forEach((id) => window.clearTimeout(id));
     timers.current = [];
   };
 
+  const reveal = () => {
+    if (!pendingRef.current || shownRef.current) return;
+    shownRef.current = true;
+    setToken((n) => n + 1);
+    setPhase("run");
+  };
+
   const finish = () => {
-    if (!activeRef.current) return;
+    if (!pendingRef.current && !shownRef.current) return;
+    pendingRef.current = false;
     clearTimers();
-    setScale(1);
-    setVeil(false);
-    document.documentElement.removeAttribute("data-route-loading");
-    document.querySelectorAll("[data-route-pending]").forEach((el) => {
-      el.removeAttribute("data-route-pending");
-      el.removeAttribute("aria-busy");
-    });
+    if (!shownRef.current) {
+      setPhase("idle");
+      return;
+    }
+    setPhase("done");
     timers.current.push(
       window.setTimeout(() => {
-        activeRef.current = false;
-        setActive(false);
-        setScale(0);
-      }, 220),
+        shownRef.current = false;
+        setPhase("idle");
+      }, HIDE_AFTER_MS),
     );
   };
 
-  const start = (anchor?: HTMLAnchorElement) => {
+  const start = () => {
     clearTimers();
-    activeRef.current = true;
-    setActive(true);
-    setScale(0.08);
-    document.documentElement.setAttribute("data-route-loading", "true");
-    if (anchor) {
-      anchor.setAttribute("data-route-pending", "true");
-      anchor.setAttribute("aria-busy", "true");
+    pendingRef.current = true;
+    if (shownRef.current) {
+      setToken((n) => n + 1);
+      setPhase("run");
     }
-    timers.current.push(window.setTimeout(finish, 12000));
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setScale(1);
-      setVeil(false);
-      return;
-    }
-
-    const trickle = () => {
-      setScale((s) => (s >= 0.9 ? s : s + (0.9 - s) * 0.07));
-      timers.current.push(window.setTimeout(trickle, 280));
-    };
-    timers.current.push(window.setTimeout(trickle, 90));
-    timers.current.push(window.setTimeout(() => setVeil(true), 140));
+    timers.current.push(window.setTimeout(reveal, SHOW_AFTER_MS));
+    timers.current.push(window.setTimeout(finish, FAILSAFE_MS));
   };
 
-  const finishRef = useRef(finish);
   useEffect(() => {
     startRef.current = start;
     finishRef.current = finish;
@@ -95,7 +89,15 @@ function RouteProgressBar() {
       if (anchor.target && anchor.target !== "_self") return;
       if (anchor.hasAttribute("download")) return;
       const href = anchor.getAttribute("href");
-      if (!href || href.startsWith("#") || href.startsWith("mailto:")) return;
+      if (
+        !href ||
+        href.startsWith("#") ||
+        href.startsWith("mailto:") ||
+        href.startsWith("tel:") ||
+        href.startsWith("javascript:")
+      ) {
+        return;
+      }
       let url: URL;
       try {
         url = new URL(href, window.location.href);
@@ -104,7 +106,7 @@ function RouteProgressBar() {
       }
       if (url.origin !== window.location.origin) return;
       if (sameDestination(url)) return;
-      startRef.current(anchor);
+      startRef.current();
     };
 
     window.addEventListener(START_EVENT, onStart);
@@ -120,7 +122,7 @@ function RouteProgressBar() {
     finishRef.current();
   }, [pathname, search]);
 
-  if (!active && scale === 0) return null;
+  if (phase === "idle") return null;
 
   return (
     <>
@@ -129,26 +131,16 @@ function RouteProgressBar() {
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={Math.round(scale * 100)}
         aria-label="Loading page"
       >
         <div
-          className="h-full origin-left bg-accent shadow-[0_0_18px_color-mix(in_oklab,var(--color-accent)_80%,transparent)]"
-          style={{
-            transform: `scaleX(${scale})`,
-            transition: "transform 180ms cubic-bezier(0.22, 1, 0.36, 1)",
-          }}
+          key={token}
+          data-complete={phase === "done" ? "" : undefined}
+          className="healos-route-bar h-full origin-left bg-accent"
         />
       </div>
-      <div
-        aria-hidden={!veil}
-        data-route-progress-veil=""
-        className={`pointer-events-none fixed inset-0 z-[45] bg-background/25 backdrop-blur-[1px] transition-opacity duration-200 ${
-          veil ? "opacity-100" : "opacity-0"
-        }`}
-      />
       <span className="sr-only" aria-live="polite">
-        {active ? "Loading page" : "Page loaded"}
+        {phase === "run" ? "Loading page" : "Page loaded"}
       </span>
     </>
   );

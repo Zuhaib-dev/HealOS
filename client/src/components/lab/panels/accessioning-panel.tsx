@@ -163,26 +163,37 @@ export function AccessioningPanel() {
         title="Accessioning &amp; sample flow"
         note="Scan every handoff. Rejections issue a replacement barcode, and custody events remain attached to the order."
         actions={
-          <>
-            <ActionButton onClick={() => setFilter("all")}>All</ActionButton>
-            <ActionButton onClick={() => setFilter("collected")}>
+          <div className="flex flex-wrap gap-1">
+            <ActionButton
+              tone={filter === "all" ? "solid" : "ghost"}
+              onClick={() => setFilter("all")}
+            >
+              All
+            </ActionButton>
+            <ActionButton
+              tone={filter === "collected" ? "solid" : "ghost"}
+              onClick={() => setFilter("collected")}
+            >
               Collected
             </ActionButton>
-            <ActionButton onClick={() => setFilter("received")}>
+            <ActionButton
+              tone={filter === "received" ? "solid" : "ghost"}
+              onClick={() => setFilter("received")}
+            >
               Received / processing
             </ActionButton>
             <ActionButton
-              tone="solid"
+              tone={filter === "recollection" ? "solid" : "ghost"}
               onClick={() => setFilter("recollection")}
             >
               Recollection
             </ActionButton>
-          </>
+          </div>
         }
       />
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-270">
+        <table className="w-full min-w-[1080px]">
           <thead className="hairline-b">
             <tr>
               <Th>Accession</Th>
@@ -198,7 +209,7 @@ export function AccessioningPanel() {
             {loading ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={8}
                   className="p-8 text-center text-muted-foreground"
                 >
                   Loading samples...
@@ -207,7 +218,7 @@ export function AccessioningPanel() {
             ) : visible.length === 0 ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={8}
                   className="p-8 text-center text-muted-foreground"
                 >
                   No samples found.

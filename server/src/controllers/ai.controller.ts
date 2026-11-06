@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { GoogleGenAI } from "@google/genai";
 import { AppError } from "../middleware/error-handler";
-import { DiagnosticReport, UserRole } from "../models/index.js";
+import {
+  DiagnosticOrder,
+  DiagnosticReport,
+  UserRole,
+} from "../models/index.js";
 import path from "path";
 import fs from "fs";
 
@@ -12,17 +16,75 @@ async function getReportContent(
   reportId?: string,
   fileUrl?: string,
 ) {
-  if (reportId) {
-    const report = await DiagnosticReport.findById(reportId).select(
-      "+localFileName fileUrl fileName patient",
+  let resolvedReportId = reportId;
+  if (!resolvedReportId && fileUrl) {
+    // Older report rows/UI versions may send the stored URL instead of the
+    // report ID. Resolve only URLs already attached to a report in our DB;
+    // the report's normal ownership and release checks still apply below.
+    let parsedFileUrl: URL;
+    try {
+      parsedFileUrl = new URL(fileUrl, "http://local.invalid");
+    } catch {
+      throw new AppError("Invalid report URL", 400);
+    }
+    const protectedFileMatch = parsedFileUrl.pathname.match(
+      /\/api\/v1\/reports\/([a-f\d]{24})\/file\/?$/i,
+    );
+    if (protectedFileMatch) resolvedReportId = protectedFileMatch[1];
+    else {
+      const storedReport = await DiagnosticReport.findOne({ fileUrl })
+        .select("_id")
+        .lean();
+      if (storedReport) resolvedReportId = String(storedReport._id);
+    }
+  }
+  if (resolvedReportId) {
+    const report = await DiagnosticReport.findById(resolvedReportId).select(
+      "+localFileName fileUrl fileName patient order uploadedBy",
     );
     if (!report) throw new AppError("Report not found", 404);
-    if (
-      req.user?.role !== UserRole.ADMIN &&
-      report.patient.toString() !== req.user?._id.toString()
-    )
+    const user = req.user;
+    if (!user) throw new AppError("Sign in to access this report", 401);
+    const isAdmin = user.role === UserRole.ADMIN;
+    const isPatientOwner =
+      user.role === UserRole.PATIENT &&
+      report.patient.toString() === user._id.toString() &&
+      report.state === "verified";
+    const isUploader = report.uploadedBy === user._id.toString();
+    const isAssignedDoctor =
+      user.role === UserRole.DOCTOR &&
+      report.state === "verified" &&
+      Boolean(
+        report.order &&
+        (await DiagnosticOrder.exists({
+          _id: report.order,
+          doctor: user._id,
+        })),
+      );
+    const reportOrder = report.order
+      ? await DiagnosticOrder.findById(report.order).select("testType")
+      : null;
+    const isDiagnosticStaff = Boolean(
+      reportOrder &&
+      ((user.role === UserRole.LAB_TECHNICIAN &&
+        reportOrder.testType === "PATHOLOGY") ||
+        (user.role === UserRole.RADIOLOGIST &&
+          reportOrder.testType === "RADIOLOGY")),
+    );
+    if (!(
+      isPatientOwner ||
+      isAdmin ||
+      isUploader ||
+      isAssignedDoctor ||
+      isDiagnosticStaff
+    ))
       throw new AppError("You do not have access to this report", 403);
-    if (req.user?.role !== UserRole.ADMIN && report.state !== "verified")
+    if (
+      !isAdmin &&
+      !isUploader &&
+      !isDiagnosticStaff &&
+      report.state !== "verified"
+    )
       throw new AppError("This report has not been released", 403);
     if (report.localFileName) {
       const safeName = path.basename(report.localFileName);
@@ -78,12 +140,7 @@ async function getReportContent(
       }
     }
   }
-  if (
-    req.user?.role !== UserRole.ADMIN &&
-    !reportId &&
-    fileUrl &&
-    !fileUrl.startsWith("/uploads/reports/")
-  )
+  if (req.user?.role !== UserRole.ADMIN && !resolvedReportId && fileUrl)
     throw new AppError("Select a released report from your account", 403);
   if (!fileUrl) throw new AppError("Report file is unavailable", 404);
   let localUrlPath = "";

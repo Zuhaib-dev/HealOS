@@ -235,9 +235,7 @@ export function CollectionPanel() {
       toast.success("Payment verified and sample collected.");
       setIsPaid(true);
 
-      setTimeout(() => {
-        loadCollections();
-      }, 2000);
+      await loadCollections();
     } catch (err) {
       console.error(err);
       toast.error(
@@ -288,6 +286,17 @@ export function CollectionPanel() {
     }
   };
 
+  const normalizedSearch = search.trim().toLowerCase();
+  const visibleOrders = rows.filter((order) => {
+    const matchesStatus =
+      tab === "COLLECTION"
+        ? order.status === "PENDING"
+        : order.status === "IN_PROGRESS";
+    const searchableText =
+      `${order.patient?.name || ""} ${order.accessionNumber || ""} ${order._id || ""}`.toLowerCase();
+    return matchesStatus && searchableText.includes(normalizedSearch);
+  });
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] text-muted-foreground">
@@ -298,13 +307,13 @@ export function CollectionPanel() {
   }
 
   return (
-    <section className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+    <section className="min-h-[calc(100vh-4rem)] flex flex-col">
       <PanelHeader
         index="01 / phlebotomy"
         title="Sample Collection & POS"
         note="Manage sample collections and process test billing."
         actions={
-          <div className="flex bg-muted/50 p-1 rounded-md border border-border/40">
+          <div className="flex flex-wrap bg-muted/50 p-1 rounded-md border border-border/40">
             <button
               onClick={() => {
                 setTab("COLLECTION");
@@ -348,9 +357,9 @@ export function CollectionPanel() {
         }
       />
 
-      <div className="flex-1 flex flex-col lg:flex-row bg-background overflow-hidden border-t border-border/60">
+      <div className="flex-1 flex flex-col lg:flex-row bg-background border-t border-border/60 min-h-0">
         {tab === "HISTORY" ? (
-          <div className="flex-1 flex flex-col bg-background overflow-hidden relative">
+          <div className="flex-1 flex flex-col bg-background min-h-[60vh] relative">
             <div className="p-4 sm:p-6 border-b border-border/40 flex justify-between items-center bg-card/20">
               <div>
                 <h2 className="font-display text-xl font-bold">
@@ -360,7 +369,7 @@ export function CollectionPanel() {
                   View finalized reports across all patients.
                 </p>
               </div>
-              <div className="relative w-72">
+              <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <input
                   id="diagnostic-history-search"
@@ -489,19 +498,7 @@ export function CollectionPanel() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 custom-scrollbar">
-                {rows.filter(
-                  (r) =>
-                    (tab === "COLLECTION"
-                      ? r.status === "PENDING"
-                      : r.status === "IN_PROGRESS") &&
-                    (r.patient?.name
-                      ?.toLowerCase()
-                      .includes(search.toLowerCase()) ||
-                      r.accessionNumber
-                        ?.toLowerCase()
-                        .includes(search.toLowerCase()) ||
-                      r._id?.toLowerCase().includes(search.toLowerCase())),
-                ).length === 0 ? (
+                {visibleOrders.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
                     <TestTube className="size-10 text-muted-foreground/30 mb-3" />
                     <p className="font-medium text-foreground">
@@ -510,79 +507,62 @@ export function CollectionPanel() {
                   </div>
                 ) : (
                   <AnimatePresence>
-                    {rows
-                      .filter(
-                        (r) =>
-                          (tab === "COLLECTION"
-                            ? r.status === "PENDING"
-                            : r.status === "IN_PROGRESS") &&
-                          (r.patient?.name
-                            ?.toLowerCase()
-                            .includes(search.toLowerCase()) ||
-                            r.accessionNumber
-                              ?.toLowerCase()
-                              .includes(search.toLowerCase()) ||
-                            r._id
-                              ?.toLowerCase()
-                              .includes(search.toLowerCase())),
-                      )
-                      .map((order) => {
-                        const isSelected = selectedOrder?._id === order._id;
-                        const patientName =
-                          order.patient?.name || "Unknown Patient";
+                    {visibleOrders.map((order) => {
+                      const isSelected = selectedOrder?._id === order._id;
+                      const patientName =
+                        order.patient?.name || "Unknown Patient";
 
-                        return (
-                          <motion.button
-                            layout
-                            key={order._id}
-                            onClick={() => handleSelectOrder(order)}
-                            className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all duration-300 ${
-                              isSelected
-                                ? "bg-primary text-primary-foreground shadow-lg border-primary ring-4 ring-primary/10 scale-[1.02]"
-                                : "bg-card hover:bg-muted/50 border-border/60 hover:border-primary/40"
-                            }`}
-                          >
-                            <div className="flex justify-between items-start gap-3">
-                              <div>
-                                <p
-                                  className={`font-bold text-lg leading-tight ${isSelected ? "text-primary-foreground" : "text-foreground"}`}
-                                >
-                                  {patientName}
-                                </p>
-                                <div
-                                  className={`flex items-center gap-2 mt-1.5 ${isSelected ? "text-primary-foreground/80" : "text-muted-foreground"}`}
-                                >
-                                  <span className="mono-label text-[10px] uppercase tracking-wider">
-                                    {order.accessionNumber ||
-                                      order._id.slice(-8)}
-                                  </span>
-                                  <span className="opacity-50">•</span>
-                                  <span className="mono-label text-[10px]">
-                                    {order.testName}
-                                  </span>
-                                </div>
-                              </div>
-                              <div
-                                className={`px-2.5 py-1 rounded-full flex items-center justify-center text-xs font-bold ${
-                                  order.status === "IN_PROGRESS"
-                                    ? isSelected
-                                      ? "bg-primary-foreground/20 text-primary-foreground"
-                                      : "bg-emerald-500/10 text-emerald-600"
-                                    : isSelected
-                                      ? "bg-primary-foreground text-primary"
-                                      : "bg-rose-500/10 text-rose-500"
-                                }`}
+                      return (
+                        <motion.button
+                          layout
+                          key={order._id}
+                          onClick={() => handleSelectOrder(order)}
+                          className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all duration-300 ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground shadow-lg border-primary ring-4 ring-primary/10 scale-[1.02]"
+                              : "bg-card hover:bg-muted/50 border-border/60 hover:border-primary/40"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start gap-3">
+                            <div>
+                              <p
+                                className={`font-bold text-lg leading-tight ${isSelected ? "text-primary-foreground" : "text-foreground"}`}
                               >
-                                {order.status === "IN_PROGRESS" ? (
-                                  <Check className="size-3.5" />
-                                ) : (
-                                  order.priority
-                                )}
+                                {patientName}
+                              </p>
+                              <div
+                                className={`flex items-center gap-2 mt-1.5 ${isSelected ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+                              >
+                                <span className="mono-label text-[10px] uppercase tracking-wider">
+                                  {order.accessionNumber || order._id.slice(-8)}
+                                </span>
+                                <span className="opacity-50">•</span>
+                                <span className="mono-label text-[10px]">
+                                  {order.testName}
+                                </span>
                               </div>
                             </div>
-                          </motion.button>
-                        );
-                      })}
+                            <div
+                              className={`px-2.5 py-1 rounded-full flex items-center justify-center text-xs font-bold ${
+                                order.status === "IN_PROGRESS"
+                                  ? isSelected
+                                    ? "bg-primary-foreground/20 text-primary-foreground"
+                                    : "bg-emerald-500/10 text-emerald-600"
+                                  : isSelected
+                                    ? "bg-primary-foreground text-primary"
+                                    : "bg-rose-500/10 text-rose-500"
+                              }`}
+                            >
+                              {order.status === "IN_PROGRESS" ? (
+                                <Check className="size-3.5" />
+                              ) : (
+                                order.priority
+                              )}
+                            </div>
+                          </div>
+                        </motion.button>
+                      );
+                    })}
                   </AnimatePresence>
                 )}
               </div>

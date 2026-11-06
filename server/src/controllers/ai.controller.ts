@@ -8,6 +8,7 @@ import {
 } from "../models/index.js";
 import path from "path";
 import fs from "fs";
+import { canAccessDiagnosticReport } from "../utils/report-access.js";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -64,10 +65,6 @@ async function getReportContent(
       isPatientOwnedReleasedReport = report.state === "verified";
     }
   }
-  if (!report && user.role === UserRole.PATIENT) {
-    if (!reportId && !fileUrl) throw new AppError("Report ID is required", 400);
-    else throw new AppError("You do not have access to this report", 403);
-  }
   if (!resolvedReportId && fileUrl) {
     // Older report rows/UI versions may send the stored URL instead of the
     // report ID. Resolve only URLs already attached to a report in our DB;
@@ -95,54 +92,20 @@ async function getReportContent(
     );
   }
   if (report) {
-    const isAdmin = user.role === UserRole.ADMIN;
-    // Patient reports are fetched above with patient: user._id and
-    // state: "verified" in the database query. That scoped lookup is the
-    // ownership check; comparing hydrated ID representations again can
-    // reject a report that the query has already proven belongs to them.
-    const isPatientOwner = isPatientOwnedReleasedReport;
-    const isUploader = report.uploadedBy === user._id.toString();
-    const isAssignedDoctor =
-      user.role === UserRole.DOCTOR &&
-      report.state === "verified" &&
-      Boolean(
-        report.order &&
-        (await DiagnosticOrder.exists({
-          _id: report.order,
-          doctor: user._id,
-        })),
-      );
-    const reportOrder = report.order
-      ? await DiagnosticOrder.findById(report.order).select("testType")
-      : null;
-    const isDiagnosticStaff = Boolean(
-      reportOrder &&
-      ((user.role === UserRole.LAB_TECHNICIAN &&
-        reportOrder.testType === "PATHOLOGY") ||
-        (user.role === UserRole.RADIOLOGIST &&
-          reportOrder.testType === "RADIOLOGY")),
-    );
-    if (!(
-      isPatientOwner ||
-      isAdmin ||
-      isUploader ||
-      isAssignedDoctor ||
-      isDiagnosticStaff
-    )) {
+    const hasAccess = await canAccessDiagnosticReport(user, report);
+    if (!hasAccess) {
       console.warn("AI report access denied", {
         role: user.role,
         released: report.state === "verified",
         patientScopedMatch: isPatientOwnedReleasedReport,
-        uploaderMatch: isUploader,
-        assignedDoctorMatch: isAssignedDoctor,
-        diagnosticStaffMatch: isDiagnosticStaff,
       });
       throw new AppError("You do not have access to this report", 403);
     }
     if (
-      !isAdmin &&
-      !isUploader &&
-      !isDiagnosticStaff &&
+      user.role !== UserRole.ADMIN &&
+      String(report.uploadedBy || "") !== String(user._id) &&
+      user.role !== UserRole.LAB_TECHNICIAN &&
+      user.role !== UserRole.RADIOLOGIST &&
       report.state !== "verified"
     )
       throw new AppError("This report has not been released", 403);

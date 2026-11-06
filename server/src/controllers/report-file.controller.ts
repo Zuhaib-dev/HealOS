@@ -1,11 +1,8 @@
 import { Request, Response } from "express";
 import path from "path";
 import fs from "fs";
-import {
-  DiagnosticOrder,
-  DiagnosticReport,
-  UserRole,
-} from "../models/index.js";
+import { DiagnosticReport } from "../models/index.js";
+import { canAccessDiagnosticReport } from "../utils/report-access.js";
 
 const reportsDirectory = path.resolve(process.cwd(), "uploads", "reports");
 
@@ -29,35 +26,8 @@ export async function getDiagnosticReportFile(
       return;
     }
 
-    const isPatientOwner =
-      user.role === UserRole.PATIENT &&
-      report.patient.toString() === user._id.toString() &&
-      report.state === "verified";
-    const isAdmin = user.role === UserRole.ADMIN;
-    const uploadedByUser = report.uploadedBy === user._id.toString();
-    const isAssignedDoctor =
-      user.role === UserRole.DOCTOR &&
-      report.state === "verified" &&
-      report.order &&
-      Boolean(
-        await DiagnosticOrder.exists({ _id: report.order, doctor: user._id }),
-      );
-    const order = report.order
-      ? await DiagnosticOrder.findById(report.order).select("testType")
-      : null;
-    const isDiagnosticStaff = Boolean(
-      order &&
-      ((user.role === UserRole.LAB_TECHNICIAN &&
-        order.testType === "PATHOLOGY") ||
-        (user.role === UserRole.RADIOLOGIST && order.testType === "RADIOLOGY")),
-    );
-    if (!(
-      isPatientOwner ||
-      isAdmin ||
-      uploadedByUser ||
-      isAssignedDoctor ||
-      isDiagnosticStaff
-    )) {
+    const hasAccess = await canAccessDiagnosticReport(user, report);
+    if (!hasAccess) {
       res.status(403).json({
         success: false,
         message: "You do not have access to this report",

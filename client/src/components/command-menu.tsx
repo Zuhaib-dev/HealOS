@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { startRouteProgress } from "@/components/navigation/route-progress";
 import { useTheme } from "next-themes";
 import {
   CommandDialog,
@@ -53,6 +54,14 @@ export function CommandMenu() {
     };
   }, []);
 
+  const go = React.useCallback(
+    (href: string) => {
+      startRouteProgress();
+      router.push(href);
+    },
+    [router],
+  );
+
   const runCommand = React.useCallback((command: () => void) => {
     setOpen(false);
     command();
@@ -66,28 +75,28 @@ export function CommandMenu() {
 
         <CommandGroup heading="Clinical Portals">
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/doctor"))}
+            onSelect={() => runCommand(() => go("/doctor"))}
             className="cursor-pointer"
           >
             <Stethoscope className="mr-2 size-4 text-emerald-500" />
             <span>Doctor Consultation Worklist</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/reception"))}
+            onSelect={() => runCommand(() => go("/reception"))}
             className="cursor-pointer"
           >
             <Users className="mr-2 size-4 text-primary" />
             <span>Reception & Patient Registration</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/patient"))}
+            onSelect={() => runCommand(() => go("/patient"))}
             className="cursor-pointer"
           >
             <Activity className="mr-2 size-4 text-blue-500" />
             <span>Patient Health Portal</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/emergency"))}
+            onSelect={() => runCommand(() => go("/emergency"))}
             className="cursor-pointer"
           >
             <ShieldCheck className="mr-2 size-4 text-rose-500" />
@@ -99,21 +108,21 @@ export function CommandMenu() {
 
         <CommandGroup heading="Diagnostics & Pharmacy">
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/pharmacy"))}
+            onSelect={() => runCommand(() => go("/pharmacy"))}
             className="cursor-pointer"
           >
             <Package className="mr-2 size-4 text-amber-500" />
             <span>Pharmacy & Dispensary Queue</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/radiology"))}
+            onSelect={() => runCommand(() => go("/radiology"))}
             className="cursor-pointer"
           >
             <Activity className="mr-2 size-4 text-indigo-500" />
             <span>Radiology & DICOM Imaging</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/lab"))}
+            onSelect={() => runCommand(() => go("/lab"))}
             className="cursor-pointer"
           >
             <FileSpreadsheet className="mr-2 size-4 text-teal-500" />
@@ -125,42 +134,42 @@ export function CommandMenu() {
 
         <CommandGroup heading="Administration & Operations">
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/admin"))}
+            onSelect={() => runCommand(() => go("/admin"))}
             className="cursor-pointer"
           >
             <Building2 className="mr-2 size-4 text-amber-500" />
             <span>Admin Console Dashboard</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/admin/schedule"))}
+            onSelect={() => runCommand(() => go("/admin/schedule"))}
             className="cursor-pointer"
           >
             <Calendar className="mr-2 size-4 text-primary" />
             <span>Theatre & Staff Scheduling</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/admin/billing"))}
+            onSelect={() => runCommand(() => go("/admin/billing"))}
             className="cursor-pointer"
           >
             <CreditCard className="mr-2 size-4 text-emerald-500" />
             <span>Revenue Ledger & Invoicing</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/admin/patients"))}
+            onSelect={() => runCommand(() => go("/admin/patients"))}
             className="cursor-pointer"
           >
             <UserCheck className="mr-2 size-4 text-blue-500" />
             <span>Patient Registry Census</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/admin/supplies"))}
+            onSelect={() => runCommand(() => go("/admin/supplies"))}
             className="cursor-pointer"
           >
             <Package className="mr-2 size-4 text-purple-500" />
             <span>Medical Supplies & Inventory</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/admin/wards"))}
+            onSelect={() => runCommand(() => go("/admin/wards"))}
             className="cursor-pointer"
           >
             <Bed className="mr-2 size-4 text-cyan-500" />
@@ -189,7 +198,7 @@ export function CommandMenu() {
             </span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/login"))}
+            onSelect={() => runCommand(() => go("/login"))}
             className="cursor-pointer"
           >
             <LogOut className="mr-2 size-4 text-muted-foreground" />

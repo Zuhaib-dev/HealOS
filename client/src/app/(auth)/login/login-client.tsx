@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/input-otp";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useAuthStore } from "@/store/use-auth-store";
+import { startRouteProgress } from "@/components/navigation/route-progress";
 import {
   forgotPasswordApi,
   loginUserApi,
@@ -63,6 +64,7 @@ export default function LoginClient() {
 
   const handleRoleRedirect = (role: string) => {
     const destination = getSafeRedirectPath(role, callbackUrl);
+    startRouteProgress();
     router.push(destination);
   };
 

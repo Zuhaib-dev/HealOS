@@ -455,3 +455,13 @@
     }
   }
 }
+
+html[data-route-loading="true"] a[data-route-pending="true"] {
+  opacity: 0.72;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-route-loading="true"] [data-route-progress-veil] {
+    display: none;
+  }
+}

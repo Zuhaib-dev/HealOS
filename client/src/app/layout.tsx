@@ -73,6 +73,7 @@ export const metadata: Metadata = {
 import { RealtimeSocketProvider } from "@/components/providers/socket-provider";
 import { SoundProvider } from "@/components/sound-provider";
 import { WebMcpProvider } from "@/components/providers/webmcp-provider";
+import { RouteProgress } from "@/components/navigation/route-progress";
 
 export default function RootLayout({
   children,
@@ -264,6 +265,7 @@ export default function RootLayout({
             <SoundProvider />
             <WebMcpProvider />
             <RealtimeSocketProvider>{children}</RealtimeSocketProvider>
+            <RouteProgress />
             <Toaster position="top-right" />
             <CommandMenu />
           </QueryProvider>

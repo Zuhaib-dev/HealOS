@@ -106,6 +106,7 @@ export function CollectionPanel() {
     "IDLE" | "WAITING" | "PAID"
   >("IDLE");
   const [activeInvoiceId, setActiveInvoiceId] = useState<string | null>(null);
+  const [specimenBarcode, setSpecimenBarcode] = useState("");
 
   const loadCollections = async () => {
     try {
@@ -180,6 +181,7 @@ export function CollectionPanel() {
     );
     setActiveInvoiceId(invoice?._id || null);
     setPrice(String(invoice?.totalAmount ?? 500));
+    setSpecimenBarcode("");
   };
 
   const handleSendBill = async () => {
@@ -217,11 +219,19 @@ export function CollectionPanel() {
     setIsProcessing(true);
     try {
       if (!activeInvoiceId) throw new Error("Create a patient invoice first.");
+      if (
+        !specimenBarcode.trim() ||
+        specimenBarcode.trim().toUpperCase() !== selectedOrder.specimenBarcode
+      ) {
+        throw new Error(
+          "Scan the active specimen barcode to confirm collection.",
+        );
+      }
       if (paymentMode === "ONLINE" && paymentStatus !== "PAID")
         throw new Error("Wait for the patient invoice to show as paid.");
       if (paymentMode === "CASH" && paymentStatus !== "PAID")
         await recordLabCashPaymentApi(selectedOrder._id);
-      await markLabCollectedApi(selectedOrder._id);
+      await markLabCollectedApi(selectedOrder._id, specimenBarcode.trim());
       toast.success("Payment verified and sample collected.");
       setIsPaid(true);
 
@@ -906,6 +916,51 @@ export function CollectionPanel() {
                             )}
                           </AnimatePresence>
 
+                          <div className="mb-4 rounded-xl border border-border/70 bg-muted/20 p-4">
+                            <label
+                              htmlFor="lab-specimen-barcode"
+                              className="mb-1 block text-sm font-semibold"
+                            >
+                              Scan specimen barcode
+                            </label>
+                            <p className="mb-2 text-xs text-muted-foreground">
+                              Current label:{" "}
+                              <span className="font-mono">
+                                {selectedOrder.specimenBarcode ||
+                                  "Barcode not assigned"}
+                              </span>
+                            </p>
+                            <input
+                              id="lab-specimen-barcode"
+                              value={specimenBarcode}
+                              onChange={(event) =>
+                                setSpecimenBarcode(
+                                  event.target.value.toUpperCase(),
+                                )
+                              }
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "Enter" &&
+                                  specimenBarcode ===
+                                    selectedOrder.specimenBarcode
+                                ) {
+                                  event.preventDefault();
+                                  if (
+                                    !isProcessing &&
+                                    activeInvoiceId &&
+                                    paymentMode &&
+                                    (paymentMode !== "ONLINE" ||
+                                      paymentStatus === "PAID")
+                                  )
+                                    void handleCheckout();
+                                }
+                              }}
+                              autoComplete="off"
+                              placeholder="Scan or type LAB-..."
+                              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                            />
+                          </div>
+
                           <div className="fixed sm:relative bottom-16 sm:bottom-0 left-0 right-0 sm:mt-auto pt-4 sm:pt-6 border-t border-border/40 bg-background/80 sm:bg-transparent backdrop-blur-xl sm:backdrop-blur-none p-4 sm:p-0 z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] sm:shadow-none">
                             <ActionButton
                               tone="solid"
@@ -915,6 +970,8 @@ export function CollectionPanel() {
                                 !activeInvoiceId ||
                                 !paymentMode ||
                                 Number(price) === 0 ||
+                                specimenBarcode.trim().toUpperCase() !==
+                                  selectedOrder.specimenBarcode ||
                                 (paymentMode === "ONLINE" &&
                                   paymentStatus !== "PAID")
                               }

@@ -16,10 +16,40 @@ export interface IDiagnosticReport extends Document {
   isCritical?: boolean; // Flag to alert doctor immediately
   criticalCallback?: {
     clinician: string;
+    contact?: mongoose.Types.ObjectId;
     readBackConfirmed: boolean;
     calledAt: Date;
     recordedBy: mongoose.Types.ObjectId;
+    note?: string;
+    escalationLevel?: number;
   };
+  criticalDueAt?: Date;
+  structuredResults?: {
+    analyteCode: string;
+    analyteName: string;
+    value: string;
+    numericValue?: number;
+    unit?: string;
+    referenceLow?: number;
+    referenceHigh?: number;
+    criticalLow?: number;
+    criticalHigh?: number;
+    previousValue?: number;
+    deltaPercent?: number;
+    deltaExceeded?: boolean;
+    flag:
+      | "NORMAL"
+      | "LOW"
+      | "HIGH"
+      | "CRITICAL_LOW"
+      | "CRITICAL_HIGH"
+      | "UNREVIEWED";
+    source: "MANUAL" | "INSTRUMENT";
+    analyser?: mongoose.Types.ObjectId;
+    externalResultId?: string;
+    resultAt: Date;
+    enteredBy?: mongoose.Types.ObjectId;
+  }[];
 
   // Radiology specific fields for documents
   kind?:
@@ -52,10 +82,51 @@ const diagnosticReportSchema = new Schema<IDiagnosticReport>(
     isCritical: { type: Boolean, default: false },
     criticalCallback: {
       clinician: { type: String, trim: true },
+      contact: { type: Schema.Types.ObjectId, ref: "LabCriticalContact" },
       readBackConfirmed: { type: Boolean, default: false },
       calledAt: { type: Date },
       recordedBy: { type: Schema.Types.ObjectId, ref: "User" },
+      note: { type: String, trim: true, maxlength: 500 },
+      escalationLevel: { type: Number, min: 1, max: 20 },
     },
+    criticalDueAt: { type: Date },
+    structuredResults: [
+      {
+        analyteCode: { type: String, required: true, trim: true },
+        analyteName: { type: String, required: true, trim: true },
+        value: { type: String, required: true, trim: true },
+        numericValue: { type: Number },
+        unit: { type: String, trim: true },
+        referenceLow: { type: Number },
+        referenceHigh: { type: Number },
+        criticalLow: { type: Number },
+        criticalHigh: { type: Number },
+        previousValue: { type: Number },
+        deltaPercent: { type: Number },
+        deltaExceeded: { type: Boolean, default: false },
+        flag: {
+          type: String,
+          enum: [
+            "NORMAL",
+            "LOW",
+            "HIGH",
+            "CRITICAL_LOW",
+            "CRITICAL_HIGH",
+            "UNREVIEWED",
+          ],
+          required: true,
+        },
+        source: {
+          type: String,
+          enum: ["MANUAL", "INSTRUMENT"],
+          required: true,
+        },
+        analyser: { type: Schema.Types.ObjectId, ref: "LabAnalyser" },
+        externalResultId: { type: String, trim: true },
+        resultAt: { type: Date, required: true },
+        enteredBy: { type: Schema.Types.ObjectId, ref: "User" },
+      },
+    ],
     kind: {
       type: String,
       enum: [

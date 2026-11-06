@@ -1,4 +1,20 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { randomBytes } from "crypto";
+
+export function generateSpecimenBarcode() {
+  const day = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+  return `LAB-${day}-${randomBytes(4).toString("hex").toUpperCase()}`;
+}
+
+export const SpecimenStatus = {
+  AWAITING_COLLECTION: "AWAITING_COLLECTION",
+  COLLECTED: "COLLECTED",
+  RECEIVED: "RECEIVED",
+  RECOLLECTION_REQUIRED: "RECOLLECTION_REQUIRED",
+  PROCESSING: "PROCESSING",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+} as const;
 
 export enum DiagnosticTestType {
   RADIOLOGY = "RADIOLOGY", // X-Ray, CT, MRI, Ultrasound
@@ -30,6 +46,19 @@ export interface IDiagnosticOrder extends Document {
   invoice?: mongoose.Types.ObjectId;
   collectedAt?: Date;
   reportedAt?: Date;
+  specimenBarcode?: string;
+  specimenStatus?: (typeof SpecimenStatus)[keyof typeof SpecimenStatus];
+  specimenHistory?: {
+    event: string;
+    barcode?: string;
+    note?: string;
+    performedBy: mongoose.Types.ObjectId;
+    at: Date;
+  }[];
+  receivedAt?: Date;
+  analyser?: mongoose.Types.ObjectId;
+  analyserAssignedAt?: Date;
+  recollectionCount?: number;
 
   // Radiology-specific fields
   accessionNumber?: string;
@@ -68,6 +97,40 @@ const diagnosticOrderSchema = new Schema<IDiagnosticOrder>(
     invoice: { type: Schema.Types.ObjectId, ref: "Invoice" },
     collectedAt: { type: Date },
     reportedAt: { type: Date },
+    specimenBarcode: {
+      type: String,
+      default: function (this: IDiagnosticOrder) {
+        return this.testType === DiagnosticTestType.PATHOLOGY
+          ? generateSpecimenBarcode()
+          : undefined;
+      },
+    },
+    specimenStatus: {
+      type: String,
+      enum: Object.values(SpecimenStatus),
+      default: function (this: IDiagnosticOrder) {
+        return this.testType === DiagnosticTestType.PATHOLOGY
+          ? SpecimenStatus.AWAITING_COLLECTION
+          : undefined;
+      },
+    },
+    specimenHistory: [
+      {
+        event: { type: String, required: true },
+        barcode: { type: String },
+        note: { type: String, trim: true, maxlength: 500 },
+        performedBy: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        at: { type: Date, required: true, default: Date.now },
+      },
+    ],
+    receivedAt: { type: Date },
+    analyser: { type: Schema.Types.ObjectId, ref: "LabAnalyser" },
+    analyserAssignedAt: { type: Date },
+    recollectionCount: { type: Number, min: 0, default: 0 },
     accessionNumber: { type: String },
     modality: {
       type: String,
@@ -82,6 +145,11 @@ const diagnosticOrderSchema = new Schema<IDiagnosticOrder>(
 );
 
 diagnosticOrderSchema.index({ accessionNumber: 1 });
+diagnosticOrderSchema.index(
+  { specimenBarcode: 1 },
+  { unique: true, sparse: true },
+);
+diagnosticOrderSchema.index({ analyser: 1, specimenStatus: 1, priority: 1 });
 diagnosticOrderSchema.index({ patient: 1, createdAt: -1 });
 diagnosticOrderSchema.index({ status: 1, testType: 1 }); // For radiology/lab queues
 

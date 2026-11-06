@@ -13,7 +13,12 @@ import {
   Th,
   type Tone,
 } from "@/components/workspace/ui";
-import { fetchLabSamplesApi } from "@/lib/api/lab";
+import {
+  fetchLabSamplesApi,
+  receiveLabSpecimenApi,
+  rejectLabSpecimenApi,
+  recollectLabSpecimenApi,
+} from "@/lib/api/lab";
 import { getSocket } from "@/lib/socket";
 import { toast } from "sonner";
 
@@ -62,8 +67,13 @@ function RackGlyph({ tubes }: { tubes: { colour: string; count: number }[] }) {
 export function AccessioningPanel() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "open" | "cancelled">("all");
+  const [filter, setFilter] = useState<
+    "all" | "collected" | "received" | "recollection"
+  >("all");
   const [now, setNow] = useState(() => Date.now());
+  const [scans, setScans] = useState<Record<string, string>>({});
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const loadSamples = async () => {
     try {
@@ -94,28 +104,78 @@ export function AccessioningPanel() {
     return () => window.clearInterval(clock);
   }, []);
 
-  const visible = rows.filter((s) =>
-    filter === "all"
-      ? true
-      : filter === "cancelled"
-        ? s.status === "CANCELLED"
-        : s.status === "IN_PROGRESS",
-  );
+  const visible = rows.filter((s) => {
+    if (filter === "collected") return s.specimenStatus === "COLLECTED";
+    if (filter === "received")
+      return ["RECEIVED", "PROCESSING"].includes(s.specimenStatus);
+    if (filter === "recollection")
+      return s.specimenStatus === "RECOLLECTION_REQUIRED";
+    return true;
+  });
+
+  const performSpecimenAction = async (
+    order: any,
+    action: "receive" | "reject" | "recollect",
+  ) => {
+    const barcode = (scans[order._id] || "").trim().toUpperCase();
+    if (barcode !== order.specimenBarcode) {
+      toast.error("Scan the active specimen barcode first.");
+      return;
+    }
+    if (action === "reject" && !reasons[order._id]?.trim()) {
+      toast.error("Enter why this sample is being rejected.");
+      return;
+    }
+    setBusyId(order._id);
+    try {
+      if (action === "receive") await receiveLabSpecimenApi(order._id, barcode);
+      if (action === "reject")
+        await rejectLabSpecimenApi(
+          order._id,
+          barcode,
+          reasons[order._id].trim(),
+        );
+      if (action === "recollect")
+        await recollectLabSpecimenApi(order._id, barcode);
+      setScans((previous) => ({ ...previous, [order._id]: "" }));
+      setReasons((previous) => ({ ...previous, [order._id]: "" }));
+      toast.success(
+        action === "receive"
+          ? "Specimen received and logged."
+          : action === "reject"
+            ? "Rejection recorded; a replacement barcode was issued."
+            : "Recollection logged; specimen is ready for receipt.",
+      );
+      await loadSamples();
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Unable to update specimen custody.",
+      );
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <section>
       <PanelHeader
         index="02 / accessioning"
         title="Accessioning &amp; sample flow"
-        note="Pathology samples in progress, reported or cancelled. Analyzer assignment is not connected; turnaround uses recorded collection and result times."
+        note="Scan every handoff. Rejections issue a replacement barcode, and custody events remain attached to the order."
         actions={
           <>
             <ActionButton onClick={() => setFilter("all")}>All</ActionButton>
-            <ActionButton onClick={() => setFilter("open")}>
-              In progress
+            <ActionButton onClick={() => setFilter("collected")}>
+              Collected
             </ActionButton>
-            <ActionButton tone="solid" onClick={() => setFilter("cancelled")}>
-              Cancelled
+            <ActionButton onClick={() => setFilter("received")}>
+              Received / processing
+            </ActionButton>
+            <ActionButton
+              tone="solid"
+              onClick={() => setFilter("recollection")}
+            >
+              Recollection
             </ActionButton>
           </>
         }
@@ -128,7 +188,7 @@ export function AccessioningPanel() {
               <Th>Accession</Th>
               <Th>Patient</Th>
               <Th>Discipline / panel</Th>
-              <Th>Assignment</Th>
+              <Th>Specimen barcode</Th>
               <Th>Collected</Th>
               <Th>TAT / SLA</Th>
               <Th>Stage</Th>
@@ -138,7 +198,7 @@ export function AccessioningPanel() {
             {loading ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={9}
                   className="p-8 text-center text-muted-foreground"
                 >
                   Loading samples...
@@ -147,7 +207,7 @@ export function AccessioningPanel() {
             ) : visible.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={9}
                   className="p-8 text-center text-muted-foreground"
                 >
                   No samples found.
@@ -187,8 +247,9 @@ export function AccessioningPanel() {
                       </p>
                     </Td>
                     <Td>
-                      <span className="mono-label text-muted-foreground">
-                        Not assigned
+                      <span className="inline-flex items-center gap-1 font-mono text-xs">
+                        <Barcode className="size-3.5" />
+                        {s.specimenBarcode}
                       </span>
                     </Td>
                     <Td>
@@ -214,19 +275,161 @@ export function AccessioningPanel() {
                     </Td>
                     <Td>
                       <span className="inline-flex items-center gap-2">
-                        {s.status === "IN_PROGRESS" && <LiveDot />}
+                        {[
+                          "COLLECTED",
+                          "RECEIVED",
+                          "PROCESSING",
+                          "RECOLLECTION_REQUIRED",
+                        ].includes(s.specimenStatus) && <LiveDot />}
                         <Pill
                           tone={
-                            s.status === "REPORTED"
+                            s.specimenStatus === "COMPLETED"
                               ? "ok"
-                              : s.status === "CANCELLED"
+                              : s.specimenStatus === "RECOLLECTION_REQUIRED" ||
+                                  s.specimenStatus === "CANCELLED"
                                 ? "bad"
                                 : "info"
                           }
                         >
-                          {s.status}
+                          {s.specimenStatus?.replaceAll("_", " ") || s.status}
                         </Pill>
                       </span>
+                    </Td>
+                    <Td>
+                      {s.specimenStatus === "COLLECTED" && (
+                        <div className="min-w-56 space-y-2">
+                          <input
+                            aria-label={`Scan received barcode ${s.specimenBarcode}`}
+                            value={scans[s._id] || ""}
+                            onChange={(event) =>
+                              setScans((previous) => ({
+                                ...previous,
+                                [s._id]: event.target.value.toUpperCase(),
+                              }))
+                            }
+                            placeholder="Scan barcode to receive"
+                            className="w-full rounded-md border border-border bg-background px-2 py-1.5 font-mono text-xs"
+                          />
+                          <div className="flex gap-2">
+                            <ActionButton
+                              tone="solid"
+                              disabled={busyId === s._id}
+                              onClick={() =>
+                                performSpecimenAction(s, "receive")
+                              }
+                            >
+                              <Check className="mr-1 inline size-3" />
+                              Receive
+                            </ActionButton>
+                            <ActionButton
+                              disabled={busyId === s._id}
+                              onClick={() =>
+                                setReasons((previous) => ({
+                                  ...previous,
+                                  [s._id]: previous[s._id] ?? "",
+                                }))
+                              }
+                            >
+                              <X className="mr-1 inline size-3" />
+                              Reject
+                            </ActionButton>
+                          </div>
+                          {reasons[s._id] !== undefined && (
+                            <div className="space-y-2">
+                              <input
+                                aria-label="Specimen rejection reason"
+                                value={reasons[s._id]}
+                                onChange={(event) =>
+                                  setReasons((previous) => ({
+                                    ...previous,
+                                    [s._id]: event.target.value,
+                                  }))
+                                }
+                                placeholder="Reason for rejection"
+                                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                              />
+                              <ActionButton
+                                disabled={busyId === s._id}
+                                onClick={() =>
+                                  performSpecimenAction(s, "reject")
+                                }
+                              >
+                                Confirm rejection
+                              </ActionButton>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {s.specimenStatus === "RECOLLECTION_REQUIRED" && (
+                        <div className="min-w-56 space-y-2">
+                          <input
+                            aria-label={`Scan recollection barcode ${s.specimenBarcode}`}
+                            value={scans[s._id] || ""}
+                            onChange={(event) =>
+                              setScans((previous) => ({
+                                ...previous,
+                                [s._id]: event.target.value.toUpperCase(),
+                              }))
+                            }
+                            placeholder="Scan replacement barcode"
+                            className="w-full rounded-md border border-border bg-background px-2 py-1.5 font-mono text-xs"
+                          />
+                          <ActionButton
+                            tone="solid"
+                            disabled={busyId === s._id}
+                            onClick={() =>
+                              performSpecimenAction(s, "recollect")
+                            }
+                          >
+                            Record recollection
+                          </ActionButton>
+                        </div>
+                      )}
+                      {s.specimenStatus === "RECEIVED" && (
+                        <span className="text-xs text-muted-foreground">
+                          Ready for analyzer assignment
+                        </span>
+                      )}
+                      {s.specimenStatus === "PROCESSING" && (
+                        <span className="text-xs text-muted-foreground">
+                          Assigned to {s.analyser?.name || "analyser"}
+                        </span>
+                      )}
+                      {s.specimenStatus === "COMPLETED" && (
+                        <span className="text-xs text-muted-foreground">
+                          Results submitted
+                        </span>
+                      )}
+                    </Td>
+                    <Td>
+                      <details className="max-w-64 text-xs">
+                        <summary className="cursor-pointer text-primary">
+                          Custody history ({s.specimenHistory?.length || 0})
+                        </summary>
+                        <ol className="mt-2 space-y-2 border-l border-border pl-3">
+                          {(s.specimenHistory || []).map(
+                            (event: any, index: number) => (
+                              <li key={`${event.at}-${index}`}>
+                                <p className="font-medium">
+                                  {event.event.replaceAll("_", " ")}
+                                </p>
+                                <p className="font-mono text-muted-foreground">
+                                  {event.barcode || "—"} ·{" "}
+                                  {new Date(event.at).toLocaleString()}
+                                </p>
+                                {event.note && (
+                                  <p className="text-muted-foreground">
+                                    {event.note}
+                                  </p>
+                                )}
+                                <p className="text-muted-foreground">
+                                  {event.performedBy?.name || "Lab staff"}
+                                </p>
+                              </li>
+                            ),
+                          )}
+                        </ol>
+                      </details>
                     </Td>
                   </tr>
                 );

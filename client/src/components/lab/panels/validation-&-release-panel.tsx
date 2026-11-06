@@ -154,11 +154,74 @@ export function ValidationPanel() {
                   )}
                 </div>
 
-                <div className="hairline mt-4 rounded-lg p-4 text-sm text-muted-foreground">
-                  Review the attached report document for its test values and
-                  reference ranges. Structured analyte and delta checks are not
-                  available for uploaded documents.
-                </div>
+                {p.structuredResults?.length ? (
+                  <div className="mt-4 overflow-x-auto rounded-lg border border-border">
+                    <table className="w-full min-w-[680px] text-left text-sm">
+                      <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+                        <tr>
+                          <th className="p-3">Analyte</th>
+                          <th className="p-3">Result</th>
+                          <th className="p-3">Reference range</th>
+                          <th className="p-3">Flag / delta</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {p.structuredResults.map(
+                          (result: any, index: number) => (
+                            <tr
+                              key={`${result.analyteCode}-${index}`}
+                              className="border-t border-border"
+                            >
+                              <td className="p-3">
+                                <strong>{result.analyteName}</strong>
+                                <span className="ml-2 font-mono text-xs text-muted-foreground">
+                                  {result.analyteCode}
+                                </span>
+                              </td>
+                              <td className="p-3 font-mono">
+                                {result.value} {result.unit}
+                              </td>
+                              <td className="p-3">
+                                {result.referenceLow ?? "—"}–
+                                {result.referenceHigh ?? "—"} {result.unit}
+                              </td>
+                              <td className="p-3">
+                                <Pill
+                                  tone={
+                                    String(result.flag).startsWith("CRITICAL")
+                                      ? "bad"
+                                      : result.flag === "HIGH" ||
+                                          result.flag === "LOW" ||
+                                          result.deltaExceeded
+                                        ? "warn"
+                                        : result.flag === "NORMAL"
+                                          ? "ok"
+                                          : "mute"
+                                  }
+                                >
+                                  {result.flag}
+                                </Pill>
+                                {result.previousValue !== undefined && (
+                                  <span className="ml-2 text-xs text-muted-foreground">
+                                    Prior {result.previousValue} · Δ{" "}
+                                    {result.deltaPercent ?? 0}%
+                                    {result.deltaExceeded ? " · review" : ""}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ),
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="hairline mt-4 rounded-lg p-4 text-sm text-muted-foreground">
+                    {p.fileUrl
+                      ? "Review the attached report document and verify values and reference ranges against the source."
+                      : "No report document or structured results attached."}
+                  </div>
+                )}
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   <ActionButton

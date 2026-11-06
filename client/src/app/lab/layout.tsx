@@ -6,6 +6,7 @@ import {
   Activity,
   CheckCircle,
   Siren,
+  BarChart3,
 } from "lucide-react";
 
 import { RoleGuard } from "@/components/auth/role-guard";
@@ -16,6 +17,7 @@ const sections = [
   { id: "analysers", label: "Auto-Analyzers", icon: Activity },
   { id: "validation", label: "Result Validation", icon: CheckCircle },
   { id: "critical", label: "Critical Results", icon: Siren },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
 ];
 
 export default function WorkspaceLayout({

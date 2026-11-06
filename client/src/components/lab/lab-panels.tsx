@@ -5,3 +5,4 @@ export { AccessioningPanel } from "./panels/accessioning-panel";
 export { AnalyserPanel } from "./panels/analyser-worklist-panel";
 export { ValidationPanel } from "./panels/validation-&-release-panel";
 export { CriticalPanel } from "./panels/critical-callback-panel";
+export { AnalyticsPanel } from "./panels/analytics-panel";

@@ -4,6 +4,7 @@ import {
   Consultation,
   ConsultationStatus,
   DiagnosticOrder,
+  generateSpecimenBarcode,
   DiagnosticReport,
   ProfessionalProfile,
   User,
@@ -247,6 +248,15 @@ export const saveConsultation = async (req: Request, res: Response) => {
           testName: order.testName,
           priority: order.priority || "ROUTINE",
           clinicalNotes: order.clinicalNotes || chiefComplaint,
+          ...(order.testType === "PATHOLOGY"
+            ? {
+                specimenBarcode: generateSpecimenBarcode(),
+                specimenStatus: "AWAITING_COLLECTION",
+                specimenHistory: [
+                  { event: "ORDERED", performedBy: doctorId, at: new Date() },
+                ],
+              }
+            : {}),
         }));
       if (ordersToCreate.length > 0)
         await DiagnosticOrder.insertMany(ordersToCreate);
@@ -302,6 +312,15 @@ export const orderDiagnostic = async (req: Request, res: Response) => {
       testName,
       priority,
       clinicalNotes,
+      ...(testType === "PATHOLOGY"
+        ? {
+            specimenBarcode: generateSpecimenBarcode(),
+            specimenStatus: "AWAITING_COLLECTION",
+            specimenHistory: [
+              { event: "ORDERED", performedBy: doctorId, at: new Date() },
+            ],
+          }
+        : {}),
     });
 
     const io = getIO();

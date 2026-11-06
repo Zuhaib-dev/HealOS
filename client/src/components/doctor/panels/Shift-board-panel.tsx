@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import { DoctorHeader } from "@/components/doctor/doctor-header";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
@@ -45,6 +45,7 @@ export function ShiftPanel() {
   const [todayFollowUps, setTodayFollowUps] = useState<any[]>([]);
   const [todayVisits, setTodayVisits] = useState<AppointmentRecord[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [caseloadQuery, setCaseloadQuery] = useState("");
 
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
   const [selectedAppointment, setSelectedAppointment] =
@@ -164,11 +165,33 @@ export function ShiftPanel() {
       ? nextVisit.patient
       : null;
 
+  const caseload = useMemo(() => {
+    const q = caseloadQuery.trim().toLowerCase();
+    const list = q
+      ? patients.filter((p) => {
+          const hay =
+            `${p.name || ""} ${p.phone || ""} ${p.email || ""}`.toLowerCase();
+          return hay.includes(q);
+        })
+      : patients;
+    return [...list].sort((a, b) =>
+      String(a.name || "").localeCompare(String(b.name || "")),
+    );
+  }, [patients, caseloadQuery]);
+
+  const todayPatientIds = useMemo(() => {
+    return new Set(
+      todayVisits.map((v) =>
+        typeof v.patient === "object" ? v.patient?._id : v.patient,
+      ),
+    );
+  }, [todayVisits]);
+
   return (
     <div className="pb-24">
       <DoctorHeader
         title={user?.name ? `Dr. ${user.name}` : "Shift"}
-        note={`${format(now, "EEEE d MMMM")} · ${format(now, "h:mm a")} · today's queue and the next consult.`}
+        note={`${format(now, "EEEE d MMMM")} · ${format(now, "h:mm a")} · queue, next consult, and your caseload.`}
       />
 
       <div className="grid grid-cols-2 gap-px bg-border/60 lg:grid-cols-4">
@@ -206,7 +229,7 @@ export function ShiftPanel() {
         ))}
       </div>
 
-      <div className="grid min-h-[calc(100vh-18rem)] lg:grid-cols-2">
+      <div className="grid min-h-[calc(100vh-18rem)] xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)_minmax(0,1fr)] lg:grid-cols-2">
         <div className="min-w-0 border-b border-border/60 lg:border-r lg:border-b-0">
           <div className="flex items-end justify-between border-b border-border/40 px-4 py-3 sm:px-6">
             <h2 className="font-display text-sm font-bold">Today’s queue</h2>
@@ -281,24 +304,24 @@ export function ShiftPanel() {
           )}
         </div>
 
-        <div className="flex min-w-0 flex-col bg-muted/15">
-          <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10">
+        <div className="flex min-w-0 flex-col border-b border-border/60 bg-muted/15 lg:border-b-0 xl:border-r">
+          <div className="px-5 py-6 sm:px-8">
             {nextVisit && nextPatient ? (
               <>
                 <p className="mono-label text-muted-foreground">Next consult</p>
-                <p className="mt-2 font-display text-7xl font-bold tracking-tight text-accent sm:text-8xl">
+                <p className="mt-2 font-display text-6xl font-bold tracking-tight text-accent sm:text-7xl">
                   {nextVisit.queueNumber
                     ? String(nextVisit.queueNumber).padStart(2, "0")
                     : "—"}
                 </p>
-                <h2 className="mt-4 max-w-md font-display text-2xl font-bold tracking-tight sm:text-3xl">
+                <h2 className="mt-3 font-display text-xl font-bold tracking-tight sm:text-2xl">
                   {nextPatient.name}
                 </h2>
-                <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                <p className="mt-2 text-sm text-muted-foreground">
                   {formatTimeRange(nextVisit.timeSlot, nextVisit.slotEndTime)}
                   {nextVisit.reason ? ` · ${nextVisit.reason}` : ""}
                 </p>
-                <div className="mt-8 flex flex-wrap gap-2">
+                <div className="mt-6 flex flex-wrap gap-2">
                   {nextVisit.status === "PENDING" ? (
                     <button
                       type="button"
@@ -329,12 +352,11 @@ export function ShiftPanel() {
             ) : (
               <>
                 <p className="mono-label text-muted-foreground">Next consult</p>
-                <p className="mt-3 font-display text-3xl font-bold tracking-tight">
+                <p className="mt-3 font-display text-2xl font-bold tracking-tight">
                   Queue is clear
                 </p>
-                <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                  When a visit is booked or confirmed, it will land here with
-                  the queue number.
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Open someone from caseload, or wait for the next booking.
                 </p>
               </>
             )}
@@ -345,15 +367,20 @@ export function ShiftPanel() {
               Follow-ups today
             </p>
             {todayFollowUps.length > 0 ? (
-              todayFollowUps.slice(0, 5).map((p, i) => (
+              todayFollowUps.map((p, i) => (
                 <button
                   key={p._id || i}
                   type="button"
                   onClick={() => openChart(p)}
                   className="flex w-full items-center justify-between gap-3 border-b border-border/40 px-5 py-3 text-left hover:bg-muted/40"
                 >
-                  <span className="truncate text-sm font-semibold">
-                    {p.name}
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold">
+                      {p.name}
+                    </span>
+                    <span className="mono-label text-[10px] text-muted-foreground">
+                      Due today
+                    </span>
                   </span>
                   <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                 </button>
@@ -363,11 +390,70 @@ export function ShiftPanel() {
                 No follow-ups due today.
               </p>
             )}
-            {patients.length > 0 ? (
-              <p className="px-5 py-3 text-xs text-muted-foreground">
-                {patients.length} patients on your caseload
+          </div>
+        </div>
+
+        <div className="min-w-0 border-t border-border/60 lg:col-span-2 xl:col-span-1 xl:border-t-0">
+          <div className="flex items-end justify-between gap-3 border-b border-border/40 px-4 py-3 sm:px-6">
+            <h2 className="font-display text-sm font-bold">Caseload</h2>
+            <span className="mono-label text-[10px] text-muted-foreground">
+              {patients.length} patients
+            </span>
+          </div>
+          <div className="border-b border-border/40 px-4 py-2 sm:px-6">
+            <label className="relative block">
+              <span className="sr-only">Search caseload</span>
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={caseloadQuery}
+                onChange={(e) => setCaseloadQuery(e.target.value)}
+                placeholder="Name, phone, or email"
+                className="w-full border border-border/60 bg-background py-2 pr-3 pl-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              />
+            </label>
+          </div>
+          <div className="max-h-[min(28rem,50vh)] overflow-y-auto xl:max-h-none">
+            {caseload.length === 0 ? (
+              <p className="px-4 py-12 text-center text-sm text-muted-foreground sm:px-6">
+                {patients.length === 0
+                  ? "No assigned patients yet."
+                  : "No one matches that search."}
               </p>
-            ) : null}
+            ) : (
+              caseload.map((p) => {
+                const inQueue = todayPatientIds.has(p._id);
+                return (
+                  <div
+                    key={p._id}
+                    className="flex items-stretch border-b border-border/40"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => openChart(p)}
+                      className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3 text-left hover:bg-muted/40 sm:px-6"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold">
+                          {p.name}
+                        </span>
+                        <span className="mono-label text-[10px] text-muted-foreground">
+                          {p.phone || p.email || "No contact"}
+                          {inQueue ? " · in today’s queue" : ""}
+                        </span>
+                      </span>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startConsult(undefined, p)}
+                      className="shrink-0 border-l border-border/40 px-3 text-xs font-semibold hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary/40"
+                    >
+                      Note
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

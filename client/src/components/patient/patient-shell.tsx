@@ -263,7 +263,7 @@ export function PatientShell({ children }: { children: ReactNode }) {
         <nav
           aria-label="Patient portal mobile navigation"
           title="Patient portal mobile navigation"
-          className="flex justify-around items-center px-2 py-1.5"
+          className="flex justify-around items-center px-1.5 py-1 max-w-md mx-auto"
         >
           {patientSections
             .filter((s) => mainMobileTabs.includes(s.id))
@@ -277,32 +277,32 @@ export function PatientShell({ children }: { children: ReactNode }) {
                   key={s.id}
                   href={href}
                   onClick={() => setIsMoreOpen(false)}
-                  className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
+                  className="relative flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-lg group tap-highlight-transparent"
                 >
                   <motion.div
                     animate={
-                      isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }
+                      isActive ? { scale: 1.12, y: -1 } : { scale: 1, y: 0 }
                     }
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                    className={`relative flex items-center justify-center p-1 rounded-full transition-colors ${
                       isActive
-                        ? "text-primary"
+                        ? "text-primary bg-primary/10"
                         : "text-muted-foreground group-hover:text-foreground"
                     }`}
                   >
                     <Icon
-                      className={`size-5 ${isActive ? "fill-primary/20" : ""}`}
+                      className={`size-4.5 ${isActive ? "fill-primary/20" : ""}`}
                       strokeWidth={isActive ? 2.5 : 2}
                     />
                   </motion.div>
                   <span
-                    className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                    className={`text-[10px] mt-0.5 font-medium transition-colors truncate max-w-full text-center tracking-tight leading-tight block ${
                       isActive
                         ? "text-primary font-semibold"
                         : "text-muted-foreground"
                     }`}
                   >
-                    {s.label}
+                    {s.label.split(" ")[0]}
                   </span>
                 </Link>
               );
@@ -313,24 +313,24 @@ export function PatientShell({ children }: { children: ReactNode }) {
             <DrawerTrigger asChild>
               <button
                 type="button"
-                className="relative flex flex-col items-center justify-center w-16 py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
+                className="relative flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-lg group tap-highlight-transparent"
               >
                 <div
-                  className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                  className={`relative flex items-center justify-center p-1 rounded-full transition-colors ${
                     moreMobileTabs.some((id) => isSectionActive(id))
-                      ? "text-primary"
+                      ? "text-primary bg-primary/10"
                       : "text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
                   <Menu
-                    className={`size-5 ${moreMobileTabs.some((id) => isSectionActive(id)) ? "fill-primary/20" : ""}`}
+                    className={`size-4.5 ${moreMobileTabs.some((id) => isSectionActive(id)) ? "fill-primary/20" : ""}`}
                     strokeWidth={
                       moreMobileTabs.some((id) => isSectionActive(id)) ? 2.5 : 2
                     }
                   />
                 </div>
                 <span
-                  className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                  className={`text-[10px] mt-0.5 font-medium transition-colors truncate max-w-full text-center tracking-tight leading-tight block ${
                     moreMobileTabs.some((id) => isSectionActive(id))
                       ? "text-primary font-semibold"
                       : "text-muted-foreground"
@@ -392,7 +392,7 @@ export function PatientShell({ children }: { children: ReactNode }) {
 
       <style jsx global>{`
         .pb-safe {
-          padding-bottom: env(safe-area-inset-bottom, 16px);
+          padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 8px));
         }
         .tap-highlight-transparent {
           -webkit-tap-highlight-color: transparent;

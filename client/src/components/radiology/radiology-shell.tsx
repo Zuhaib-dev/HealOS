@@ -34,13 +34,48 @@ import {
 } from "@/components/ui/drawer";
 
 export const radiologySections = [
-  { id: "worklist", label: "Study Worklist", icon: ListChecks },
-  { id: "upload", label: "Upload Diagnostic Reports", icon: UploadCloud },
-  { id: "reporting", label: "Reporting Desk", icon: FileText },
-  { id: "archive", label: "Study Archive", icon: FolderOpen },
-  { id: "critical", label: "Critical Findings", icon: Siren },
-  { id: "modalities", label: "Modalities & Dose", icon: Radiation },
-  { id: "booking", label: "Slot Booking", icon: CalendarClock },
+  {
+    id: "worklist",
+    label: "Study Worklist",
+    shortLabel: "Worklist",
+    icon: ListChecks,
+  },
+  {
+    id: "upload",
+    label: "Upload Diagnostic Reports",
+    shortLabel: "Upload",
+    icon: UploadCloud,
+  },
+  {
+    id: "reporting",
+    label: "Reporting Desk",
+    shortLabel: "Reports",
+    icon: FileText,
+  },
+  {
+    id: "archive",
+    label: "Study Archive",
+    shortLabel: "Archive",
+    icon: FolderOpen,
+  },
+  {
+    id: "critical",
+    label: "Critical Findings",
+    shortLabel: "Critical",
+    icon: Siren,
+  },
+  {
+    id: "modalities",
+    label: "Modalities & Dose",
+    shortLabel: "Scanners",
+    icon: Radiation,
+  },
+  {
+    id: "booking",
+    label: "Slot Booking",
+    shortLabel: "Booking",
+    icon: CalendarClock,
+  },
 ] as const;
 
 export type RadiologySectionId = (typeof radiologySections)[number]["id"];
@@ -51,8 +86,8 @@ export function RadiologyShell({ children }: { children: ReactNode }) {
   const { user } = useAuthStore();
   const pathname = usePathname();
 
-  const mainMobileTabs = radiologySections.slice(0, 4);
-  const moreMobileTabs = radiologySections.slice(4);
+  const mainMobileTabs = [...radiologySections].slice(0, 4);
+  const moreMobileTabs = [...radiologySections].slice(4);
 
   const currentSection =
     radiologySections.find((s) =>
@@ -197,44 +232,46 @@ export function RadiologyShell({ children }: { children: ReactNode }) {
         <nav
           aria-label="Radiology portal mobile navigation"
           title="Radiology portal mobile navigation"
-          className="flex justify-around items-center px-2 py-1.5"
+          className="flex justify-around items-center px-1.5 py-1 max-w-md mx-auto"
         >
           {mainMobileTabs.map((s) => {
             const Icon = s.icon;
             const isActive = isSectionActive(s.id);
             const href =
               s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
+            const shortTitle = s.shortLabel;
+
             return (
               <Link
                 key={s.id}
                 href={href}
                 onClick={() => setIsMoreOpen(false)}
-                className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
+                className="relative flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-lg group tap-highlight-transparent"
               >
                 <motion.div
                   animate={
-                    isActive ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }
+                    isActive ? { scale: 1.12, y: -1 } : { scale: 1, y: 0 }
                   }
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                  className={`relative flex items-center justify-center p-1 rounded-full transition-colors ${
                     isActive
-                      ? "text-primary"
+                      ? "text-primary bg-primary/10"
                       : "text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
                   <Icon
-                    className={`size-5 ${isActive ? "fill-primary/20" : ""}`}
+                    className={`size-4.5 ${isActive ? "fill-primary/20" : ""}`}
                     strokeWidth={isActive ? 2.5 : 2}
                   />
                 </motion.div>
                 <span
-                  className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                  className={`text-[10px] mt-0.5 font-medium transition-colors truncate max-w-full text-center tracking-tight leading-tight block ${
                     isActive
                       ? "text-primary font-semibold"
                       : "text-muted-foreground"
                   }`}
                 >
-                  {s.label}
+                  {shortTitle}
                 </span>
               </Link>
             );
@@ -246,17 +283,17 @@ export function RadiologyShell({ children }: { children: ReactNode }) {
               <DrawerTrigger asChild>
                 <button
                   type="button"
-                  className="relative flex-1 flex flex-col items-center justify-center py-1.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-md group tap-highlight-transparent"
+                  className="relative flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-lg group tap-highlight-transparent"
                 >
                   <div
-                    className={`relative flex items-center justify-center p-1.5 rounded-full transition-colors ${
+                    className={`relative flex items-center justify-center p-1 rounded-full transition-colors ${
                       moreMobileTabs.some((s) => isSectionActive(s.id))
-                        ? "text-primary"
+                        ? "text-primary bg-primary/10"
                         : "text-muted-foreground group-hover:text-foreground"
                     }`}
                   >
                     <Menu
-                      className={`size-5 ${moreMobileTabs.some((s) => isSectionActive(s.id)) ? "fill-primary/20" : ""}`}
+                      className={`size-4.5 ${moreMobileTabs.some((s) => isSectionActive(s.id)) ? "fill-primary/20" : ""}`}
                       strokeWidth={
                         moreMobileTabs.some((s) => isSectionActive(s.id))
                           ? 2.5
@@ -265,7 +302,7 @@ export function RadiologyShell({ children }: { children: ReactNode }) {
                     />
                   </div>
                   <span
-                    className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                    className={`text-[10px] mt-0.5 font-medium transition-colors truncate max-w-full text-center tracking-tight leading-tight block ${
                       moreMobileTabs.some((s) => isSectionActive(s.id))
                         ? "text-primary font-semibold"
                         : "text-muted-foreground"
@@ -283,29 +320,31 @@ export function RadiologyShell({ children }: { children: ReactNode }) {
                   </DrawerTitle>
                   <UserProfileMenu />
                 </DrawerHeader>
-                <div className="p-4 grid grid-cols-3 sm:grid-cols-4 gap-4 overflow-y-auto">
+                <div className="p-4 grid grid-cols-3 sm:grid-cols-4 gap-2.5 overflow-y-auto">
                   {moreMobileTabs.map((s) => {
                     const Icon = s.icon;
                     const isActive = isSectionActive(s.id);
                     const href =
                       s.id === "worklist" ? "/radiology" : `/radiology/${s.id}`;
+                    const drawerTitle = s.shortLabel;
+
                     return (
                       <Link
                         key={s.id}
                         href={href}
                         onClick={() => setIsMoreOpen(false)}
-                        className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                        className={`flex flex-col items-center justify-center text-center gap-1.5 p-3 rounded-xl transition-all ${
                           isActive
-                            ? "bg-primary/10 text-primary border border-primary/20"
+                            ? "bg-primary/10 text-primary border border-primary/25 shadow-xs"
                             : "bg-muted/40 text-muted-foreground border border-border/40 active:bg-muted/60"
                         }`}
                       >
                         <Icon
-                          className="size-6"
+                          className="size-5 shrink-0"
                           strokeWidth={isActive ? 2.5 : 2}
                         />
-                        <span className="text-[10px] font-semibold tracking-wide text-center leading-tight">
-                          {s.label}
+                        <span className="text-[11px] font-semibold tracking-tight text-center leading-tight truncate max-w-full block">
+                          {drawerTitle}
                         </span>
                       </Link>
                     );
@@ -326,7 +365,7 @@ export function RadiologyShell({ children }: { children: ReactNode }) {
 
       <style jsx global>{`
         .pb-safe {
-          padding-bottom: env(safe-area-inset-bottom, 16px);
+          padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 8px));
         }
         .tap-highlight-transparent {
           -webkit-tap-highlight-color: transparent;

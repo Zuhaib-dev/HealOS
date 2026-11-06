@@ -13,12 +13,42 @@ import { RoleGuard } from "@/components/auth/role-guard";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 
 const sections = [
-  { id: "collection", label: "Sample Collection", icon: TestTube },
-  { id: "accession", label: "Accessioning", icon: ListChecks },
-  { id: "analysers", label: "Auto-Analyzers", icon: Activity },
-  { id: "validation", label: "Result Validation", icon: CheckCircle },
-  { id: "critical", label: "Critical Results", icon: Siren },
-  { id: "analytics", label: "Analytics", icon: BarChart3 },
+  {
+    id: "collection",
+    label: "Sample Collection",
+    shortLabel: "Collection",
+    icon: TestTube,
+  },
+  {
+    id: "accession",
+    label: "Accessioning",
+    shortLabel: "Accession",
+    icon: ListChecks,
+  },
+  {
+    id: "analysers",
+    label: "Auto-Analyzers",
+    shortLabel: "Analyzers",
+    icon: Activity,
+  },
+  {
+    id: "validation",
+    label: "Result Validation",
+    shortLabel: "Validation",
+    icon: CheckCircle,
+  },
+  {
+    id: "critical",
+    label: "Critical Results",
+    shortLabel: "Critical",
+    icon: Siren,
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    shortLabel: "Analytics",
+    icon: BarChart3,
+  },
 ];
 
 export default function WorkspaceLayout({

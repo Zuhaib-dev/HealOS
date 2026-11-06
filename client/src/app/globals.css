@@ -351,21 +351,107 @@
   }
 }
 
-/* Universal Icon Micro-animations for premium UX */
+/* Icon motion: verb-led, no bounce, no card-wide group wiggle */
 @layer utilities {
-  /* When a button, link or group is hovered, elegantly animate the lucide icon */
-  button:hover svg.lucide:not(.animate-spin),
-  a:hover svg.lucide:not(.animate-spin),
-  .group:hover svg.lucide:not(.animate-spin) {
-    transform: scale(1.15) translateY(-0.08rem) rotate(6deg);
-    transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @media (hover: hover) and (pointer: fine) {
+    :where(button, a, [role="button"]) svg.lucide {
+      transform-box: fill-box;
+      transform-origin: center;
+      transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    :where(button, a, [role="button"]):hover svg.lucide:not(.animate-spin) {
+      transform: translateY(-1px);
+    }
+
+    :where(button, a, [role="button"]):active svg.lucide:not(.animate-spin) {
+      transform: translateY(0.5px);
+      transition-duration: 90ms;
+    }
+
+    :where(button, a, [role="button"]):hover
+      svg.lucide:not(.animate-spin):is(
+        [class*="arrow-right"],
+        [class*="chevron-right"],
+        [class*="chevron-last"],
+        [class*="move-right"],
+        [class*="log-in"],
+        [class*="log-out"]
+      ) {
+      transform: translateX(2px);
+    }
+
+    :where(button, a, [role="button"]):hover
+      svg.lucide:not(.animate-spin):is(
+        [class*="arrow-left"],
+        [class*="chevron-left"],
+        [class*="chevron-first"],
+        [class*="move-left"]
+      ) {
+      transform: translateX(-2px);
+    }
+
+    :where(button, a, [role="button"]):hover
+      svg.lucide:not(.animate-spin):is(
+        [class*="arrow-up"]:not([class*="arrow-up-right"]),
+        [class*="chevron-up"],
+        [class*="upload"],
+        [class*="share"]
+      ) {
+      transform: translateY(-2px);
+    }
+
+    :where(button, a, [role="button"]):hover
+      svg.lucide:not(.animate-spin):is(
+        [class*="arrow-down"],
+        [class*="chevron-down"],
+        [class*="download"]
+      ) {
+      transform: translateY(2px);
+    }
+
+    :where(button, a, [role="button"]):hover
+      svg.lucide:not(.animate-spin):is(
+        [class*="arrow-up-right"],
+        [class*="external-link"],
+        [class*="square-arrow-out-up-right"]
+      ) {
+      transform: translate(1.5px, -1.5px);
+    }
+
+    :where(button, a, [role="button"]):hover
+      svg.lucide:not(.animate-spin):is(
+        [class*="lucide-plus"],
+        [class*="lucide-x"],
+        [class*="plus-circle"],
+        [class*="x-circle"]
+      ) {
+      transform: rotate(90deg);
+    }
+
+    :where(button, a, [role="button"]):hover
+      svg.lucide:not(.animate-spin):is(
+        [class*="refresh-cw"],
+        [class*="rotate-cw"]
+      ) {
+      transform: rotate(45deg);
+    }
+
+    :where(button, a, [role="button"]):hover
+      svg.lucide:not(.animate-spin):is([class*="search"]) {
+      transform: scale(1.06);
+    }
+
+    :where(button, a, [role="button"]):hover
+      svg.lucide:not(.animate-spin):is([class*="lucide-send"]) {
+      transform: translate(2px, -1px);
+    }
   }
 
-  /* When active/pressed */
-  button:active svg.lucide:not(.animate-spin),
-  a:active svg.lucide:not(.animate-spin),
-  .group:active svg.lucide:not(.animate-spin) {
-    transform: scale(0.95) rotate(-2deg);
-    transition: all 0.15s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    :where(button, a, [role="button"]) svg.lucide {
+      transition: none;
+      transform: none;
+    }
   }
 }

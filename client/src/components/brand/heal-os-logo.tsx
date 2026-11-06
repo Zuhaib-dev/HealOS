@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 
 type HealOSLogoProps = {
@@ -9,9 +10,8 @@ type HealOSLogoProps = {
 };
 
 /**
- * HealOS mark — a brass aperture ring (instrument iris) enclosing an
- * ECG trace that draws itself, with cross ticks as calibration marks.
- * Pure SVG, no raster assets.
+ * HealOS mark — a brass aperture ring enclosing an ECG trace.
+ * Idle is still. Hover redraws the trace and ticks the iris once.
  */
 export function HealOSLogo({
   className,
@@ -19,9 +19,19 @@ export function HealOSLogo({
   size = 34,
 }: HealOSLogoProps) {
   const reduce = useReducedMotion() ?? false;
+  const [hovered, setHovered] = useState(false);
+  const [traceKey, setTraceKey] = useState(0);
+  const live = !reduce && hovered;
 
   return (
-    <span className={`inline-flex items-center gap-3 ${className ?? ""}`}>
+    <span
+      className={`inline-flex items-center gap-3 ${className ?? ""}`}
+      onMouseEnter={() => {
+        setHovered(true);
+        if (!reduce) setTraceKey((n) => n + 1);
+      }}
+      onMouseLeave={() => setHovered(false)}
+    >
       <svg
         width={size}
         height={size}
@@ -30,7 +40,6 @@ export function HealOSLogo({
         aria-hidden="true"
         className="shrink-0 overflow-visible"
       >
-        {/* calibration ticks */}
         {Array.from({ length: 12 }).map((_, i) => (
           <line
             key={i}
@@ -46,63 +55,28 @@ export function HealOSLogo({
           />
         ))}
 
-        {/* expanding pulse halos (heartbeat) */}
-        {!reduce &&
-          [0, 1.3].map((delay) => (
-            <motion.circle
-              key={delay}
-              cx="24"
-              cy="24"
-              r="15"
-              stroke="currentColor"
-              strokeWidth="1"
-              className="text-accent"
-              initial={{ scale: 0.85, opacity: 0 }}
-              animate={{ scale: [0.85, 1.45], opacity: [0, 0.45, 0] }}
-              transition={{
-                duration: 2.6,
-                repeat: Infinity,
-                ease: "easeOut",
-                delay: delay + 1.2,
-              }}
-              style={{ transformOrigin: "24px 24px" }}
-            />
-          ))}
+        {live ? (
+          <motion.circle
+            cx="24"
+            cy="24"
+            r="15"
+            stroke="currentColor"
+            strokeWidth="1"
+            className="text-accent"
+            initial={{ scale: 0.92, opacity: 0.35 }}
+            animate={{ scale: 1.28, opacity: 0 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            style={{ transformOrigin: "24px 24px" }}
+          />
+        ) : null}
 
-        {/* iris ring */}
-        <motion.circle
+        <circle
           cx="24"
           cy="24"
           r="15"
           stroke="currentColor"
           strokeWidth="1.25"
           className="text-primary"
-          initial={reduce ? false : { pathLength: 0, scale: 1, opacity: 1 }}
-          animate={
-            reduce
-              ? false
-              : {
-                  pathLength: 1,
-                  scale: [1, 1.06, 1, 1.03, 1],
-                  opacity: [1, 0.8, 1, 0.9, 1],
-                }
-          }
-          transition={{
-            pathLength: { duration: 1.2, ease: "easeInOut" },
-            scale: {
-              duration: 1.3,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1.2,
-            },
-            opacity: {
-              duration: 1.3,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1.2,
-            },
-          }}
-          style={{ transformOrigin: "24px 24px", rotate: -90 }}
         />
 
         <motion.circle
@@ -114,12 +88,11 @@ export function HealOSLogo({
           strokeDasharray="2 6"
           className="text-accent"
           opacity={0.5}
-          animate={reduce ? false : { rotate: 360 }}
-          transition={{ duration: 26, repeat: Infinity, ease: "linear" }}
+          animate={reduce ? false : { rotate: live ? 28 : 0 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           style={{ transformOrigin: "24px 24px" }}
         />
 
-        {/* ECG trace */}
         <motion.path
           d="M9 24h5.5l2.5-6.5 3 13 3.2-9.5 2.3 3H39"
           stroke="currentColor"
@@ -127,40 +100,28 @@ export function HealOSLogo({
           strokeLinecap="square"
           strokeLinejoin="miter"
           className="text-foreground"
-          initial={reduce ? false : { pathLength: 0, opacity: 1 }}
-          animate={reduce ? false : { pathLength: 1, opacity: [1, 0.65, 1] }}
+          initial={reduce ? false : { pathLength: 0 }}
+          animate={reduce ? false : { pathLength: 1 }}
           transition={{
-            pathLength: { duration: 1.6, delay: 0.3, ease: "easeInOut" },
-            opacity: {
-              duration: 1.3,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1.2,
+            pathLength: {
+              duration: live ? 0.55 : 1.2,
+              ease: [0.22, 1, 0.36, 1],
             },
           }}
+          key={traceKey}
         />
 
-        {/* live dot */}
-        {!reduce && (
+        {live ? (
           <motion.circle
             cx="9"
             cy="24"
-            r="1.9"
+            r="1.6"
             className="fill-accent"
-            initial={{ cx: 9, opacity: 0, scale: 1 }}
-            animate={{
-              cx: [9, 39],
-              opacity: [0, 1, 1, 0],
-              scale: [1, 1.5, 1, 1.5, 1],
-            }}
-            transition={{
-              duration: 2.6,
-              repeat: Infinity,
-              ease: "linear",
-              delay: 1.4,
-            }}
+            initial={{ cx: 9, opacity: 0 }}
+            animate={{ cx: 39, opacity: [0, 1, 1, 0] }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           />
-        )}
+        ) : null}
       </svg>
 
       {showWordmark && (

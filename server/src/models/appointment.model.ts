@@ -26,6 +26,11 @@ export enum PaymentStatus {
   REFUNDED = "REFUNDED",
 }
 
+export enum AppointmentSource {
+  PATIENT_PORTAL = "PATIENT_PORTAL",
+  RECEPTION_WALK_IN = "RECEPTION_WALK_IN",
+}
+
 export interface IAppointment extends Document {
   patient: mongoose.Types.ObjectId;
   doctor: mongoose.Types.ObjectId;
@@ -33,6 +38,8 @@ export interface IAppointment extends Document {
   date: string; // YYYY-MM-DD
   timeSlot: string; // Stored as sortable 24-hour HH:mm; formatted for display by the client.
   queueNumber?: number;
+  queueToken?: string;
+  source: AppointmentSource;
   reason: string;
   type: AppointmentType;
   status: AppointmentStatus;
@@ -60,6 +67,13 @@ const appointmentSchema = new Schema<IAppointment>(
     date: { type: String, required: true },
     timeSlot: { type: String, required: true },
     queueNumber: { type: Number, min: 1 },
+    queueToken: { type: String, trim: true },
+    source: {
+      type: String,
+      enum: Object.values(AppointmentSource),
+      default: AppointmentSource.PATIENT_PORTAL,
+      index: true,
+    },
     reason: { type: String, required: true },
     type: {
       type: String,

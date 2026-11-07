@@ -1,6 +1,12 @@
 "use client";
 
-import { UserPlus, Users, Monitor, LayoutDashboard } from "lucide-react";
+import {
+  UserPlus,
+  Users,
+  Monitor,
+  LayoutDashboard,
+  ClipboardList,
+} from "lucide-react";
 
 import { RoleGuard } from "@/components/auth/role-guard";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
@@ -12,6 +18,12 @@ const sections = [
     label: "New Patient",
     shortLabel: "Register",
     icon: UserPlus,
+  },
+  {
+    id: "walk-ins",
+    label: "Walk-in records",
+    shortLabel: "Walk-ins",
+    icon: ClipboardList,
   },
   { id: "queue", label: "Queue", shortLabel: "Queue", icon: Users },
   {
@@ -28,7 +40,7 @@ export default function WorkspaceLayout({
   children: React.ReactNode;
 }) {
   return (
-    <RoleGuard allowedRoles={["RECEPTIONIST"]}>
+    <RoleGuard allowedRoles={["RECEPTIONIST", "ADMIN"]}>
       <WorkspaceShell
         navId="reception"
         breadcrumb="Access & flow / Front desk (OPD)"

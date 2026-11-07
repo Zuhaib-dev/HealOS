@@ -81,7 +81,7 @@ export function UsersPanel() {
     <div>
       <AdminHeader
         title="Users"
-        note="Accounts on this facility — role and verification."
+        note="Staff and system accounts. Patient records are managed in the patient registry."
       />
 
       <div className="hairline-b grid grid-cols-2 sm:grid-cols-4">
@@ -194,7 +194,6 @@ export function UsersPanel() {
                       className="bg-background/50 border border-border/60 rounded-md px-2 py-1.5 text-xs mono-label outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
                     >
                       <option value="USER">USER</option>
-                      <option value="PATIENT">PATIENT</option>
                       <option value="DOCTOR">DOCTOR</option>
                       <option value="RADIOLOGIST">RADIOLOGIST</option>
                       <option value="RECEPTIONIST">RECEPTIONIST</option>

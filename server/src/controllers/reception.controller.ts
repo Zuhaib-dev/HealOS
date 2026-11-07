@@ -1,7 +1,14 @@
 import { Request, Response } from "express";
-import { User, UserRole, PatientProfile } from "../models/index.js";
+import {
+  User,
+  UserRole,
+  PatientProfile,
+  ProfessionalProfile,
+  DoctorAvailability,
+} from "../models/index.js";
 import {
   Appointment,
+  AppointmentSource,
   AppointmentStatus,
   PaymentStatus,
 } from "../models/appointment.model.js";
@@ -14,6 +21,7 @@ import { AppError } from "../middleware/error-handler.js";
 import { getIO } from "../socket.js";
 import crypto from "crypto";
 import { getClinicDateKey } from "../utils/clinic-date.js";
+import { z } from "zod";
 
 // ==========================================
 // 1. Get Reception Overview Stats
@@ -29,7 +37,7 @@ export const getReceptionOverview = async (
     // 1. Registrations Today
     const [appointmentsToday, totalPatients, newPatientsToday] =
       await Promise.all([
-        Appointment.countDocuments({ date: { $gte: today } }),
+        Appointment.countDocuments({ date: today }),
         User.countDocuments({ role: UserRole.PATIENT }),
         User.countDocuments({
           role: UserRole.PATIENT,
@@ -43,7 +51,7 @@ export const getReceptionOverview = async (
 
     // 2. Tokens Waiting
     const waitingAppointments = await Appointment.find({
-      date: { $gte: today },
+      date: today,
       status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING] },
       $nor: [{ paymentMethod: "ONLINE", paymentStatus: "PENDING_ONLINE" }],
     })
@@ -202,119 +210,240 @@ export const registerPatientAndCreateToken = async (
   req: Request,
   res: Response,
 ) => {
+  let patientIdToRollback: string | undefined;
+  let appointmentIdToRollback: string | undefined;
+  let invoiceIdToRollback: string | undefined;
   try {
+    const parsed = z
+      .object({
+        firstName: z.string().trim().min(1),
+        lastName: z.string().trim().optional(),
+        phone: z.string().trim().min(10),
+        dateOfBirth: z.string().optional(),
+        gender: z.enum(["MALE", "FEMALE", "Male", "Female"]),
+        address: z.string().trim().optional(),
+        department: z.string().trim().min(1),
+        doctorId: z.string().regex(/^[a-f\d]{24}$/i),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        timeSlot: z.string().regex(/^\d{2}:\d{2}$/),
+        reason: z.string().trim().min(3).max(500),
+        payer: z.enum(["self", "insurance", "corporate"]).default("self"),
+      })
+      .safeParse(req.body);
+    if (!parsed.success) {
+      throw new AppError(
+        parsed.error.issues[0]?.message || "Check the walk-in details",
+        400,
+      );
+    }
     const {
       firstName,
       lastName,
-      phone,
+      phone: rawPhone,
       dateOfBirth,
       gender,
       address,
       department,
+      doctorId,
+      date,
+      timeSlot,
+      reason,
       payer,
-    } = req.body;
-
-    if (!firstName || !phone || !department) {
-      throw new AppError("First name, phone, and department are required", 400);
+    } = parsed.data;
+    if (date !== getClinicDateKey()) {
+      throw new AppError("Walk-in appointments must be booked for today", 400);
     }
 
-    const name = lastName ? `${firstName} ${lastName}` : firstName;
+    const name = [firstName, lastName].filter(Boolean).join(" ");
+    const phoneDigits = rawPhone.replace(/\D/g, "");
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      throw new AppError("Enter a valid patient mobile number", 400);
+    }
+    const phone = `+${phoneDigits}`;
+    const doctorProfile = await ProfessionalProfile.findOne({
+      user: doctorId,
+      requestedRole: UserRole.DOCTOR,
+      status: "APPROVED",
+    }).select("specialization");
+    const doctor = await User.findOne({ _id: doctorId, role: UserRole.DOCTOR });
+    if (!doctor || !doctorProfile) {
+      throw new AppError("Select an approved doctor", 400);
+    }
+    if (doctorProfile.specialization !== department) {
+      throw new AppError("The selected doctor is not in this department", 400);
+    }
 
-    // Try to find if user exists by phone
-    let patient = await User.findOne({ phone, role: UserRole.PATIENT });
-    let patientProfile = null;
+    const requestedDate = new Date(`${date}T00:00:00.000Z`);
+    const availability = await DoctorAvailability.findOne({
+      doctor: doctorId,
+      active: true,
+      weekdays: requestedDate.getUTCDay(),
+    });
+    if (!availability) {
+      throw new AppError("This doctor has no booking hours today", 409);
+    }
+    const toMinutes = (value: string) => {
+      const [hours = 0, minutes = 0] = value.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+    const slotMinute = toMinutes(timeSlot);
+    const scheduleStart = toMinutes(availability.startTime);
+    const scheduleEnd = toMinutes(availability.endTime);
+    const aligned =
+      slotMinute >= scheduleStart &&
+      slotMinute + availability.slotDurationMinutes <= scheduleEnd &&
+      (slotMinute - scheduleStart) % availability.slotDurationMinutes === 0;
+    if (!aligned) throw new AppError("Choose a valid doctor time slot", 400);
+    const clinicTime = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .format(new Date())
+      .split(":")
+      .map(Number);
+    const [currentHour = 0, currentMinute = 0] = clinicTime;
+    if (slotMinute <= currentHour * 60 + currentMinute) {
+      throw new AppError("Choose a time slot that has not passed", 409);
+    }
+    const occupiedCount = await Appointment.countDocuments({
+      doctor: doctorId,
+      date,
+      status: { $ne: AppointmentStatus.CANCELLED },
+    });
+    const capacity = Math.min(
+      availability.maxPatientsPerDay,
+      Math.floor(
+        (scheduleEnd - scheduleStart) / availability.slotDurationMinutes,
+      ),
+    );
+    if (occupiedCount >= capacity) {
+      throw new AppError(
+        "This doctor has reached the daily appointment limit",
+        409,
+      );
+    }
 
+    let patient = await User.findOne({
+      role: UserRole.PATIENT,
+      phone: { $in: [rawPhone, phoneDigits, phone] },
+    });
     if (!patient) {
-      // Create new user
       patient = new User({
         name,
         phone,
-        email: `${phone}@healos-temp.com`, // Dummy email
+        email: `${phoneDigits}@healos-temp.com`,
         password: crypto.randomBytes(8).toString("hex"),
         role: UserRole.PATIENT,
       });
       await patient.save();
-
-      // Create patient profile
-      patientProfile = new PatientProfile({
-        user: patient._id,
-        dateOfBirth: dateOfBirth || null,
-        gender: gender || "FEMALE",
-        address,
-      });
-      await patientProfile.save();
-    } else {
-      // Find existing profile or create it
-      patientProfile = await PatientProfile.findOne({ user: patient._id });
-      if (!patientProfile) {
-        patientProfile = new PatientProfile({
-          user: patient._id,
-          dateOfBirth: dateOfBirth || null,
-          gender: gender || "FEMALE",
-          address,
-        });
-        await patientProfile.save();
-      }
+      patientIdToRollback = patient._id.toString();
     }
+    await PatientProfile.findOneAndUpdate(
+      { user: patient._id },
+      {
+        $set: {
+          ...(dateOfBirth ? { dob: dateOfBirth } : {}),
+          gender: gender.toUpperCase(),
+          ...(address ? { address } : {}),
+        },
+        $setOnInsert: { user: patient._id },
+      },
+      { upsert: true, new: true, runValidators: true },
+    );
 
-    // Assign doctor from requested department, or fallback to any available doctor
-    let doctor = await User.findOne({ role: UserRole.DOCTOR, department });
-    if (!doctor) {
-      doctor = await User.findOne({ role: UserRole.DOCTOR });
-    }
-    if (!doctor) {
-      doctor = await User.findOne({ role: UserRole.ADMIN });
-    }
-    const doctorId = doctor?._id;
-
-    // Create an Appointment / Token
-    const appointment = new Appointment({
+    const queueRows = await Appointment.find({ doctor: doctorId, date })
+      .select("queueNumber")
+      .lean();
+    const queueNumber =
+      queueRows.reduce((max, row) => Math.max(max, row.queueNumber || 0), 0) +
+      1;
+    const appointment = await Appointment.create({
       patient: patient._id,
-      doctor: doctorId,
-      department,
-      date: new Date(),
-      timeSlot: "Walk-in",
-      reason: "OPD Consultation",
+      doctor: doctor._id,
+      department: doctorProfile.specialization,
+      date,
+      timeSlot,
+      queueNumber,
+      reason,
+      type: "IN_PERSON",
       status: AppointmentStatus.CONFIRMED,
+      paymentMethod: "CASH",
+      paymentStatus: PaymentStatus.PENDING_CASH,
+      amount: availability.consultationFee,
+      advanceAmount: availability.advanceFee,
+      source: AppointmentSource.RECEPTION_WALK_IN,
     });
+    appointmentIdToRollback = appointment._id.toString();
+    const token = `${department
+      .split(/\s+/)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 3)
+      .toUpperCase()}-${String(queueNumber).padStart(3, "0")}-${appointment._id
+      .toString()
+      .slice(-4)
+      .toUpperCase()}`;
+    appointment.queueToken = token;
     await appointment.save();
 
-    // Generate Invoice for OPD Consult
-    const issuedById =
-      (req as any).user?._id ||
-      (req as any).user?.id ||
-      (await User.findOne({ role: UserRole.ADMIN }))?._id;
-    const invoice = new Invoice({
+    const issuedById = req.user?._id || req.user?.id;
+    const totalAmount = availability.consultationFee;
+    const invoice = await Invoice.create({
       patient: patient._id,
       issuedBy: issuedById,
       appointment: appointment._id,
-      items: [{ description: "OPD Consultation", amount: 500 }],
-      totalAmount: 500,
-      payer: payer || "self",
-      insuranceCoverage: payer === "insurance" ? 500 : 0,
+      items: [{ description: "OPD Consultation", amount: totalAmount }],
+      totalAmount,
+      payer,
+      insuranceCoverage: payer === "insurance" ? totalAmount : 0,
     });
-    await invoice.save();
-
-    const token = `${department.charAt(0).toUpperCase()}-${Math.floor(Math.random() * 90) + 10}`;
+    invoiceIdToRollback = invoice._id.toString();
+    const populatedAppointment = await Appointment.findById(appointment._id)
+      .populate("doctor", "name email phone avatarUrl")
+      .populate("patient", "name email phone avatarUrl");
 
     try {
       const io = getIO();
       io.emit("reception:overview_updated");
+      io.emit("admin:data_changed", {
+        types: ["users", "patients", "billing"],
+      });
+      io.emit("appointment_created", {
+        appointmentId: appointment._id,
+        doctorId: doctor._id,
+        patientId: patient._id,
+        source: AppointmentSource.RECEPTION_WALK_IN,
+      });
       io.emit("reception:token_created", {
         token,
         patientName: name,
         department,
+        doctorId: doctor._id,
       });
     } catch {}
 
     res.status(201).json({
+      success: true,
       status: "success",
-      data: { patient, appointment, token, invoice },
+      data: { patient, appointment: populatedAppointment, token, invoice },
     });
   } catch (error: any) {
-    res.status(error.statusCode || 500).json({
+    if (invoiceIdToRollback)
+      await Invoice.findByIdAndDelete(invoiceIdToRollback);
+    if (appointmentIdToRollback)
+      await Appointment.findByIdAndDelete(appointmentIdToRollback);
+    if (patientIdToRollback) {
+      await PatientProfile.findOneAndDelete({ user: patientIdToRollback });
+      await User.findByIdAndDelete(patientIdToRollback);
+    }
+    res.status(error.statusCode || (error.code === 11000 ? 409 : 500)).json({
       status: "error",
-      message: error.message || "Failed to register patient",
+      message:
+        error.code === 11000
+          ? "That doctor slot was just booked. Refresh availability and choose another time."
+          : error.message || "Failed to register patient",
     });
   }
 };
@@ -324,11 +453,10 @@ export const registerPatientAndCreateToken = async (
 // ==========================================
 export const getQueue = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getClinicDateKey();
 
     const appointments = await Appointment.find({
-      date: { $gte: today },
+      date: new RegExp(`^${today}`),
     })
       .populate("patient", "name phone")
       .populate("doctor", "name department")
@@ -342,6 +470,36 @@ export const getQueue = async (_req: Request, res: Response): Promise<void> => {
     res.status(error.statusCode || 500).json({
       status: "error",
       message: error.message || "Failed to fetch queue",
+    });
+  }
+};
+
+export const getWalkInAppointments = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const date =
+      typeof req.query.date === "string" ? req.query.date : getClinicDateKey();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new AppError("Choose a valid date", 400);
+    }
+    const appointments = await Appointment.find({
+      date: new RegExp(`^${date}`),
+      $or: [
+        { source: AppointmentSource.RECEPTION_WALK_IN },
+        { timeSlot: "Walk-in" },
+      ],
+    })
+      .populate("patient", "name email phone")
+      .populate("doctor", "name email")
+      .sort({ createdAt: -1 })
+      .limit(200);
+    res.status(200).json({ success: true, appointments });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Failed to fetch walk-in appointments",
     });
   }
 };

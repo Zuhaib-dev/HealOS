@@ -41,8 +41,10 @@ export const getAppointments = async (req: Request, res: Response) => {
     const appointments = await Appointment.find({
       doctor: doctorId,
     })
-      .select("patient date timeSlot status type paymentStatus reason")
-      .populate("patient", "firstName lastName email avatar role")
+      .select(
+        "patient date timeSlot status type paymentStatus reason department queueNumber queueToken source",
+      )
+      .populate("patient", "name email phone avatarUrl role")
       .sort({ date: 1, timeSlot: 1 })
       .lean();
 

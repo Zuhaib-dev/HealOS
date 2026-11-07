@@ -22,7 +22,7 @@ function waitMinutes(createdAt: string) {
 }
 
 function tokenLabel(app: AppointmentRecord) {
-  if (app.token) return app.token;
+  if (app.queueToken || app.token) return app.queueToken || app.token!;
   const prefix = app.department?.charAt(0) || "T";
   return `${prefix}-${app._id.slice(-4).toUpperCase()}`;
 }

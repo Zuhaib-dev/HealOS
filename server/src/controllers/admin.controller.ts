@@ -59,7 +59,8 @@ export const getAllUsers = async (
     const queryText = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const role =
       typeof req.query.role === "string" ? req.query.role.trim() : "";
-    const query: Record<string, any> = {};
+    // Patient accounts are managed in the patient registry, not the staff role editor.
+    const query: Record<string, any> = { role: { $ne: UserRole.PATIENT } };
 
     if (queryText) {
       const sanitizedRegex = queryText.replace(
@@ -117,35 +118,52 @@ export const getAllPatients = async (
     const sanitizedRegex = queryText
       ? queryText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")
       : "";
-
-    const matchingUsers = sanitizedRegex
-      ? await User.find({
+    const matchingProfileUserIds = sanitizedRegex
+      ? await PatientProfile.distinct("user", {
           $or: [
-            { name: { $regex: sanitizedRegex, $options: "i" } },
-            { email: { $regex: sanitizedRegex, $options: "i" } },
-            { phone: { $regex: sanitizedRegex, $options: "i" } },
-          ],
-        }).select("_id")
-      : [];
-
-    const query = sanitizedRegex
-      ? {
-          $or: [
-            { user: { $in: matchingUsers.map((user) => user._id) } },
             { emergencyContactName: { $regex: sanitizedRegex, $options: "i" } },
             { emergencyPhone: { $regex: sanitizedRegex, $options: "i" } },
           ],
-        }
-      : {};
+        })
+      : [];
+    const userQuery: Record<string, any> = { role: UserRole.PATIENT };
+    if (sanitizedRegex) {
+      userQuery.$or = [
+        { name: { $regex: sanitizedRegex, $options: "i" } },
+        { email: { $regex: sanitizedRegex, $options: "i" } },
+        { phone: { $regex: sanitizedRegex, $options: "i" } },
+        { _id: { $in: matchingProfileUserIds } },
+      ];
+    }
 
-    const [patients, total] = await Promise.all([
-      PatientProfile.find(query)
-        .populate("user", "name email phone avatarUrl role")
+    const [users, total] = await Promise.all([
+      User.find(userQuery)
+        .select("name email phone avatarUrl role createdAt")
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limit),
-      PatientProfile.countDocuments(query),
+        .limit(limit)
+        .lean(),
+      User.countDocuments(userQuery),
     ]);
+    const profiles = await PatientProfile.find({
+      user: { $in: users.map((user) => user._id) },
+    }).lean();
+    const profilesByUser = new Map(
+      profiles.map((profile) => [profile.user.toString(), profile]),
+    );
+    const patients = users.map((user) => {
+      const profile = profilesByUser.get(user._id.toString());
+      return {
+        _id: profile?._id || user._id,
+        user,
+        gender: profile?.gender,
+        bloodGroup: profile?.bloodGroup,
+        emergencyContactName: profile?.emergencyContactName,
+        emergencyPhone: profile?.emergencyPhone,
+        isComplete: profile?.isComplete || false,
+        createdAt: profile?.createdAt || user.createdAt,
+      };
+    });
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -179,7 +197,7 @@ export const getFacilityStats = async (
       pendingApprovals,
     ] = await Promise.all([
       User.countDocuments(),
-      PatientProfile.countDocuments({ isComplete: true }),
+      User.countDocuments({ role: UserRole.PATIENT }),
       ProfessionalProfile.countDocuments({ status: "APPROVED" }),
       Appointment.countDocuments(),
       ProfessionalProfile.countDocuments({ status: "PENDING" }),
@@ -223,7 +241,7 @@ export const getAdminOverview = async (
       revenueData,
     ] = await Promise.all([
       User.countDocuments(),
-      PatientProfile.countDocuments({ isComplete: true }),
+      User.countDocuments({ role: UserRole.PATIENT }),
       ProfessionalProfile.countDocuments({ status: "APPROVED" }),
       Appointment.countDocuments(),
       ProfessionalProfile.countDocuments({ status: "PENDING" }),

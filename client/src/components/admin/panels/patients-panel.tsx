@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { HeartPulse } from "lucide-react";
+import Link from "next/link";
 import { AdminHeader } from "../admin-header";
 import { fetchAdminPatientsApi } from "@/lib/api/admin";
 import { useAdminRealtime } from "../use-admin-realtime";
@@ -41,6 +42,14 @@ export function PatientsPanel() {
       <AdminHeader
         title="Patients"
         note="Registered profiles, contacts, and verification."
+        actions={
+          <Link
+            href="/reception/walk-ins"
+            className="mono-label border border-border/60 px-3 py-2 text-xs font-semibold transition-colors hover:bg-muted"
+          >
+            Manage walk-in appointments
+          </Link>
+        }
       />
       <div className="hairline-b px-5 py-3 sm:px-8">
         <input
@@ -126,7 +135,9 @@ export function PatientsPanel() {
                         {p.user?.name || "Anonymous Patient"}
                       </p>
                       <p className="mono-label text-[11px] text-muted-foreground">
-                        {p.user?.email}
+                        {p.user?.email?.endsWith("@healos-temp.com")
+                          ? p.user?.phone || "Reception registration"
+                          : p.user?.email}
                       </p>
                     </div>
                   </span>

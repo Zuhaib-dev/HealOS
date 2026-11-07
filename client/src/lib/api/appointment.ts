@@ -40,6 +40,8 @@ export interface AppointmentRecord {
   date: string;
   timeSlot: string;
   queueNumber?: number;
+  queueToken?: string;
+  source?: "PATIENT_PORTAL" | "RECEPTION_WALK_IN";
   arrivalTime?: string;
   slotEndTime?: string;
   reason: string;

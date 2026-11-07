@@ -8,9 +8,14 @@ import { useEffect, useState } from "react";
 import { UserPlus, Check, AlertCircle, Loader2, Printer } from "lucide-react";
 import { ActionButton } from "@/components/admin/admin-shell";
 import { registerPatientApi } from "@/lib/api/reception";
-import { fetchAvailableDoctorsApi } from "@/lib/api/appointment";
+import {
+  fetchAvailableDoctorsApi,
+  fetchDoctorAvailabilityApi,
+  type DoctorListItem,
+} from "@/lib/api/appointment";
 import { toast } from "sonner";
 import { ReceptionHeader } from "@/components/reception/reception-header";
+import { formatTime12Hour } from "@/lib/time-format";
 
 const FALLBACK_DEPARTMENTS = [
   "General Medicine",
@@ -28,7 +33,12 @@ type IssuedSlip = {
     firstName?: string;
     lastName?: string;
   };
-  appointment: { department: string };
+  appointment: {
+    department: string;
+    date: string;
+    timeSlot: string;
+    doctor?: { name?: string };
+  };
 };
 
 function Field({
@@ -131,6 +141,9 @@ export function RegistrationPanel() {
     gender: "",
     address: "",
     department: "",
+    doctorId: "",
+    timeSlot: "",
+    reason: "",
     payer: "self",
   });
 
@@ -139,11 +152,29 @@ export function RegistrationPanel() {
   const [issued, setIssued] = useState<IssuedSlip | null>(null);
   const [departments, setDepartments] =
     useState<string[]>(FALLBACK_DEPARTMENTS);
+  const [doctors, setDoctors] = useState<DoctorListItem[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<
+    Array<{ start: string; end: string }>
+  >([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  const departmentDoctors = doctors.filter(
+    (doctor) =>
+      doctor.specialization.trim().toLowerCase() ===
+      form.department.trim().toLowerCase(),
+  );
 
   useEffect(() => {
     fetchAvailableDoctorsApi()
       .then((res) => {
         if (res.success && res.doctors.length > 0) {
+          setDoctors(res.doctors);
           const depts = Array.from(
             new Set(res.doctors.map((d) => d.specialization)),
           );
@@ -157,6 +188,35 @@ export function RegistrationPanel() {
       })
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    setAvailableSlots([]);
+    if (!form.doctorId) return;
+    let active = true;
+    setSlotsLoading(true);
+    fetchDoctorAvailabilityApi(form.doctorId, today)
+      .then((res) => {
+        if (active) {
+          const slots = res.available ? res.availableSlots || [] : [];
+          setAvailableSlots(slots);
+          setForm((current) => ({
+            ...current,
+            timeSlot: slots.some((slot) => slot.start === current.timeSlot)
+              ? current.timeSlot
+              : "",
+          }));
+        }
+      })
+      .catch(() => {
+        if (active) setAvailableSlots([]);
+      })
+      .finally(() => {
+        if (active) setSlotsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [form.doctorId, today]);
 
   const clearError = (key: string) => {
     setErrors((prev) => {
@@ -175,6 +235,10 @@ export function RegistrationPanel() {
       newErrors.phone = "Enter a valid phone number";
     if (!form.gender) newErrors.gender = "Select sex";
     if (!form.department) newErrors.department = "Select a department";
+    if (!form.doctorId) newErrors.doctorId = "Select a doctor";
+    if (!form.timeSlot) newErrors.timeSlot = "Select an available time";
+    if (form.reason.trim().length < 3)
+      newErrors.reason = "Enter a short reason for the visit";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -188,7 +252,7 @@ export function RegistrationPanel() {
     setLoading(true);
     setErrors({});
     try {
-      const res = await registerPatientApi(form);
+      const res = await registerPatientApi({ ...form, date: today });
       if (res.status === "success") {
         setIssued(res.data);
         toast.success("Patient registered. Token issued.");
@@ -201,6 +265,9 @@ export function RegistrationPanel() {
           address: "",
           department: departments[0] || "General Medicine",
           payer: "self",
+          doctorId: "",
+          timeSlot: "",
+          reason: "",
         });
       }
     } catch (e: unknown) {
@@ -226,7 +293,7 @@ export function RegistrationPanel() {
     <section className="flex min-h-[calc(100vh-4rem)] flex-col pb-28 lg:pb-0">
       <ReceptionHeader
         title="New registration"
-        note="Walk-in intake. Verify photo ID, then issue an OPD token."
+        note="Register the patient, record the visit reason, choose a doctor and live appointment time, then issue the OPD token."
       />
 
       <div className="grid flex-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)]">
@@ -313,7 +380,12 @@ export function RegistrationPanel() {
                   key={d}
                   type="button"
                   onClick={() => {
-                    setForm({ ...form, department: d });
+                    setForm({
+                      ...form,
+                      department: d,
+                      doctorId: "",
+                      timeSlot: "",
+                    });
                     clearError("department");
                   }}
                   className={choiceClass(form.department === d)}
@@ -322,6 +394,86 @@ export function RegistrationPanel() {
                 </button>
               ))}
             </ChoiceRow>
+
+            <div className="max-w-2xl">
+              <label
+                htmlFor="reg-doctor"
+                className="mono-label mb-1.5 block text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+              >
+                Assigned doctor <span className="text-destructive">*</span>
+              </label>
+              <select
+                id="reg-doctor"
+                value={form.doctorId}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    doctorId: event.target.value,
+                    timeSlot: "",
+                  })
+                }
+                className="w-full border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">
+                  Choose a doctor in {form.department || "this department"}
+                </option>
+                {departmentDoctors.map((doctor) => (
+                  <option key={doctor._id} value={doctor._id}>
+                    {doctor.name} · {doctor.specialization}
+                  </option>
+                ))}
+              </select>
+              {errors.doctorId ? (
+                <p className="mt-1 text-xs text-destructive">
+                  {errors.doctorId}
+                </p>
+              ) : null}
+              {form.department && departmentDoctors.length === 0 ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  No bookable doctor is listed for this department.
+                </p>
+              ) : null}
+            </div>
+
+            <ChoiceRow
+              label={`Available times today · ${today}`}
+              required
+              error={errors.timeSlot}
+            >
+              {slotsLoading ? (
+                <span className="text-xs text-muted-foreground">
+                  Loading doctor availability…
+                </span>
+              ) : availableSlots.length ? (
+                availableSlots.map((slot) => (
+                  <button
+                    key={slot.start}
+                    type="button"
+                    aria-pressed={form.timeSlot === slot.start}
+                    onClick={() => setForm({ ...form, timeSlot: slot.start })}
+                    className={choiceClass(form.timeSlot === slot.start)}
+                  >
+                    {formatTime12Hour(slot.start)}
+                  </button>
+                ))
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  {form.doctorId
+                    ? "No future appointment times remain today."
+                    : "Select a doctor to see today's times."}
+                </span>
+              )}
+            </ChoiceRow>
+
+            <Field
+              id="reg-visit-reason"
+              label="Reason for visit"
+              required
+              value={form.reason}
+              onChange={(reason) => setForm({ ...form, reason })}
+              placeholder="Symptoms, follow-up, or consultation reason"
+              error={errors.reason}
+            />
 
             <ChoiceRow label="Payer">
               {[
@@ -356,7 +508,7 @@ export function RegistrationPanel() {
               ) : (
                 <>
                   <UserPlus className="mr-2 inline size-4" />
-                  Issue token
+                  Register & book walk-in
                 </>
               )}
             </ActionButton>
@@ -402,6 +554,15 @@ export function RegistrationPanel() {
                     </dt>
                     <dd className="mt-0.5 font-mono text-sm">
                       {issued.appointment.department}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="mono-label text-[10px] text-muted-foreground uppercase">
+                      Doctor · appointment
+                    </dt>
+                    <dd className="mt-0.5 text-sm">
+                      {issued.appointment.doctor?.name || "Assigned doctor"} ·{" "}
+                      {formatTime12Hour(issued.appointment.timeSlot)}
                     </dd>
                   </div>
                 </div>

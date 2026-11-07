@@ -7,6 +7,7 @@ import {
   getPendingBills,
   payBill,
   getReceptionOverview,
+  getWalkInAppointments,
 } from "../controllers/reception.controller.js";
 
 const router = Router();
@@ -18,6 +19,7 @@ router.get("/overview", getReceptionOverview);
 router.get("/stats", getReceptionOverview);
 router.post("/register", registerPatientAndCreateToken);
 router.get("/queue", getQueue);
+router.get("/walk-ins", getWalkInAppointments);
 router.get("/bills/pending", getPendingBills);
 router.put("/bills/:id/pay", payBill);
 

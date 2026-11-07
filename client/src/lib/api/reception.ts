@@ -44,6 +44,9 @@ export interface ReceptionOverviewData {
 export interface AppointmentRecord {
   _id: string;
   token?: string;
+  queueToken?: string;
+  source?: "PATIENT_PORTAL" | "RECEPTION_WALK_IN";
+  queueNumber?: number;
   patient?: {
     _id: string;
     name?: string;
@@ -104,6 +107,9 @@ export interface RegisterPatientPayload {
   gender?: string;
   address?: string;
   department: string;
+  doctorId: string;
+  date: string;
+  timeSlot: string;
   payer?: string;
 }
 
@@ -120,6 +126,13 @@ export const fetchQueueApi = async (): Promise<{
   data: { appointments: AppointmentRecord[] };
 }> => {
   const res = await apiClient.get("/reception/queue");
+  return res.data;
+};
+
+export const fetchWalkInAppointmentsApi = async (
+  date: string,
+): Promise<{ success: boolean; appointments: AppointmentRecord[] }> => {
+  const res = await apiClient.get(`/reception/walk-ins?date=${date}`);
   return res.data;
 };
 

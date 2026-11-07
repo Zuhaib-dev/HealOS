@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import { PatientDashboardData } from "@/lib/api/patient";
-import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
+import { DashboardInvoice } from "@/lib/api/patient";
+import { usePatientBilling } from "@/hooks/use-patient-lists";
 import { PaymentCelebration } from "../payment-celebration";
 import {
   createRazorpayOrderApi,
@@ -73,7 +73,7 @@ function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-4 py-3.5 align-middle text-sm">{children}</td>;
 }
 
-function invoicePaidAmount(invoice: PatientDashboardData["invoices"][number]) {
+function invoicePaidAmount(invoice: DashboardInvoice) {
   const recorded = Math.max(
     invoice.paidAmount || 0,
     invoice.appointment?.paidAmount || 0,
@@ -86,7 +86,7 @@ function invoicePaidAmount(invoice: PatientDashboardData["invoices"][number]) {
   return Math.max(0, recorded);
 }
 
-function invoiceBalanceDue(invoice: PatientDashboardData["invoices"][number]) {
+function invoiceBalanceDue(invoice: DashboardInvoice) {
   if (invoice.status === "CANCELLED") return 0;
   return Math.max(
     0,
@@ -99,7 +99,9 @@ function invoiceBalanceDue(invoice: PatientDashboardData["invoices"][number]) {
 /* ---------- 06 billing ---------- */
 
 export function BillingPanel() {
-  const { data, isLoading, refetch } = usePatientDashboard();
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const { data, isLoading, refetch } = usePatientBilling(page, pageSize);
 
   useEffect(() => {
     loadRazorpayScript();
@@ -197,37 +199,11 @@ export function BillingPanel() {
   };
 
   const invoiceRows = data?.invoices || [];
-  const dueInvoices = invoiceRows.filter(
-    (invoice) =>
-      invoice.status !== "CANCELLED" && invoiceBalanceDue(invoice) > 0,
-  );
-  const outstandingAmount = dueInvoices.reduce(
-    (sum, invoice) => sum + invoiceBalanceDue(invoice),
-    0,
-  );
-  const currentYear = new Date().getFullYear();
-  const paidThisYear = invoiceRows.reduce((sum, invoice) => {
-    if (invoice.paymentHistory?.length) {
-      return (
-        sum +
-        invoice.paymentHistory
-          .filter(
-            (payment) =>
-              payment.method !== "INSURANCE" &&
-              new Date(payment.paidAt).getFullYear() === currentYear,
-          )
-          .reduce((paid, payment) => paid + payment.amount, 0)
-      );
-    }
-    const paidDate = invoice.paidAt;
-    return paidDate && new Date(paidDate).getFullYear() === currentYear
-      ? sum + invoicePaidAmount(invoice)
-      : sum;
-  }, 0);
-  const insuredAmount = invoiceRows.reduce(
-    (sum, invoice) => sum + (invoice.insuranceCoverage || 0),
-    0,
-  );
+  const outstandingAmount = data?.summary.outstanding || 0;
+  const dueCount = data?.summary.dueCount || 0;
+  const paidThisYear = data?.summary.paidThisYear || 0;
+  const insuredAmount = data?.summary.insured || 0;
+  const totalPages = Math.max(1, Math.ceil((data?.total || 0) / pageSize));
 
   return (
     <section className="pb-24 lg:pb-0">
@@ -259,7 +235,7 @@ export function BillingPanel() {
           {
             label: "Outstanding",
             value: `₹${outstandingAmount}`,
-            note: `${dueInvoices.length} invoice(s) with a balance`,
+            note: `${dueCount} invoice(s) with a balance`,
           },
           {
             label: "With insurer",
@@ -701,6 +677,31 @@ export function BillingPanel() {
           </table>
         </div>
       </div>
+      {totalPages > 1 ? (
+        <div className="hairline-t flex items-center justify-center gap-3 p-4">
+          <button
+            type="button"
+            className="hairline px-3 py-2 text-xs disabled:opacity-40"
+            disabled={page <= 1 || isLoading}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            Previous
+          </button>
+          <span className="mono-label text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            className="hairline px-3 py-2 text-xs disabled:opacity-40"
+            disabled={page >= totalPages || isLoading}
+            onClick={() =>
+              setPage((current) => Math.min(totalPages, current + 1))
+            }
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
       <PaymentCelebration
         active={paymentCelebration}
         onComplete={() => setPaymentCelebration(false)}

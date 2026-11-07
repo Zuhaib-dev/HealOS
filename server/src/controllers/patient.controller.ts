@@ -32,58 +32,59 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
       throw new AppError("Patient not found", 404);
     }
 
-    // 1. Get Appointments
-    const unpaidOnlineAppointmentIds = await Appointment.find({
-      patient: patientId,
-      paymentMethod: "ONLINE",
-      paymentStatus: "PENDING_ONLINE",
-      status: "PENDING",
-    }).distinct("_id");
-    const appointments = await Appointment.find({
-      patient: patientId,
-      $nor: [{ paymentMethod: "ONLINE", paymentStatus: "PENDING_ONLINE" }],
-    })
-      .populate("doctor", "name role specialization")
-      .sort({ date: -1, timeSlot: -1 })
-      .lean();
+    // These reads are independent. Run them together to avoid stacking their
+    // database round-trip times on every dashboard load.
+    const [
+      unpaidOnlineAppointmentIds,
+      consultations,
+      diagnosticOrders,
+      diagnosticReports,
+      vitals,
+      profile,
+    ] = await Promise.all([
+      Appointment.find({
+        patient: patientId,
+        paymentMethod: "ONLINE",
+        paymentStatus: "PENDING_ONLINE",
+        status: "PENDING",
+      }).distinct("_id"),
+      Consultation.find({ patient: patientId })
+        .populate("doctor", "name role")
+        .sort({ createdAt: -1 })
+        .lean(),
+      DiagnosticOrder.find({ patient: patientId })
+        .populate("doctor", "name")
+        .sort({ createdAt: -1 })
+        .lean(),
+      DiagnosticReport.find({
+        patient: patientId,
+        state: "verified",
+      })
+        .populate("order", "testName testType")
+        .sort({ createdAt: -1 })
+        .lean(),
+      Vitals.find({ patient: patientId }).sort({ createdAt: -1 }).lean(),
+      PatientProfile.findOne({ user: patientId }).lean(),
+    ]);
 
-    // 2. Get Consultations (History & Prescriptions)
-    const consultations = await Consultation.find({ patient: patientId })
-      .populate("doctor", "name role")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // 3. Get Diagnostic Orders (Pending & Completed)
-    const diagnosticOrders = await DiagnosticOrder.find({ patient: patientId })
-      .populate("doctor", "name")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // 4. Get Diagnostic Reports
-    const diagnosticReports = await DiagnosticReport.find({
-      patient: patientId,
-      state: "verified",
-    })
-      .populate("order", "testName testType")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // 5. Get Vitals
-    const vitals = await Vitals.find({ patient: patientId })
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // 6. Get Invoices
-    const invoices = await Invoice.find({
-      patient: patientId,
-      appointment: { $nin: unpaidOnlineAppointmentIds },
-    })
-      .populate("appointment", "date timeSlot paidAmount amount")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // 7. Get Profile
-    const profile = await PatientProfile.findOne({ user: patientId }).lean();
+    // Both depend on the unpaid appointment IDs, but can run in parallel with
+    // each other once that first read completes.
+    const [appointments, invoices] = await Promise.all([
+      Appointment.find({
+        patient: patientId,
+        $nor: [{ paymentMethod: "ONLINE", paymentStatus: "PENDING_ONLINE" }],
+      })
+        .populate("doctor", "name role specialization")
+        .sort({ date: -1, timeSlot: -1 })
+        .lean(),
+      Invoice.find({
+        patient: patientId,
+        appointment: { $nin: unpaidOnlineAppointmentIds },
+      })
+        .populate("appointment", "date timeSlot paidAmount amount")
+        .sort({ createdAt: -1 })
+        .lean(),
+    ]);
 
     res.status(200).json({
       status: "success",
@@ -101,6 +102,207 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
     res.status(error.statusCode || 500).json({
       status: "error",
       message: error.message || "Failed to fetch patient dashboard",
+    });
+  }
+};
+
+export const getPatientBilling = async (req: Request, res: Response) => {
+  try {
+    const patientId = req.user?._id;
+    if (!patientId) throw new AppError("Patient not found", 404);
+
+    const page = Math.max(
+      1,
+      Number.parseInt(String(req.query.page || "1"), 10) || 1,
+    );
+    const pageSize = Math.min(
+      50,
+      Math.max(
+        1,
+        Number.parseInt(String(req.query.pageSize || "10"), 10) || 10,
+      ),
+    );
+    const unpaidOnlineAppointmentIds = await Appointment.find({
+      patient: patientId,
+      paymentMethod: "ONLINE",
+      paymentStatus: "PENDING_ONLINE",
+      status: "PENDING",
+    }).distinct("_id");
+    const filter = {
+      patient: patientId,
+      appointment: { $nin: unpaidOnlineAppointmentIds },
+    };
+
+    const [invoices, total, summaryInvoices] = await Promise.all([
+      Invoice.find(filter)
+        .populate("appointment", "date timeSlot paidAmount amount")
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((page - 1) * pageSize)
+        .limit(pageSize)
+        .lean(),
+      Invoice.countDocuments(filter),
+      Invoice.find(filter)
+        .select(
+          "totalAmount paidAmount insuranceCoverage status paymentHistory paidAt",
+        )
+        .populate("appointment", "paidAmount")
+        .lean(),
+    ]);
+
+    const year = new Date().getFullYear();
+    const summary = summaryInvoices.reduce(
+      (totals, invoice) => {
+        const recorded = Math.max(
+          invoice.paidAmount || 0,
+          (invoice.appointment as any)?.paidAmount || 0,
+        );
+        const paid =
+          invoice.status === "PAID"
+            ? Math.max(
+                recorded,
+                invoice.totalAmount - (invoice.insuranceCoverage || 0),
+              )
+            : Math.max(0, recorded);
+        if (invoice.status !== "CANCELLED") {
+          totals.outstanding += Math.max(
+            0,
+            invoice.totalAmount - (invoice.insuranceCoverage || 0) - paid,
+          );
+          if (
+            invoice.totalAmount - (invoice.insuranceCoverage || 0) - paid >
+            0
+          ) {
+            totals.dueCount += 1;
+          }
+        }
+        totals.insured += invoice.insuranceCoverage || 0;
+        if (invoice.paymentHistory?.length) {
+          totals.paidThisYear += invoice.paymentHistory
+            .filter(
+              (payment) =>
+                payment.method !== "INSURANCE" &&
+                new Date(payment.paidAt).getFullYear() === year,
+            )
+            .reduce((sum, payment) => sum + payment.amount, 0);
+        } else if (
+          invoice.paidAt &&
+          new Date(invoice.paidAt).getFullYear() === year
+        ) {
+          totals.paidThisYear += paid;
+        }
+        return totals;
+      },
+      { outstanding: 0, dueCount: 0, insured: 0, paidThisYear: 0 },
+    );
+
+    res.status(200).json({
+      status: "success",
+      data: { invoices, total, page, pageSize, summary },
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      status: "error",
+      message: error.message || "Failed to fetch patient billing",
+    });
+  }
+};
+
+export const getPatientRecords = async (req: Request, res: Response) => {
+  try {
+    const patientId = req.user?._id;
+    if (!patientId) throw new AppError("Patient not found", 404);
+
+    const page = Math.max(
+      1,
+      Number.parseInt(String(req.query.page || "1"), 10) || 1,
+    );
+    const pageSize = Math.min(
+      50,
+      Math.max(
+        1,
+        Number.parseInt(String(req.query.pageSize || "10"), 10) || 10,
+      ),
+    );
+    const offset = (page - 1) * pageSize;
+    const query = String(req.query.q || "").trim();
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const search = escapedQuery ? new RegExp(escapedQuery, "i") : null;
+    const orderFilter: Record<string, unknown> = {
+      patient: patientId,
+      status: { $ne: "REPORTED" },
+    };
+    const reportFilter: Record<string, unknown> = {
+      patient: patientId,
+      state: "verified",
+    };
+    if (search) {
+      orderFilter.$or = [{ testName: search }, { testType: search }];
+      reportFilter.$or = [
+        { title: search },
+        { fileName: search },
+        { kind: search },
+        { findings: search },
+        { uploadedBy: search },
+      ];
+    }
+
+    const fetchCount = offset + pageSize;
+    const [orders, reports, orderCount, reportCount] = await Promise.all([
+      DiagnosticOrder.find(orderFilter)
+        .populate("doctor", "name")
+        .sort({ createdAt: -1, _id: -1 })
+        .limit(fetchCount)
+        .lean(),
+      DiagnosticReport.find(reportFilter)
+        .populate("order", "testName testType")
+        .sort({ createdAt: -1, _id: -1 })
+        .limit(fetchCount)
+        .lean(),
+      DiagnosticOrder.countDocuments(orderFilter),
+      DiagnosticReport.countDocuments(reportFilter),
+    ]);
+
+    const records = [
+      ...orders.map((order) => ({
+        id: String(order._id),
+        name: order.testName,
+        kind: order.testType,
+        dept: (order.doctor as any)?.name
+          ? `Dr. ${(order.doctor as any).name}`
+          : "Doctor",
+        date: order.createdAt,
+        status: "pending",
+        flagged: false,
+        pages: 0,
+        size: "",
+        fileUrl: (order as any).fileUrl || null,
+      })),
+      ...reports.map((report) => ({
+        id: String(report._id),
+        name:
+          (report.order as any)?.testName || report.title || "Uploaded Report",
+        kind: (report.order as any)?.testType || "REPORT",
+        dept: report.uploadedBy || "Lab / Radiology",
+        date: report.createdAt,
+        status: "ready",
+        flagged: false,
+        pages: report.pages || 1,
+        size: report.fileSize || "PDF",
+        fileUrl: report.fileUrl || null,
+        reportId: String(report._id),
+      })),
+    ]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(offset, offset + pageSize);
+
+    res.status(200).json({
+      status: "success",
+      data: { records, total: orderCount + reportCount, page, pageSize },
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      status: "error",
+      message: error.message || "Failed to fetch patient records",
     });
   }
 };

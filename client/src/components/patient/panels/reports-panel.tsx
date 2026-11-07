@@ -15,7 +15,7 @@ import {
 import { PatientHeader } from "@/components/patient/patient-header";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
-import { usePatientDashboard } from "@/hooks/use-patient-dashboard";
+import { usePatientRecords } from "@/hooks/use-patient-lists";
 import { openProtectedReport } from "@/lib/api/reports";
 
 /* ---------- primitives ---------- */
@@ -54,7 +54,14 @@ function Td({ children }: { children: React.ReactNode }) {
 
 export function ReportsPanel() {
   const [q, setQ] = useState("");
-  const { data, refetch } = usePatientDashboard();
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const { data, isLoading, refetch } = usePatientRecords(
+    page,
+    pageSize,
+    debouncedQuery,
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
 
@@ -85,6 +92,14 @@ export function ReportsPanel() {
       scrollToBottom();
     }
   }, [chatMessages, isChatting]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedQuery(q.trim());
+      setPage(1);
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [q]);
 
   const handleExplainReport = async (
     name: string,
@@ -234,9 +249,6 @@ export function ReportsPanel() {
     }
   };
 
-  const orders = data?.diagnosticOrders || [];
-  const reports = data?.diagnosticReports || [];
-
   const getFullFileUrl = (url: string | null | undefined) => {
     if (!url) return null;
     if (url.startsWith("http")) return url;
@@ -246,55 +258,14 @@ export function ReportsPanel() {
     return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
   };
 
-  const allRecords: {
-    id: string;
-    name: string;
-    kind: string;
-    dept: string;
-    date: string;
-    status: string;
-    flagged: boolean;
-    pages: number;
-    size: string;
-    fileUrl: string | null;
-    reportId?: string;
-  }[] = [
-    ...orders
-      .filter((o: any) => o.status !== "REPORTED")
-      .map((o: any) => ({
-        id: o._id,
-        name: o.testName,
-        kind: o.testType,
-        dept: o.doctor?.name ? `Dr. ${o.doctor.name}` : "Doctor",
-        date: o.createdAt
-          ? new Date(o.createdAt).toISOString().split("T")[0]
-          : "N/A",
-        status: "pending",
-        flagged: false,
-        pages: 0,
-        size: "",
-        fileUrl: getFullFileUrl(o.fileUrl),
-      })),
-    ...reports.map((r: any) => ({
-      id: r._id,
-      name: r.order?.testName || r.title || "Uploaded Report",
-      kind: r.order?.testType || "REPORT",
-      dept: r.uploadedBy?.name ? r.uploadedBy.name : "Lab / Radiology",
-      date: r.createdAt
-        ? new Date(r.createdAt).toISOString().split("T")[0]
-        : "N/A",
-      status: "ready",
-      flagged: false, // We could add logic for flags later
-      pages: 1,
-      size: "PDF",
-      fileUrl: getFullFileUrl(r.fileUrl),
-      reportId: String(r._id),
-    })),
-  ];
-
-  const rows = allRecords.filter((r) =>
-    `${r.name} ${r.kind} ${r.dept}`.toLowerCase().includes(q.toLowerCase()),
-  );
+  const rows = (data?.records || []).map((record) => ({
+    ...record,
+    date: record.date
+      ? new Date(record.date).toISOString().split("T")[0]
+      : "N/A",
+    fileUrl: getFullFileUrl(record.fileUrl),
+  }));
+  const totalPages = Math.max(1, Math.ceil((data?.total || 0) / pageSize));
 
   return (
     <section className="pb-24 lg:pb-0">
@@ -317,12 +288,14 @@ export function ReportsPanel() {
           className="hairline mono-label placeholder:text-muted-foreground w-full max-w-sm bg-transparent px-3 py-2.5 outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-sm"
         />
         <span className="mono-label text-muted-foreground">
-          {rows.length} records found
+          {data?.total || 0} records found
         </span>
       </div>
 
       <div className="space-y-3 p-4 lg:hidden">
-        {rows.length === 0 ? (
+        {isLoading ? (
+          <div className="h-32 animate-pulse bg-foreground/4" />
+        ) : rows.length === 0 ? (
           <p className="border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
             No records found.
           </p>
@@ -412,7 +385,16 @@ export function ReportsPanel() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="p-10 text-center text-sm text-muted-foreground"
+                >
+                  Loading records…
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
               <tr>
                 <td colSpan={6} className="p-16 text-center">
                   <div className="flex flex-col items-center justify-center gap-3">
@@ -546,6 +528,32 @@ export function ReportsPanel() {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 ? (
+        <div className="hairline-t flex items-center justify-center gap-3 p-4">
+          <button
+            type="button"
+            className="hairline px-3 py-2 text-xs disabled:opacity-40"
+            disabled={page <= 1 || isLoading}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            Previous
+          </button>
+          <span className="mono-label text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            className="hairline px-3 py-2 text-xs disabled:opacity-40"
+            disabled={page >= totalPages || isLoading}
+            onClick={() =>
+              setPage((current) => Math.min(totalPages, current + 1))
+            }
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
 
       <div className="hairline-t p-5 sm:p-8">
         <div className="hairline flex flex-wrap items-center gap-4 p-5">

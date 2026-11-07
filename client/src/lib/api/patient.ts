@@ -77,11 +77,65 @@ export interface PatientDashboardData {
   invoices: DashboardInvoice[];
 }
 
+export interface PatientBillingData {
+  invoices: DashboardInvoice[];
+  total: number;
+  page: number;
+  pageSize: number;
+  summary: {
+    outstanding: number;
+    dueCount: number;
+    insured: number;
+    paidThisYear: number;
+  };
+}
+
+export interface PatientRecord {
+  id: string;
+  name: string;
+  kind: string;
+  dept: string;
+  date: string;
+  status: "pending" | "ready";
+  flagged: boolean;
+  pages: number;
+  size: string;
+  fileUrl: string | null;
+  reportId?: string;
+}
+
+export interface PatientRecordsData {
+  records: PatientRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export const fetchPatientDashboardApi = async () => {
   const response = await apiClient.get<{
     status: string;
     data: PatientDashboardData;
   }>("/patient/dashboard");
+  return response.data.data;
+};
+
+export const fetchPatientBillingApi = async (page: number, pageSize = 10) => {
+  const response = await apiClient.get<{
+    status: string;
+    data: PatientBillingData;
+  }>("/patient/billing", { params: { page, pageSize } });
+  return response.data.data;
+};
+
+export const fetchPatientRecordsApi = async (
+  page: number,
+  pageSize = 10,
+  query = "",
+) => {
+  const response = await apiClient.get<{
+    status: string;
+    data: PatientRecordsData;
+  }>("/patient/records", { params: { page, pageSize, q: query } });
   return response.data.data;
 };
 

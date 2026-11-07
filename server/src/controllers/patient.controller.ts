@@ -32,6 +32,60 @@ export const getPatientDashboard = async (req: Request, res: Response) => {
       throw new AppError("Patient not found", 404);
     }
 
+    const view = String(req.query.view || "full");
+    if (["overview", "appointments", "medications"].includes(view)) {
+      const [appointments, consultations, vitals, profile] = await Promise.all([
+        view === "medications"
+          ? Promise.resolve([])
+          : Appointment.find({
+              patient: patientId,
+              $nor: [
+                { paymentMethod: "ONLINE", paymentStatus: "PENDING_ONLINE" },
+              ],
+            })
+              .select(
+                "doctor date timeSlot status type reason department slotEndTime arrivalTime queueNumber paidAmount amount",
+              )
+              .populate("doctor", "name role specialization")
+              .sort({ date: -1, timeSlot: -1 })
+              .lean(),
+        Consultation.find({ patient: patientId })
+          .select(
+            view === "medications"
+              ? "doctor medicines createdAt"
+              : "doctor diagnosis chiefComplaint followUpDate appointment medicines createdAt",
+          )
+          .populate("doctor", "name role")
+          .sort({ createdAt: -1 })
+          .lean(),
+        view === "overview"
+          ? Vitals.find({ patient: patientId })
+              .select(
+                "bloodPressure heartRate temperature respiratoryRate spO2 createdAt",
+              )
+              .sort({ createdAt: -1 })
+              .lean()
+          : Promise.resolve([]),
+        view === "overview"
+          ? PatientProfile.findOne({ user: patientId }).lean()
+          : Promise.resolve(null),
+      ]);
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          profile,
+          appointments,
+          consultations,
+          diagnosticOrders: [],
+          diagnosticReports: [],
+          vitals,
+          invoices: [],
+        },
+      });
+      return;
+    }
+
     // These reads are independent. Run them together to avoid stacking their
     // database round-trip times on every dashboard load.
     const [
@@ -133,7 +187,11 @@ export const getPatientBilling = async (req: Request, res: Response) => {
       appointment: { $nin: unpaidOnlineAppointmentIds },
     };
 
-    const [invoices, total, summaryInvoices] = await Promise.all([
+    const year = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+    }).format(new Date());
+    const [invoices, total, summaryRows] = await Promise.all([
       Invoice.find(filter)
         .populate("appointment", "date timeSlot paidAmount amount")
         .sort({ createdAt: -1, _id: -1 })
@@ -141,59 +199,159 @@ export const getPatientBilling = async (req: Request, res: Response) => {
         .limit(pageSize)
         .lean(),
       Invoice.countDocuments(filter),
-      Invoice.find(filter)
-        .select(
-          "totalAmount paidAmount insuranceCoverage status paymentHistory paidAt",
-        )
-        .populate("appointment", "paidAmount")
-        .lean(),
+      Invoice.aggregate([
+        { $match: filter },
+        {
+          $lookup: {
+            from: "appointments",
+            localField: "appointment",
+            foreignField: "_id",
+            pipeline: [{ $project: { paidAmount: 1 } }],
+            as: "appointmentInfo",
+          },
+        },
+        {
+          $addFields: {
+            insurance: { $ifNull: ["$insuranceCoverage", 0] },
+            recordedPaid: {
+              $max: [
+                { $ifNull: ["$paidAmount", 0] },
+                {
+                  $ifNull: [
+                    { $arrayElemAt: ["$appointmentInfo.paidAmount", 0] },
+                    0,
+                  ],
+                },
+              ],
+            },
+            hasPaymentHistory: {
+              $gt: [{ $size: { $ifNull: ["$paymentHistory", []] } }, 0],
+            },
+          },
+        },
+        {
+          $addFields: {
+            paidEffective: {
+              $cond: [
+                { $eq: ["$status", "PAID"] },
+                {
+                  $max: [
+                    "$recordedPaid",
+                    { $subtract: ["$totalAmount", "$insurance"] },
+                  ],
+                },
+                { $max: [0, "$recordedPaid"] },
+              ],
+            },
+            paymentsThisYear: {
+              $filter: {
+                input: { $ifNull: ["$paymentHistory", []] },
+                as: "payment",
+                cond: {
+                  $and: [
+                    { $ne: ["$$payment.method", "INSURANCE"] },
+                    {
+                      $eq: [
+                        {
+                          $dateToString: {
+                            date: "$$payment.paidAt",
+                            format: "%Y",
+                            timezone: "Asia/Kolkata",
+                          },
+                        },
+                        year,
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            outstanding: {
+              $sum: {
+                $cond: [
+                  { $ne: ["$status", "CANCELLED"] },
+                  {
+                    $max: [
+                      0,
+                      {
+                        $subtract: [
+                          { $subtract: ["$totalAmount", "$insurance"] },
+                          "$paidEffective",
+                        ],
+                      },
+                    ],
+                  },
+                  0,
+                ],
+              },
+            },
+            dueCount: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $ne: ["$status", "CANCELLED"] },
+                      {
+                        $gt: [
+                          {
+                            $subtract: [
+                              { $subtract: ["$totalAmount", "$insurance"] },
+                              "$paidEffective",
+                            ],
+                          },
+                          0,
+                        ],
+                      },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+            insured: { $sum: "$insurance" },
+            paidThisYear: {
+              $sum: {
+                $cond: [
+                  "$hasPaymentHistory",
+                  { $sum: "$paymentsThisYear.amount" },
+                  {
+                    $cond: [
+                      {
+                        $eq: [
+                          {
+                            $dateToString: {
+                              date: "$paidAt",
+                              format: "%Y",
+                              timezone: "Asia/Kolkata",
+                            },
+                          },
+                          year,
+                        ],
+                      },
+                      "$paidEffective",
+                      0,
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ]),
     ]);
 
-    const year = new Date().getFullYear();
-    const summary = summaryInvoices.reduce(
-      (totals, invoice) => {
-        const recorded = Math.max(
-          invoice.paidAmount || 0,
-          (invoice.appointment as any)?.paidAmount || 0,
-        );
-        const paid =
-          invoice.status === "PAID"
-            ? Math.max(
-                recorded,
-                invoice.totalAmount - (invoice.insuranceCoverage || 0),
-              )
-            : Math.max(0, recorded);
-        if (invoice.status !== "CANCELLED") {
-          totals.outstanding += Math.max(
-            0,
-            invoice.totalAmount - (invoice.insuranceCoverage || 0) - paid,
-          );
-          if (
-            invoice.totalAmount - (invoice.insuranceCoverage || 0) - paid >
-            0
-          ) {
-            totals.dueCount += 1;
-          }
-        }
-        totals.insured += invoice.insuranceCoverage || 0;
-        if (invoice.paymentHistory?.length) {
-          totals.paidThisYear += invoice.paymentHistory
-            .filter(
-              (payment) =>
-                payment.method !== "INSURANCE" &&
-                new Date(payment.paidAt).getFullYear() === year,
-            )
-            .reduce((sum, payment) => sum + payment.amount, 0);
-        } else if (
-          invoice.paidAt &&
-          new Date(invoice.paidAt).getFullYear() === year
-        ) {
-          totals.paidThisYear += paid;
-        }
-        return totals;
-      },
-      { outstanding: 0, dueCount: 0, insured: 0, paidThisYear: 0 },
-    );
+    const summary = summaryRows[0] || {
+      outstanding: 0,
+      dueCount: 0,
+      insured: 0,
+      paidThisYear: 0,
+    };
 
     res.status(200).json({
       status: "success",

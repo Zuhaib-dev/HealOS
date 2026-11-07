@@ -142,7 +142,7 @@ export default function ReceptionOverview() {
           </button>
           <Link
             href="/reception/new"
-            prefetch
+            prefetch={false}
             className="inline-flex items-center gap-2 bg-accent px-3 py-2 font-mono text-xs font-bold text-background transition-colors hover:bg-accent/90"
           >
             <UserPlus className="size-3.5" />
@@ -192,7 +192,7 @@ export default function ReceptionOverview() {
       <div className="mt-4 grid grid-cols-1 gap-px bg-border/60 sm:grid-cols-3">
         <Link
           href="/reception/new"
-          prefetch
+          prefetch={false}
           className="flex items-center gap-3 bg-background px-4 py-3 transition-colors hover:bg-foreground/3"
         >
           <UserPlus className="size-4 text-accent" />
@@ -206,7 +206,7 @@ export default function ReceptionOverview() {
         </Link>
         <Link
           href="/reception/queue"
-          prefetch
+          prefetch={false}
           className="flex items-center gap-3 bg-background px-4 py-3 transition-colors hover:bg-foreground/3"
         >
           <Users className="size-4 text-accent" />
@@ -220,7 +220,7 @@ export default function ReceptionOverview() {
         </Link>
         <Link
           href="/reception/counter"
-          prefetch
+          prefetch={false}
           className="flex items-center gap-3 bg-background px-4 py-3 transition-colors hover:bg-foreground/3"
         >
           <Monitor className="size-4 text-accent" />
@@ -242,7 +242,7 @@ export default function ReceptionOverview() {
           </div>
           <Link
             href="/reception/queue"
-            prefetch
+            prefetch={false}
             className="mono-label inline-flex shrink-0 items-center gap-1 text-[10px] font-medium transition-colors hover:text-accent"
           >
             Full queue <ArrowRight className="size-3" />

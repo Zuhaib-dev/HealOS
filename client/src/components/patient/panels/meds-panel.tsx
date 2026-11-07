@@ -23,7 +23,7 @@ function Pill({
 }
 
 export function MedsPanel() {
-  const { data, isLoading } = usePatientDashboard();
+  const { data, isLoading } = usePatientDashboard("medications");
 
   const parseDurationDays = (dur: string) => {
     if (!dur) return 30;

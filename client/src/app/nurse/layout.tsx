@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   ClipboardList,
   Pill,
@@ -28,28 +26,11 @@ const sections = [
   },
 ];
 
-const prefetchRoutes = [
-  "/nurse",
-  "/nurse/emar",
-  "/nurse/wounds",
-  "/nurse/fluids",
-  "/nurse/bells",
-  "/nurse/handover",
-];
-
 export default function WorkspaceLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-
-  useEffect(() => {
-    prefetchRoutes.forEach((href) => {
-      router.prefetch(href);
-    });
-  }, [router]);
-
   return (
     <RoleGuard allowedRoles={["NURSE"]}>
       <WorkspaceShell

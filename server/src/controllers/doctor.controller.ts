@@ -504,37 +504,37 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
     // Count today's appointments
     const today = getClinicDateKey();
-    const appointmentsToday = await Appointment.countDocuments({
-      doctor: doctorId,
-      date: today,
-    });
-
-    // Count active patients (unique patients with appointments in last 30 days)
-    const activePatients = await Appointment.distinct("patient", {
-      doctor: doctorId,
-    });
-
     const todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
-    const followUpsCount = await Consultation.countDocuments({
-      doctor: doctorId,
-      followUpDate: { $gte: todayDate },
-    });
-
-    const resultOrderIds = await DiagnosticOrder.find({
-      doctor: doctorId,
-      status: "REPORTED",
-    }).distinct("_id");
+    const [
+      appointmentsToday,
+      activePatients,
+      followUpsCount,
+      resultOrderIds,
+      shift,
+    ] = await Promise.all([
+      Appointment.countDocuments({ doctor: doctorId, date: today }),
+      Appointment.distinct("patient", { doctor: doctorId }),
+      Consultation.countDocuments({
+        doctor: doctorId,
+        followUpDate: { $gte: todayDate },
+      }),
+      DiagnosticOrder.find({
+        doctor: doctorId,
+        status: "REPORTED",
+      }).distinct("_id"),
+      Schedule.findOne({
+        user: doctorId,
+        date: today,
+        shiftType: { $in: ["REGULAR", "ON_CALL"] },
+      })
+        .sort({ startTime: 1 })
+        .lean(),
+    ]);
     const resultsAwaiting = await DiagnosticReport.countDocuments({
       order: { $in: resultOrderIds },
       state: "pending sign",
     });
-
-    const shift = await Schedule.findOne({
-      user: doctorId,
-      date: today,
-      shiftType: { $in: ["REGULAR", "ON_CALL"] },
-    }).sort({ startTime: 1 });
     let elapsedMinutes = 0;
     if (shift) {
       const toMinutes = (value: string) => {
@@ -571,23 +571,22 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 export const getAssignedPatients = async (req: Request, res: Response) => {
   try {
     const doctorId = req.user?._id;
-    const patientIds = await Appointment.distinct("patient", {
-      doctor: doctorId,
-    });
-    const patients = await User.find({ _id: { $in: patientIds } })
-      .select("name email phone avatarUrl")
-      .lean();
-
     const todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
     const tomorrowDate = new Date(todayDate);
     tomorrowDate.setDate(tomorrowDate.getDate() + 1);
 
-    const followUpConsults = await Consultation.find({
-      doctor: doctorId,
-      followUpDate: { $gte: todayDate, $lt: tomorrowDate },
-    })
-      .populate("patient", "name email phone avatarUrl")
+    const [patientIds, followUpConsults] = await Promise.all([
+      Appointment.distinct("patient", { doctor: doctorId }),
+      Consultation.find({
+        doctor: doctorId,
+        followUpDate: { $gte: todayDate, $lt: tomorrowDate },
+      })
+        .populate("patient", "name email phone avatarUrl")
+        .lean(),
+    ]);
+    const patients = await User.find({ _id: { $in: patientIds } })
+      .select("name email phone avatarUrl")
       .lean();
 
     const todayFollowUps = followUpConsults.map((c) => c.patient);

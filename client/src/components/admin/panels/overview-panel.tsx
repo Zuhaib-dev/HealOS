@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   AreaChart,
@@ -28,18 +28,9 @@ import { useAuthStore } from "@/store/use-auth-store";
 import { ActionButton } from "../admin-shell";
 import { AdminHeader } from "../admin-header";
 import {
-  AdminAuditLogData,
-  AdminInventoryData,
-  AdminInvoiceData,
-  AdminStaffData,
+  AdminOverviewData,
   AdminWardData,
-  FacilityStatsData,
-  fetchAdminAuditLogsApi,
-  fetchAdminInventoryApi,
-  fetchAdminInvoicesApi,
-  fetchAdminStaffApi,
-  fetchAdminWardsApi,
-  fetchFacilityStatsApi,
+  fetchAdminOverviewApi,
 } from "@/lib/api/admin";
 import { useAdminRealtime } from "../use-admin-realtime";
 
@@ -63,41 +54,8 @@ function Metric({
   );
 }
 
-function RevenueChart({ invoices }: { invoices: AdminInvoiceData[] }) {
-  const revenueData = useMemo(() => {
-    const grouped: Record<string, number> = {};
-    invoices.forEach((invoice) => {
-      const transactions = invoice.paymentHistory?.length
-        ? invoice.paymentHistory
-        : invoice.status === "PAID"
-          ? [
-              {
-                amount:
-                  invoice.paidAmount ||
-                  Math.max(
-                    0,
-                    invoice.totalAmount - (invoice.insuranceCoverage || 0),
-                  ),
-                paidAt: invoice.createdAt,
-              },
-            ]
-          : [];
-      transactions.forEach((payment) => {
-        const dateKey = new Date(payment.paidAt).toISOString().slice(0, 10);
-        grouped[dateKey] = (grouped[dateKey] || 0) + payment.amount;
-      });
-    });
-    const data = Object.entries(grouped)
-      .sort(([first], [second]) => first.localeCompare(second))
-      .map(([dateKey, total]) => ({
-        date: new Date(`${dateKey}T12:00:00`).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        }),
-        total,
-      }));
-    return data.length > 0 ? data : [{ date: "No data", total: 0 }];
-  }, [invoices]);
+function RevenueChart({ data }: { data: { date: string; total: number }[] }) {
+  const revenueData = data.length > 0 ? data : [{ date: "No data", total: 0 }];
 
   const max = Math.max(...revenueData.map((d) => d.total));
 
@@ -271,39 +229,14 @@ function OccupancyGauge({ wards }: { wards: AdminWardData[] }) {
 
 export function OverviewPanel() {
   const { user } = useAuthStore();
-  const [stats, setStats] = useState<FacilityStatsData | null>(null);
-  const [wards, setWards] = useState<AdminWardData[]>([]);
-  const [staff, setStaff] = useState<AdminStaffData[]>([]);
-  const [invoices, setInvoices] = useState<AdminInvoiceData[]>([]);
-  const [inventory, setInventory] = useState<AdminInventoryData[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AdminAuditLogData[]>([]);
+  const [overview, setOverview] = useState<AdminOverviewData | null>(null);
 
   const loadOverview = useCallback(async () => {
     try {
-      const [
-        statsRes,
-        wardsRes,
-        staffRes,
-        invoicesRes,
-        inventoryRes,
-        auditRes,
-      ] = await Promise.all([
-        fetchFacilityStatsApi(),
-        fetchAdminWardsApi(),
-        fetchAdminStaffApi(),
-        fetchAdminInvoicesApi(),
-        fetchAdminInventoryApi(),
-        fetchAdminAuditLogsApi(),
-      ]);
-
-      if (statsRes.success && statsRes.stats) setStats(statsRes.stats);
-      if (wardsRes.success && wardsRes.wards) setWards(wardsRes.wards);
-      if (staffRes.success && staffRes.staff) setStaff(staffRes.staff);
-      if (invoicesRes.success && invoicesRes.invoices)
-        setInvoices(invoicesRes.invoices);
-      if (inventoryRes.success && inventoryRes.inventory)
-        setInventory(inventoryRes.inventory);
-      if (auditRes.success && auditRes.logs) setAuditLogs(auditRes.logs);
+      const response = await fetchAdminOverviewApi();
+      if (response.success && response.overview) {
+        setOverview(response.overview);
+      }
     } catch {
       console.error("Failed to load facility overview");
     }
@@ -328,24 +261,21 @@ export function OverviewPanel() {
     loadOverview,
   );
 
-  const overdueInvoices = invoices.filter(
-    (invoice) => invoice.status === "OVERDUE" || invoice.status === "FAILED",
+  const stats = overview?.stats;
+  const wards = overview?.wards || [];
+  const overdueInvoices = overview?.overdueInvoices || 0;
+  const lowStock = overview?.lowStock || 0;
+  const criticalAudit = overview?.criticalAudit || 0;
+  const revenueData = (overview?.revenueData || []).map(
+    ({ dateKey, total }) => ({
+      date: new Date(`${dateKey}T12:00:00`).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      total,
+    }),
   );
-  const lowStock = inventory.filter(
-    (item) => item.currentStock < item.reorderThreshold,
-  );
-  const criticalAudit = auditLogs.filter((log) => log.level === "crit");
-  const departmentLoad = Object.values(
-    staff.reduce<
-      Record<string, { label: string; total: number; approved: number }>
-    >((acc, member) => {
-      const label = member.department || "General";
-      acc[label] ||= { label, total: 0, approved: 0 };
-      acc[label].total += 1;
-      if (member.status === "APPROVED") acc[label].approved += 1;
-      return acc;
-    }, {}),
-  ).map((dept) => ({
+  const departmentLoad = (overview?.staffDepartments || []).map((dept) => ({
     label: dept.label,
     value: dept.total > 0 ? Math.round((dept.approved / dept.total) * 100) : 0,
   }));
@@ -381,7 +311,7 @@ export function OverviewPanel() {
       </div>
 
       <div className="hairline-b grid lg:grid-cols-[1.6fr_1fr]">
-        <RevenueChart invoices={invoices} />
+        <RevenueChart data={revenueData} />
         <OccupancyGauge wards={wards} />
       </div>
 
@@ -396,15 +326,9 @@ export function OverviewPanel() {
                 `${stats?.pendingApprovals || 0} clinician credentials`,
                 "awaiting verification",
               ],
-              [`${overdueInvoices.length} invoice alerts`, "failed or overdue"],
-              [
-                `${criticalAudit.length} security incidents`,
-                "critical audit level",
-              ],
-              [
-                `${lowStock.length} supplies below reorder`,
-                "inventory threshold",
-              ],
+              [`${overdueInvoices} invoice alerts`, "failed or overdue"],
+              [`${criticalAudit} security incidents`, "critical audit level"],
+              [`${lowStock} supplies below reorder`, "inventory threshold"],
             ].map(([a, b]) => (
               <li
                 key={a}

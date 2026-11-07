@@ -6,10 +6,10 @@
  * audience: hospital admins · use: see facility load and act on queues
  */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Activity,
   BedDouble,
@@ -92,22 +92,11 @@ const moreMobileTabs = sections
   .map((s) => s.id)
   .filter((id) => !(mainMobileTabs as readonly string[]).includes(id));
 
-const prefetchRoutes = [
-  "/admin",
-  ...sections.filter((s) => s.id !== "overview").map((s) => `/admin/${s.id}`),
-];
-
 export function AdminShell({ children }: { children: ReactNode }) {
   const { user } = useAuthStore();
   const { isSidebarCollapsed, toggleSidebar } = useUIStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
-
-  useEffect(() => {
-    prefetchRoutes.forEach((href) => router.prefetch(href));
-  }, [router]);
-
   const isSectionActive = (id: string) =>
     id === "overview"
       ? pathname === "/admin"
@@ -174,7 +163,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 <Link
                   key={s.id}
                   href={href}
-                  prefetch
+                  prefetch={false}
                   title={isSidebarCollapsed ? s.label : undefined}
                   className={`mono-label group relative flex items-center text-left transition-colors ${
                     isSidebarCollapsed
@@ -266,7 +255,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 <Link
                   key={s.id}
                   href={href}
-                  prefetch
+                  prefetch={false}
                   onClick={() => setIsMoreOpen(false)}
                   className="tap-highlight-transparent group relative flex min-w-0 flex-1 flex-col items-center justify-center px-0.5 py-1 outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                 >

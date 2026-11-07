@@ -8,14 +8,16 @@ import { getSocket } from "../lib/socket";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/use-auth-store";
 
-export const usePatientDashboard = () => {
+export const usePatientDashboard = (
+  view?: "overview" | "appointments" | "medications",
+) => {
   const queryClient = useQueryClient();
   const patientId = useAuthStore((state) => state.user?.id);
 
   const query = useQuery<PatientDashboardData>({
     // Keep patient records isolated when different accounts use the same tab.
-    queryKey: ["patient-dashboard", patientId],
-    queryFn: fetchPatientDashboardApi,
+    queryKey: ["patient-dashboard", patientId, view || "full"],
+    queryFn: () => fetchPatientDashboardApi(view),
     enabled: Boolean(patientId),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

@@ -4,6 +4,10 @@ import { User, UserRole } from "../models/user.model.js";
 import { PatientProfile } from "../models/patient-profile.model.js";
 import { ProfessionalProfile } from "../models/professional-profile.model.js";
 import { Appointment } from "../models/appointment.model.js";
+import { Invoice } from "../models/invoice.model.js";
+import { Ward } from "../models/ward.model.js";
+import { Inventory } from "../models/inventory.model.js";
+import { AuditLog } from "../models/audit-log.model.js";
 import { emitAdminDataChanged, emitUserRoleUpdated, getIO } from "../socket.js";
 import { logAudit } from "../utils/audit.js";
 import { z } from "zod";
@@ -167,17 +171,19 @@ export const getFacilityStats = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const totalUsers = await User.countDocuments();
-    const totalPatients = await PatientProfile.countDocuments({
-      isComplete: true,
-    });
-    const totalClinicians = await ProfessionalProfile.countDocuments({
-      status: "APPROVED",
-    });
-    const totalAppointments = await Appointment.countDocuments();
-    const pendingApprovals = await ProfessionalProfile.countDocuments({
-      status: "PENDING",
-    });
+    const [
+      totalUsers,
+      totalPatients,
+      totalClinicians,
+      totalAppointments,
+      pendingApprovals,
+    ] = await Promise.all([
+      User.countDocuments(),
+      PatientProfile.countDocuments({ isComplete: true }),
+      ProfessionalProfile.countDocuments({ status: "APPROVED" }),
+      Appointment.countDocuments(),
+      ProfessionalProfile.countDocuments({ status: "PENDING" }),
+    ]);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -194,6 +200,145 @@ export const getFacilityStats = async (
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Server error fetching facility stats",
+    });
+  }
+};
+
+export const getAdminOverview = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const [
+      totalUsers,
+      totalPatients,
+      totalClinicians,
+      totalAppointments,
+      pendingApprovals,
+      wards,
+      staffDepartments,
+      overdueInvoices,
+      lowStock,
+      criticalAudit,
+      revenueData,
+    ] = await Promise.all([
+      User.countDocuments(),
+      PatientProfile.countDocuments({ isComplete: true }),
+      ProfessionalProfile.countDocuments({ status: "APPROVED" }),
+      Appointment.countDocuments(),
+      ProfessionalProfile.countDocuments({ status: "PENDING" }),
+      Ward.find()
+        .select("name code capacity currentOccupancy department")
+        .lean(),
+      ProfessionalProfile.aggregate([
+        {
+          $group: {
+            _id: { $ifNull: ["$department", "General"] },
+            total: { $sum: 1 },
+            approved: {
+              $sum: { $cond: [{ $eq: ["$status", "APPROVED"] }, 1, 0] },
+            },
+          },
+        },
+        { $project: { _id: 0, label: "$_id", total: 1, approved: 1 } },
+        { $sort: { label: 1 } },
+      ]),
+      Invoice.countDocuments({ status: { $in: ["OVERDUE", "FAILED"] } }),
+      Inventory.countDocuments({
+        $expr: { $lt: ["$currentStock", "$reorderThreshold"] },
+      }),
+      AuditLog.countDocuments({ level: "crit" }),
+      Invoice.aggregate([
+        {
+          $addFields: {
+            normalizedPayments: {
+              $cond: [
+                {
+                  $gt: [{ $size: { $ifNull: ["$paymentHistory", []] } }, 0],
+                },
+                {
+                  $map: {
+                    input: "$paymentHistory",
+                    as: "payment",
+                    in: {
+                      amount: "$$payment.amount",
+                      paidAt: "$$payment.paidAt",
+                    },
+                  },
+                },
+                {
+                  $cond: [
+                    { $eq: ["$status", "PAID"] },
+                    [
+                      {
+                        amount: {
+                          $cond: [
+                            { $gt: [{ $ifNull: ["$paidAmount", 0] }, 0] },
+                            "$paidAmount",
+                            {
+                              $max: [
+                                0,
+                                {
+                                  $subtract: [
+                                    "$totalAmount",
+                                    { $ifNull: ["$insuranceCoverage", 0] },
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                        paidAt: { $ifNull: ["$paidAt", "$createdAt"] },
+                      },
+                    ],
+                    [],
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        { $unwind: "$normalizedPayments" },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                date: "$normalizedPayments.paidAt",
+                format: "%Y-%m-%d",
+                timezone: "Asia/Kolkata",
+              },
+            },
+            total: { $sum: "$normalizedPayments.amount" },
+          },
+        },
+        { $sort: { _id: 1 } },
+        { $project: { _id: 0, dateKey: "$_id", total: 1 } },
+      ]),
+    ]);
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      overview: {
+        stats: {
+          totalUsers,
+          totalPatients,
+          totalClinicians,
+          totalAppointments,
+          pendingApprovals,
+        },
+        wards,
+        staffDepartments,
+        overdueInvoices,
+        lowStock,
+        criticalAudit,
+        revenueData,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getAdminOverview:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Server error fetching admin overview",
     });
   }
 };

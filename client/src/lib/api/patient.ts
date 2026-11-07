@@ -111,11 +111,13 @@ export interface PatientRecordsData {
   pageSize: number;
 }
 
-export const fetchPatientDashboardApi = async () => {
+export const fetchPatientDashboardApi = async (
+  view?: "overview" | "appointments" | "medications",
+) => {
   const response = await apiClient.get<{
     status: string;
     data: PatientDashboardData;
-  }>("/patient/dashboard");
+  }>("/patient/dashboard", { params: view ? { view } : undefined });
   return response.data.data;
 };
 

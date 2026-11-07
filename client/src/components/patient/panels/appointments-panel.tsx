@@ -28,7 +28,7 @@ export function AppointmentsPanel() {
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
   const [page, setPage] = useState(1);
   const limit = 6;
-  const { data, isLoading, refetch } = usePatientDashboard();
+  const { data, isLoading, refetch } = usePatientDashboard("appointments");
   const [selectedConsultation, setSelectedConsultation] =
     useState<DashboardConsultation | null>(null);
   const [activeVideoCallId, setActiveVideoCallId] = useState<string | null>(

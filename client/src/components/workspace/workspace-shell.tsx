@@ -132,6 +132,7 @@ export function WorkspaceShell({
                 <Link
                   key={s.id}
                   href={href}
+                  prefetch={false}
                   title={isSidebarCollapsed ? s.label : undefined}
                   className={`mono-label group relative flex items-center ${isSidebarCollapsed ? "justify-center px-0 py-3" : "gap-3 px-3 py-2.5"} text-left transition-colors ${
                     isActive
@@ -218,6 +219,7 @@ export function WorkspaceShell({
               <Link
                 key={s.id}
                 href={href}
+                prefetch={false}
                 onClick={() => setIsMoreOpen(false)}
                 className="relative flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 transition-all outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded-lg group tap-highlight-transparent"
               >
@@ -305,6 +307,7 @@ export function WorkspaceShell({
                       <Link
                         key={s.id}
                         href={href}
+                        prefetch={false}
                         onClick={() => setIsMoreOpen(false)}
                         className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
                           isActive

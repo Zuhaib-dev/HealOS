@@ -49,6 +49,24 @@ export interface FacilityStatsData {
   pendingApprovals: number;
 }
 
+export interface AdminOverviewData {
+  stats: FacilityStatsData;
+  wards: AdminWardData[];
+  staffDepartments: { label: string; total: number; approved: number }[];
+  overdueInvoices: number;
+  lowStock: number;
+  criticalAudit: number;
+  revenueData: { dateKey: string; total: number }[];
+}
+
+export async function fetchAdminOverviewApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    overview: AdminOverviewData;
+  }>("/admin/overview");
+  return response.data;
+}
+
 /**
  * Fetch all registered users
  */

@@ -5,6 +5,7 @@ import {
   getAllUsers,
   getAllPatients,
   getFacilityStats,
+  getAdminOverview,
   updateUserRole,
   getStaff,
   getSchedule,
@@ -36,6 +37,7 @@ adminRouter.get("/users", getAllUsers);
 adminRouter.patch("/users/:id/role", updateUserRole);
 adminRouter.get("/patients", getAllPatients);
 adminRouter.get("/stats", getFacilityStats);
+adminRouter.get("/overview", getAdminOverview);
 adminRouter.get("/staff", getStaff);
 adminRouter.get("/roles", getRoles);
 adminRouter.get("/schedule", getSchedule);

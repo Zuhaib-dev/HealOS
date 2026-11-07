@@ -27,7 +27,7 @@ import { PatientSkeleton } from "@/components/patient/patient-skeleton";
 
 export function OverviewPanel() {
   const { user } = useAuthStore();
-  const { data, isLoading, error } = usePatientDashboard();
+  const { data, isLoading, error } = usePatientDashboard("overview");
   const [isVitalsModalOpen, setIsVitalsModalOpen] = useState(false);
   const [aiSummary, setAiSummary] = useState("");
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -150,7 +150,7 @@ export function OverviewPanel() {
         </div>
         <Link
           href="/patient/book"
-          prefetch
+          prefetch={false}
           className="inline-flex items-center gap-2 bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
         >
           Book a visit <ChevronRight className="size-3.5" />
@@ -220,7 +220,7 @@ export function OverviewPanel() {
             </h2>
             <Link
               href="/patient/appointments"
-              prefetch
+              prefetch={false}
               className="text-xs text-muted-foreground hover:text-accent"
             >
               All visits
@@ -265,7 +265,7 @@ export function OverviewPanel() {
             </h2>
             <Link
               href="/patient/meds"
-              prefetch
+              prefetch={false}
               className="text-xs text-muted-foreground hover:text-accent"
             >
               Meds

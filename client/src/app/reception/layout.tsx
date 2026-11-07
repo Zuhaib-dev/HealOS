@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { UserPlus, Users, Monitor, LayoutDashboard } from "lucide-react";
 
 import { RoleGuard } from "@/components/auth/role-guard";
@@ -24,26 +22,11 @@ const sections = [
   },
 ];
 
-const prefetchRoutes = [
-  "/reception",
-  "/reception/new",
-  "/reception/queue",
-  "/reception/counter",
-];
-
 export default function WorkspaceLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-
-  useEffect(() => {
-    prefetchRoutes.forEach((href) => {
-      router.prefetch(href);
-    });
-  }, [router]);
-
   return (
     <RoleGuard allowedRoles={["RECEPTIONIST"]}>
       <WorkspaceShell

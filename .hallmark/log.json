@@ -1,6 +1,13 @@
 [
   {
     "date": "2026-11-07",
+    "macrostructure": "Catalogue",
+    "theme": "Emerald Prestige",
+    "enrichment": "none",
+    "brief": "Pharmacy: equal script cells, bill sheet, receipt index"
+  },
+  {
+    "date": "2026-11-07",
     "macrostructure": "Map / Diagram",
     "theme": "Emerald Prestige",
     "enrichment": "none",

@@ -6,8 +6,13 @@ import { RoleGuard } from "@/components/auth/role-guard";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 
 const sections = [
-  { id: "queue", label: "Rx Queue", icon: Pill },
-  { id: "history", label: "Past Orders", icon: CheckCircle },
+  { id: "queue", label: "Scripts", shortLabel: "Scripts", icon: Pill },
+  {
+    id: "history",
+    label: "Dispensed",
+    shortLabel: "Ledger",
+    icon: CheckCircle,
+  },
 ];
 
 export default function WorkspaceLayout({

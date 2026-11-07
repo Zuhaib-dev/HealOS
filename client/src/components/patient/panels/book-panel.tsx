@@ -82,6 +82,8 @@ export function BookPanel() {
   const [availability, setAvailability] = useState<{
     available: boolean;
     slotsRemaining: number;
+    dailyCapacity?: number;
+    bookedCount?: number;
     consultationFee?: number;
     advanceFee?: number;
     slotDurationMinutes?: number;
@@ -102,7 +104,9 @@ export function BookPanel() {
     }
     setAvailability(null);
     fetchDoctorAvailabilityApi(selectedDoctorId, format(date, "yyyy-MM-dd"))
-      .then(setAvailability)
+      .then((result) => {
+        setAvailability(result);
+      })
       .catch(() => setAvailability({ available: false, slotsRemaining: 0 }));
   }, [date, selectedDoctorId]);
 
@@ -142,7 +146,9 @@ export function BookPanel() {
         (!event?.doctorId || event.doctorId === selectedDoctorId)
       ) {
         fetchDoctorAvailabilityApi(selectedDoctorId, format(date, "yyyy-MM-dd"))
-          .then(setAvailability)
+          .then((result) => {
+            setAvailability(result);
+          })
           .catch(() => {});
         const visibleDates = Array.from({ length: 7 }, (_, index) =>
           addDays(new Date(), weekOffset * 7 + index),
@@ -738,9 +744,7 @@ export function BookPanel() {
                     {!availability
                       ? "Checking remaining appointments…"
                       : availability.available
-                        ? `${availability.slotsRemaining} appointment${
-                            availability.slotsRemaining === 1 ? "" : "s"
-                          } left this day. Exact time is assigned after you pay.`
+                        ? `${availability.slotsRemaining} slots left · ${availability.slotsRemaining} appointments left this day. Exact time is assigned after you pay.`
                         : "No remaining appointments this day."}
                   </p>
 

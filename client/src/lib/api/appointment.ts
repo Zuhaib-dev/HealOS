@@ -72,6 +72,10 @@ export async function fetchDoctorAvailabilityApi(
     success: boolean;
     available: boolean;
     slotsRemaining: number;
+    dailyCapacity?: number;
+    bookedCount?: number;
+    availableSlots?: Array<{ start: string; end: string; arrivalTime: string }>;
+    nextSlot?: string | null;
     consultationFee?: number;
     advanceFee?: number;
     slotDurationMinutes?: number;

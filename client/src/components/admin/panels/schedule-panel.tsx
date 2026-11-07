@@ -85,6 +85,20 @@ function clockToHours(value?: string) {
   return parseInt(h || "0", 10) + parseInt(m || "0", 10) / 60;
 }
 
+function bookableCapacity(
+  startTime: string,
+  endTime: string,
+  slotDurationMinutes: number,
+  maxPatientsPerDay: number,
+) {
+  if (slotDurationMinutes <= 0) return 0;
+  const minutes = Math.max(
+    0,
+    Math.round((clockToHours(endTime) - clockToHours(startTime)) * 60),
+  );
+  return Math.min(maxPatientsPerDay, Math.floor(minutes / slotDurationMinutes));
+}
+
 function clampHours(n: number) {
   return Math.min(WINDOW.to, Math.max(WINDOW.from, n));
 }
@@ -156,6 +170,16 @@ export function SchedulePanel() {
     advanceFee: 20,
     active: true,
   });
+  const timeSlotsPerDay = bookableCapacity(
+    availabilityForm.startTime,
+    availabilityForm.endTime,
+    availabilityForm.slotDurationMinutes,
+    100,
+  );
+  const effectiveDailyCapacity = Math.min(
+    availabilityForm.maxPatientsPerDay,
+    timeSlotsPerDay,
+  );
   const [formData, setFormData] = useState({
     user: "",
     date: today,
@@ -820,7 +844,7 @@ export function SchedulePanel() {
                       <button
                         type="button"
                         onClick={() => applyAvailability(row)}
-                        className={`hairline-b flex w-full items-baseline justify-between gap-3 py-2 text-left text-sm ${
+                        className={`hairline-b flex w-full flex-col justify-between gap-1 py-2 text-left text-sm sm:flex-row sm:items-baseline sm:gap-3 ${
                           availabilityForm.doctorId === row.doctor?._id
                             ? "text-foreground"
                             : "text-muted-foreground hover:text-foreground"
@@ -829,9 +853,16 @@ export function SchedulePanel() {
                         <span className="truncate">
                           {row.doctor?.name || "Doctor"}
                         </span>
-                        <span className="mono-label shrink-0">
+                        <span className="mono-label text-left sm:shrink-0 sm:text-right">
                           {formatTimeRange(row.startTime, row.endTime)} ·{" "}
-                          {row.maxPatientsPerDay}/day
+                          {bookableCapacity(
+                            row.startTime,
+                            row.endTime,
+                            row.slotDurationMinutes,
+                            row.maxPatientsPerDay,
+                          )}{" "}
+                          bookable/day · {row.maxPatientsPerDay} max ·{" "}
+                          {row.slotDurationMinutes} min
                           {row.active ? "" : " · off"}
                         </span>
                       </button>
@@ -929,6 +960,16 @@ export function SchedulePanel() {
                   }
                 />
               </label>
+            </div>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+              <p className="text-sm font-semibold">
+                {effectiveDailyCapacity} bookable appointments per day
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {timeSlotsPerDay < availabilityForm.maxPatientsPerDay
+                  ? `The ${availabilityForm.startTime}–${availabilityForm.endTime} schedule fits ${timeSlotsPerDay} appointments at ${availabilityForm.slotDurationMinutes}-minute intervals. Extend clinic hours or shorten the interval to offer ${availabilityForm.maxPatientsPerDay}.`
+                  : `The schedule supports your ${availabilityForm.maxPatientsPerDay}-patient daily limit.`}
+              </p>
             </div>
             <p className="text-xs text-muted-foreground">
               Advance is collected online; the rest is due at the clinic.

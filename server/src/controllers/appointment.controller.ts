@@ -140,6 +140,20 @@ export const bookAppointment = async (
       }
       const occupiedSet = new Set(occupied.map((item) => item.timeSlot));
       let timeSlot = "";
+      const totalSlots = Math.floor(
+        (end - start) / availability.slotDurationMinutes,
+      );
+      const effectiveCapacity = Math.min(
+        availability.maxPatientsPerDay,
+        totalSlots,
+      );
+      if (occupied.length >= effectiveCapacity) {
+        res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          message: "All appointment slots for this day have been booked.",
+        });
+        return;
+      }
       const previousQueueNumbers = await Appointment.find({
         doctor: doctorId,
         date,
@@ -339,7 +353,9 @@ export const getDoctorAvailability = async (
     success: true,
     available: availableSlots.length > 0 && slotsRemaining > 0,
     nextSlot: availableSlots[0]?.start || null,
-    availableSlots: availableSlots.slice(0, slotsRemaining),
+    availableSlots,
+    dailyCapacity: total,
+    bookedCount: booked.length,
     slotsRemaining,
     consultationFee: availability.consultationFee,
     advanceFee: availability.advanceFee,

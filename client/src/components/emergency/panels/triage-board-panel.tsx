@@ -941,12 +941,28 @@ export function TriageBoardPanel() {
                       <option value="awaiting triage">awaiting triage</option>
                       <option value="in bay">in bay</option>
                       <option value="awaiting bed">awaiting bed</option>
-                      <option value="admitted">admitted</option>
+                      {t.disposition === "admitted" && (
+                        <option value="admitted" disabled>
+                          admitted · inpatient
+                        </option>
+                      )}
                       <option value="for discharge">for discharge</option>
                     </select>
                   </Td>
                   <Td>
                     <div className="flex items-center gap-2">
+                      {(canAssign && t.disposition === "awaiting bed") ||
+                      (canRecordObservations &&
+                        t.disposition === "admitted") ? (
+                        <Link
+                          href={`/emergency/admissions/${encodeURIComponent(t._id)}`}
+                          className="mono-label text-xs underline hover:text-accent"
+                        >
+                          {t.disposition === "admitted"
+                            ? "View admission"
+                            : "Admit to ward"}
+                        </Link>
+                      ) : null}
                       {canAssign && (
                         <button
                           type="button"
@@ -974,13 +990,15 @@ export function TriageBoardPanel() {
                             ED medication chart
                           </Link>
                         )}
-                      <button
-                        type="button"
-                        onClick={() => handleDischarge(t.id)}
-                        className="mono-label text-xs hover:text-destructive underline"
-                      >
-                        Discharge
-                      </button>
+                      {t.disposition !== "admitted" && (
+                        <button
+                          type="button"
+                          onClick={() => handleDischarge(t.id)}
+                          className="mono-label text-xs hover:text-destructive underline"
+                        >
+                          Discharge
+                        </button>
+                      )}
                     </div>
                   </Td>
                 </tr>

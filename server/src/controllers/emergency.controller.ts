@@ -20,6 +20,8 @@ import {
   DiagnosticOrderPriority,
   DiagnosticTestType,
   DiagnosticReport,
+  EmergencyAdmission,
+  Ward,
 } from "../models";
 import { logAudit } from "../utils/audit.js";
 import { getIO } from "../socket.js";
@@ -197,7 +199,9 @@ export const getEmergencyStats = async (
 ): Promise<void> => {
   try {
     await removeLegacyEmergencyDemoData();
-    const activeCases = await EmergencyCase.find({ isArchived: false });
+    const activeCases = (
+      await EmergencyCase.find({ isArchived: false })
+    ).filter((emergencyCase) => emergencyCase.disposition !== "admitted");
     const totalInDept = activeCases.length;
     const awaitingTriage = activeCases.filter(
       (c) => c.disposition === "awaiting triage",
@@ -413,6 +417,265 @@ export const getEmergencyCaseById = async (
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ success: false, message: "Failed to load emergency case." });
+  }
+};
+
+export const getEmergencyWards = async (_req: Request, res: Response) => {
+  try {
+    const wards = await Ward.find()
+      .select("name code department capacity currentOccupancy")
+      .sort({ name: 1 })
+      .lean();
+    res.status(StatusCodes.OK).json({
+      success: true,
+      wards: wards.map((ward) => ({
+        ...ward,
+        available: Math.max(0, ward.capacity - ward.currentOccupancy),
+      })),
+    });
+  } catch (error) {
+    console.error("Error in getEmergencyWards:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to load ward capacity." });
+  }
+};
+
+export const getEmergencyAdmission = async (req: Request, res: Response) => {
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    if (!mongoose.isValidObjectId(id)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "Invalid emergency case ID." });
+    }
+    const emergencyCase = await EmergencyCase.findById(id).lean();
+    if (!emergencyCase)
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Emergency case not found." });
+    const admission = await EmergencyAdmission.findOne({ emergencyCase: id })
+      .populate("ward", "name code department capacity currentOccupancy")
+      .populate("admittedBy", "name")
+      .lean();
+    const wards = await Ward.find()
+      .select("name code department capacity currentOccupancy")
+      .sort({ name: 1 })
+      .lean();
+    res.status(StatusCodes.OK).json({
+      success: true,
+      case: formatEmergencyCase(emergencyCase),
+      admission,
+      wards: wards.map((ward) => ({
+        ...ward,
+        available: Math.max(0, ward.capacity - ward.currentOccupancy),
+      })),
+    });
+  } catch (error) {
+    console.error("Error in getEmergencyAdmission:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to load admission handoff." });
+  }
+};
+
+export const createEmergencyAdmission = async (req: Request, res: Response) => {
+  let occupiedWardId: mongoose.Types.ObjectId | undefined;
+  let createdAdmissionId: mongoose.Types.ObjectId | undefined;
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    const { wardId, reason } = req.body || {};
+    const normalizedReason = typeof reason === "string" ? reason.trim() : "";
+    if (
+      !mongoose.isValidObjectId(id) ||
+      !mongoose.isValidObjectId(wardId) ||
+      normalizedReason.length < 3 ||
+      normalizedReason.length > 1000
+    ) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Choose a ward and enter an admission reason.",
+      });
+    }
+    const emergencyCase = await EmergencyCase.findOne({
+      _id: id,
+      isArchived: false,
+    });
+    if (!emergencyCase)
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Active emergency case not found." });
+    if (
+      req.user?.role !== UserRole.ADMIN &&
+      emergencyCase.assignedDoctor?.toString() !== req.user?._id?.toString()
+    ) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        message: "Only the assigned clinician can initiate this admission.",
+      });
+    }
+    const consultation = await Consultation.findOne({
+      emergencyCase: emergencyCase._id,
+      status: ConsultationStatus.COMPLETED,
+    });
+    if (!consultation || !consultation.diagnosis?.trim())
+      return res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message:
+          "Sign the ED clinician encounter with a diagnosis before admission.",
+      });
+    const existing = await EmergencyAdmission.findOne({
+      emergencyCase: emergencyCase._id,
+    });
+    if (existing)
+      return res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: `An admission record already exists (${existing.status.toLowerCase()}).`,
+      });
+    const ward = await Ward.findOneAndUpdate(
+      {
+        _id: wardId,
+        $expr: {
+          $lt: [{ $ifNull: ["$currentOccupancy", 0] }, "$capacity"],
+        },
+      },
+      { $inc: { currentOccupancy: 1 } },
+      { new: true },
+    );
+    if (!ward)
+      return res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message:
+          "That ward is full or unavailable. Refresh and choose another ward.",
+      });
+    occupiedWardId = ward._id;
+    const admission = await EmergencyAdmission.create({
+      emergencyCase: emergencyCase._id,
+      ward: ward._id,
+      admittedBy: req.user?._id,
+      patientName: emergencyCase.patientName,
+      diagnosis: consultation.diagnosis,
+      reason: normalizedReason,
+    });
+    createdAdmissionId = admission._id;
+    emergencyCase.disposition = "admitted";
+    emergencyCase.area = ward.name;
+    await emergencyCase.save();
+    createdAdmissionId = undefined;
+    occupiedWardId = undefined;
+    const result = await EmergencyAdmission.findById(admission._id)
+      .populate("ward", "name code department capacity currentOccupancy")
+      .populate("admittedBy", "name")
+      .lean();
+    broadcastEmergencyEvent("emergency:triage_updated", {
+      action: "admitted",
+      case: formatEmergencyCase(emergencyCase),
+      admission: result,
+    });
+    getIO()?.emit("admin:data_changed", { types: ["wards", "emergency"] });
+    await logAudit(
+      req.user?.name || "emergency_staff",
+      `Admitted ED case ${emergencyCase.caseId} to ${ward.name}`,
+      emergencyCase.caseId,
+      "info",
+    );
+    return res.status(StatusCodes.CREATED).json({
+      success: true,
+      admission: result,
+      case: formatEmergencyCase(emergencyCase),
+    });
+  } catch (error: any) {
+    if (createdAdmissionId) {
+      await EmergencyAdmission.deleteOne({ _id: createdAdmissionId }).catch(
+        () => undefined,
+      );
+    }
+    if (occupiedWardId)
+      await Ward.updateOne(
+        { _id: occupiedWardId, currentOccupancy: { $gt: 0 } },
+        { $inc: { currentOccupancy: -1 } },
+      ).catch(() => undefined);
+    if (error?.code === 11000)
+      return res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: "This ED visit already has an admission record.",
+      });
+    console.error("Error in createEmergencyAdmission:", error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to complete ward admission." });
+  }
+};
+
+export const closeEmergencyAdmission = async (req: Request, res: Response) => {
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
+    if (!mongoose.isValidObjectId(id) || note.length > 1000)
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "Invalid case or discharge note." });
+    const admission = await EmergencyAdmission.findOneAndUpdate(
+      { emergencyCase: id, status: "ACTIVE" },
+      {
+        $set: {
+          status: "DISCHARGED",
+          dischargedAt: new Date(),
+          ...(note ? { dischargeNote: note } : {}),
+        },
+      },
+      { new: true },
+    );
+    if (!admission)
+      return res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: "No active ward admission exists for this case.",
+      });
+    const released = await Ward.updateOne(
+      { _id: admission.ward, currentOccupancy: { $gt: 0 } },
+      { $inc: { currentOccupancy: -1 } },
+    );
+    if (released.modifiedCount !== 1) {
+      await EmergencyAdmission.updateOne(
+        { _id: admission._id, status: "DISCHARGED" },
+        {
+          $set: { status: "ACTIVE" },
+          $unset: { dischargedAt: 1, dischargeNote: 1 },
+        },
+      );
+      return res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message:
+          "Ward occupancy needs reconciliation before this discharge can be recorded.",
+      });
+    }
+    const emergencyCase = await EmergencyCase.findByIdAndUpdate(
+      id,
+      { $set: { disposition: "for discharge", isArchived: true } },
+      { new: true },
+    );
+    broadcastEmergencyEvent("emergency:triage_updated", {
+      action: "inpatient_discharge",
+      case: emergencyCase && formatEmergencyCase(emergencyCase),
+      admission,
+    });
+    getIO()?.emit("admin:data_changed", { types: ["wards", "emergency"] });
+    await logAudit(
+      req.user?.name || "emergency_staff",
+      `Closed ward admission for ED case ${admission.patientName}`,
+      String(id),
+      "info",
+    );
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      admission,
+      case: emergencyCase && formatEmergencyCase(emergencyCase),
+    });
+  } catch (error) {
+    console.error("Error in closeEmergencyAdmission:", error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to close ward admission." });
   }
 };
 
@@ -1314,12 +1577,37 @@ export const updateEmergencyCase = async (
           .json({ success: false, message: "Invalid emergency disposition." });
         return;
       }
+      if (body.disposition === "admitted") {
+        res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          message:
+            "Use the ward admission handoff to select a ward and reserve capacity.",
+        });
+        return;
+      }
       updateData.disposition = body.disposition as string;
     }
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(idParam);
     const filterQuery = isObjectId
       ? { $or: [{ _id: idParam }, { caseId: idParam }] }
       : { caseId: idParam };
+
+    const targetCase = await EmergencyCase.findOne(filterQuery).select("_id");
+    if (
+      targetCase &&
+      (await EmergencyAdmission.exists({
+        emergencyCase: targetCase._id,
+        status: "ACTIVE",
+      })) &&
+      ("disposition" in body || "area" in body)
+    ) {
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message:
+          "An active inpatient handoff must be closed before changing ED area or disposition.",
+      });
+      return;
+    }
 
     const updated = await EmergencyCase.findOneAndUpdate(
       filterQuery,
@@ -1372,6 +1660,22 @@ export const dischargeEmergencyCase = async (
     const filterQuery = isObjectId
       ? { $or: [{ _id: idParam }, { caseId: idParam }] }
       : { caseId: idParam };
+
+    const existingCase = await EmergencyCase.findOne(filterQuery).select("_id");
+    if (
+      existingCase &&
+      (await EmergencyAdmission.exists({
+        emergencyCase: existingCase._id,
+        status: "ACTIVE",
+      }))
+    ) {
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message:
+          "Close the inpatient admission to release ward capacity before closing this ED case.",
+      });
+      return;
+    }
 
     const discharged = await EmergencyCase.findOneAndUpdate(
       filterQuery,

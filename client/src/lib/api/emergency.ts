@@ -43,6 +43,66 @@ export interface EmergencyCaseData {
   triageNotes?: string;
 }
 
+export interface EmergencyWardData {
+  _id: string;
+  name: string;
+  code: string;
+  department: string;
+  capacity: number;
+  currentOccupancy: number;
+  available: number;
+}
+
+export interface EmergencyAdmissionData {
+  _id: string;
+  emergencyCase: string;
+  ward: EmergencyWardData | string;
+  admittedBy: { _id: string; name: string } | string;
+  patientName: string;
+  diagnosis: string;
+  reason: string;
+  status: "ACTIVE" | "DISCHARGED" | "TRANSFERRED";
+  admittedAt: string;
+  dischargedAt?: string;
+  dischargeNote?: string;
+}
+
+export async function fetchEmergencyAdmissionApi(caseId: string) {
+  const response = await apiClient.get<{
+    success: boolean;
+    case: EmergencyCaseData;
+    admission: EmergencyAdmissionData | null;
+    wards: EmergencyWardData[];
+  }>(`/emergency/cases/${encodeURIComponent(caseId)}/admission`);
+  return response.data;
+}
+
+export async function createEmergencyAdmissionApi(
+  caseId: string,
+  payload: { wardId: string; reason: string },
+) {
+  const response = await apiClient.post<{
+    success: boolean;
+    admission: EmergencyAdmissionData;
+    case: EmergencyCaseData;
+  }>(`/emergency/cases/${encodeURIComponent(caseId)}/admission`, payload);
+  return response.data;
+}
+
+export async function closeEmergencyAdmissionApi(
+  caseId: string,
+  note?: string,
+) {
+  const response = await apiClient.post<{
+    success: boolean;
+    admission: EmergencyAdmissionData;
+    case: EmergencyCaseData;
+  }>(`/emergency/cases/${encodeURIComponent(caseId)}/admission/close`, {
+    note,
+  });
+  return response.data;
+}
+
 export interface CreateEmergencyCasePayload {
   patientName: string;
   age: number;

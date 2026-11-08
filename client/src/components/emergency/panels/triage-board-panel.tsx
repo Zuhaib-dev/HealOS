@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, X, UserCheck, AlertCircle, RefreshCw } from "lucide-react";
+import { Plus, X, AlertCircle } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import {
   LiveDot,
@@ -12,15 +12,19 @@ import {
   type Tone,
 } from "@/components/workspace/ui";
 import { getSocket } from "@/lib/socket";
+import { useAuthStore } from "@/store/use-auth-store";
 import {
   fetchEmergencyStatsApi,
   fetchTriageCasesApi,
   createEmergencyCaseApi,
   updateEmergencyCaseApi,
   dischargeEmergencyCaseApi,
+  fetchEmergencyCliniciansApi,
+  assignEmergencyCaseApi,
   type EmergencyCaseData,
   type EmergencyDisposition,
   type EsiLevel,
+  type EmergencyClinicianData,
 } from "@/lib/api/emergency";
 
 const esiTone = (e: EsiLevel): Tone =>
@@ -38,6 +42,16 @@ export function TriageBoardPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
+  const [assigningCase, setAssigningCase] = useState<EmergencyCaseData | null>(
+    null,
+  );
+  const [clinicians, setClinicians] = useState<EmergencyClinicianData[]>([]);
+  const [selectedDoctorId, setSelectedDoctorId] = useState("");
+  const [isAssigning, setIsAssigning] = useState(false);
+  const currentUser = useAuthStore((state) => state.user);
+  const canAssign = ["ADMIN", "DOCTOR", "EMERGENCY_DOCTOR"].includes(
+    currentUser?.role || "",
+  );
   const [feedback, setFeedback] = useState<{
     type: "ok" | "err";
     msg: string;
@@ -88,6 +102,43 @@ export function TriageBoardPanel() {
       socket.off("emergency:triage_updated", handleUpdate);
     };
   }, [loadData]);
+
+  useEffect(() => {
+    if (!canAssign) return;
+    fetchEmergencyCliniciansApi()
+      .then((res) => setClinicians(res.clinicians || []))
+      .catch(() =>
+        setFeedback({
+          type: "err",
+          msg: "Could not load emergency clinicians.",
+        }),
+      );
+  }, [canAssign]);
+
+  const openAssignment = (emergencyCase: EmergencyCaseData) => {
+    setAssigningCase(emergencyCase);
+    setSelectedDoctorId(emergencyCase.assignedDoctorId || "");
+  };
+
+  const handleAssignCase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assigningCase) return;
+    setIsAssigning(true);
+    setFeedback(null);
+    try {
+      await assignEmergencyCaseApi(assigningCase._id, selectedDoctorId || null);
+      setAssigningCase(null);
+      setFeedback({ type: "ok", msg: "ED clinician assignment updated." });
+      await loadData();
+    } catch (err: any) {
+      setFeedback({
+        type: "err",
+        msg: err.response?.data?.message || "Could not assign clinician.",
+      });
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   const handleIntakeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -450,6 +501,70 @@ export function TriageBoardPanel() {
         </div>
       )}
 
+      {assigningCase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <form
+            onSubmit={handleAssignCase}
+            className="bg-background hairline w-full max-w-md space-y-4 p-6 shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <p className="mono-label text-accent text-xs font-bold">
+                  {assigningCase.id}
+                </p>
+                <h3 className="font-mono text-lg font-bold">
+                  Assign ED clinician
+                </h3>
+              </div>
+              <button
+                type="button"
+                aria-label="Close clinician assignment"
+                onClick={() => setAssigningCase(null)}
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              This case will appear in the selected clinician&apos;s ED
+              worklist.
+            </p>
+            <label
+              htmlFor="emergency-clinician-select"
+              className="mono-label block text-xs text-muted-foreground"
+            >
+              Responsible clinician
+            </label>
+            <select
+              id="emergency-clinician-select"
+              value={selectedDoctorId}
+              onChange={(e) => setSelectedDoctorId(e.target.value)}
+              className="hairline bg-foreground/3 -mt-3 w-full p-2 text-sm"
+            >
+              <option value="">Unassigned</option>
+              {clinicians.map((clinician) => (
+                <option key={clinician._id} value={clinician._id}>
+                  {clinician.name} ·{" "}
+                  {clinician.role === "EMERGENCY_DOCTOR"
+                    ? "Emergency doctor"
+                    : "Doctor"}
+                </option>
+              ))}
+            </select>
+            <div className="flex justify-end gap-2 border-t pt-4">
+              <ActionButton
+                type="button"
+                onClick={() => setAssigningCase(null)}
+              >
+                Cancel
+              </ActionButton>
+              <ActionButton type="submit" tone="solid" disabled={isAssigning}>
+                {isAssigning ? "Assigning…" : "Save assignment"}
+              </ActionButton>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* Main Table */}
       <div className="hairline-t overflow-x-auto">
         <table className="w-full min-w-250">
@@ -501,6 +616,11 @@ export function TriageBoardPanel() {
                       {t.age}
                       {t.sex} · arrived {t.arrived}
                     </p>
+                    <p className="mono-label text-muted-foreground">
+                      {t.assignedDoctorName
+                        ? `Dr. ${t.assignedDoctorName}`
+                        : "No clinician assigned"}
+                    </p>
                   </Td>
                   <Td className="max-w-xs truncate">{t.complaint}</Td>
                   <Td>
@@ -546,6 +666,15 @@ export function TriageBoardPanel() {
                   </Td>
                   <Td>
                     <div className="flex items-center gap-2">
+                      {canAssign && (
+                        <button
+                          type="button"
+                          onClick={() => openAssignment(t)}
+                          className="mono-label text-xs underline hover:text-accent"
+                        >
+                          {t.assignedDoctorName ? "Reassign" : "Assign doctor"}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleDischarge(t.id)}

@@ -1,12 +1,19 @@
 "use client";
 
-import { LayoutDashboard, Activity, Siren, Ambulance } from "lucide-react";
+import {
+  LayoutDashboard,
+  Activity,
+  Siren,
+  Ambulance,
+  ClipboardList,
+} from "lucide-react";
 
 import { RoleGuard } from "@/components/auth/role-guard";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 
 const sections = [
   { id: "triage", label: "Triage Board", icon: LayoutDashboard },
+  { id: "worklist", label: "My ED cases", icon: ClipboardList },
   { id: "resus", label: "Resus Bays", icon: Activity },
   { id: "inbound", label: "Inbound EMS", icon: Ambulance },
   { id: "incident", label: "Disaster Mode", icon: Siren },

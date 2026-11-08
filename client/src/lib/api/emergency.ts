@@ -36,6 +36,7 @@ export interface EmergencyCaseData {
   obs: string;
   disposition: EmergencyDisposition;
   assignedDoctorName?: string;
+  assignedDoctorId?: string;
   triageNotes?: string;
 }
 
@@ -118,6 +119,41 @@ export interface MajorIncidentConfigPayload {
 // ============================================
 // API Functions
 // ============================================
+
+export interface EmergencyClinicianData {
+  _id: string;
+  name: string;
+  role: "DOCTOR" | "EMERGENCY_DOCTOR";
+}
+
+export async function fetchEmergencyCliniciansApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    clinicians: EmergencyClinicianData[];
+  }>("/emergency/clinicians");
+  return response.data;
+}
+
+export async function assignEmergencyCaseApi(
+  caseId: string,
+  doctorId: string | null,
+) {
+  const response = await apiClient.patch<{
+    success: boolean;
+    message: string;
+    case: EmergencyCaseData;
+  }>(`/emergency/cases/${encodeURIComponent(caseId)}/assignment`, { doctorId });
+  return response.data;
+}
+
+export async function fetchMyEmergencyCasesApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    cases: EmergencyCaseData[];
+    count: number;
+  }>("/emergency/cases/mine");
+  return response.data;
+}
 
 /**
  * Fetch live Emergency department summary metrics

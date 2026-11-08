@@ -3,11 +3,14 @@
 // ============================================
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
+import mongoose from "mongoose";
 import {
   EmergencyCase,
   ResusBay,
   InboundAmbulance,
   MajorIncident,
+  User,
+  UserRole,
 } from "../models";
 import { logAudit } from "../utils/audit.js";
 import { getIO } from "../socket.js";
@@ -60,6 +63,7 @@ const formatEmergencyCase = (record: any) => {
     obs: record.observations,
     disposition: record.disposition,
     assignedDoctorName: record.assignedDoctorName,
+    assignedDoctorId: record.assignedDoctor?.toString(),
     triageNotes: record.triageNotes,
   };
 };
@@ -246,6 +250,122 @@ export const getTriageCases = async (
       success: false,
       message: "Failed to fetch triage cases",
     });
+  }
+};
+
+export const getEmergencyClinicians = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const clinicians = await User.find({
+      role: { $in: [UserRole.DOCTOR, UserRole.EMERGENCY_DOCTOR] },
+    })
+      .select("name role")
+      .sort({ name: 1 })
+      .lean();
+    res.status(StatusCodes.OK).json({ success: true, clinicians });
+  } catch (error) {
+    console.error("Error in getEmergencyClinicians:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to load emergency clinicians.",
+    });
+  }
+};
+
+export const getMyEmergencyCases = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const cases = await EmergencyCase.find({
+      assignedDoctor: req.user?._id,
+      isArchived: false,
+    })
+      .sort({ esi: 1, arrivedAt: 1 })
+      .lean();
+    res.status(StatusCodes.OK).json({
+      success: true,
+      cases: cases.map(formatEmergencyCase),
+      count: cases.length,
+    });
+  } catch (error) {
+    console.error("Error in getMyEmergencyCases:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to load your emergency worklist.",
+    });
+  }
+};
+
+export const assignEmergencyCase = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    const { doctorId } = req.body ?? {};
+    if (
+      !mongoose.isValidObjectId(id) ||
+      (doctorId !== null && !mongoose.isValidObjectId(doctorId))
+    ) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Select a valid emergency clinician.",
+      });
+      return;
+    }
+    const emergencyCase = await EmergencyCase.findById(id);
+    if (!emergencyCase || emergencyCase.isArchived) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Active emergency case not found." });
+      return;
+    }
+    if (doctorId === null) {
+      emergencyCase.assignedDoctor = undefined;
+      emergencyCase.assignedDoctorName = undefined;
+    } else {
+      const clinician = await User.findOne({
+        _id: doctorId,
+        role: { $in: [UserRole.DOCTOR, UserRole.EMERGENCY_DOCTOR] },
+      }).select("name");
+      if (!clinician) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message:
+            "The selected user is not an active doctor or emergency doctor.",
+        });
+        return;
+      }
+      emergencyCase.assignedDoctor = clinician._id;
+      emergencyCase.assignedDoctorName = clinician.name;
+    }
+    await emergencyCase.save();
+    const formattedCase = formatEmergencyCase(emergencyCase);
+    broadcastEmergencyEvent("emergency:triage_updated", {
+      action: "assigned",
+      case: formattedCase,
+    });
+    await logAudit(
+      req.user?.name || "emergency_staff",
+      doctorId === null
+        ? `Unassigned clinician from ED case ${emergencyCase.caseId}`
+        : `Assigned ${emergencyCase.assignedDoctorName} to ED case ${emergencyCase.caseId}`,
+      emergencyCase.caseId,
+      "info",
+    );
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Emergency case assignment updated.",
+      case: formattedCase,
+    });
+  } catch (error) {
+    console.error("Error in assignEmergencyCase:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to assign emergency case." });
   }
 };
 

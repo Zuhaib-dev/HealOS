@@ -5,6 +5,9 @@ import { Router } from "express";
 import {
   getEmergencyStats,
   getTriageCases,
+  getEmergencyClinicians,
+  getMyEmergencyCases,
+  assignEmergencyCase,
   createEmergencyCase,
   updateEmergencyCase,
   dischargeEmergencyCase,
@@ -42,8 +45,15 @@ emergencyRouter.use(
 // 1. Triage Board
 // ---------------------------
 emergencyRouter.get("/stats", getEmergencyStats);
+emergencyRouter.get("/clinicians", getEmergencyClinicians);
+emergencyRouter.get("/cases/mine", getMyEmergencyCases);
 emergencyRouter.get("/cases", getTriageCases);
 emergencyRouter.post("/cases", createEmergencyCase);
+emergencyRouter.patch(
+  "/cases/:id/assignment",
+  requireRole([UserRole.EMERGENCY_DOCTOR, UserRole.DOCTOR, UserRole.ADMIN]),
+  assignEmergencyCase,
+);
 emergencyRouter.patch("/cases/:id", updateEmergencyCase);
 emergencyRouter.delete("/cases/:id", dischargeEmergencyCase);
 

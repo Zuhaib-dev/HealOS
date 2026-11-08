@@ -11,6 +11,8 @@ import {
   getEmergencyCaseById,
   getEmergencyEncounter,
   saveEmergencyEncounter,
+  getEmergencyMedicationChart,
+  recordEmergencyMedicationAdministration,
   getEmergencyObservations,
   createEmergencyObservation,
   createEmergencyCase,
@@ -69,6 +71,21 @@ emergencyRouter.put(
   "/cases/:id/encounter",
   requireRole([UserRole.EMERGENCY_DOCTOR, UserRole.DOCTOR]),
   saveEmergencyEncounter,
+);
+emergencyRouter.get(
+  "/cases/:id/medications",
+  requireRole([
+    UserRole.EMERGENCY_DOCTOR,
+    UserRole.DOCTOR,
+    UserRole.NURSE,
+    UserRole.ADMIN,
+  ]),
+  getEmergencyMedicationChart,
+);
+emergencyRouter.post(
+  "/cases/:id/medications/:medicineId/administrations",
+  requireRole([UserRole.NURSE]),
+  recordEmergencyMedicationAdministration,
 );
 emergencyRouter.get("/cases/:id/observations", getEmergencyObservations);
 emergencyRouter.post("/cases/:id/observations", createEmergencyObservation);

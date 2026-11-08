@@ -41,3 +41,4 @@ export * from "./emergency-observation.model.js";
 export * from "./resus-bay.model.js";
 export * from "./inbound-ambulance.model.js";
 export * from "./major-incident.model.js";
+export * from "./emergency-medication-administration.model.js";

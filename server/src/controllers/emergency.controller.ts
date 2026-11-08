@@ -15,6 +15,7 @@ import {
   Consultation,
   ConsultationStatus,
   PharmacySale,
+  EmergencyMedicationAdministration,
 } from "../models";
 import { logAudit } from "../utils/audit.js";
 import { getIO } from "../socket.js";
@@ -648,6 +649,147 @@ export const saveEmergencyEncounter = async (
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ success: false, message: "Failed to save ED encounter." });
+  }
+};
+
+export const getEmergencyMedicationChart = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    if (!mongoose.isValidObjectId(id)) {
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "Invalid emergency case ID." });
+      return;
+    }
+    const emergencyCase = await EmergencyCase.findOne({
+      _id: id,
+      isArchived: false,
+    });
+    if (!emergencyCase) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Active emergency case not found." });
+      return;
+    }
+    const consultation = await Consultation.findOne({
+      emergencyCase: emergencyCase._id,
+      status: ConsultationStatus.COMPLETED,
+    }).lean();
+    const administrations = await EmergencyMedicationAdministration.find({
+      emergencyCase: emergencyCase._id,
+    })
+      .populate("recordedBy", "name")
+      .sort({ recordedAt: -1 })
+      .lean();
+    res.status(StatusCodes.OK).json({
+      success: true,
+      case: formatEmergencyCase(emergencyCase),
+      consultation: consultation
+        ? { _id: consultation._id, medicines: consultation.medicines }
+        : null,
+      administrations,
+    });
+  } catch (error) {
+    console.error("Error in getEmergencyMedicationChart:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to load ED medication chart." });
+  }
+};
+
+export const recordEmergencyMedicationAdministration = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    const medicineId =
+      typeof req.params.medicineId === "string" ? req.params.medicineId : "";
+    if (
+      !mongoose.isValidObjectId(id) ||
+      !mongoose.isValidObjectId(medicineId)
+    ) {
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "Invalid case or medication ID." });
+      return;
+    }
+    const emergencyCase = await EmergencyCase.findOne({
+      _id: id,
+      isArchived: false,
+    });
+    if (!emergencyCase) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Active emergency case not found." });
+      return;
+    }
+    const consultation = await Consultation.findOne({
+      emergencyCase: emergencyCase._id,
+      status: ConsultationStatus.COMPLETED,
+    });
+    const medicine: any = consultation?.medicines.find(
+      (item: any) => item._id?.toString() === medicineId,
+    );
+    if (!consultation || !medicine) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Signed prescription medicine not found.",
+      });
+      return;
+    }
+    const { state, note } = req.body || {};
+    const normalizedNote = typeof note === "string" ? note.trim() : "";
+    if (
+      !["GIVEN", "HELD", "REFUSED"].includes(state) ||
+      normalizedNote.length > 1000 ||
+      (state !== "GIVEN" && !normalizedNote)
+    ) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message:
+          "Choose given, held, or refused. A reason is required when medicine is not given.",
+      });
+      return;
+    }
+    const administration = await EmergencyMedicationAdministration.create({
+      emergencyCase: emergencyCase._id,
+      consultation: consultation._id,
+      medicineId: medicine._id,
+      medicineName: medicine.name,
+      dose: medicine.dosage,
+      route: medicine.route || "Not specified",
+      state,
+      recordedBy: req.user?._id,
+      ...(normalizedNote ? { note: normalizedNote } : {}),
+    });
+    const populated = await EmergencyMedicationAdministration.findById(
+      administration._id,
+    )
+      .populate("recordedBy", "name")
+      .lean();
+    broadcastEmergencyEvent("emergency:medication_administered", {
+      caseId: emergencyCase._id,
+      administration: populated,
+    });
+    await logAudit(
+      req.user?.name || "emergency_nurse",
+      `Recorded ${state.toLowerCase()} medication for ED case ${emergencyCase.caseId}`,
+      emergencyCase.caseId,
+      state === "GIVEN" ? "info" : "warn",
+    );
+    res
+      .status(StatusCodes.CREATED)
+      .json({ success: true, administration: populated });
+  } catch (error) {
+    console.error("Error in recordEmergencyMedicationAdministration:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to record medication administration.",
+    });
   }
 };
 

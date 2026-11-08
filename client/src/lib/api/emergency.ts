@@ -76,6 +76,46 @@ export interface EmergencyEncounterData {
   status: "DRAFT" | "COMPLETED";
 }
 
+export interface EmergencyMedicationAdministrationData {
+  _id: string;
+  medicineId: string;
+  medicineName: string;
+  dose: string;
+  route: string;
+  state: "GIVEN" | "HELD" | "REFUSED";
+  recordedBy: { _id: string; name: string } | string;
+  recordedAt: string;
+  note?: string;
+}
+
+export async function fetchEmergencyMedicationChartApi(caseId: string) {
+  const response = await apiClient.get<{
+    success: boolean;
+    case: EmergencyCaseData;
+    consultation: {
+      _id: string;
+      medicines: EmergencyEncounterMedicine[];
+    } | null;
+    administrations: EmergencyMedicationAdministrationData[];
+  }>(`/emergency/cases/${encodeURIComponent(caseId)}/medications`);
+  return response.data;
+}
+
+export async function recordEmergencyMedicationAdministrationApi(
+  caseId: string,
+  medicineId: string,
+  payload: { state: "GIVEN" | "HELD" | "REFUSED"; note?: string },
+) {
+  const response = await apiClient.post<{
+    success: boolean;
+    administration: EmergencyMedicationAdministrationData;
+  }>(
+    `/emergency/cases/${encodeURIComponent(caseId)}/medications/${encodeURIComponent(medicineId)}/administrations`,
+    payload,
+  );
+  return response.data;
+}
+
 export async function fetchEmergencyCaseApi(caseId: string) {
   const response = await apiClient.get<{
     success: boolean;

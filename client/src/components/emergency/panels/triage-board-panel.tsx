@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Plus, X, AlertCircle } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import {
@@ -964,6 +965,15 @@ export function TriageBoardPanel() {
                           Record observations
                         </button>
                       )}
+                      {canRecordObservations &&
+                        t.encounterStatus === "COMPLETED" && (
+                          <Link
+                            href={`/emergency/medications/${encodeURIComponent(t._id)}`}
+                            className="mono-label text-xs underline hover:text-accent"
+                          >
+                            ED medication chart
+                          </Link>
+                        )}
                       <button
                         type="button"
                         onClick={() => handleDischarge(t.id)}

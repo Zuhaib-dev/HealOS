@@ -107,3 +107,7 @@ npm run lint -w @healos/client
 - [Monorepo, architecture, and local services](../README.md)
 - [Express API and backend workflows](../server/README.md)
 - [Shared package](../packages/shared/README.md)
+
+## Author
+
+**Zuhaib Rashid**

@@ -44,3 +44,7 @@ This package is a shared utility and type surface, not yet the single authoritat
 - [Monorepo architecture](../../README.md)
 - [Client workspace](../../client/README.md)
 - [Server workspace](../../server/README.md)
+
+## Author
+
+**Zuhaib Rashid**

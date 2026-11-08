@@ -123,3 +123,7 @@ The server Dockerfile uses Node 20 multi-stage builds and builds `@healos/shared
 - [Monorepo architecture and system workflows](../README.md)
 - [Client API integration and UI conventions](../client/README.md)
 - [Shared package exports](../packages/shared/README.md)
+
+## Author
+
+**Zuhaib Rashid**

@@ -220,3 +220,7 @@ npm run test -w @healos/server
 - [API, persistence, and server development](./server/README.md)
 - [Shared workspace package](./packages/shared/README.md)
 - [License](./LICENSE)
+
+## Author
+
+**Zuhaib Rashid**

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  LayoutDashboard,
-  Users,
-  Activity,
-  Siren,
-  Ambulance,
-} from "lucide-react";
+import { LayoutDashboard, Activity, Siren, Ambulance } from "lucide-react";
 
 import { RoleGuard } from "@/components/auth/role-guard";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
@@ -24,7 +18,7 @@ export default function WorkspaceLayout({
   children: React.ReactNode;
 }) {
   return (
-    <RoleGuard allowedRoles={["EMERGENCY_DOCTOR", "ADMIN", "DOCTOR"]}>
+    <RoleGuard allowedRoles={["EMERGENCY_DOCTOR", "ADMIN", "DOCTOR", "NURSE"]}>
       <WorkspaceShell
         navId="emergency"
         breadcrumb="Urgent care / Emergency department"

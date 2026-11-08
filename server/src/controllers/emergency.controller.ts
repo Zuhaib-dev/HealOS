@@ -29,6 +29,57 @@ const broadcastEmergencyEvent = (event: string, payload: any) => {
   }
 };
 
+const emergencyDispositions = [
+  "awaiting triage",
+  "in bay",
+  "awaiting bed",
+  "for discharge",
+  "admitted",
+  "transferred",
+  "deceased",
+] as const;
+
+const formatEmergencyCase = (record: any) => {
+  const arrivedDate = new Date(record.arrivedAt);
+  const waitMin = Math.max(
+    0,
+    Math.floor((Date.now() - arrivedDate.getTime()) / 60000),
+  );
+  return {
+    _id: record._id.toString(),
+    id: record.caseId,
+    patient: record.patientName,
+    age: record.age,
+    sex: record.sex,
+    complaint: record.presentingComplaint,
+    esi: record.esi,
+    arrived: `${String(arrivedDate.getHours()).padStart(2, "0")}:${String(arrivedDate.getMinutes()).padStart(2, "0")}`,
+    arrivedAt: arrivedDate.toISOString(),
+    waitMin,
+    area: record.area,
+    obs: record.observations,
+    disposition: record.disposition,
+    assignedDoctorName: record.assignedDoctorName,
+    triageNotes: record.triageNotes,
+  };
+};
+
+const allocateEmergencyCaseId = async () => {
+  const counter = await EmergencyCase.db
+    .collection<{ _id: string; sequence: number }>("emergency_counters")
+    .findOneAndUpdate(
+      { _id: "case-id" },
+      { $inc: { sequence: 1 } },
+      { upsert: true, returnDocument: "after" },
+    );
+  const sequence = counter?.sequence;
+  if (typeof sequence !== "number") {
+    throw new Error("Unable to allocate emergency case identifier");
+  }
+  const day = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+  return `ED-${day}-${String(sequence).padStart(5, "0")}`;
+};
+
 // Remove only the exact demo fixtures previously inserted by this controller.
 // Matching both identifiers and fixture text avoids deleting real operations
 // records that happen to share a short unit or bay label.
@@ -182,34 +233,7 @@ export const getTriageCases = async (
       arrivedAt: 1,
     });
 
-    const now = Date.now();
-    const formattedCases = cases.map((c) => {
-      const arrivedDate = new Date(c.arrivedAt);
-      const waitMin = Math.max(
-        0,
-        Math.floor((now - arrivedDate.getTime()) / 60000),
-      );
-      const hours = String(arrivedDate.getHours()).padStart(2, "0");
-      const minutes = String(arrivedDate.getMinutes()).padStart(2, "0");
-
-      return {
-        _id: c._id.toString(),
-        id: c.caseId,
-        patient: c.patientName,
-        age: c.age,
-        sex: c.sex,
-        complaint: c.presentingComplaint,
-        esi: c.esi,
-        arrived: `${hours}:${minutes}`,
-        arrivedAt: c.arrivedAt.toISOString(),
-        waitMin,
-        area: c.area,
-        obs: c.observations,
-        disposition: c.disposition,
-        assignedDoctorName: c.assignedDoctorName,
-        triageNotes: c.triageNotes,
-      };
-    });
+    const formattedCases = cases.map(formatEmergencyCase);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -230,6 +254,13 @@ export const createEmergencyCase = async (
   res: Response,
 ): Promise<void> => {
   try {
+    if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "A valid intake payload is required.",
+      });
+      return;
+    }
     const {
       patientName,
       age,
@@ -238,35 +269,63 @@ export const createEmergencyCase = async (
       esi,
       area,
       observations,
-      disposition,
-      triageNotes,
     } = req.body;
 
-    if (!patientName || age === undefined || !sex || !presentingComplaint) {
+    const normalizedName =
+      typeof patientName === "string" ? patientName.trim() : "";
+    const normalizedComplaint =
+      typeof presentingComplaint === "string" ? presentingComplaint.trim() : "";
+    const normalizedAge = typeof age === "number" ? age : Number(age);
+    const normalizedEsi = typeof esi === "number" ? esi : Number(esi);
+    const normalizedSex = typeof sex === "string" ? sex : "";
+
+    if (
+      !normalizedName ||
+      normalizedName.length > 120 ||
+      age === undefined ||
+      age === null ||
+      age === "" ||
+      !Number.isInteger(normalizedAge) ||
+      normalizedAge < 0 ||
+      normalizedAge > 130 ||
+      !(["M", "F", "O"] as string[]).includes(normalizedSex) ||
+      !normalizedComplaint ||
+      normalizedComplaint.length > 500 ||
+      !Number.isInteger(normalizedEsi) ||
+      normalizedEsi < 1 ||
+      normalizedEsi > 5 ||
+      (area !== undefined &&
+        (typeof area !== "string" ||
+          !area.trim() ||
+          area.trim().length > 80)) ||
+      (observations !== undefined &&
+        (typeof observations !== "string" || observations.length > 1000))
+    ) {
       res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: "patientName, age, sex, and presentingComplaint are required",
+        message:
+          "Enter a patient name (max 120), age from 0 to 130, valid sex, complaint (max 500), and ESI level 1–5. Area and observations must be valid text.",
       });
       return;
     }
 
-    // Generate consecutive caseId (e.g. ED-4413)
-    const count = await EmergencyCase.countDocuments();
-    const caseId = `ED-${4400 + count + 1}`;
+    const caseId = await allocateEmergencyCaseId();
 
     const newCase = await EmergencyCase.create({
       caseId,
-      patientName,
-      age: Number(age),
-      sex,
-      presentingComplaint,
-      esi: Number(esi) || 3,
-      area: area || (Number(esi) <= 2 ? "Resus" : "Waiting"),
+      patientName: normalizedName,
+      age: normalizedAge,
+      sex: normalizedSex,
+      presentingComplaint: normalizedComplaint,
+      esi: normalizedEsi,
+      area:
+        typeof area === "string"
+          ? area.trim()
+          : normalizedEsi <= 2
+            ? "Resus"
+            : "Waiting",
       observations: observations?.trim() || "obs pending",
-      disposition: disposition || "awaiting triage",
-      triageNotes,
-      assignedDoctor: req.user?._id,
-      assignedDoctorName: req.user?.name,
+      disposition: "awaiting triage",
     });
 
     broadcastEmergencyEvent("emergency:triage_updated", {
@@ -276,7 +335,7 @@ export const createEmergencyCase = async (
 
     await logAudit(
       req.user?.name || "emergency_staff",
-      `Intake ED patient ${caseId} (${patientName}) - ESI ${newCase.esi}`,
+      `Intake ED patient ${caseId} (${normalizedName}) - ESI ${newCase.esi}`,
       caseId,
       newCase.esi <= 2 ? "warn" : "info",
     );
@@ -284,7 +343,7 @@ export const createEmergencyCase = async (
     res.status(StatusCodes.CREATED).json({
       success: true,
       message: `Emergency patient intake registered as ${caseId}`,
-      case: newCase,
+      case: formatEmergencyCase(newCase),
     });
   } catch (error) {
     console.error("Error in createEmergencyCase:", error);
@@ -309,7 +368,74 @@ export const updateEmergencyCase = async (
         .json({ success: false, message: "ID is required" });
       return;
     }
-    const updateData = req.body;
+    if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "A valid update payload is required.",
+      });
+      return;
+    }
+    const body = req.body as Record<string, unknown>;
+    const allowedFields = [
+      "esi",
+      "area",
+      "observations",
+      "disposition",
+      "triageNotes",
+    ];
+    const unsupported = Object.keys(body).filter(
+      (key) => !allowedFields.includes(key),
+    );
+    if (unsupported.length > 0 || Object.keys(body).length === 0) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message:
+          "Only ESI, area, observations, disposition, and triage notes can be updated.",
+      });
+      return;
+    }
+
+    const updateData: Record<string, string | number> = {};
+    if ("esi" in body) {
+      const esiValue = Number(body.esi);
+      if (!Number.isInteger(esiValue) || esiValue < 1 || esiValue > 5) {
+        res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ success: false, message: "ESI must be from 1 to 5." });
+        return;
+      }
+      updateData.esi = esiValue;
+    }
+    for (const [field, maxLength] of [
+      ["area", 80],
+      ["observations", 1000],
+      ["triageNotes", 2000],
+    ] as const) {
+      if (field in body) {
+        const value = body[field];
+        if (typeof value !== "string" || value.length > maxLength) {
+          res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `${field} must be text up to ${maxLength} characters.`,
+          });
+          return;
+        }
+        updateData[field] = value.trim();
+      }
+    }
+    if ("disposition" in body) {
+      if (
+        !emergencyDispositions.includes(
+          body.disposition as (typeof emergencyDispositions)[number],
+        )
+      ) {
+        res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ success: false, message: "Invalid emergency disposition." });
+        return;
+      }
+      updateData.disposition = body.disposition as string;
+    }
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(idParam);
     const filterQuery = isObjectId
       ? { $or: [{ _id: idParam }, { caseId: idParam }] }
@@ -331,13 +457,13 @@ export const updateEmergencyCase = async (
 
     broadcastEmergencyEvent("emergency:triage_updated", {
       action: "updated",
-      case: updated,
+      case: formatEmergencyCase(updated),
     });
 
     res.status(StatusCodes.OK).json({
       success: true,
       message: "Emergency case updated",
-      case: updated,
+      case: formatEmergencyCase(updated),
     });
   } catch (error) {
     console.error("Error in updateEmergencyCase:", error);

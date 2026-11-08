@@ -146,8 +146,11 @@ export async function createEmergencyCaseApi(
  */
 export async function updateEmergencyCaseApi(
   id: string,
-  payload: Partial<CreateEmergencyCasePayload> & {
+  payload: Partial<
+    Pick<CreateEmergencyCasePayload, "esi" | "area" | "observations">
+  > & {
     disposition?: EmergencyDisposition;
+    triageNotes?: string;
   },
 ) {
   const response = await apiClient.patch<{

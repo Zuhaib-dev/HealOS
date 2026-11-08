@@ -50,7 +50,7 @@ export function TriageBoardPanel() {
     sex: "M" as "M" | "F" | "O",
     presentingComplaint: "",
     esi: 3 as EsiLevel,
-    area: "Waiting",
+    area: "",
     observations: "",
   });
 
@@ -102,6 +102,25 @@ export function TriageBoardPanel() {
       });
       return;
     }
+    const age = Number(form.age);
+    if (!Number.isInteger(age) || age < 0 || age > 130) {
+      setFeedback({
+        type: "err",
+        msg: "Enter a whole-number age from 0 to 130.",
+      });
+      return;
+    }
+    if (
+      form.patientName.trim().length > 120 ||
+      form.presentingComplaint.trim().length > 500 ||
+      form.observations.trim().length > 1000
+    ) {
+      setFeedback({
+        type: "err",
+        msg: "Name, complaint, or observations exceed the allowed length.",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     setFeedback(null);
@@ -109,7 +128,7 @@ export function TriageBoardPanel() {
     try {
       const res = await createEmergencyCaseApi({
         patientName: form.patientName.trim(),
-        age: parseInt(form.age, 10),
+        age,
         sex: form.sex,
         presentingComplaint: form.presentingComplaint.trim(),
         esi: form.esi,
@@ -125,7 +144,7 @@ export function TriageBoardPanel() {
           sex: "M",
           presentingComplaint: "",
           esi: 3,
-          area: "Waiting",
+          area: "",
           observations: "",
         });
         setTimeout(() => {
@@ -269,7 +288,8 @@ export function TriageBoardPanel() {
                     id="triage-patient-name"
                     type="text"
                     required={true}
-                    placeholder="e.g. John Doe / Unknown Male"
+                    placeholder="e.g. John Doe / Unknown patient"
+                    maxLength={120}
                     value={form.patientName}
                     onChange={(e) =>
                       setForm({ ...form, patientName: e.target.value })
@@ -290,7 +310,7 @@ export function TriageBoardPanel() {
                       type="number"
                       required={true}
                       min={0}
-                      max={120}
+                      max={130}
                       placeholder="Age"
                       value={form.age}
                       onChange={(e) =>
@@ -328,6 +348,7 @@ export function TriageBoardPanel() {
                   type="text"
                   required={true}
                   placeholder="e.g. Severe chest pain radiating to left arm, diaphoresis"
+                  maxLength={500}
                   value={form.presentingComplaint}
                   onChange={(e) =>
                     setForm({ ...form, presentingComplaint: e.target.value })
@@ -377,19 +398,15 @@ export function TriageBoardPanel() {
                   >
                     Target Department Area
                   </label>
-                  <select
+                  <input
                     id="triage-target-area"
+                    type="text"
+                    maxLength={80}
+                    placeholder={form.esi <= 2 ? "e.g. Resus" : "e.g. Waiting"}
                     value={form.area}
                     onChange={(e) => setForm({ ...form, area: e.target.value })}
                     className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm focus:outline-hidden"
-                  >
-                    <option value="Waiting">Waiting Area</option>
-                    <option value="Resus 1">Resus Bay 1</option>
-                    <option value="Resus 2">Resus Bay 2</option>
-                    <option value="Acute 1">Acute Bay 1</option>
-                    <option value="Majors 1">Majors Bay 1</option>
-                    <option value="Minors">Minors / Fast Track</option>
-                  </select>
+                  />
                 </div>
               </div>
 
@@ -404,6 +421,7 @@ export function TriageBoardPanel() {
                   id="triage-observations"
                   type="text"
                   placeholder="e.g. HR 112 · BP 142/90 · SpO2 94% · RR 24"
+                  maxLength={1000}
                   value={form.observations}
                   onChange={(e) =>
                     setForm({ ...form, observations: e.target.value })

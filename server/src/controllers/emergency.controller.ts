@@ -78,6 +78,7 @@ const formatEmergencyCase = (record: any) => {
     clinicianAssignedAt: record.clinicianAssignedAt?.toISOString(),
     encounterStatus: record.encounterStatus,
     diagnosisSummary: record.diagnosisSummary,
+    dischargedAt: record.dischargedAt?.toISOString(),
     triageNotes: record.triageNotes,
   };
 };
@@ -611,10 +612,11 @@ export const closeEmergencyAdmission = async (req: Request, res: Response) => {
   try {
     const id = typeof req.params.id === "string" ? req.params.id : "";
     const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
-    if (!mongoose.isValidObjectId(id) || note.length > 1000)
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ success: false, message: "Invalid case or discharge note." });
+    if (!mongoose.isValidObjectId(id) || note.length < 3 || note.length > 1000)
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Enter a discharge handoff note of at least 3 characters.",
+      });
     const admission = await EmergencyAdmission.findOneAndUpdate(
       { emergencyCase: id, status: "ACTIVE" },
       {
@@ -651,7 +653,14 @@ export const closeEmergencyAdmission = async (req: Request, res: Response) => {
     }
     const emergencyCase = await EmergencyCase.findByIdAndUpdate(
       id,
-      { $set: { disposition: "for discharge", isArchived: true } },
+      {
+        $set: {
+          disposition: "for discharge",
+          isArchived: true,
+          dischargedAt: new Date(),
+          ...(req.user?._id ? { dischargedBy: req.user._id } : {}),
+        },
+      },
       { new: true },
     );
     broadcastEmergencyEvent("emergency:triage_updated", {
@@ -1661,7 +1670,28 @@ export const dischargeEmergencyCase = async (
       ? { $or: [{ _id: idParam }, { caseId: idParam }] }
       : { caseId: idParam };
 
-    const existingCase = await EmergencyCase.findOne(filterQuery).select("_id");
+    const existingCase = await EmergencyCase.findOne(filterQuery);
+    if (!existingCase) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Emergency case not found" });
+      return;
+    }
+    const signedEncounter = await Consultation.findOne({
+      emergencyCase: existingCase._id,
+      status: ConsultationStatus.COMPLETED,
+    }).select("diagnosis advice");
+    if (
+      !signedEncounter?.diagnosis?.trim() ||
+      !signedEncounter.advice?.trim()
+    ) {
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message:
+          "A signed clinician encounter with a diagnosis and plan is required before ED discharge.",
+      });
+      return;
+    }
     if (
       existingCase &&
       (await EmergencyAdmission.exists({
@@ -1679,7 +1709,14 @@ export const dischargeEmergencyCase = async (
 
     const discharged = await EmergencyCase.findOneAndUpdate(
       filterQuery,
-      { $set: { disposition: "for discharge", isArchived: true } },
+      {
+        $set: {
+          disposition: "for discharge",
+          isArchived: true,
+          dischargedAt: new Date(),
+          ...(req.user?._id ? { dischargedBy: req.user._id } : {}),
+        },
+      },
       { new: true },
     );
 
@@ -1695,6 +1732,12 @@ export const dischargeEmergencyCase = async (
       action: "discharged",
       case: discharged,
     });
+    await logAudit(
+      req.user?.name || "emergency_staff",
+      `Discharged ED case ${discharged.caseId}`,
+      discharged.caseId,
+      "info",
+    );
 
     res.status(StatusCodes.OK).json({
       success: true,

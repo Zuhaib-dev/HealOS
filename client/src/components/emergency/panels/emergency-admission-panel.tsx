@@ -92,7 +92,7 @@ export function EmergencyAdmissionPanel({ caseId }: { caseId: string }) {
     try {
       const response = await closeEmergencyAdmissionApi(
         caseId,
-        dischargeNote.trim() || undefined,
+        dischargeNote.trim(),
       );
       setAdmission(response.admission);
       setEmergencyCase(response.case);
@@ -199,10 +199,12 @@ export function EmergencyAdmissionPanel({ caseId }: { caseId: string }) {
             <div className="mt-6 border-t border-border pt-5">
               <label className="block">
                 <span className="mono-label text-xs text-muted-foreground">
-                  Discharge note (optional)
+                  Discharge note
                 </span>
                 <textarea
                   maxLength={1000}
+                  minLength={3}
+                  required
                   value={dischargeNote}
                   onChange={(event) => setDischargeNote(event.target.value)}
                   rows={3}
@@ -212,7 +214,7 @@ export function EmergencyAdmissionPanel({ caseId }: { caseId: string }) {
               </label>
               <ActionButton
                 onClick={() => void close()}
-                disabled={working}
+                disabled={working || dischargeNote.trim().length < 3}
                 className="mt-3"
               >
                 {working

@@ -40,6 +40,7 @@ export interface EmergencyCaseData {
   clinicianAssignedAt?: string;
   encounterStatus?: "DRAFT" | "COMPLETED";
   diagnosisSummary?: string;
+  dischargedAt?: string;
   triageNotes?: string;
 }
 
@@ -89,10 +90,7 @@ export async function createEmergencyAdmissionApi(
   return response.data;
 }
 
-export async function closeEmergencyAdmissionApi(
-  caseId: string,
-  note?: string,
-) {
+export async function closeEmergencyAdmissionApi(caseId: string, note: string) {
   const response = await apiClient.post<{
     success: boolean;
     admission: EmergencyAdmissionData;

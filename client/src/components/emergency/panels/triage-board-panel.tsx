@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Plus, X, AlertCircle } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import {
@@ -354,8 +355,10 @@ export function TriageBoardPanel() {
     try {
       await dischargeEmergencyCaseApi(caseId);
       await loadData();
-    } catch (err) {
-      console.error("Failed to discharge case:", err);
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message || "Failed to discharge this ED case.",
+      );
     }
   };
 

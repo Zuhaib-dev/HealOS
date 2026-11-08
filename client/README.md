@@ -1,108 +1,109 @@
-# HealOS Frontend 🖥️
+# HealOS web client
 
-![Client Banner](https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=2070&auto=format&fit=crop)
+The `@healos/client` workspace is the browser-facing application. It uses Next.js App Router and React; the API and clinical workflow rules live primarily in the separate Express server. See the [root README](../README.md) for the monorepo architecture, shared run steps, and system design overview.
 
-The frontend application for HealOS, built with **Next.js** (App Router), **React 19**, and **Tailwind CSS v4**. It serves as the primary interface for all 7 user roles (Admin, Doctor, Nurse, Pharmacist, Lab Technician, Receptionist, and Patient), providing a highly responsive, real-time experience.
+## Responsibilities
 
----
+- Render public, authentication, patient, and staff workspaces.
+- Apply role-aware navigation and client route guards for user experience.
+- Call the server API through the shared Axios client.
+- Subscribe to authorized Socket.IO events and refresh relevant UI state.
+- Host selected Next route handlers for auth integration, developer endpoints, API surfaces, and markdown content.
 
-## 🚀 Technologies Used
+The client is not an authorization boundary. Protected data and state changes must be checked by the Express API.
 
-- **Framework**: Next.js (App Router)
-- **UI Library**: React 19
-- **Styling**: Tailwind CSS v4, Framer Motion for animations
-- **State Management**: Zustand (Global Auth/Theme State), React Query (Async Server State)
-- **Components**: Radix UI (Unstyled, accessible primitives), Lucide Icons
-- **Real-time**: Socket.io-client
-- **Payments**: Razorpay Checkout SDK
-- **Forms & Validation**: React Hook Form + Zod
+## Stack
 
----
+- Next.js 16 App Router and React 19
+- TypeScript, Tailwind CSS 4, Radix UI, Lucide React and Motion
+- Axios for HTTP; Socket.IO client for real-time events
+- Zustand for session/UI state; TanStack Query is available for server-state use
+- React Hook Form and Zod for form handling and validation
+- Sentry integration configured through Next.js
 
-## 📂 Project Structure
+## Source map
 
 ```text
-client/
-├── cypress/                # E2E Tests for clinical flows
-├── public/                 # Static assets and images
-├── src/
-│   ├── app/                # Next.js App Router pages and layouts
-│   ├── components/         # Reusable UI components & Workspace specific panels
-│   │   ├── admin/          # Admin-specific panels
-│   │   ├── doctor/         # Doctor-specific panels
-│   │   ├── nurse/          # Nurse-specific panels
-│   │   ├── patient/        # Patient-specific panels
-│   │   ├── pharmacy/       # Pharmacy-specific panels
-│   │   ├── lab/            # Lab-specific panels
-│   │   └── workspace/      # Shared dashboard shells and layout wrappers
-│   ├── lib/                # API clients, Socket configuration, Utility functions
-│   └── store/              # Zustand global state (Auth, Theme)
-├── next.config.ts          # Next.js configuration
-├── tailwind.config.ts      # Tailwind CSS v4 configuration
-└── package.json
+client/src/
+├── app/                     Routes, layouts, metadata and Next route handlers
+│   ├── (auth)/              Login and registration
+│   ├── admin/               Administration workspace
+│   ├── doctor/              Doctor workspace
+│   ├── emergency/           ED board, records and clinical workflow
+│   ├── lab/                 Laboratory workspace
+│   ├── nurse/               Nursing workspace
+│   ├── patient/             Patient portal
+│   ├── pharmacy/            Pharmacy workspace
+│   ├── radiology/           Radiology workspace
+│   └── reception/           Reception and walk-in workspace
+├── components/              Shared components and domain panels
+├── hooks/                   Reusable client hooks
+├── lib/
+│   ├── api/                  Domain API functions
+│   ├── api-client.ts         Axios configuration and interceptors
+│   └── socket.ts             Singleton Socket.IO client
+├── proxy.ts                  Route redirects and token-aware navigation
+└── store/                    Zustand auth and UI state
 ```
 
----
+## Data and real-time flow
 
-## ⚡ Key Features
+Domain API functions in `src/lib/api/` call the Axios instance. The instance applies the configured API base URL, attaches the current bearer token, and logs out on an unauthorized response. Use these domain functions from pages and panels rather than duplicating URL construction or auth headers.
 
-- **Role-based Dashboards**: Dynamically renders distinct navigation and panels based on the authenticated user's role.
-- **Real-time Data Streams**: Uses Socket.io to push live updates for Call Bells, Lab Reports, Appointments, and eMAR modifications directly to the active components.
-- **Optimistic UI Updates**: Instant feedback on UI interactions (like completing tasks or administering medications) while syncing with the backend in the background.
-- **Responsive Layout**: Adapts gracefully to mobile devices (great for Nurses logging eMAR at the bedside) and large desktop monitors (ideal for Admins and Doctors).
+The socket client connects to the host derived from `NEXT_PUBLIC_API_URL`. The authenticated application joins user and role rooms through the socket provider/notification UI. Components should subscribe to the specific events relevant to their workspace, remove listeners on unmount, and refetch authoritative data after updates. Do not use a socket event as the only source of a clinical record or payment state.
 
----
+Most workflow panels are interactive client components. Keep route shells, metadata, and static composition server-rendered where possible; add `"use client"` at the smallest component boundary that needs browser state, effects, or event handlers.
 
-## 🛠️ Development Setup
+## Local development
 
-1. **Install Dependencies:**
+Install dependencies from the monorepo root:
 
-   ```bash
-   npm install
-   ```
+```bash
+npm ci
+```
 
-2. **Environment Configuration:**
-   Create a `.env.local` file in the `client` directory and populate it with the following:
+Create `client/.env.local`:
 
-   ```env
-   NEXT_PUBLIC_API_URL=http://localhost:5001/api/v1
-   NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key
-   ```
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5001/api/v1
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-3. **Run Development Server:**
+Start the complete local stack from the root with `npm run dev`, or start only the client with:
 
-   ```bash
-   npm run dev
-   ```
+```bash
+npm run dev -w @healos/client
+```
 
-   _The app will be available at `http://localhost:3000`._
+The app runs on `http://localhost:3000`. The API must be available at the configured URL for authenticated or data-backed screens. Root `.env.example` documents additional optional integrations; only variables needed by the client should be placed in a `NEXT_PUBLIC_*` variable.
 
-4. **Run E2E Tests (Cypress):**
-   ```bash
-   npx cypress open
-   ```
+## Commands
 
----
+Run from the repository root:
 
-## 🚢 Deployment
+```bash
+npm run build -w @healos/client
+npm run typecheck -w @healos/client
+npm run lint -w @healos/client
+```
 
-The client is optimized for deployment on **Vercel**.
-Simply connect your repository to Vercel, set the Root Directory to `client`, and configure your Environment Variables (`NEXT_PUBLIC_API_URL`). Vercel will automatically detect Next.js and build the project using `next build`.
+`cypress` is present in client dependencies and `cypress.config.ts` configures browser tests. Check the current Cypress spec files before assuming a particular E2E workflow is covered.
 
----
+## Production build
 
-## Author
+`next.config.ts` enables standalone output and image optimization formats. The client Dockerfile builds the shared package and client, then copies Next standalone output and static assets into a Node 20 runtime image. Supply `NEXT_PUBLIC_API_URL`, the public app URL, and any provider settings required by the features enabled in that deployment. Since `NEXT_PUBLIC_*` values are embedded into client bundles at build time, configure them before building the production image.
 
-<div align="center">
+## Implementation conventions
 
-**Zuhaib Rashid**  
-Full-stack engineer · UI/UX obsessive · Real-time systems nerd
+- Follow [client/AGENTS.md](./AGENTS.md) for the repository's Next.js 16 guidance; consult the matching installed Next docs before changing framework APIs.
+- Keep API response types near the domain API functions in `src/lib/api/`.
+- Use server responses as authoritative for statuses, prices, availability, permission checks, and clinical data.
+- Show loading, empty, and error states for API-backed panels.
+- Avoid fetching or rendering more records than the user needs; use server-side filters and pagination when the endpoint supports them.
+- Preserve accessible labels, keyboard focus, and responsive behavior in clinical workspaces.
 
-[![Portfolio](https://img.shields.io/badge/Portfolio-zuhaibrashid.com-0078D4?style=for-the-badge&logo=microsoft-edge)](https://zuhaibrashid.com)
-[![GitHub](https://img.shields.io/badge/GitHub-Zuhaib--dev-181717?style=for-the-badge&logo=github)](https://github.com/Zuhaib-dev)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Zuhaib_Rashid-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/zuhaib-rashid-661345318/)
-[![Twitter](https://img.shields.io/badge/Twitter-@xuhaib__x9-1DA1F2?style=for-the-badge&logo=twitter)](https://x.com/xuhaib_x9)
+## Related documentation
 
-_Built with obsessive attention to detail, real-world production patterns, and way too much coffee._
-
-</div>
+- [Monorepo, architecture, and local services](../README.md)
+- [Express API and backend workflows](../server/README.md)
+- [Shared package](../packages/shared/README.md)

@@ -1,170 +1,222 @@
-# HealOS 🏥
+# HealOS
 
-![HealOS Banner](https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop)
+HealOS is a hospital operations and patient-care web application. It brings patient access, reception, clinical workspaces, diagnostics, pharmacy, billing, administration, and emergency-department workflows into one system.
 
-> **A Next-Generation Hospital Management System built with the MERN stack.**
+This repository is an **npm-workspaces monorepo** orchestrated by Turborepo. The browser application and API are separate deployable services; shared TypeScript utilities live in a third workspace. The backend is a modular Express application backed by MongoDB, rather than a collection of independently deployed microservices.
 
-HealOS is a comprehensive, real-time, role-based Hospital Management System designed to streamline clinical workflows, patient management, and facility operations. Built with modern web technologies, it features 7 distinct workspaces tailored to the specific needs of different hospital staff and patients.
+## Contents
 
----
+- [System architecture](#system-architecture)
+- [Workspaces](#workspaces)
+- [Technology stack](#technology-stack)
+- [Workflows and algorithms](#workflows-and-algorithms)
+- [Run locally](#run-locally)
+- [Configuration](#configuration)
+- [Quality checks](#quality-checks)
+- [Security and clinical-data notes](#security-and-clinical-data-notes)
+- [Further documentation](#further-documentation)
 
-## 🏗️ System Architecture
-
-HealOS uses a decoupled client-server architecture. The frontend is a highly interactive React application powered by Next.js, communicating via RESTful APIs and real-time WebSockets to an Express.js backend.
-
-```mermaid
-graph TD
-    Client[Next.js Client App]
-    API[Express.js REST API]
-    WS[Socket.io Real-time Server]
-    DB[(MongoDB Atlas)]
-    Payment[Razorpay Gateway]
-
-    Client -- HTTPS / JSON --> API
-    Client -- WebSockets --> WS
-    API -- Mongoose --> DB
-    WS -- Pub/Sub --> API
-    API -- Webhooks / Server-to-Server --> Payment
-    Client -- Client SDK --> Payment
-```
-
-### 🔐 Authentication Flow
-
-The system uses stateless JSON Web Tokens (JWT) for authentication and role-based access control (RBAC).
+## System architecture
 
 ```mermaid
-sequenceDiagram
-    participant User
-    participant Client
-    participant Server
-    participant DB
+flowchart LR
+  Browser[Browser / role workspace]
+  Web[Next.js client\nReact App Router]
+  API[Express API\nREST /api/v1]
+  Socket[Socket.IO\nreal-time events]
+  Mongo[(MongoDB\nMongoose models)]
+  Pay[Razorpay]
+  Mail[Email provider]
 
-    User->>Client: Enters Credentials
-    Client->>Server: POST /auth/login
-    Server->>DB: Verify User & Password Hash
-    DB-->>Server: User Data & Role
-    Server-->>Client: Returns JWT Token
-    Client->>Client: Stores Token in Zustand / LocalStorage
-    Client->>Server: Request Protected Route + Bearer Token
-    Server->>Server: verifyToken() & requireRole([ROLE])
-    Server-->>Client: Authorized Data
+  Browser --> Web
+  Web -->|JSON + bearer JWT| API
+  Browser <-->|authenticated socket connection| Socket
+  API --> Mongo
+  Socket -. same Node HTTP server .- API
+  API -->|payment operations| Pay
+  API -->|configured delivery| Mail
 ```
 
----
+The Next.js app serves the user interface and a small set of Next route handlers (developer/API surfaces, auth integration, and related endpoints). The Express server owns the main `/api/v1` REST API, authentication and role checks, domain workflows, persistence, and the Socket.IO server. Mongoose schemas define persisted domain records and database indexes. Socket events complement API reads and writes; the database remains the source of truth.
 
-## 👥 Role-Based Workspaces
+This is a **modular monolith**: routes are grouped by domain (`/auth`, `/appointments`, `/doctor`, `/nurse`, `/lab`, `/radiology`, `/pharmacy`, `/reception`, `/emergency`, `/admin`, and others), while controllers and models run in one API process and share one MongoDB connection. This keeps deployment and transactions straightforward while preserving clear module boundaries.
 
-HealOS provides tailored dashboards and tools for 7 different user roles:
+### Request and authorization path
 
-1. **👨‍⚕️ Doctor**: Manage consultations, write persistent clinical notes, order lab diagnostics, and prescribe medications.
-2. **👩‍⚕️ Nurse**: Interactive eMAR (Medication Administration), Shift Handovers (SBAR), Call Bells queue, and patient vitals tracking.
-3. **💊 Pharmacist**: Real-time e-Prescription queue and medication dispensing workflow.
-4. **🔬 Lab Technician**: Receive diagnostic orders, upload patient lab reports, and manage sample collections.
-5. **🏢 Admin**: Facility overview, staff role management, ward capacity tracking, and clinical credential approvals.
-6. **🏥 Receptionist**: Patient onboarding, billing, and appointment scheduling.
-7. **🤒 Patient**: Patient portal to book appointments, view medical records, view lab reports, and pay invoices online via Razorpay.
+1. A user signs in through the client and receives a backend JWT.
+2. The Axios API client sends that token as a bearer credential.
+3. Express verifies the token, reloads the user, checks the token version, and attaches the current user to the request.
+4. Route middleware checks the user role; controllers validate inputs and enforce workflow rules before changing records.
+5. The API returns JSON. When appropriate, the server emits a Socket.IO event so subscribed workspaces can refresh.
 
----
+The client route guard improves navigation and user experience. API authorization is enforced independently on the server and is the security boundary.
 
-## 🚀 Comprehensive Tech Stack
+## Workspaces
 
-### Frontend (Client)
+```text
+.
+├── client/                 Next.js web application
+│   └── src/
+│       ├── app/            App Router pages and route handlers
+│       ├── components/     Shared UI and role-specific panels
+│       ├── lib/            API client, Socket.IO client, utilities
+│       └── store/          Zustand client state
+├── server/                 Express API and Socket.IO server
+│   └── src/
+│       ├── routes/         URL and role middleware
+│       ├── controllers/    Request handling and domain workflows
+│       ├── models/         Mongoose schemas and indexes
+│       ├── middleware/     Authentication, validation, errors, limits
+│       ├── utils/          Date, audit, mail, report and billing helpers
+│       └── __tests__/      Jest API tests
+├── packages/shared/        Shared constants, types and Zod validators
+├── docker-compose.yml      Local MongoDB, Redis, API and web services
+├── turbo.json              Workspace task graph and build cache settings
+└── package.json            npm workspace and root commands
+```
 
-- **Core Framework**: [Next.js 15 (App Router)](https://nextjs.org/) & [React 19](https://react.dev/)
-- **Styling & UI**:
-  - [Tailwind CSS v4](https://tailwindcss.com/) (using modern logical properties and zero-config CSS variables)
-  - Custom _Emerald Prestige_ Design System (clinical interface focus)
-  - [Framer Motion](https://www.framer.com/motion/) (Silky-smooth microinteractions and structural page transitions)
-  - [Lucide React](https://lucide.dev/) (Consistent, clean iconography)
-- **State Management & Data Fetching**:
-  - [Zustand](https://zustand-demo.pmnd.rs/) (Lightweight global state for Auth & UI)
-  - [TanStack React Query](https://tanstack.com/query) (Server state caching and synchronization)
-- **Forms & Validation**: React Hook Form, Zod
-- **Typography**: `next/font` (JetBrains Mono for data/UI, Work Sans for prose)
-- **SEO & Performance**:
-  - Next.js Metadata API, dynamic `sitemap.xml`, and JSON-LD Structured Data
-  - Strict Client Component separation (`"use client"`) to maximize Server Components
+### Role workspaces
 
-### Backend (Server)
+The current application includes patient, receptionist, doctor, nurse, pharmacist, lab technician, radiologist, emergency doctor, and administrator experiences. The backend user model also has a general `USER` role. Available screens and permissions are not identical across roles; server routes define the actual access rules.
 
-- **Runtime & Framework**: [Node.js](https://nodejs.org/) & [Express.js](https://expressjs.com/)
-- **Language**: TypeScript (Strict typing across API borders)
-- **Database**: [MongoDB](https://www.mongodb.com/) & [Mongoose](https://mongoosejs.com/) (NoSQL ODM)
-- **Real-time Engine**: [Socket.io](https://socket.io/) (Pub/Sub for immediate clinical updates)
-- **Authentication**: JWT (JSON Web Tokens) with strictly typed Role-Based Access Control (RBAC)
-- **Payments**: [Razorpay API](https://razorpay.com/) (For patient invoices and online billing)
+| Area        | Example workflows                                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------------- |
+| Patient     | Appointment booking, billing, medicines, reports, messages, profile                               |
+| Reception   | Patient registration, walk-ins, appointment queue, counter workflows                              |
+| Doctor      | Clinic, encounters, clinical notes, orders, results, rounds and handover                          |
+| Nurse       | eMAR, observations, fluids, wounds, call bells and handover                                       |
+| Diagnostics | Lab accession, collection, analysis and validation; radiology bookings, modalities and reports    |
+| Pharmacy    | Prescription queue, dispensing and history                                                        |
+| Emergency   | Triage board, clinician worklist, resuscitation, EMS, records, pending work and admission handoff |
+| Admin       | Staff approvals, users, roles, patients, wards, billing, supplies, audit and system settings      |
 
-### Architecture & Patterns
+## Technology stack
 
-- **Decoupled Monorepo**: Separate `/client` and `/server` environments
-- **Role Guards**: Custom Higher-Order Components ensuring strict URL routing for 9 different user types
-- **Hallmark Protocol**: Structural variety and anti-slop design in public landing pages (Marquee Heroes, Workbenches, Long Documents)
+| Layer                 | Technologies in this repository                                                           |
+| --------------------- | ----------------------------------------------------------------------------------------- |
+| Language              | TypeScript across the client, server and shared package                                   |
+| Web                   | Next.js 16 App Router, React 19, Tailwind CSS 4                                           |
+| UI                    | Radix UI primitives, Lucide icons, Motion, React Hook Form and Zod                        |
+| Client state          | Zustand for client/session UI state; TanStack Query is installed for server-state use     |
+| API                   | Node.js 20+, Express 5, REST JSON endpoints                                               |
+| Persistence           | MongoDB 7-compatible deployment, Mongoose 8                                               |
+| Real time             | Socket.IO 4                                                                               |
+| Monorepo              | npm workspaces, Turborepo 2                                                               |
+| Validation / security | Zod, JWT, bcryptjs, Helmet, CORS and express-rate-limit                                   |
+| Monitoring            | Sentry packages and instrumentation                                                       |
+| Payments / email      | Razorpay integration; configurable SMTP, Gmail API or Resend delivery paths               |
+| Checks                | TypeScript, ESLint, Prettier, Jest, Supertest; Cypress is included in client dependencies |
 
----
+Redis is included in the local Docker Compose topology and `REDIS_URL` appears in configuration, but the current server code does not use a Redis client for application caching or Socket.IO pub/sub. Do not assume Redis-backed caching, queues, or horizontal Socket.IO scaling are active features.
 
-## 🏁 Getting Started
+## Workflows and algorithms
+
+### Appointment capacity and booking
+
+The API derives bookable times from a doctor's configured clinic days, booking hours, slot duration, and daily patient limit. It counts existing appointments for the doctor and date, removes already-used times, and reports both remaining daily capacity and available times. A partial unique index prevents two non-cancelled appointments from taking the same doctor/date/time slot while allowing a cancelled slot to be reused. Booking requests are revalidated by the server so stale client availability cannot be treated as authoritative. Reception walk-in bookings are checked against today's schedule and past times.
+
+### Emergency department prioritization and records
+
+The live ED board sorts by ESI acuity (lower ESI number first) and arrival time. ED records are case-based and retain the visit lifecycle and links to encounters, observations, diagnostics, medication administrations, pharmacy activity, and admission data. The pending-work view derives tasks from saved records, including unresolved work after discharge; it does not manufacture patient accounts or scheduled nursing doses.
+
+### Diagnostic and medication workflows
+
+Clinician encounters can create diagnostic orders and prescriptions. Orders move through persisted statuses and reports have an explicit verification state; the ED record view only displays clinical report content after verification. Pharmacy sales move through payment and dispensing statuses. Emergency medication administration events separately record whether a prescribed medicine was given, held, or refused.
+
+### Pagination and query shape
+
+List endpoints use bounded page/limit parameters where implemented. The shared package provides pagination defaults and validators, but endpoint behavior is domain-specific. For large collections, prefer database filtering, indexed sort keys and bounded pages over loading a complete collection into the client.
+
+## Run locally
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- MongoDB Atlas account / Local MongoDB instance
-- Razorpay Account (for payment integration)
+- Node.js 20 or newer and npm 10 or newer
+- MongoDB (local service or a MongoDB URI)
+- Optional integration credentials for payments, email, Google sign-in, AI, or external file services
+- Docker Compose if you want to run the repository's containerized local services
 
-### Installation
+### Install and configure
 
-1. **Clone the repository:**
+```bash
+npm ci
+cp .env.example .env
+```
 
-   ```bash
-   git clone https://github.com/yourusername/healos.git
-   cd healos
-   ```
+Edit `.env` with local values. Never use the example JWT secrets or placeholder provider credentials in a deployed environment. The API loads repository-root `.env` and also supports `server/.env`. For Next.js public variables, create `client/.env.local` and set at least:
 
-2. **Setup Backend:**
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5001/api/v1
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-   ```bash
-   cd server
-   npm install
-   # Create a .env file based on .env.example
-   npm run dev
-   ```
+Start MongoDB locally, or use Compose for the database while running the app with the workspace scripts:
 
-   _See [server/README.md](./server/README.md) for detailed backend configuration._
+```bash
+docker compose up -d mongodb
+```
 
-3. **Setup Frontend:**
-   ```bash
-   cd ../client
-   npm install
-   # Create a .env.local file
-   npm run dev
-   ```
-   _See [client/README.md](./client/README.md) for detailed frontend configuration._
+Then start the workspaces:
 
----
+```bash
+npm run dev
+```
 
-## 🤝 Contributing
+The web app is served on `http://localhost:3000`; the API is served on `http://localhost:5001`, with REST routes under `/api/v1` and a health endpoint at `/health`. Turborepo's `dev` task is persistent and starts the workspace dev tasks together.
 
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](#).
+Useful focused commands:
 
-## 📄 License
+```bash
+npm run dev:client
+npm run dev:server
+npm run build
+npm run typecheck
+npm run lint
+npm run format:check
+```
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Run a workspace command from the root with npm's workspace selector, for example `npm run typecheck -w @healos/server`.
 
----
+## Configuration
 
-## Author
+The canonical list of supported variables and safe local placeholders is [.env.example](./.env.example). Important settings include:
 
-<div align="center">
+| Variable                                              | Purpose                                                                |
+| ----------------------------------------------------- | ---------------------------------------------------------------------- |
+| `MONGODB_URI`                                         | MongoDB connection used by the API                                     |
+| `PORT`, `CLIENT_URL`, `NODE_ENV`                      | API runtime and allowed client origin                                  |
+| `JWT_SECRET`, `JWT_REFRESH_SECRET`                    | Token signing; use long, unique secrets in production                  |
+| `AUTH_SYNC_SECRET`                                    | Required by production environment validation for auth synchronization |
+| `NEXT_PUBLIC_API_URL`                                 | Client-side API base URL                                               |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`              | Optional payment integration                                           |
+| `SMTP_*`, `GMAIL_*`, `RESEND_API_KEY`                 | Optional email delivery configuration                                  |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_SECRET` | Optional client authentication provider settings                       |
+| `GEMINI_API_KEY`, `IMAGEKIT_*`, `NEXT_PUBLIC_TURN_*`  | Optional AI, media, and teleconsultation-related configuration         |
 
-**Zuhaib Rashid**  
-_Full Stack Developer & Healthcare Systems Architect_  
-UI/UX Obsessive · Real-time Systems Engineer · Autonomous Agent Protocols
+Keep server secrets out of `NEXT_PUBLIC_*` variables. The `NEXT_PUBLIC_` prefix makes a value available to browser code.
 
-[![Portfolio](https://img.shields.io/badge/Portfolio-zuhaibrashid.com-0078D4?style=for-the-badge&logo=microsoft-edge)](https://zuhaibrashid.com)
-[![Email](https://img.shields.io/badge/Email-zuhaibrashid01%40gmail.com-EA4335?style=for-the-badge&logo=gmail)](mailto:zuhaibrashid01@gmail.com)
-[![GitHub](https://img.shields.io/badge/GitHub-Zuhaib--dev-181717?style=for-the-badge&logo=github)](https://github.com/Zuhaib-dev)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Zuhaib_Rashid-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/zuhaib-rashid-661345318/)
-[![Twitter](https://img.shields.io/badge/Twitter-@xuhaib__x9-1DA1F2?style=for-the-badge&logo=twitter)](https://x.com/xuhaib_x9)
+## Quality checks
 
-_Built with obsessive attention to detail, real-world clinical safety patterns, and modern agentic architectures._
+The repository CI workflow runs install, lint, typecheck, backend Jest tests, and monorepo builds. Backend tests live in `server/src/__tests__` and use Jest, Supertest, and an in-memory MongoDB test setup.
 
-</div>
+```bash
+npm run lint
+npm run typecheck
+npm run build
+npm run test -w @healos/server
+```
+
+## Security and clinical-data notes
+
+- Keep secrets and production patient data out of source control, screenshots, logs, and sample fixtures.
+- Server controllers and role middleware are authoritative for access and state changes; a hidden UI control is not authorization.
+- Diagnostic report contents may have workflow-specific verification restrictions. Preserve those checks when adding readers or exports.
+- Audit and clinical actions should remain attributable to the authenticated user and persisted in their domain records.
+- This repository provides software workflows; it does not replace local clinical governance, privacy review, or emergency protocols.
+
+## Further documentation
+
+- [Client architecture and development](./client/README.md)
+- [API, persistence, and server development](./server/README.md)
+- [Shared workspace package](./packages/shared/README.md)
+- [License](./LICENSE)

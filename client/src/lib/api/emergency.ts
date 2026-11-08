@@ -96,6 +96,9 @@ export interface CascadeStepData {
 
 export interface MajorIncidentData {
   _id: string;
+  isConfigured: boolean;
+  configuredAt?: string;
+  configuredBy?: string;
   isArmed: boolean;
   armedAt?: string;
   armedBy?: string;
@@ -103,6 +106,13 @@ export interface MajorIncidentData {
   theatresArmed?: number;
   staffRecalled?: number;
   steps: CascadeStepData[];
+}
+
+export interface MajorIncidentConfigPayload {
+  surgeBeds: number;
+  theatresArmed: number;
+  staffRecalled: number;
+  steps: Array<{ text: string; completed: false }>;
 }
 
 // ============================================
@@ -298,6 +308,17 @@ export async function fetchMajorIncidentApi() {
     success: boolean;
     incident: MajorIncidentData | null;
   }>("/emergency/incident");
+  return response.data;
+}
+
+export async function saveMajorIncidentConfigApi(
+  payload: MajorIncidentConfigPayload,
+) {
+  const response = await apiClient.put<{
+    success: boolean;
+    message: string;
+    incident: MajorIncidentData;
+  }>("/emergency/incident", payload);
   return response.data;
 }
 

@@ -1207,13 +1207,91 @@ export const assignAmbulanceBay = async (
 // 4. Major Incident / Disaster Operations
 // ============================================
 
+export const saveMajorIncidentConfig = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "A valid incident plan is required.",
+      });
+      return;
+    }
+    const { surgeBeds, theatresArmed, staffRecalled, steps } = req.body;
+    const capacities = [surgeBeds, theatresArmed, staffRecalled];
+    if (
+      capacities.some(
+        (value) => !Number.isInteger(value) || value < 0 || value > 10000,
+      ) ||
+      !Array.isArray(steps) ||
+      steps.length < 1 ||
+      steps.length > 30 ||
+      steps.some(
+        (step) =>
+          typeof step?.text !== "string" ||
+          !step.text.trim() ||
+          step.text.trim().length > 300,
+      )
+    ) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message:
+          "Enter non-negative whole-number capacities and 1–30 checklist steps (each up to 300 characters).",
+      });
+      return;
+    }
+
+    let incident = await MajorIncident.findOne();
+    if (incident?.isArmed) {
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message:
+          "Disarm the current major incident before changing its approved plan.",
+      });
+      return;
+    }
+    if (!incident) incident = new MajorIncident();
+    incident.isConfigured = true;
+    incident.configuredAt = new Date();
+    incident.configuredBy = req.user?.name || "Emergency department staff";
+    incident.surgeBeds = surgeBeds;
+    incident.theatresArmed = theatresArmed;
+    incident.staffRecalled = staffRecalled;
+    incident.steps = steps.map((step: { text: string }) => ({
+      text: step.text.trim(),
+      completed: false,
+    })) as typeof incident.steps;
+    await incident.save();
+    broadcastEmergencyEvent("emergency:incident_updated", incident);
+    await logAudit(
+      req.user?.name || "Emergency department staff",
+      "Configured hospital major incident plan",
+      "DISASTER_MODE",
+      "warn",
+    );
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Hospital incident plan saved.",
+      incident,
+    });
+  } catch (error) {
+    console.error("Error in saveMajorIncidentConfig:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to save incident plan." });
+  }
+};
+
 export const getMajorIncident = async (
   _req: Request,
   res: Response,
 ): Promise<void> => {
   try {
     await removeLegacyEmergencyDemoData();
-    let incident = await MajorIncident.findOne();
+    const record = await MajorIncident.findOne({ isConfigured: true });
+    const incident = record || null;
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -1236,7 +1314,7 @@ export const toggleMajorIncident = async (
     await removeLegacyEmergencyDemoData();
     const { armed } = req.body;
 
-    let incident = await MajorIncident.findOne();
+    let incident = await MajorIncident.findOne({ isConfigured: true });
     if (!incident) {
       res.status(StatusCodes.CONFLICT).json({
         success: false,
@@ -1296,7 +1374,7 @@ export const toggleCascadeStep = async (
     const { completed } = req.body;
     const stepIdx = parseInt(indexParam || "0", 10);
 
-    const incident = await MajorIncident.findOne();
+    const incident = await MajorIncident.findOne({ isConfigured: true });
     if (!incident || !incident.steps[stepIdx]) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,

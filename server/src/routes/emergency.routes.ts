@@ -18,6 +18,7 @@ import {
   assignAmbulanceBay,
   recordAmbulanceArrival,
   getMajorIncident,
+  saveMajorIncidentConfig,
   toggleMajorIncident,
   toggleCascadeStep,
 } from "../controllers/emergency.controller.js";
@@ -67,6 +68,7 @@ emergencyRouter.post("/inbound/:unit/arrive", recordAmbulanceArrival);
 // 4. Major Incident / Disaster Mode
 // ---------------------------
 emergencyRouter.get("/incident", getMajorIncident);
+emergencyRouter.put("/incident", saveMajorIncidentConfig);
 emergencyRouter.post("/incident/toggle", toggleMajorIncident);
 emergencyRouter.patch("/incident/step/:index", toggleCascadeStep);
 

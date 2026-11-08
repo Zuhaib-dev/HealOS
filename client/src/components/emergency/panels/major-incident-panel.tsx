@@ -2,12 +2,21 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
-import { Siren, AlertTriangle, Check, RefreshCw, Printer } from "lucide-react";
+import {
+  Siren,
+  AlertTriangle,
+  Check,
+  RefreshCw,
+  Printer,
+  Plus,
+  X,
+} from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Card, Pill, Toggle } from "@/components/workspace/ui";
 import { getSocket } from "@/lib/socket";
 import {
   fetchMajorIncidentApi,
+  saveMajorIncidentConfigApi,
   toggleMajorIncidentApi,
   toggleCascadeStepApi,
   type MajorIncidentData,
@@ -17,11 +26,20 @@ export function MajorIncidentPanel() {
   const [incident, setIncident] = useState<MajorIncidentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
+  const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [configForm, setConfigForm] = useState({
+    surgeBeds: "",
+    theatresArmed: "",
+    staffRecalled: "",
+    steps: [""],
+  });
 
   const loadIncident = useCallback(async () => {
     try {
       const res = await fetchMajorIncidentApi();
-      if (res.success && res.incident) {
+      if (res.success) {
         setIncident(res.incident);
       }
     } catch (err) {
@@ -30,6 +48,60 @@ export function MajorIncidentPanel() {
       setIsLoading(false);
     }
   }, []);
+
+  const openConfig = () => {
+    setConfigForm({
+      surgeBeds: incident?.surgeBeds == null ? "" : String(incident.surgeBeds),
+      theatresArmed:
+        incident?.theatresArmed == null ? "" : String(incident.theatresArmed),
+      staffRecalled:
+        incident?.staffRecalled == null ? "" : String(incident.staffRecalled),
+      steps: incident?.steps.map((step) => step.text) || [""],
+    });
+    setIsEditingConfig(true);
+    setFeedback(null);
+  };
+
+  const handleSaveConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const surgeBeds = Number(configForm.surgeBeds);
+    const theatresArmed = Number(configForm.theatresArmed);
+    const staffRecalled = Number(configForm.staffRecalled);
+    if (
+      ![surgeBeds, theatresArmed, staffRecalled].every(
+        (value) => Number.isInteger(value) && value >= 0,
+      ) ||
+      configForm.steps.some((step) => !step.trim())
+    ) {
+      setFeedback(
+        "Enter whole-number capacities and complete every checklist step.",
+      );
+      return;
+    }
+    setIsSavingConfig(true);
+    setFeedback(null);
+    try {
+      const res = await saveMajorIncidentConfigApi({
+        surgeBeds,
+        theatresArmed,
+        staffRecalled,
+        steps: configForm.steps.map((text) => ({
+          text: text.trim(),
+          completed: false,
+        })),
+      });
+      setIncident(res.incident);
+      setIsEditingConfig(false);
+      setFeedback(res.message);
+    } catch (err) {
+      setFeedback(
+        (err as any)?.response?.data?.message ||
+          "Failed to save the hospital incident plan.",
+      );
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
 
   useEffect(() => {
     loadIncident();
@@ -97,6 +169,10 @@ export function MajorIncidentPanel() {
               <RefreshCw className="mr-1 inline size-3" />
               Refresh
             </ActionButton>
+            <ActionButton onClick={openConfig} disabled={isArmed}>
+              <Plus className="mr-1 inline size-3.5" />
+              {incident ? "Edit hospital plan" : "Configure hospital plan"}
+            </ActionButton>
             {incident && (
               <ActionButton tone="solid" onClick={() => window.print()}>
                 <Printer className="mr-1 inline size-3.5" />
@@ -106,6 +182,159 @@ export function MajorIncidentPanel() {
           </div>
         }
       />
+
+      {feedback && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="hairline mb-4 flex items-center justify-between gap-3 bg-background p-3 text-sm"
+        >
+          <span>{feedback}</span>
+          <button
+            type="button"
+            aria-label="Dismiss message"
+            onClick={() => setFeedback(null)}
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+
+      {isEditingConfig && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <form
+            onSubmit={handleSaveConfig}
+            className="bg-background hairline max-h-[90vh] w-full max-w-2xl space-y-4 overflow-y-auto p-6 shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <p className="mono-label text-accent text-xs font-bold">
+                  HOSPITAL CONFIGURATION
+                </p>
+                <h3 className="font-mono text-lg font-bold">
+                  Major incident response plan
+                </h3>
+              </div>
+              <button
+                type="button"
+                aria-label="Close plan editor"
+                onClick={() => setIsEditingConfig(false)}
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Enter approved local surge capacity and response steps. This plan
+              is saved as standby; it does not activate disaster mode.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {(
+                [
+                  ["surgeBeds", "Surge beds"],
+                  ["theatresArmed", "Theatres available"],
+                  ["staffRecalled", "Staff to recall"],
+                ] as const
+              ).map(([field, label]) => (
+                <label key={field} className="mono-label text-xs">
+                  {label}
+                  <input
+                    required
+                    type="number"
+                    min={0}
+                    max={10000}
+                    value={configForm[field]}
+                    onChange={(e) =>
+                      setConfigForm({ ...configForm, [field]: e.target.value })
+                    }
+                    className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm"
+                  />
+                </label>
+              ))}
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="mono-label text-xs">
+                  Approved response checklist
+                </p>
+                <ActionButton
+                  type="button"
+                  onClick={() =>
+                    setConfigForm({
+                      ...configForm,
+                      steps: [...configForm.steps, ""],
+                    })
+                  }
+                  disabled={configForm.steps.length >= 30}
+                >
+                  <Plus className="mr-1 inline size-3" />
+                  Add step
+                </ActionButton>
+              </div>
+              <div className="space-y-2">
+                {configForm.steps.map((step, index) => (
+                  <div key={index} className="flex gap-2">
+                    <label
+                      className="sr-only"
+                      htmlFor={`incident-step-${index}`}
+                    >
+                      Response step {index + 1}
+                    </label>
+                    <input
+                      id={`incident-step-${index}`}
+                      required
+                      maxLength={300}
+                      value={step}
+                      onChange={(e) =>
+                        setConfigForm({
+                          ...configForm,
+                          steps: configForm.steps.map((value, i) =>
+                            i === index ? e.target.value : value,
+                          ),
+                        })
+                      }
+                      className="hairline bg-foreground/3 min-w-0 flex-1 p-2 text-sm"
+                      placeholder={`Step ${index + 1}`}
+                    />
+                    <ActionButton
+                      type="button"
+                      aria-label={`Remove step ${index + 1}`}
+                      onClick={() =>
+                        setConfigForm({
+                          ...configForm,
+                          steps: configForm.steps.filter((_, i) => i !== index),
+                        })
+                      }
+                      disabled={configForm.steps.length <= 1}
+                    >
+                      <X className="size-4" />
+                    </ActionButton>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {feedback && (
+              <p role="alert" className="text-sm text-destructive">
+                {feedback}
+              </p>
+            )}
+            <div className="flex justify-end gap-2 border-t pt-4">
+              <ActionButton
+                type="button"
+                onClick={() => setIsEditingConfig(false)}
+              >
+                Cancel
+              </ActionButton>
+              <ActionButton
+                type="submit"
+                tone="solid"
+                disabled={isSavingConfig}
+              >
+                {isSavingConfig ? "Saving…" : "Save approved plan"}
+              </ActionButton>
+            </div>
+          </form>
+        </div>
+      )}
 
       {isLoading ? (
         <div
@@ -124,6 +353,9 @@ export function MajorIncidentPanel() {
             Disaster mode is unavailable until an authorized team configures the
             hospital&apos;s actual escalation checklist and surge capacity.
           </p>
+          <ActionButton tone="solid" onClick={openConfig} className="mt-5">
+            <Plus className="mr-1 inline size-3.5" /> Configure approved plan
+          </ActionButton>
         </div>
       ) : (
         <div

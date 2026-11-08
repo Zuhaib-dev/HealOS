@@ -8,6 +8,9 @@ export interface ICascadeStep {
 }
 
 export interface IMajorIncident extends Document {
+  isConfigured: boolean;
+  configuredAt?: Date;
+  configuredBy?: string;
   isArmed: boolean;
   armedAt?: Date;
   armedBy?: string;
@@ -28,6 +31,13 @@ const cascadeStepSchema = new Schema<ICascadeStep>({
 
 const majorIncidentSchema = new Schema<IMajorIncident>(
   {
+    isConfigured: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    configuredAt: { type: Date },
+    configuredBy: { type: String, trim: true },
     isArmed: {
       type: Boolean,
       default: false,

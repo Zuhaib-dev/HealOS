@@ -1,4 +1,4 @@
-import { DiagnosticOrder, UserRole } from "../models/index.js";
+import { DiagnosticOrder, EmergencyCase, UserRole } from "../models/index.js";
 import type { IDiagnosticReport } from "../models/diagnostic-report.model.js";
 import type { IUser } from "../models/user.model.js";
 
@@ -25,8 +25,30 @@ export async function canAccessDiagnosticReport(
       })),
     );
   const order = report.order
-    ? await DiagnosticOrder.findById(report.order).select("testType")
+    ? await DiagnosticOrder.findById(report.order).select(
+        "testType doctor emergencyCase",
+      )
     : null;
+  const emergencyCaseId = report.emergencyCase || order?.emergencyCase;
+  const emergencyCase = emergencyCaseId
+    ? await EmergencyCase.findById(emergencyCaseId).select(
+        "assignedDoctor isArchived",
+      )
+    : null;
+  const isAssignedEdClinician = Boolean(
+    report.state === "verified" &&
+    emergencyCase &&
+    !emergencyCase.isArchived &&
+    (user.role === UserRole.EMERGENCY_DOCTOR ||
+      user.role === UserRole.DOCTOR) &&
+    String(emergencyCase.assignedDoctor || "") === userId,
+  );
+  const isEdNurse = Boolean(
+    report.state === "verified" &&
+    emergencyCase &&
+    !emergencyCase.isArchived &&
+    user.role === UserRole.NURSE,
+  );
   const isDiagnosticStaff = Boolean(
     order &&
     ((user.role === UserRole.LAB_TECHNICIAN &&
@@ -38,6 +60,8 @@ export async function canAccessDiagnosticReport(
     isAdmin ||
     isUploader ||
     isAssignedDoctor ||
+    isAssignedEdClinician ||
+    isEdNurse ||
     isDiagnosticStaff
   );
 }

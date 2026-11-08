@@ -353,7 +353,7 @@ export function CollectionPanel() {
             );
 
     const searchableText =
-      `${order.patient?.name || ""} ${order.patient?.mrn || ""} ${order.accessionNumber || ""} ${order.testName || ""} ${order.specimenBarcode || ""} ${order._id || ""}`.toLowerCase();
+      `${order.patient?.name || order.emergencyCase?.patientName || ""} ${order.emergencyCase?.caseId || ""} ${order.patient?.mrn || ""} ${order.accessionNumber || ""} ${order.testName || ""} ${order.specimenBarcode || ""} ${order._id || ""}`.toLowerCase();
     return (
       matchesStatus &&
       matchesPriority &&
@@ -680,7 +680,9 @@ export function CollectionPanel() {
                   visibleOrders.map((order) => {
                     const isSelected = selectedOrder?._id === order._id;
                     const patientName =
-                      order.patient?.name || "Unknown Patient";
+                      order.patient?.name ||
+                      order.emergencyCase?.patientName ||
+                      "Unknown Patient";
                     const isStat = ["STAT", "URGENT", "EMERGENCY"].includes(
                       order.priority?.toUpperCase(),
                     );
@@ -835,9 +837,14 @@ export function CollectionPanel() {
                             <p className="text-xs text-muted-foreground">
                               Patient:{" "}
                               <strong className="text-foreground">
-                                {selectedOrder.patient?.name}
+                                {selectedOrder.patient?.name ||
+                                  selectedOrder.emergencyCase?.patientName ||
+                                  "Unknown Patient"}
                               </strong>{" "}
-                              · MRN: {selectedOrder.patient?.mrn || "N/A"}
+                              ·{" "}
+                              {selectedOrder.emergencyCase
+                                ? `ED ${selectedOrder.emergencyCase.caseId}`
+                                : `MRN: ${selectedOrder.patient?.mrn || "N/A"}`}
                             </p>
                           </div>
                         </div>
@@ -912,7 +919,9 @@ export function CollectionPanel() {
                                 HealOS Laboratory Label
                               </p>
                               <p className="font-bold text-sm text-foreground">
-                                {selectedOrder.patient?.name}
+                                {selectedOrder.patient?.name ||
+                                  selectedOrder.emergencyCase?.patientName ||
+                                  "Unknown Patient"}
                               </p>
                             </div>
                             <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-600">
@@ -939,7 +948,9 @@ export function CollectionPanel() {
                           <div className="flex justify-between text-left text-xs text-muted-foreground pt-3 border-t border-border/50 mt-2">
                             <span>Test: {selectedOrder.testName}</span>
                             <span>
-                              MRN: {selectedOrder.patient?.mrn || "N/A"}
+                              {selectedOrder.emergencyCase
+                                ? `ED ${selectedOrder.emergencyCase.caseId}`
+                                : `MRN: ${selectedOrder.patient?.mrn || "N/A"}`}
                             </span>
                           </div>
                         </div>

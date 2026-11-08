@@ -177,7 +177,9 @@ async function persistStructuredResults(
     throw new AppError("One or more analyte codes are not configured", 400);
 
   const priorReports = await DiagnosticReport.find({
-    patient: order.patient,
+    ...(order.patient
+      ? { patient: order.patient }
+      : { emergencyCase: order.emergencyCase }),
     state: "verified",
     order: { $ne: order._id },
     "structuredResults.analyteCode": { $in: codes },
@@ -208,7 +210,8 @@ async function persistStructuredResults(
     );
   if (!report) {
     report = await DiagnosticReport.create({
-      patient: order.patient,
+      ...(order.patient ? { patient: order.patient } : {}),
+      ...(order.emergencyCase ? { emergencyCase: order.emergencyCase } : {}),
       order: order._id,
       uploadedBy: actor,
       title: `Lab Result - ${order.testName}`,
@@ -396,7 +399,8 @@ export const uploadLabReport = async (req: Request, res: Response) => {
         state: "pending sign",
       }).sort({ createdAt: -1 })) ||
       new DiagnosticReport({
-        patient: order.patient,
+        ...(order.patient ? { patient: order.patient } : {}),
+        ...(order.emergencyCase ? { emergencyCase: order.emergencyCase } : {}),
         order: order._id,
         title: "Lab Result - " + order.testName,
         state: "pending sign",
@@ -472,6 +476,7 @@ export const getLabHistory = async (req: Request, res: Response) => {
     const totalCount = await DiagnosticReport.countDocuments(filter);
     const reports = await DiagnosticReport.find(filter)
       .populate("patient", "name mrn")
+      .populate("emergencyCase", "caseId patientName")
       .populate("order", "testName accessionNumber status")
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -504,6 +509,7 @@ export const getCollections = async (_req: Request, res: Response) => {
     for (const order of orders) await ensureSpecimenIdentity(order);
     await DiagnosticOrder.populate(orders, [
       { path: "patient", select: "name mrn phone" },
+      { path: "emergencyCase", select: "caseId patientName age sex" },
       {
         path: "invoice",
         select: "totalAmount paidAmount insuranceCoverage status paymentMethod",
@@ -790,6 +796,7 @@ export const getSamples = async (_req: Request, res: Response) => {
     for (const sample of samples) await ensureSpecimenIdentity(sample);
     await DiagnosticOrder.populate(samples, [
       { path: "patient", select: "name mrn phone" },
+      { path: "emergencyCase", select: "caseId patientName age sex" },
       { path: "analyser", select: "name discipline" },
       { path: "specimenHistory.performedBy", select: "name" },
     ]);
@@ -805,6 +812,7 @@ export const getPendingValidation = async (_req: Request, res: Response) => {
     const reports = await DiagnosticReport.find({ state: "pending sign" })
       .populate({ path: "order", match: { testType: "PATHOLOGY" } })
       .populate("patient", "name")
+      .populate("emergencyCase", "caseId patientName")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -853,9 +861,11 @@ export const validateReport = async (req: Request, res: Response) => {
     io.to("lab_technician").emit("lab_report_validated", {
       reportId: releasedReport._id,
     });
-    io.to(`user:${releasedReport.patient}`).emit("lab_report_validated", {
-      reportId: releasedReport._id,
-    });
+    if (releasedReport.patient) {
+      io.to(`user:${releasedReport.patient}`).emit("lab_report_validated", {
+        reportId: releasedReport._id,
+      });
+    }
     io.to(`user:${order.doctor}`).emit("lab_report_validated", {
       reportId: releasedReport._id,
     });
@@ -1112,6 +1122,7 @@ export const getAnalyserWorklist = async (req: Request, res: Response) => {
       },
     })
       .populate("patient", "name mrn")
+      .populate("emergencyCase", "caseId patientName")
       .sort({ priority: 1, createdAt: 1 });
     res.json({ success: true, orders });
   } catch (error: any) {
@@ -1533,6 +1544,7 @@ export const getCriticalValues = async (_req: Request, res: Response) => {
         select: "testName accessionNumber doctor specimenBarcode",
       })
       .populate("patient", "name phone")
+      .populate("emergencyCase", "caseId patientName age sex")
       .populate("criticalCallback.contact", "name role phone priority")
       .sort({ createdAt: -1 })
       .lean();

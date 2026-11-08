@@ -70,6 +70,7 @@ export const getOrders = async (
   try {
     const orders = await DiagnosticOrder.find({ testType: "RADIOLOGY" })
       .populate("patient", "name phone")
+      .populate("emergencyCase", "caseId patientName age sex")
       .populate("doctor", "name")
       .sort({ createdAt: -1 })
       .limit(200)
@@ -247,13 +248,15 @@ export const uploadReport = async (req: Request, res: Response) => {
     }
 
     const report = await DiagnosticReport.create({
-      patient: order.patient,
+      ...(order.patient ? { patient: order.patient } : {}),
+      ...(order.emergencyCase ? { emergencyCase: order.emergencyCase } : {}),
       order: order._id,
       uploadedBy,
       fileUrl,
       ...(localFileName ? { localFileName } : {}),
       fileName: file.originalname,
       comments,
+      state: "verified",
     });
     if (localFileName) {
       report.fileUrl = `/api/v1/reports/${report._id}/file`;
@@ -293,6 +296,7 @@ export const getDocuments = async (
       order: { $in: radiologyOrderIds },
     })
       .populate("patient", "name")
+      .populate("emergencyCase", "caseId patientName")
       .populate("radiologist", "name")
       .populate("order", "accessionNumber testName")
       .sort({ createdAt: -1 })

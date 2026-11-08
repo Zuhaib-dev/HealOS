@@ -100,7 +100,7 @@ export function ValidationPanel() {
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       const text =
-        `${r.patient?.name || ""} ${r.patient?.mrn || ""} ${r.order?.testName || ""} ${r.order?.accessionNumber || ""} ${r._id || ""}`.toLowerCase();
+        `${r.patient?.name || r.emergencyCase?.patientName || ""} ${r.emergencyCase?.caseId || ""} ${r.patient?.mrn || ""} ${r.order?.testName || ""} ${r.order?.accessionNumber || ""} ${r._id || ""}`.toLowerCase();
       if (!text.includes(q)) return false;
     }
     return true;
@@ -251,7 +251,10 @@ export function ValidationPanel() {
             const hasCritical = p.isCritical;
             const isReadBackConfirmed = p.criticalCallback?.readBackConfirmed;
             const isBlockedByCritical = hasCritical && !isReadBackConfirmed;
-            const patientName = p.patient?.name || "Unknown Patient";
+            const patientName =
+              p.patient?.name ||
+              p.emergencyCase?.patientName ||
+              "Unknown Patient";
             const accession =
               p.order?.accessionNumber || p.order?._id?.slice(-8) || "N/A";
             const isValidating = validatingId === p._id;

@@ -147,7 +147,7 @@ export function CriticalPanel() {
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       const text =
-        `${c.patient?.name || ""} ${c.order?.testName || ""} ${c.order?.accessionNumber || ""} ${c.findings || ""}`.toLowerCase();
+        `${c.patient?.name || c.emergencyCase?.patientName || ""} ${c.emergencyCase?.caseId || ""} ${c.order?.testName || ""} ${c.order?.accessionNumber || ""} ${c.findings || ""}`.toLowerCase();
       if (!text.includes(q)) return false;
     }
     return true;
@@ -422,7 +422,10 @@ export function CriticalPanel() {
               const isConfirmed = Boolean(
                 c.criticalCallback?.readBackConfirmed,
               );
-              const patientName = c.patient?.name || "Unknown Patient";
+              const patientName =
+                c.patient?.name ||
+                c.emergencyCase?.patientName ||
+                "Unknown Patient";
               const accession =
                 c.order?.accessionNumber || c.order?._id?.slice(-8) || "N/A";
               const selectedContactId = callbacks[c._id]?.contactId;

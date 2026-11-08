@@ -2,7 +2,8 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IDiagnosticReport extends Document {
   order: mongoose.Types.ObjectId; // Link to the order
-  patient: mongoose.Types.ObjectId;
+  patient?: mongoose.Types.ObjectId;
+  emergencyCase?: mongoose.Types.ObjectId;
   radiologist?: mongoose.Types.ObjectId; // The lab tech/radiologist who uploaded it
   uploadedBy?: string; // string or ID
   reportUrl?: string; // URL to PDF/DICOM in cloud storage
@@ -68,7 +69,8 @@ export interface IDiagnosticReport extends Document {
 const diagnosticReportSchema = new Schema<IDiagnosticReport>(
   {
     order: { type: Schema.Types.ObjectId, ref: "DiagnosticOrder" },
-    patient: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    patient: { type: Schema.Types.ObjectId, ref: "User" },
+    emergencyCase: { type: Schema.Types.ObjectId, ref: "EmergencyCase" },
     radiologist: { type: Schema.Types.ObjectId, ref: "User" },
     uploadedBy: { type: String },
     reportUrl: { type: String },

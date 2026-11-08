@@ -2,13 +2,20 @@ import apiClient from "../api-client";
 
 export interface DiagnosticOrderRecord {
   _id: string;
-  patient: {
+  patient?: {
     _id: string;
     firstName: string;
     lastName: string;
     dateOfBirth?: string;
     gender?: string;
     phone?: string;
+  };
+  emergencyCase?: {
+    _id: string;
+    caseId: string;
+    patientName: string;
+    age: number;
+    sex: string;
   };
   doctor: {
     _id: string;

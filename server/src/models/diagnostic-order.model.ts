@@ -35,7 +35,8 @@ export enum DiagnosticOrderStatus {
 }
 
 export interface IDiagnosticOrder extends Document {
-  patient: mongoose.Types.ObjectId;
+  patient?: mongoose.Types.ObjectId;
+  emergencyCase?: mongoose.Types.ObjectId;
   doctor: mongoose.Types.ObjectId;
   consultation?: mongoose.Types.ObjectId; // Link to the consultation where it was ordered
   testType: DiagnosticTestType;
@@ -74,7 +75,8 @@ export interface IDiagnosticOrder extends Document {
 
 const diagnosticOrderSchema = new Schema<IDiagnosticOrder>(
   {
-    patient: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    patient: { type: Schema.Types.ObjectId, ref: "User" },
+    emergencyCase: { type: Schema.Types.ObjectId, ref: "EmergencyCase" },
     doctor: { type: Schema.Types.ObjectId, ref: "User", required: true },
     consultation: { type: Schema.Types.ObjectId, ref: "Consultation" },
     testType: {
@@ -151,7 +153,13 @@ diagnosticOrderSchema.index(
 );
 diagnosticOrderSchema.index({ analyser: 1, specimenStatus: 1, priority: 1 });
 diagnosticOrderSchema.index({ patient: 1, createdAt: -1 });
+diagnosticOrderSchema.index({ emergencyCase: 1, createdAt: -1 });
 diagnosticOrderSchema.index({ status: 1, testType: 1 }); // For radiology/lab queues
+diagnosticOrderSchema.pre("validate", function () {
+  if (!this.patient && !this.emergencyCase) {
+    this.invalidate("patient", "A patient or emergency case is required");
+  }
+});
 
 export const DiagnosticOrder = mongoose.model<IDiagnosticOrder>(
   "DiagnosticOrder",

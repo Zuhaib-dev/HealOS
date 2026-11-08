@@ -73,7 +73,37 @@ export interface EmergencyEncounterData {
   diagnosis: string;
   advice: string;
   medicines: EmergencyEncounterMedicine[];
+  diagnosticOrders: EmergencyDiagnosticOrderDraft[];
   status: "DRAFT" | "COMPLETED";
+}
+
+export interface EmergencyDiagnosticOrderDraft {
+  testType: "PATHOLOGY" | "RADIOLOGY";
+  testName: string;
+  priority: "ROUTINE" | "URGENT" | "STAT";
+  clinicalNotes?: string;
+}
+
+export interface EmergencyDiagnosticOrderResult extends EmergencyDiagnosticOrderDraft {
+  _id: string;
+  status: "PENDING" | "IN_PROGRESS" | "REPORTED" | "CANCELLED";
+  accessionNumber?: string;
+  reportedAt?: string;
+  report?: {
+    _id?: string;
+    title?: string;
+    comments?: string;
+    findings?: string;
+    state?: string;
+    fileUrl?: string;
+    isCritical?: boolean;
+    structuredResults?: {
+      analyteName: string;
+      value: string;
+      unit?: string;
+      flag: string;
+    }[];
+  } | null;
 }
 
 export interface EmergencyMedicationAdministrationData {
@@ -129,6 +159,7 @@ export async function fetchEmergencyEncounterApi(caseId: string) {
     success: boolean;
     case: EmergencyCaseData;
     encounter: EmergencyEncounterData | null;
+    diagnostics: EmergencyDiagnosticOrderResult[];
   }>(`/emergency/cases/${encodeURIComponent(caseId)}/encounter`);
   return response.data;
 }
@@ -141,6 +172,7 @@ export async function saveEmergencyEncounterApi(
     success: boolean;
     case: EmergencyCaseData;
     consultation: EmergencyEncounterData;
+    diagnostics: EmergencyDiagnosticOrderResult[];
   }>(`/emergency/cases/${encodeURIComponent(caseId)}/encounter`, encounter);
   return response.data;
 }

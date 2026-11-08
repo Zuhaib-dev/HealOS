@@ -22,6 +22,12 @@ export async function createOrGetDiagnosticInvoice(
     const existing = await Invoice.findById(order.invoice);
     if (existing) return existing;
   }
+  if (!order.patient && !order.emergencyCase) {
+    throw Object.assign(
+      new Error("Diagnostic order has no patient or ED case"),
+      { statusCode: 409 },
+    );
+  }
   const linked = await Invoice.findOne({ diagnosticOrder: order._id });
   if (linked) {
     order.invoice = linked._id;
@@ -30,7 +36,8 @@ export async function createOrGetDiagnosticInvoice(
   }
   try {
     const invoice = await Invoice.create({
-      patient: order.patient,
+      ...(order.patient ? { patient: order.patient } : {}),
+      ...(order.emergencyCase ? { emergencyCase: order.emergencyCase } : {}),
       issuedBy,
       diagnosticOrder: order._id,
       items: [{ description: order.testName, amount }],
@@ -44,7 +51,8 @@ export async function createOrGetDiagnosticInvoice(
     await order.save();
     const io = getIO();
     const invoiceId = invoice._id;
-    io.to(`user:${order.patient}`).emit("invoice_updated", { invoiceId });
+    if (order.patient)
+      io.to(`user:${order.patient}`).emit("invoice_updated", { invoiceId });
     io.to("admin").emit("invoice_created", { invoiceId });
     io.to("receptionist").emit("invoice_created", { invoiceId });
     return invoice;

@@ -16,6 +16,10 @@ import {
   ConsultationStatus,
   PharmacySale,
   EmergencyMedicationAdministration,
+  DiagnosticOrder,
+  DiagnosticOrderPriority,
+  DiagnosticTestType,
+  DiagnosticReport,
 } from "../models";
 import { logAudit } from "../utils/audit.js";
 import { getIO } from "../socket.js";
@@ -454,10 +458,38 @@ export const getEmergencyEncounter = async (
     const consultation = await Consultation.findOne({
       emergencyCase: emergencyCase._id,
     }).lean();
+    const diagnosticOrders = consultation
+      ? await DiagnosticOrder.find({ consultation: consultation._id })
+          .select(
+            "testType testName priority status accessionNumber createdAt reportedAt",
+          )
+          .sort({ createdAt: 1 })
+          .lean()
+      : [];
+    const diagnostics = await Promise.all(
+      diagnosticOrders.map(async (order) => {
+        const report = await DiagnosticReport.findOne({ order: order._id })
+          .select(
+            "title comments findings fileUrl state structuredResults isCritical createdAt",
+          )
+          .sort({ createdAt: -1 })
+          .lean();
+        return {
+          ...order,
+          report:
+            report?.state === "verified"
+              ? report
+              : report
+                ? { state: report.state, isCritical: report.isCritical }
+                : null,
+        };
+      }),
+    );
     res.status(StatusCodes.OK).json({
       success: true,
       case: formatEmergencyCase(emergencyCase),
       encounter: consultation,
+      diagnostics,
     });
   } catch (error) {
     console.error("Error in getEmergencyEncounter:", error);
@@ -486,6 +518,7 @@ export const saveEmergencyEncounter = async (
     const advice = typeof body.advice === "string" ? body.advice.trim() : "";
     const status = body.status;
     const medicines = body.medicines;
+    const diagnosticOrders = body.diagnosticOrders;
     if (
       assessment.length > 4000 ||
       diagnosis.length > 2000 ||
@@ -494,11 +527,14 @@ export const saveEmergencyEncounter = async (
         status,
       ) ||
       !Array.isArray(medicines) ||
-      medicines.length > 50
+      medicines.length > 50 ||
+      !Array.isArray(diagnosticOrders) ||
+      diagnosticOrders.length > 30
     ) {
       res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: "Check the encounter fields and medicine list.",
+        message:
+          "Check the encounter fields, medicine list, and diagnostic orders.",
       });
       return;
     }
@@ -516,6 +552,12 @@ export const saveEmergencyEncounter = async (
       frequency: string;
       duration: string;
       instructions?: string;
+    }[] = [];
+    const normalizedDiagnosticOrders: {
+      testType: DiagnosticTestType;
+      testName: string;
+      priority: DiagnosticOrderPriority;
+      clinicalNotes?: string;
     }[] = [];
     for (const medicine of medicines) {
       if (!medicine || typeof medicine !== "object") {
@@ -576,6 +618,45 @@ export const saveEmergencyEncounter = async (
         ...(instructions ? { instructions } : {}),
       });
     }
+    for (const order of diagnosticOrders) {
+      if (!order || typeof order !== "object") {
+        res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ success: false, message: "Invalid diagnostic order." });
+        return;
+      }
+      const testType = order.testType;
+      const testName =
+        typeof order.testName === "string" ? order.testName.trim() : "";
+      const priority = order.priority;
+      const clinicalNotes =
+        typeof order.clinicalNotes === "string"
+          ? order.clinicalNotes.trim()
+          : "";
+      if (!testName && !clinicalNotes) continue;
+      if (
+        ![DiagnosticTestType.PATHOLOGY, DiagnosticTestType.RADIOLOGY].includes(
+          testType,
+        ) ||
+        !testName ||
+        testName.length > 200 ||
+        clinicalNotes.length > 1000 ||
+        !Object.values(DiagnosticOrderPriority).includes(priority)
+      ) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message:
+            "Each diagnostic order needs a valid type, test name, and priority.",
+        });
+        return;
+      }
+      normalizedDiagnosticOrders.push({
+        testType,
+        testName,
+        priority,
+        ...(clinicalNotes ? { clinicalNotes } : {}),
+      });
+    }
     let consultation = await Consultation.findOne({
       emergencyCase: emergencyCase._id,
     });
@@ -619,8 +700,47 @@ export const saveEmergencyEncounter = async (
     consultation.diagnosis = diagnosis;
     consultation.advice = advice;
     consultation.medicines = normalizedMedicines;
-    consultation.status = status;
+    consultation.diagnosticOrders = normalizedDiagnosticOrders;
+    consultation.status =
+      status === ConsultationStatus.COMPLETED
+        ? ConsultationStatus.DRAFT
+        : status;
     await consultation.save();
+    if (status === ConsultationStatus.COMPLETED) {
+      for (const order of normalizedDiagnosticOrders) {
+        const existingOrder = await DiagnosticOrder.findOne({
+          consultation: consultation._id,
+          testType: order.testType,
+          testName: order.testName,
+        });
+        if (!existingOrder) {
+          const createdOrder = await DiagnosticOrder.create({
+            ...(emergencyCase.patientRef
+              ? { patient: emergencyCase.patientRef }
+              : {}),
+            emergencyCase: emergencyCase._id,
+            doctor: emergencyCase.assignedDoctor,
+            consultation: consultation._id,
+            testType: order.testType,
+            testName: order.testName,
+            priority: order.priority,
+            clinicalNotes: order.clinicalNotes,
+          });
+          const io = getIO();
+          const event = {
+            orderId: createdOrder._id,
+            emergencyCaseId: emergencyCase._id,
+          };
+          io?.to(
+            order.testType === DiagnosticTestType.PATHOLOGY
+              ? "lab_technician"
+              : "radiologist",
+          ).emit("order_created", event);
+        }
+      }
+      consultation.status = ConsultationStatus.COMPLETED;
+      await consultation.save();
+    }
     emergencyCase.encounterStatus = status;
     emergencyCase.diagnosisSummary = diagnosis || undefined;
     await emergencyCase.save();
@@ -643,6 +763,32 @@ export const saveEmergencyEncounter = async (
       success: true,
       consultation,
       case: formatEmergencyCase(emergencyCase),
+      diagnostics: await Promise.all(
+        (
+          await DiagnosticOrder.find({ consultation: consultation._id })
+            .select(
+              "testType testName priority status accessionNumber createdAt reportedAt",
+            )
+            .sort({ createdAt: 1 })
+            .lean()
+        ).map(async (order) => {
+          const report = await DiagnosticReport.findOne({ order: order._id })
+            .select(
+              "title comments findings fileUrl state structuredResults isCritical createdAt",
+            )
+            .sort({ createdAt: -1 })
+            .lean();
+          return {
+            ...order,
+            report:
+              report?.state === "verified"
+                ? report
+                : report
+                  ? { state: report.state, isCritical: report.isCritical }
+                  : null,
+          };
+        }),
+      ),
     });
   } catch (error) {
     console.error("Error in saveEmergencyEncounter:", error);

@@ -28,6 +28,7 @@ export interface IConsultation extends Document {
   diagnosticOrders?: {
     testType: string;
     testName: string;
+    priority?: string;
     clinicalNotes?: string;
   }[];
   followUpDate?: Date;
@@ -66,6 +67,7 @@ const consultationSchema = new Schema<IConsultation>(
         {
           testType: { type: String },
           testName: { type: String },
+          priority: { type: String, enum: ["ROUTINE", "URGENT", "STAT"] },
           clinicalNotes: { type: String },
         },
       ],

@@ -191,7 +191,8 @@ async function getReportContent(
       throw new AppError("This report has not been released", 403);
     if (
       req.user?.role !== UserRole.ADMIN &&
-      legacyReport.patient.toString() !== req.user?._id.toString()
+      (!legacyReport.patient ||
+        legacyReport.patient.toString() !== req.user?._id.toString())
     )
       throw new AppError("You do not have access to this report", 403);
     return getReportContent(req, legacyReport._id.toString());

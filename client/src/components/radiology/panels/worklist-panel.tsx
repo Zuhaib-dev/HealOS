@@ -269,7 +269,7 @@ export function WorklistPanel() {
         ? `${order.patient.firstName || ""} ${order.patient.lastName || ""}`.trim() ||
           order.patient.name ||
           ""
-        : "";
+        : order.emergencyCase?.patientName || "";
 
       // Modality filter
       if (modalityFilter !== "ALL" && order.modality !== modalityFilter)
@@ -284,7 +284,7 @@ export function WorklistPanel() {
 
       if (!q) return true;
       const searchable =
-        `${patientName} ${order.accessionNumber || ""} ${order.testName || ""} ${order.modality || ""} ${order._id || ""}`.toLowerCase();
+        `${patientName} ${order.emergencyCase?.caseId || ""} ${order.accessionNumber || ""} ${order.testName || ""} ${order.modality || ""} ${order._id || ""}`.toLowerCase();
       return searchable.includes(q);
     });
   }, [pendingQueue, search, modalityFilter, priorityFilter]);
@@ -445,7 +445,7 @@ export function WorklistPanel() {
                   ? `${order.patient.firstName || ""} ${order.patient.lastName || ""}`.trim() ||
                     order.patient.name ||
                     "Unknown Patient"
-                  : "Unknown Patient";
+                  : order.emergencyCase?.patientName || "Unknown Patient";
                 const isStat = ["STAT", "URGENT", "EMERGENCY"].includes(
                   order.priority?.toUpperCase(),
                 );
@@ -595,8 +595,14 @@ export function WorklistPanel() {
                           Patient:{" "}
                           <strong className="text-foreground">
                             {selectedOrder.patient?.name ||
+                              selectedOrder.emergencyCase?.patientName ||
                               `${selectedOrder.patient?.firstName || ""} ${selectedOrder.patient?.lastName || ""}`}
                           </strong>{" "}
+                          {selectedOrder.emergencyCase && (
+                            <span>
+                              · ED {selectedOrder.emergencyCase.caseId}{" "}
+                            </span>
+                          )}
                           · Modality:{" "}
                           <span className="font-mono font-bold text-foreground">
                             {selectedOrder.modality || "Imaging"}

@@ -5,12 +5,15 @@ import Link from "next/link";
 import { Plus, Trash2, RefreshCw, ArrowLeft } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Pill } from "@/components/workspace/ui";
+import { openProtectedReport } from "@/lib/api/reports";
 import {
   fetchEmergencyEncounterApi,
   saveEmergencyEncounterApi,
   type EmergencyCaseData,
   type EmergencyEncounterData,
   type EmergencyEncounterMedicine,
+  type EmergencyDiagnosticOrderDraft,
+  type EmergencyDiagnosticOrderResult,
 } from "@/lib/api/emergency";
 
 const emptyMedicine = (): EmergencyEncounterMedicine => ({
@@ -22,16 +25,27 @@ const emptyMedicine = (): EmergencyEncounterMedicine => ({
   instructions: "",
 });
 
+const emptyDiagnosticOrder = (): EmergencyDiagnosticOrderDraft => ({
+  testType: "PATHOLOGY",
+  testName: "",
+  priority: "ROUTINE",
+  clinicalNotes: "",
+});
+
 export function EmergencyEncounterPanel({ caseId }: { caseId: string }) {
   const [emergencyCase, setEmergencyCase] = useState<EmergencyCaseData | null>(
     null,
   );
+  const [diagnostics, setDiagnostics] = useState<
+    EmergencyDiagnosticOrderResult[]
+  >([]);
   const [encounter, setEncounter] = useState<EmergencyEncounterData>({
     chiefComplaint: "",
     assessment: "",
     diagnosis: "",
     advice: "",
     medicines: [],
+    diagnosticOrders: [],
     status: "DRAFT",
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +58,7 @@ export function EmergencyEncounterPanel({ caseId }: { caseId: string }) {
     try {
       const response = await fetchEmergencyEncounterApi(caseId);
       setEmergencyCase(response.case);
+      setDiagnostics(response.diagnostics || []);
       if (response.encounter) {
         setEncounter({
           _id: response.encounter._id,
@@ -53,6 +68,7 @@ export function EmergencyEncounterPanel({ caseId }: { caseId: string }) {
           diagnosis: response.encounter.diagnosis || "",
           advice: response.encounter.advice || "",
           medicines: response.encounter.medicines || [],
+          diagnosticOrders: response.encounter.diagnosticOrders || [],
           status: response.encounter.status,
         });
       } else {
@@ -85,10 +101,29 @@ export function EmergencyEncounterPanel({ caseId }: { caseId: string }) {
       const response = await saveEmergencyEncounterApi(caseId, payload);
       setEncounter(response.consultation);
       setEmergencyCase(response.case);
+      setDiagnostics(response.diagnostics || []);
       setMessage(
         status === "COMPLETED"
-          ? encounter.medicines.some((medicine) => medicine.name.trim())
-            ? "Encounter signed. Prescription sent to the pharmacy queue."
+          ? [
+              encounter.medicines.some((medicine) => medicine.name.trim())
+                ? "Prescription sent to pharmacy"
+                : "",
+              encounter.diagnosticOrders.some((order) => order.testName.trim())
+                ? "diagnostics routed to lab/radiology"
+                : "",
+            ].filter(Boolean).length > 0
+            ? `Encounter signed; ${[
+                encounter.medicines.some((medicine) => medicine.name.trim())
+                  ? "prescription sent to pharmacy"
+                  : "",
+                encounter.diagnosticOrders.some((order) =>
+                  order.testName.trim(),
+                )
+                  ? "diagnostics routed to lab/radiology"
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" and ")}.`
             : "Encounter signed and saved."
           : "Draft saved.",
       );
@@ -111,6 +146,19 @@ export function EmergencyEncounterPanel({ caseId }: { caseId: string }) {
       ...current,
       medicines: current.medicines.map((medicine, medicineIndex) =>
         medicineIndex === index ? { ...medicine, [field]: value } : medicine,
+      ),
+    }));
+  };
+
+  const updateDiagnosticOrder = (
+    index: number,
+    field: keyof EmergencyDiagnosticOrderDraft,
+    value: string,
+  ) => {
+    setEncounter((current) => ({
+      ...current,
+      diagnosticOrders: current.diagnosticOrders.map((order, orderIndex) =>
+        orderIndex === index ? { ...order, [field]: value } : order,
       ),
     }));
   };
@@ -358,6 +406,138 @@ export function EmergencyEncounterPanel({ caseId }: { caseId: string }) {
               </div>
             )}
           </section>
+
+          <section className="bg-background p-5 sm:p-7">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-lg font-semibold">
+                  Diagnostic orders
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Signed orders appear in the pathology or radiology worklist.
+                </p>
+              </div>
+              <ActionButton
+                onClick={() =>
+                  setEncounter({
+                    ...encounter,
+                    diagnosticOrders: [
+                      ...encounter.diagnosticOrders,
+                      emptyDiagnosticOrder(),
+                    ],
+                  })
+                }
+              >
+                <Plus className="mr-1 inline size-3" />
+                Add test
+              </ActionButton>
+            </div>
+            {encounter.diagnosticOrders.length === 0 ? (
+              <div className="hairline bg-foreground/2 p-5 text-sm text-muted-foreground">
+                No diagnostic orders added.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {encounter.diagnosticOrders.map((order, index) => (
+                  <div
+                    key={`${order.testType}-${index}`}
+                    className="hairline grid gap-3 bg-foreground/2 p-4 sm:grid-cols-2"
+                  >
+                    <label className="mono-label text-xs text-muted-foreground">
+                      Department
+                      <select
+                        value={order.testType}
+                        onChange={(event) =>
+                          updateDiagnosticOrder(
+                            index,
+                            "testType",
+                            event.target.value,
+                          )
+                        }
+                        className="hairline bg-background mt-1 w-full p-2 text-sm text-foreground"
+                      >
+                        <option value="PATHOLOGY">
+                          Laboratory / pathology
+                        </option>
+                        <option value="RADIOLOGY">Radiology</option>
+                      </select>
+                    </label>
+                    <label className="mono-label text-xs text-muted-foreground">
+                      Priority
+                      <select
+                        value={order.priority}
+                        onChange={(event) =>
+                          updateDiagnosticOrder(
+                            index,
+                            "priority",
+                            event.target.value,
+                          )
+                        }
+                        className="hairline bg-background mt-1 w-full p-2 text-sm text-foreground"
+                      >
+                        <option value="ROUTINE">Routine</option>
+                        <option value="URGENT">Urgent</option>
+                        <option value="STAT">STAT</option>
+                      </select>
+                    </label>
+                    <label className="mono-label text-xs text-muted-foreground sm:col-span-2">
+                      Test name
+                      <input
+                        maxLength={200}
+                        value={order.testName}
+                        onChange={(event) =>
+                          updateDiagnosticOrder(
+                            index,
+                            "testName",
+                            event.target.value,
+                          )
+                        }
+                        className="hairline bg-background mt-1 w-full p-2 text-sm text-foreground"
+                        placeholder={
+                          order.testType === "PATHOLOGY"
+                            ? "CBC, electrolytes…"
+                            : "Chest X-ray, CT…"
+                        }
+                      />
+                    </label>
+                    <label className="mono-label text-xs text-muted-foreground sm:col-span-2">
+                      Clinical indication
+                      <input
+                        maxLength={1000}
+                        value={order.clinicalNotes || ""}
+                        onChange={(event) =>
+                          updateDiagnosticOrder(
+                            index,
+                            "clinicalNotes",
+                            event.target.value,
+                          )
+                        }
+                        className="hairline bg-background mt-1 w-full p-2 text-sm text-foreground"
+                        placeholder="Reason for investigation"
+                      />
+                    </label>
+                    <div className="flex justify-end sm:col-span-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEncounter({
+                            ...encounter,
+                            diagnosticOrders: encounter.diagnosticOrders.filter(
+                              (_, orderIndex) => orderIndex !== index,
+                            ),
+                          })
+                        }
+                        className="inline-flex items-center gap-1 text-xs text-destructive"
+                      >
+                        <Trash2 className="size-3" />
+                        Remove order
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
 
         <aside className="space-y-px">
@@ -372,6 +552,91 @@ export function EmergencyEncounterPanel({ caseId }: { caseId: string }) {
               The nursing chart keeps the timestamped history on the triage
               board.
             </p>
+          </section>
+          <section className="bg-background p-5 sm:p-7">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-display text-lg font-semibold">
+                Investigation status
+              </h2>
+              <span className="mono-label text-xs text-muted-foreground">
+                {diagnostics.length} signed
+              </span>
+            </div>
+            {diagnostics.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Signed investigations will appear here as lab and radiology
+                teams process them.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {diagnostics.map((order) => (
+                  <li key={order._id} className="hairline bg-foreground/2 p-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <strong className="text-sm">{order.testName}</strong>
+                      <span className="mono-label text-xs">
+                        {order.status.replaceAll("_", " ")}
+                      </span>
+                    </div>
+                    <p className="mono-label mt-1 text-xs text-muted-foreground">
+                      {order.testType} · {order.priority}
+                      {order.accessionNumber
+                        ? ` · ${order.accessionNumber}`
+                        : ""}
+                    </p>
+                    {order.status === "REPORTED" &&
+                      order.report?.state === "pending sign" && (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Report is awaiting verification.
+                        </p>
+                      )}
+                    {order.report?.isCritical && (
+                      <p className="mt-2 text-xs font-semibold text-destructive">
+                        Critical result — review immediately
+                      </p>
+                    )}
+                    {order.report?.findings && (
+                      <p className="mt-2 text-sm">{order.report.findings}</p>
+                    )}
+                    {order.report?.comments && (
+                      <p className="mt-2 text-sm">{order.report.comments}</p>
+                    )}
+                    {order.report?.structuredResults &&
+                      order.report.structuredResults.length > 0 && (
+                        <ul className="mt-2 space-y-1 border-l border-border pl-3">
+                          {order.report.structuredResults.map(
+                            (result, index) => (
+                              <li
+                                key={`${result.analyteName}-${index}`}
+                                className="text-xs text-muted-foreground"
+                              >
+                                <span className="font-medium text-foreground">
+                                  {result.analyteName}:
+                                </span>{" "}
+                                {result.value} {result.unit || ""} ·{" "}
+                                {result.flag.replaceAll("_", " ")}
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                      )}
+                    {order.report?._id && order.report.state === "verified" && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void openProtectedReport(order.report!._id!).catch(
+                            () =>
+                              setError("Unable to open the released report."),
+                          )
+                        }
+                        className="mt-3 text-xs font-semibold text-primary underline"
+                      >
+                        Open released report
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
           <section className="bg-background p-5 sm:p-7">
             <h2 className="font-display text-lg font-semibold">
@@ -403,9 +668,8 @@ export function EmergencyEncounterPanel({ caseId }: { caseId: string }) {
               </ActionButton>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              Signing requires a diagnosis. Pharmacy orders become visible after
-              signature; signed orders cannot be edited once pharmacy processing
-              starts.
+              Signing requires a diagnosis. Medication and diagnostic orders
+              route to their staff worklists after signature.
             </p>
           </section>
         </aside>

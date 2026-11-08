@@ -117,7 +117,7 @@ export function AccessioningPanel() {
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       const searchable =
-        `${s.accessionNumber || ""} ${s.patient?.name || ""} ${s.patient?.mrn || ""} ${s.testName || ""} ${s.specimenBarcode || ""} ${s._id || ""}`.toLowerCase();
+        `${s.accessionNumber || ""} ${s.patient?.name || s.emergencyCase?.patientName || ""} ${s.emergencyCase?.caseId || ""} ${s.patient?.mrn || ""} ${s.testName || ""} ${s.specimenBarcode || ""} ${s._id || ""}`.toLowerCase();
       if (!searchable.includes(q)) return false;
     }
 
@@ -424,7 +424,10 @@ export function AccessioningPanel() {
                   : null;
                 const sla = s.slaMin;
                 const breach = tat !== null && sla !== undefined && tat > sla;
-                const patientName = s.patient?.name || "Unknown Patient";
+                const patientName =
+                  s.patient?.name ||
+                  s.emergencyCase?.patientName ||
+                  "Unknown Patient";
                 const isBusy = busyId === s._id;
                 const activeScan = scans[s._id] || "";
                 const isBarcodeMatch =
@@ -451,7 +454,9 @@ export function AccessioningPanel() {
                         {patientName}
                       </p>
                       <p className="font-mono text-xs text-muted-foreground">
-                        MRN: {s.patient?.mrn || "N/A"}
+                        {s.emergencyCase
+                          ? `ED ${s.emergencyCase.caseId}`
+                          : `MRN: ${s.patient?.mrn || "N/A"}`}
                       </p>
                     </Td>
 

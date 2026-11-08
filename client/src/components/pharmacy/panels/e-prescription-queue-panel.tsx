@@ -114,7 +114,7 @@ export function RxQueuePanel() {
     () =>
       rows.filter((row) => {
         const matchesSearch =
-          `${row.patient?.name || ""} ${row.doctor?.name || ""} ${row._id}`
+          `${row.patient?.name || row.emergencyCase?.patientName || ""} ${row.emergencyCase?.caseId || ""} ${row.doctor?.name || ""} ${row._id}`
             .toLowerCase()
             .includes(search.toLowerCase());
         return (
@@ -223,7 +223,7 @@ export function RxQueuePanel() {
         })),
       );
       toast.success(
-        "Invoice sent to the patient's billing page. Stock is checked again before dispensing.",
+        "Invoice created. Stock is checked again before dispensing.",
       );
       await load();
     } catch (error: any) {
@@ -359,7 +359,9 @@ export function RxQueuePanel() {
                       >
                         <span className="flex w-full min-w-0 items-baseline justify-between gap-3">
                           <span className="truncate font-display text-lg font-semibold tracking-tight">
-                            {row.patient?.name || "Patient"}
+                            {row.patient?.name ||
+                              row.emergencyCase?.patientName ||
+                              "Patient"}
                           </span>
                           <span
                             className={`mono-label shrink-0 ${
@@ -374,6 +376,9 @@ export function RxQueuePanel() {
                           </span>
                         </span>
                         <span className="truncate text-sm text-muted-foreground">
+                          {row.emergencyCase
+                            ? `${row.emergencyCase.caseId} · `
+                            : ""}
                           Dr. {row.doctor?.name || "—"}
                         </span>
                         <span className="mt-auto flex w-full items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -424,10 +429,15 @@ export function RxQueuePanel() {
                     Queue
                   </button>
                   <h2 className="truncate font-display text-2xl font-bold tracking-tight">
-                    {selected.patient?.name || "Patient"}
+                    {selected.patient?.name ||
+                      selected.emergencyCase?.patientName ||
+                      "Patient"}
                   </h2>
                   <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
                     <span>Dr. {selected.doctor?.name || "—"}</span>
+                    {selected.emergencyCase && (
+                      <span>ED case {selected.emergencyCase.caseId}</span>
+                    )}
                     <span>
                       {new Date(selected.createdAt).toLocaleDateString()}
                     </span>

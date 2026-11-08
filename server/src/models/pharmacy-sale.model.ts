@@ -5,7 +5,8 @@ export type PharmacySaleStatus =
 
 export interface IPharmacySale extends Document {
   consultation: mongoose.Types.ObjectId;
-  patient: mongoose.Types.ObjectId;
+  patient?: mongoose.Types.ObjectId;
+  emergencyCase?: mongoose.Types.ObjectId;
   invoice: mongoose.Types.ObjectId;
   pharmacist: mongoose.Types.ObjectId;
   dispensedBy?: mongoose.Types.ObjectId;
@@ -31,7 +32,8 @@ const pharmacySaleSchema = new Schema<IPharmacySale>(
       ref: "Consultation",
       required: true,
     },
-    patient: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    patient: { type: Schema.Types.ObjectId, ref: "User" },
+    emergencyCase: { type: Schema.Types.ObjectId, ref: "EmergencyCase" },
     invoice: {
       type: Schema.Types.ObjectId,
       ref: "Invoice",
@@ -67,6 +69,7 @@ const pharmacySaleSchema = new Schema<IPharmacySale>(
 
 pharmacySaleSchema.index({ status: 1, createdAt: -1 });
 pharmacySaleSchema.index({ consultation: 1 }, { unique: true });
+pharmacySaleSchema.index({ emergencyCase: 1, createdAt: -1 });
 
 export const PharmacySale = mongoose.model<IPharmacySale>(
   "PharmacySale",

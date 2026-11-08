@@ -30,7 +30,8 @@ export interface IInvoicePayment {
 }
 
 export interface IInvoice extends Document {
-  patient: mongoose.Types.ObjectId;
+  patient?: mongoose.Types.ObjectId;
+  emergencyCase?: mongoose.Types.ObjectId;
   issuedBy: mongoose.Types.ObjectId; // User who generated the invoice
   appointment?: mongoose.Types.ObjectId; // Optional link to an appointment
   pharmacySale?: mongoose.Types.ObjectId;
@@ -53,7 +54,8 @@ export interface IInvoice extends Document {
 
 const invoiceSchema = new Schema<IInvoice>(
   {
-    patient: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    patient: { type: Schema.Types.ObjectId, ref: "User" },
+    emergencyCase: { type: Schema.Types.ObjectId, ref: "EmergencyCase" },
     issuedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     appointment: { type: Schema.Types.ObjectId, ref: "Appointment" },
     pharmacySale: { type: Schema.Types.ObjectId, ref: "PharmacySale" },
@@ -113,6 +115,12 @@ const invoiceSchema = new Schema<IInvoice>(
   },
   { timestamps: true },
 );
+
+invoiceSchema.pre("validate", function () {
+  if (!this.patient && !this.emergencyCase) {
+    this.invalidate("patient", "A patient or emergency case is required");
+  }
+});
 
 invoiceSchema.index({ patient: 1, status: 1 });
 invoiceSchema.index({ status: 1 });

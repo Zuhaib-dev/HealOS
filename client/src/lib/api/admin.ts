@@ -221,7 +221,13 @@ export async function saveDoctorAvailabilityApi(doctorId: string, data: any) {
 
 export interface AdminInvoiceData {
   _id: string;
-  patient: { name: string; email?: string; phone?: string };
+  patient?: { name: string; email?: string; phone?: string };
+  emergencyCase?: {
+    caseId: string;
+    patientName: string;
+    age: number;
+    sex: string;
+  };
   totalAmount: number;
   paidAmount?: number;
   insuranceCoverage?: number;

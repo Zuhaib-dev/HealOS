@@ -216,7 +216,10 @@ export function BillingPanel() {
       const tableRows = filteredData.map((inv) => [
         inv._id.slice(-8).toUpperCase(),
         new Date(inv.createdAt).toLocaleDateString(),
-        inv.patient?.name || "Unknown",
+        inv.patient?.name ||
+          inv.emergencyCase?.patientName ||
+          inv.emergencyCase?.caseId ||
+          "Unknown",
         inv.status || "PENDING",
         inv.totalAmount?.toLocaleString() || "0",
       ]);
@@ -373,10 +376,12 @@ export function BillingPanel() {
                 </Td>
                 <Td>
                   <span className="font-medium group-hover:text-primary transition-colors">
-                    {inv.patient?.name || "Unknown Patient"}
+                    {inv.patient?.name ||
+                      inv.emergencyCase?.patientName ||
+                      "Unknown Patient"}
                   </span>
                   <span className="text-muted-foreground text-xs block mt-0.5">
-                    {inv.patient?.email}
+                    {inv.patient?.email || inv.emergencyCase?.caseId}
                   </span>
                 </Td>
                 <Td>
@@ -431,7 +436,9 @@ export function BillingPanel() {
                         </DialogTitle>
                         <DialogDescription>
                           Hospital payment receipt details for{" "}
-                          {inv.patient?.name || "Patient"}
+                          {inv.patient?.name ||
+                            inv.emergencyCase?.patientName ||
+                            "Patient"}
                         </DialogDescription>
                       </DialogHeader>
                       {/* Receipt paper container */}
@@ -494,7 +501,9 @@ export function BillingPanel() {
                             </span>
                             <div className="text-right">
                               <span className="font-bold">
-                                {inv.patient?.name || "Unknown Patient"}
+                                {inv.patient?.name ||
+                                  inv.emergencyCase?.patientName ||
+                                  "Unknown Patient"}
                               </span>
                               {inv.patient?.phone && (
                                 <span className="block mt-0.5">

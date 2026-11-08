@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import {
   Consultation,
   ConsultationStatus,
+  EmergencyCase,
   Inventory,
   Invoice,
   InvoicePaymentMethod,
@@ -85,6 +86,7 @@ export const getPendingPrescriptions = async (_req: Request, res: Response) => {
       "medicines.isDispensed": { $ne: true },
     })
       .populate("patient", "name phone")
+      .populate("emergencyCase", "caseId patientName age sex")
       .populate("doctor", "name")
       .sort({ createdAt: -1 })
       .lean();
@@ -115,6 +117,7 @@ export const getPrescriptionHistory = async (_req: Request, res: Response) => {
   try {
     const sales = await PharmacySale.find({ status: "DISPENSED" })
       .populate("patient", "name phone")
+      .populate("emergencyCase", "caseId patientName age sex")
       .populate("pharmacist", "name")
       .populate("dispensedBy", "name")
       .populate(
@@ -311,8 +314,19 @@ export const createPharmacyBill = async (req: Request, res: Response) => {
       reserved.push({ id: new mongoose.Types.ObjectId(id), quantity });
     }
 
+    const linkedEmergencyCase = consultation.emergencyCase
+      ? await EmergencyCase.findById(consultation.emergencyCase).select(
+          "caseId patientName",
+        )
+      : null;
+    if (!consultation.patient && !linkedEmergencyCase) {
+      return bad(res, 409, "The prescription has no linked patient or ED case");
+    }
     const invoice = await Invoice.create({
-      patient: consultation.patient,
+      ...(consultation.patient ? { patient: consultation.patient } : {}),
+      ...(consultation.emergencyCase
+        ? { emergencyCase: consultation.emergencyCase }
+        : {}),
       issuedBy: req.user?._id,
       appointment: consultation.appointment,
       items: saleItems.map((item) => ({
@@ -329,7 +343,10 @@ export const createPharmacyBill = async (req: Request, res: Response) => {
     try {
       sale = await PharmacySale.create({
         consultation: consultation._id,
-        patient: consultation.patient,
+        ...(consultation.patient ? { patient: consultation.patient } : {}),
+        ...(consultation.emergencyCase
+          ? { emergencyCase: consultation.emergencyCase }
+          : {}),
         invoice: invoice._id,
         pharmacist: req.user?._id,
         items: saleItems,

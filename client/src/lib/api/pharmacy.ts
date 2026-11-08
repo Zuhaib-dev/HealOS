@@ -14,7 +14,14 @@ export interface PharmacyCatalogItem {
 export interface PharmacySaleRecord {
   _id: string;
   consultation: string;
-  patient: { _id: string; name: string; phone?: string };
+  patient?: { _id: string; name: string; phone?: string };
+  emergencyCase?: {
+    _id: string;
+    caseId: string;
+    patientName: string;
+    age: number;
+    sex: string;
+  };
   pharmacist?: { name: string };
   dispensedBy?: { name: string };
   invoice: {
@@ -50,7 +57,14 @@ export interface MedicineRecord {
 
 export interface PendingPrescriptionRecord {
   _id: string;
-  patient: { _id: string; name: string; phone?: string };
+  patient?: { _id: string; name: string; phone?: string };
+  emergencyCase?: {
+    _id: string;
+    caseId: string;
+    patientName: string;
+    age: number;
+    sex: string;
+  };
   doctor: { _id: string; name: string };
   medicines: MedicineRecord[];
   createdAt: string;

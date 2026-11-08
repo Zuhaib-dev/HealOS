@@ -32,8 +32,8 @@ export default function WorkspaceLayout({
         sections={sections}
 
         statusTitle="Department"
-        statusLine="34 in department"
-        statusNote="2 resus occupied · 3 ambulances inbound"
+        statusLine="Live operations"
+        statusNote="Counts reflect active emergency records"
       >
         {children}
       </WorkspaceShell>

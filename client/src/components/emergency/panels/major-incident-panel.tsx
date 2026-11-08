@@ -90,17 +90,19 @@ export function MajorIncidentPanel() {
       <PanelHeader
         index="04 / escalation"
         title="Disaster / mass-casualty mode"
-        note="Arming this mode switches the department to triage-sieve capture, releases surge capacity and drives the action cascade."
+        note="Hospital-approved escalation instructions and capacity must be configured before disaster mode can be activated."
         actions={
           <div className="flex items-center gap-2">
             <ActionButton onClick={loadIncident}>
               <RefreshCw className="mr-1 inline size-3" />
               Refresh
             </ActionButton>
-            <ActionButton tone="solid" onClick={() => window.print()}>
-              <Printer className="mr-1 inline size-3.5" />
-              Print cascade card
-            </ActionButton>
+            {incident && (
+              <ActionButton tone="solid" onClick={() => window.print()}>
+                <Printer className="mr-1 inline size-3.5" />
+                Print cascade card
+              </ActionButton>
+            )}
           </div>
         }
       />
@@ -112,6 +114,16 @@ export function MajorIncidentPanel() {
           className="p-12 text-center mono-label text-muted-foreground animate-pulse"
         >
           Loading major incident protocols...
+        </div>
+      ) : !incident ? (
+        <div className="hairline bg-background p-8 sm:p-10">
+          <p className="font-mono text-base font-semibold">
+            No approved incident plan configured
+          </p>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Disaster mode is unavailable until an authorized team configures the
+            hospital&apos;s actual escalation checklist and surge capacity.
+          </p>
         </div>
       ) : (
         <div
@@ -164,9 +176,24 @@ export function MajorIncidentPanel() {
                   </p>
                   <div className="mt-3 grid gap-4 sm:grid-cols-3">
                     {[
-                      ["Surge beds", `+${incident?.surgeBeds || 42}`],
-                      ["Theatres armed", String(incident?.theatresArmed || 3)],
-                      ["Staff recalled", String(incident?.staffRecalled || 68)],
+                      [
+                        "Surge beds",
+                        incident.surgeBeds == null
+                          ? "—"
+                          : `+${incident.surgeBeds}`,
+                      ],
+                      [
+                        "Theatres armed",
+                        incident.theatresArmed == null
+                          ? "—"
+                          : String(incident.theatresArmed),
+                      ],
+                      [
+                        "Staff recalled",
+                        incident.staffRecalled == null
+                          ? "—"
+                          : String(incident.staffRecalled),
+                      ],
                     ].map(([k, v]) => (
                       <div key={k}>
                         <p className="font-mono text-2xl font-bold">{v}</p>

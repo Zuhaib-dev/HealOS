@@ -29,216 +29,95 @@ const broadcastEmergencyEvent = (event: string, payload: any) => {
   }
 };
 
-// ============================================
-// Default Seed Data
-// ============================================
-export const ensureEmergencyDataSeeded = async () => {
-  try {
-    const caseCount = await EmergencyCase.countDocuments();
-    if (caseCount === 0) {
-      const now = Date.now();
-      await EmergencyCase.create([
+// Remove only the exact demo fixtures previously inserted by this controller.
+// Matching both identifiers and fixture text avoids deleting real operations
+// records that happen to share a short unit or bay label.
+let legacyDemoCleanup: Promise<void> | undefined;
+const removeLegacyEmergencyDemoData = async () => {
+  legacyDemoCleanup ??= Promise.all([
+    EmergencyCase.deleteMany({
+      $or: [
         {
           caseId: "ED-4412",
           patientName: "Unknown male",
-          age: 55,
-          sex: "M",
           presentingComplaint: "Cardiac arrest · ROSC en route",
-          esi: 1,
-          arrivedAt: new Date(now - 12 * 60 * 1000),
-          area: "Resus 1",
-          observations: "HR 118 · BP 84/50 · SpO2 91%",
-          disposition: "in bay",
         },
         {
           caseId: "ED-4411",
           patientName: "Sana Qureshi",
-          age: 34,
-          sex: "F",
           presentingComplaint: "Severe asthma, silent chest",
-          esi: 2,
-          arrivedAt: new Date(now - 26 * 60 * 1000),
-          area: "Resus 2",
-          observations: "RR 32 · SpO2 88% · PEF 30%",
-          disposition: "in bay",
         },
         {
           caseId: "ED-4409",
           patientName: "Tom Whelan",
-          age: 68,
-          sex: "M",
           presentingComplaint: "Central chest pain, ST changes",
-          esi: 2,
-          arrivedAt: new Date(now - 39 * 60 * 1000),
-          area: "Acute 4",
-          observations: "HR 96 · BP 148/88 · Trop pending",
-          disposition: "awaiting bed",
         },
         {
           caseId: "ED-4408",
           patientName: "Meera Joshi",
-          age: 41,
-          sex: "F",
           presentingComplaint: "RIF pain, vomiting",
-          esi: 3,
-          arrivedAt: new Date(now - 60 * 60 * 1000),
-          area: "Majors 7",
-          observations: "HR 102 · T 38.1",
-          disposition: "in bay",
         },
         {
           caseId: "ED-4405",
           patientName: "Kofi Mensah",
-          age: 23,
-          sex: "M",
           presentingComplaint: "Ankle injury, weight-bearing",
-          esi: 4,
-          arrivedAt: new Date(now - 89 * 60 * 1000),
-          area: "Minors",
-          observations: "obs normal",
-          disposition: "in bay",
         },
         {
           caseId: "ED-4402",
           patientName: "Elsie Barnes",
-          age: 79,
-          sex: "F",
           presentingComplaint: "Mechanical fall, no LOC",
-          esi: 3,
-          arrivedAt: new Date(now - 118 * 60 * 1000),
-          area: "Waiting",
-          observations: "HR 84 · BP 132/70",
-          disposition: "awaiting triage",
         },
-      ]);
-      console.log("🚑 Default ED emergency cases seeded successfully.");
-    }
-
-    const bayCount = await ResusBay.countDocuments();
-    if (bayCount === 0) {
-      await ResusBay.create([
+      ],
+    }),
+    ResusBay.deleteMany({
+      $or: [
         {
           bayId: "Resus 1",
-          state: "occupied",
           patientSummary: "Unknown male · post-arrest",
           team: "Dr. Varma + 3",
-          occupiedAt: new Date(Date.now() - 12 * 60 * 1000),
-          clockDisplay: "12 min",
-          airway: "ETT 8.0",
-          lines: "IO humeral, R IJ",
-          nextIntervention: "Repeat gas 14:20",
         },
         {
           bayId: "Resus 2",
-          state: "occupied",
           patientSummary: "Sana Qureshi · asthma",
           team: "Dr. Bose + 2",
-          occupiedAt: new Date(Date.now() - 26 * 60 * 1000),
-          clockDisplay: "26 min",
-          airway: "NIV mask",
-          lines: "2 × 18G",
-          nextIntervention: "Mg infusion running",
         },
-        {
-          bayId: "Resus 3",
-          state: "ready",
-          patientSummary: "—",
-          team: "—",
-          clockDisplay: "—",
-          airway: "checked 12:00",
-          lines: "trolley stocked",
-          nextIntervention: "Available",
-        },
-        {
-          bayId: "Resus 4",
-          state: "cleaning",
-          patientSummary: "—",
-          team: "Housekeeping",
-          clockDisplay: "4 min",
-          airway: "restock due",
-          lines: "—",
-          nextIntervention: "Ready ~14:15",
-        },
-      ]);
-      console.log("🩺 Default Resus bays seeded successfully.");
-    }
-
-    const inboundCount = await InboundAmbulance.countDocuments();
-    if (inboundCount === 0) {
-      await InboundAmbulance.create([
+        { bayId: "Resus 3", patientSummary: "—", airway: "checked 12:00" },
+        { bayId: "Resus 4", patientSummary: "—", team: "Housekeeping" },
+      ],
+    }),
+    InboundAmbulance.deleteMany({
+      $or: [
         {
           unit: "AMB-21",
-          etaMinutes: 3,
           presentingComplaint: "STEMI, pre-alert",
-          esi: 1,
           crew: "Paramedic Shah",
-          observations: "HR 52 · BP 92/60 · anterior ST↑",
-          prealert: true,
-          progress: 0.86,
         },
         {
           unit: "AMB-07",
-          etaMinutes: 9,
           presentingComplaint: "RTC, ?pelvic fracture",
-          esi: 2,
           crew: "Paramedic Cole",
-          observations: "HR 110 · BP 104/68 · GCS 15",
-          prealert: true,
-          progress: 0.58,
         },
         {
           unit: "AMB-14",
-          etaMinutes: 17,
           presentingComplaint: "Elderly fall, hip pain",
-          esi: 3,
           crew: "Tech Grewal",
-          observations: "obs stable",
-          prealert: false,
-          progress: 0.3,
         },
-      ]);
-      console.log("🚨 Default Inbound ambulances seeded successfully.");
-    }
-
-    const incidentCount = await MajorIncident.countDocuments();
-    if (incidentCount === 0) {
-      await MajorIncident.create({
-        isArmed: false,
-        surgeBeds: 42,
-        theatresArmed: 3,
-        staffRecalled: 68,
-        steps: [
-          {
-            text: "Declare major incident to switchboard (dial 2222)",
-            completed: false,
-          },
-          {
-            text: "Open casualty clearing area and label triage sieve packs",
-            completed: false,
-          },
-          {
-            text: "Stand up second theatre and recall on-call surgical team",
-            completed: false,
-          },
-          {
-            text: "Discharge-to-assess sweep on wards 2, 3 and 5",
-            completed: false,
-          },
-          {
-            text: "Open blood bank major haemorrhage protocol",
-            completed: false,
-          },
-          {
-            text: "Notify regional control and press office",
-            completed: false,
-          },
-        ],
-      });
-      console.log("🛡️ Default Major Incident protocols seeded successfully.");
-    }
-  } catch (err) {
-    console.error("Error ensuring emergency seed data:", err);
-  }
+      ],
+    }),
+    MajorIncident.deleteMany({
+      isArmed: false,
+      surgeBeds: 42,
+      theatresArmed: 3,
+      staffRecalled: 68,
+      "steps.0.text": "Declare major incident to switchboard (dial 2222)",
+    }),
+  ])
+    .then(() => undefined)
+    .catch((error) => {
+      legacyDemoCleanup = undefined;
+      throw error;
+    });
+  return legacyDemoCleanup;
 };
 
 // ============================================
@@ -250,8 +129,7 @@ export const getEmergencyStats = async (
   res: Response,
 ): Promise<void> => {
   try {
-    await ensureEmergencyDataSeeded();
-
+    await removeLegacyEmergencyDemoData();
     const activeCases = await EmergencyCase.find({ isArchived: false });
     const totalInDept = activeCases.length;
     const awaitingTriage = activeCases.filter(
@@ -263,16 +141,6 @@ export const getEmergencyStats = async (
       Math.max(0, Math.floor((now - new Date(c.arrivedAt).getTime()) / 60000)),
     );
 
-    // Median wait time
-    let medianWait = 18;
-    if (waitTimes.length > 0) {
-      const sorted = [...waitTimes].sort((a, b) => a - b);
-      const mid = Math.floor(sorted.length / 2);
-      const val = sorted[mid] ?? 0;
-      const prev = sorted[mid - 1] ?? 0;
-      medianWait = sorted.length % 2 !== 0 ? val : Math.round((prev + val) / 2);
-    }
-
     // 4-hour breaches (> 240 mins)
     const fourHourBreaches = waitTimes.filter((w) => w > 240).length;
 
@@ -281,7 +149,7 @@ export const getEmergencyStats = async (
       stats: {
         totalInDept,
         awaitingTriage,
-        medianTimeToClinician: `${medianWait || 18} min`,
+        medianTimeToClinician: "—",
         fourHourBreaches,
       },
     });
@@ -299,8 +167,7 @@ export const getTriageCases = async (
   res: Response,
 ): Promise<void> => {
   try {
-    await ensureEmergencyDataSeeded();
-
+    await removeLegacyEmergencyDemoData();
     const { filter } = req.query;
     let query: any = { isArchived: false };
 
@@ -395,7 +262,7 @@ export const createEmergencyCase = async (
       presentingComplaint,
       esi: Number(esi) || 3,
       area: area || (Number(esi) <= 2 ? "Resus" : "Waiting"),
-      observations: observations || "obs pending",
+      observations: observations?.trim() || "obs pending",
       disposition: disposition || "awaiting triage",
       triageNotes,
       assignedDoctor: req.user?._id,
@@ -542,8 +409,7 @@ export const getResusBays = async (
   res: Response,
 ): Promise<void> => {
   try {
-    await ensureEmergencyDataSeeded();
-
+    await removeLegacyEmergencyDemoData();
     const bays = await ResusBay.find().sort({ bayId: 1 });
 
     const now = Date.now();
@@ -758,8 +624,7 @@ export const getInboundAmbulances = async (
   res: Response,
 ): Promise<void> => {
   try {
-    await ensureEmergencyDataSeeded();
-
+    await removeLegacyEmergencyDemoData();
     const units = await InboundAmbulance.find({ status: "en_route" }).sort({
       etaMinutes: 1,
     });
@@ -824,12 +689,8 @@ export const getMajorIncident = async (
   res: Response,
 ): Promise<void> => {
   try {
-    await ensureEmergencyDataSeeded();
-
+    await removeLegacyEmergencyDemoData();
     let incident = await MajorIncident.findOne();
-    if (!incident) {
-      incident = await MajorIncident.create({ isArmed: false, steps: [] });
-    }
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -849,11 +710,17 @@ export const toggleMajorIncident = async (
   res: Response,
 ): Promise<void> => {
   try {
+    await removeLegacyEmergencyDemoData();
     const { armed } = req.body;
 
     let incident = await MajorIncident.findOne();
     if (!incident) {
-      incident = new MajorIncident();
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message:
+          "Configure an approved major incident plan before arming this mode.",
+      });
+      return;
     }
 
     incident.isArmed = Boolean(armed);
@@ -899,6 +766,7 @@ export const toggleCascadeStep = async (
   res: Response,
 ): Promise<void> => {
   try {
+    await removeLegacyEmergencyDemoData();
     const indexParam = Array.isArray(req.params.index)
       ? req.params.index[0]
       : req.params.index;

@@ -90,9 +90,9 @@ export interface MajorIncidentData {
   isArmed: boolean;
   armedAt?: string;
   armedBy?: string;
-  surgeBeds: number;
-  theatresArmed: number;
-  staffRecalled: number;
+  surgeBeds?: number;
+  theatresArmed?: number;
+  staffRecalled?: number;
   steps: CascadeStepData[];
 }
 
@@ -248,7 +248,7 @@ export async function assignAmbulanceBayApi(unit: string, bay: string) {
 export async function fetchMajorIncidentApi() {
   const response = await apiClient.get<{
     success: boolean;
-    incident: MajorIncidentData;
+    incident: MajorIncidentData | null;
   }>("/emergency/incident");
   return response.data;
 }

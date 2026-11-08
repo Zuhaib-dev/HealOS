@@ -11,9 +11,9 @@ export interface IMajorIncident extends Document {
   isArmed: boolean;
   armedAt?: Date;
   armedBy?: string;
-  surgeBeds: number;
-  theatresArmed: number;
-  staffRecalled: number;
+  surgeBeds?: number;
+  theatresArmed?: number;
+  staffRecalled?: number;
   steps: ICascadeStep[];
   createdAt: Date;
   updatedAt: Date;
@@ -41,15 +41,12 @@ const majorIncidentSchema = new Schema<IMajorIncident>(
     },
     surgeBeds: {
       type: Number,
-      default: 42,
     },
     theatresArmed: {
       type: Number,
-      default: 3,
     },
     staffRecalled: {
       type: Number,
-      default: 68,
     },
     steps: [cascadeStepSchema],
   },

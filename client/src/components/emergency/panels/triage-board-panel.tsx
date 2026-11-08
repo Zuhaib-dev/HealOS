@@ -114,7 +114,7 @@ export function TriageBoardPanel() {
         presentingComplaint: form.presentingComplaint.trim(),
         esi: form.esi,
         area: form.area || (form.esi <= 2 ? "Resus" : "Waiting"),
-        observations: form.observations.trim() || "Obs normal",
+        observations: form.observations.trim() || "obs pending",
       });
 
       if (res.success) {

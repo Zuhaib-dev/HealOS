@@ -141,13 +141,15 @@ export function ResusPanel() {
               <RefreshCw className="mr-1 inline size-3" />
               Refresh
             </ActionButton>
-            <ActionButton
-              tone="solid"
-              onClick={() => handleCallTeam("Resus 1")}
-            >
-              <Siren className="mr-1 inline size-3.5" />
-              Call resus team
-            </ActionButton>
+            {bays.length > 0 && (
+              <ActionButton
+                tone="solid"
+                onClick={() => handleCallTeam(bays[0]?.id)}
+              >
+                <Siren className="mr-1 inline size-3.5" />
+                Call resus team
+              </ActionButton>
+            )}
           </div>
         }
       />
@@ -345,6 +347,16 @@ export function ResusPanel() {
       {isLoading ? (
         <div className="p-12 text-center mono-label text-muted-foreground animate-pulse">
           Loading resus bays...
+        </div>
+      ) : bays.length === 0 ? (
+        <div className="hairline bg-background p-10 text-center">
+          <p className="font-mono text-base font-semibold">
+            No resus bays configured
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Add the department&apos;s real bays before tracking occupancy or
+            calling a team.
+          </p>
         </div>
       ) : (
         <div

@@ -442,6 +442,334 @@ export const getEmergencyWards = async (_req: Request, res: Response) => {
   }
 };
 
+// Historical ED register: cases remain discoverable after discharge/archive.
+export const getEmergencyRecords = async (req: Request, res: Response) => {
+  try {
+    const page = Math.max(1, Math.min(100000, Number(req.query.page) || 1));
+    const limit = Math.max(10, Math.min(100, Number(req.query.limit) || 25));
+    const search = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const status =
+      typeof req.query.status === "string" ? req.query.status : "all";
+    const query: Record<string, any> = {};
+    if (status === "active") query.isArchived = false;
+    if (status === "closed")
+      query.$or = [
+        { isArchived: true },
+        { disposition: { $in: ["admitted", "transferred", "deceased"] } },
+      ];
+    if (search) {
+      const searchFilter = {
+        $or: [
+          {
+            caseId: {
+              $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+              $options: "i",
+            },
+          },
+          {
+            patientName: {
+              $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+              $options: "i",
+            },
+          },
+          {
+            presentingComplaint: {
+              $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+              $options: "i",
+            },
+          },
+        ],
+      };
+      if (query.$or) query.$and = [{ $or: query.$or }, searchFilter];
+      else Object.assign(query, searchFilter);
+    }
+    const [cases, total] = await Promise.all([
+      EmergencyCase.find(query)
+        .sort({ arrivedAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      EmergencyCase.countDocuments(query),
+    ]);
+    res.status(StatusCodes.OK).json({
+      success: true,
+      cases: cases.map(formatEmergencyCase),
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error("Error in getEmergencyRecords:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to load ED records." });
+  }
+};
+
+// Aggregate work from clinical records so staff see only real outstanding work.
+export const getEmergencyPendingWork = async (_req: Request, res: Response) => {
+  try {
+    const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+    const [cases, orders, consultations, sales, admissions] = await Promise.all(
+      [
+        EmergencyCase.find({ arrivedAt: { $gte: since } })
+          .sort({ esi: 1, arrivedAt: 1 })
+          .limit(1000)
+          .lean(),
+        DiagnosticOrder.find({
+          emergencyCase: { $exists: true },
+          status: { $in: ["PENDING", "IN_PROGRESS", "REPORTED"] },
+          createdAt: { $gte: since },
+        })
+          .select("emergencyCase testName testType priority status createdAt")
+          .lean(),
+        Consultation.find({
+          emergencyCase: { $exists: true },
+          status: "COMPLETED",
+          createdAt: { $gte: since },
+        })
+          .select("emergencyCase medicines")
+          .lean(),
+        PharmacySale.find({
+          emergencyCase: { $exists: true },
+          status: { $in: ["AWAITING_PAYMENT", "DISPENSING"] },
+          createdAt: { $gte: since },
+        })
+          .select("emergencyCase consultation status createdAt")
+          .lean(),
+        EmergencyAdmission.find({
+          status: "ACTIVE",
+          createdAt: { $gte: since },
+        })
+          .select("emergencyCase")
+          .lean(),
+      ],
+    );
+    const byId = new Map(cases.map((c) => [c._id.toString(), c]));
+    const tasks: any[] = [];
+    const add = (
+      c: any,
+      category: string,
+      title: string,
+      href: string,
+      createdAt?: Date,
+      detail?: string,
+    ) => {
+      if (!c) return;
+      tasks.push({
+        caseId: c.caseId,
+        patient: c.patientName,
+        esi: c.esi,
+        category,
+        title,
+        detail,
+        href: `/emergency/records/${c._id}`,
+        actionHref: href || undefined,
+        createdAt: createdAt?.toISOString() || c.arrivedAt.toISOString(),
+      });
+    };
+    for (const c of cases) {
+      if (c.disposition === "awaiting triage")
+        add(c, "Triage", "Triage assessment required", "", c.arrivedAt);
+      if (
+        !c.assignedDoctor &&
+        !["admitted", "transferred", "deceased"].includes(c.disposition)
+      )
+        add(c, "Assignment", "Assign an ED clinician", "", c.arrivedAt);
+      if (
+        c.assignedDoctor &&
+        c.encounterStatus !== "COMPLETED" &&
+        !["admitted", "transferred", "deceased"].includes(c.disposition)
+      )
+        add(
+          c,
+          "Clinical review",
+          "Complete the clinician encounter",
+          "",
+          c.clinicianAssignedAt || c.arrivedAt,
+        );
+      if (
+        c.disposition === "awaiting bed" &&
+        !admissions.some((a) => a.emergencyCase.toString() === c._id.toString())
+      )
+        add(
+          c,
+          "Ward handoff",
+          "Complete ward admission handoff",
+          `/emergency/admissions/${c._id}`,
+          c.updatedAt,
+        );
+    }
+    const reports = orders.length
+      ? await DiagnosticReport.find({
+          order: { $in: orders.map((o) => o._id) },
+        })
+          .select("order state")
+          .lean()
+      : [];
+    for (const order of orders) {
+      const c = byId.get(order.emergencyCase?.toString() || "");
+      if (order.status === "PENDING" || order.status === "IN_PROGRESS")
+        add(
+          c,
+          "Diagnostics",
+          `${order.testName} · ${order.status === "PENDING" ? "awaiting processing" : "in progress"}`,
+          "",
+          order.createdAt,
+          order.priority,
+        );
+      if (
+        order.status === "REPORTED" &&
+        reports.some(
+          (r) =>
+            r.order.toString() === order._id.toString() &&
+            r.state !== "verified",
+        )
+      )
+        add(
+          c,
+          "Result review",
+          `Review ${order.testName} result`,
+          "",
+          order.createdAt,
+        );
+    }
+    const saleConsultations = new Set(
+      sales.map((s) => s.consultation.toString()),
+    );
+    for (const sale of sales) {
+      const c = byId.get(sale.emergencyCase?.toString() || "");
+      add(
+        c,
+        "Pharmacy",
+        sale.status === "AWAITING_PAYMENT"
+          ? "Prescription awaiting payment"
+          : "Prescription dispensing in progress",
+        "",
+        sale.createdAt,
+      );
+    }
+    for (const consultation of consultations) {
+      const hasMedicines = consultation.medicines?.some(
+        (m: any) => !m.isDispensed,
+      );
+      if (hasMedicines && !saleConsultations.has(consultation._id.toString()))
+        add(
+          byId.get(consultation.emergencyCase?.toString() || ""),
+          "Pharmacy",
+          "Prescription awaiting pharmacy processing",
+          "",
+          consultation.createdAt,
+        );
+    }
+    tasks.sort(
+      (a, b) =>
+        (a.esi ?? 5) - (b.esi ?? 5) ||
+        Date.parse(a.createdAt) - Date.parse(b.createdAt),
+    );
+    const counts = tasks.reduce((acc: Record<string, number>, task) => {
+      acc[task.category] = (acc[task.category] || 0) + 1;
+      return acc;
+    }, {});
+    res.status(StatusCodes.OK).json({
+      success: true,
+      tasks,
+      counts,
+      total: tasks.length,
+      lookbackDays: 180,
+    });
+  } catch (error) {
+    console.error("Error in getEmergencyPendingWork:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to load pending ED work." });
+  }
+};
+
+export const getEmergencyCaseRecord = async (req: Request, res: Response) => {
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    if (!mongoose.isValidObjectId(id))
+      return void res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "Invalid emergency case ID." });
+    const record = await EmergencyCase.findById(id).lean();
+    if (!record)
+      return void res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "ED record not found." });
+    const [encounter, observations, orders, administrations, admission, sales] =
+      await Promise.all([
+        Consultation.findOne({ emergencyCase: id })
+          .populate("doctor", "name")
+          .lean(),
+        EmergencyObservation.find({ emergencyCase: id })
+          .sort({ recordedAt: -1 })
+          .limit(100)
+          .populate("recordedBy", "name")
+          .lean(),
+        DiagnosticOrder.find({ emergencyCase: id })
+          .sort({ createdAt: -1 })
+          .limit(100)
+          .lean(),
+        EmergencyMedicationAdministration.find({ emergencyCase: id })
+          .sort({ recordedAt: -1 })
+          .limit(100)
+          .populate("recordedBy", "name")
+          .lean(),
+        EmergencyAdmission.findOne({ emergencyCase: id })
+          .populate("ward", "name code")
+          .populate("admittedBy", "name")
+          .lean(),
+        PharmacySale.find({ emergencyCase: id })
+          .select("status totalAmount createdAt dispensedAt items")
+          .sort({ createdAt: -1 })
+          .lean(),
+      ]);
+    const reports = orders.length
+      ? await DiagnosticReport.find({
+          order: { $in: orders.map((o) => o._id) },
+        })
+          .select(
+            "order title state findings comments isCritical structuredResults fileUrl createdAt",
+          )
+          .lean()
+      : [];
+    const diagnosticHistory = orders.map((order) => {
+      const report: any = reports.find(
+        (r) => r.order.toString() === order._id.toString(),
+      );
+      const safeReport =
+        report?.state === "verified"
+          ? report
+          : report
+            ? {
+                state: report.state,
+                isCritical: report.isCritical,
+                createdAt: report.createdAt,
+              }
+            : null;
+      return { ...order, report: safeReport };
+    });
+    res.status(StatusCodes.OK).json({
+      success: true,
+      case: formatEmergencyCase(record),
+      encounter,
+      observations,
+      diagnostics: diagnosticHistory,
+      administrations,
+      admission,
+      pharmacy: sales,
+    });
+  } catch (error) {
+    console.error("Error in getEmergencyCaseRecord:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to load ED patient record." });
+  }
+};
+
 export const getEmergencyAdmission = async (req: Request, res: Response) => {
   try {
     const id = typeof req.params.id === "string" ? req.params.id : "";

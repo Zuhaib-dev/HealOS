@@ -21,6 +21,60 @@ export interface EmergencyStatsData {
   fourHourBreaches: number;
 }
 
+export interface EmergencyRecordPage {
+  cases: EmergencyCaseData[];
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+export interface EmergencyPendingTask {
+  caseId: string;
+  patient: string;
+  esi: EsiLevel;
+  category: string;
+  title: string;
+  detail?: string;
+  href: string;
+  actionHref?: string;
+  createdAt: string;
+}
+
+export async function fetchEmergencyRecordsApi(
+  params: { page?: number; q?: string; status?: string } = {},
+) {
+  const response = await apiClient.get<
+    EmergencyRecordPage & { success: boolean }
+  >("/emergency/records", { params });
+  return response.data;
+}
+
+export async function fetchEmergencyPendingApi() {
+  const response = await apiClient.get<{
+    success: boolean;
+    tasks: EmergencyPendingTask[];
+    counts: Record<string, number>;
+    total: number;
+    lookbackDays: number;
+  }>("/emergency/pending");
+  return response.data;
+}
+
+export async function fetchEmergencyRecordApi(id: string) {
+  const response = await apiClient.get<{
+    success: boolean;
+    case: EmergencyCaseData;
+    encounter: any;
+    observations: any[];
+    diagnostics: any[];
+    administrations: any[];
+    admission: any;
+    pharmacy: any[];
+  }>(`/emergency/records/${encodeURIComponent(id)}`);
+  return response.data;
+}
+
 export interface EmergencyCaseData {
   _id: string;
   id: string; // e.g. "ED-4412"

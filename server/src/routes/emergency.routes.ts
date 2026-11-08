@@ -4,6 +4,9 @@
 import { Router } from "express";
 import {
   getEmergencyStats,
+  getEmergencyRecords,
+  getEmergencyPendingWork,
+  getEmergencyCaseRecord,
   getTriageCases,
   getEmergencyClinicians,
   getMyEmergencyCases,
@@ -56,6 +59,9 @@ emergencyRouter.use(
 // 1. Triage Board
 // ---------------------------
 emergencyRouter.get("/stats", getEmergencyStats);
+emergencyRouter.get("/pending", getEmergencyPendingWork);
+emergencyRouter.get("/records", getEmergencyRecords);
+emergencyRouter.get("/records/:id", getEmergencyCaseRecord);
 emergencyRouter.get("/clinicians", getEmergencyClinicians);
 emergencyRouter.get("/cases/mine", getMyEmergencyCases);
 emergencyRouter.get("/cases/:id", getEmergencyCaseById);

@@ -9,6 +9,7 @@ import {
   updateEmergencyCase,
   dischargeEmergencyCase,
   getResusBays,
+  createResusBay,
   updateResusBay,
   callResusTeam,
   handoverToIcu,
@@ -49,6 +50,7 @@ emergencyRouter.delete("/cases/:id", dischargeEmergencyCase);
 // 2. Resus Bays
 // ---------------------------
 emergencyRouter.get("/bays", getResusBays);
+emergencyRouter.post("/bays", createResusBay);
 emergencyRouter.patch("/bays/:id", updateResusBay);
 emergencyRouter.post("/bays/:id/call-team", callResusTeam);
 emergencyRouter.post("/bays/:id/handover-icu", handoverToIcu);

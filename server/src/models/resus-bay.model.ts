@@ -33,12 +33,12 @@ const resusBaySchema = new Schema<IResusBay>(
     },
     patientSummary: {
       type: String,
-      default: "—",
+      default: "Unassigned",
       trim: true,
     },
     team: {
       type: String,
-      default: "—",
+      default: "Unassigned",
       trim: true,
     },
     occupiedAt: {
@@ -50,17 +50,17 @@ const resusBaySchema = new Schema<IResusBay>(
     },
     airway: {
       type: String,
-      default: "trolley checked",
+      default: "Not recorded",
       trim: true,
     },
     lines: {
       type: String,
-      default: "—",
+      default: "Not recorded",
       trim: true,
     },
     nextIntervention: {
       type: String,
-      default: "Available",
+      default: "No intervention recorded",
       trim: true,
     },
   },

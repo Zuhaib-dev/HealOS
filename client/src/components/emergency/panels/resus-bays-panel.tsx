@@ -2,20 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
-import {
-  Siren,
-  AlertTriangle,
-  Check,
-  RefreshCw,
-  X,
-  Stethoscope,
-  ArrowRight,
-} from "lucide-react";
+import { Siren, Check, RefreshCw, X, Plus } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
-import { Pill, type Tone } from "@/components/workspace/ui";
+import { Pill } from "@/components/workspace/ui";
 import { getSocket } from "@/lib/socket";
 import {
   fetchResusBaysApi,
+  createResusBayApi,
   updateResusBayApi,
   callResusTeamApi,
   handoverToIcuApi,
@@ -27,10 +20,8 @@ export function ResusPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeAlert, setActiveAlert] = useState<string | null>(null);
   const [editingBay, setEditingBay] = useState<ResusBayData | null>(null);
+  const [isCreatingBay, setIsCreatingBay] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isPending = isSubmitting;
-  const isUpdating = isSubmitting;
-  const setIsUpdating = setIsSubmitting;
   const [message, setMessage] = useState<string | null>(null);
 
   const loadBays = useCallback(async () => {
@@ -110,22 +101,35 @@ export function ResusPanel() {
     e.preventDefault();
     if (!editingBay) return;
 
-    setIsUpdating(true);
+    setIsSubmitting(true);
     try {
-      await updateResusBayApi(editingBay.id, {
-        state: editingBay.state,
-        patient: editingBay.patient,
-        team: editingBay.team,
-        airway: editingBay.airway,
-        lines: editingBay.lines,
-        next: editingBay.next,
-      });
+      if (isCreatingBay) {
+        const response = await createResusBayApi({
+          bayId: editingBay.id,
+          airway: editingBay.airway,
+          lines: editingBay.lines,
+        });
+        setMessage(response.message);
+      } else {
+        await updateResusBayApi(editingBay.id, {
+          state: editingBay.state,
+          patient: editingBay.patient,
+          team: editingBay.team,
+          airway: editingBay.airway,
+          lines: editingBay.lines,
+          next: editingBay.next,
+        });
+        setMessage(`${editingBay.id} updated.`);
+      }
       setEditingBay(null);
+      setIsCreatingBay(false);
       await loadBays();
     } catch (err) {
-      console.error("Failed to update bay:", err);
+      setMessage(
+        (err as any)?.response?.data?.message || "Failed to save bay.",
+      );
     } finally {
-      setIsUpdating(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -140,6 +144,24 @@ export function ResusPanel() {
             <ActionButton onClick={loadBays}>
               <RefreshCw className="mr-1 inline size-3" />
               Refresh
+            </ActionButton>
+            <ActionButton
+              onClick={() => {
+                setIsCreatingBay(true);
+                setEditingBay({
+                  _id: "",
+                  id: "",
+                  state: "ready",
+                  patient: "Unassigned",
+                  team: "Unassigned",
+                  clock: "—",
+                  airway: "Not recorded",
+                  lines: "Not recorded",
+                  next: "No intervention recorded",
+                });
+              }}
+            >
+              <Plus className="mr-1 inline size-3.5" /> Add bay
             </ActionButton>
             {bays.length > 0 && (
               <ActionButton
@@ -190,11 +212,16 @@ export function ResusPanel() {
           <div className="bg-background hairline w-full max-w-md p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-mono text-base font-bold">
-                Manage {editingBay.id}
+                {isCreatingBay
+                  ? "Configure resus bay"
+                  : `Manage ${editingBay.id}`}
               </h3>
               <button
                 type="button"
-                onClick={() => setEditingBay(null)}
+                onClick={() => {
+                  setEditingBay(null);
+                  setIsCreatingBay(false);
+                }}
                 aria-label={`Close manage ${editingBay.id} dialog`}
                 className="text-muted-foreground hover:text-foreground p-1"
               >
@@ -205,6 +232,29 @@ export function ResusPanel() {
 
             <form onSubmit={handleSaveBayEdit} className="mt-4 space-y-3">
               <div>
+                {isCreatingBay && (
+                  <>
+                    <label
+                      htmlFor="resus-bay-id"
+                      className="mono-label block text-muted-foreground text-xs"
+                    >
+                      Bay name
+                    </label>
+                    <input
+                      id="resus-bay-id"
+                      type="text"
+                      required
+                      maxLength={60}
+                      autoFocus
+                      value={editingBay.id}
+                      onChange={(e) =>
+                        setEditingBay({ ...editingBay, id: e.target.value })
+                      }
+                      className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm focus:outline-hidden"
+                      placeholder="e.g. Resus 1"
+                    />
+                  </>
+                )}
                 <label
                   htmlFor="resus-bay-state"
                   className="mono-label block text-muted-foreground text-xs"
@@ -327,7 +377,13 @@ export function ResusPanel() {
               </div>
 
               <div className="mt-6 flex justify-end gap-3 border-t pt-4">
-                <ActionButton type="button" onClick={() => setEditingBay(null)}>
+                <ActionButton
+                  type="button"
+                  onClick={() => {
+                    setEditingBay(null);
+                    setIsCreatingBay(false);
+                  }}
+                >
                   Cancel
                 </ActionButton>
                 <ActionButton
@@ -335,7 +391,11 @@ export function ResusPanel() {
                   tone="solid"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Saving..." : "Update Bay"}
+                  {isSubmitting
+                    ? "Saving..."
+                    : isCreatingBay
+                      ? "Add bay"
+                      : "Update Bay"}
                 </ActionButton>
               </div>
             </form>
@@ -426,7 +486,12 @@ export function ResusPanel() {
                 </dl>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <ActionButton onClick={() => setEditingBay(b)}>
+                  <ActionButton
+                    onClick={() => {
+                      setIsCreatingBay(false);
+                      setEditingBay(b);
+                    }}
+                  >
                     Manage chart
                   </ActionButton>
                   {occupied ? (

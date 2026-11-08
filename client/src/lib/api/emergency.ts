@@ -193,6 +193,19 @@ export async function fetchResusBaysApi() {
   return response.data;
 }
 
+export async function createResusBayApi(payload: {
+  bayId: string;
+  airway?: string;
+  lines?: string;
+}) {
+  const response = await apiClient.post<{
+    success: boolean;
+    message: string;
+    bay: ResusBayData;
+  }>("/emergency/bays", payload);
+  return response.data;
+}
+
 /**
  * Update resus bay state, team, airway, lines, or next intervention
  */

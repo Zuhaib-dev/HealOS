@@ -530,6 +530,71 @@ export const dischargeEmergencyCase = async (
 // 2. Resus Bay Operations
 // ============================================
 
+export const createResusBay = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { bayId, airway, lines } = req.body ?? {};
+    const normalizedBayId = typeof bayId === "string" ? bayId.trim() : "";
+    if (
+      !normalizedBayId ||
+      normalizedBayId.length > 60 ||
+      (airway !== undefined &&
+        (typeof airway !== "string" || airway.length > 120)) ||
+      (lines !== undefined && (typeof lines !== "string" || lines.length > 120))
+    ) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message:
+          "Enter a bay name (max 60 characters) and valid optional setup notes.",
+      });
+      return;
+    }
+
+    const bay = await ResusBay.create({
+      bayId: normalizedBayId,
+      state: "ready",
+      patientSummary: "Unassigned",
+      team: "Unassigned",
+      airway:
+        typeof airway === "string"
+          ? airway.trim() || "Not recorded"
+          : "Not recorded",
+      lines:
+        typeof lines === "string"
+          ? lines.trim() || "Not recorded"
+          : "Not recorded",
+      nextIntervention: "No intervention recorded",
+    });
+    broadcastEmergencyEvent("emergency:bay_updated", bay);
+    await logAudit(
+      req.user?.name || "emergency_staff",
+      `Configured emergency resus bay ${normalizedBayId}`,
+      normalizedBayId,
+      "info",
+    );
+    res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: `Resus bay ${normalizedBayId} configured.`,
+      bay,
+    });
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: "A bay with that name is already configured.",
+      });
+      return;
+    }
+    console.error("Error in createResusBay:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to configure resus bay",
+    });
+  }
+};
+
 export const getResusBays = async (
   _req: Request,
   res: Response,

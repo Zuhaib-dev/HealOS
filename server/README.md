@@ -126,4 +126,8 @@ The server Dockerfile uses Node 20 multi-stage builds and builds `@healos/shared
 
 ## Author
 
-**Zuhaib Rashid**
+**Zuhaib Rashid**<br>
+_Full Stack Developer & Healthcare Systems Architect_<br>
+UI/UX Obsessive · Real-time Systems Engineer · Autonomous Agent Protocols
+
+**Zuhaib Rashid** · [GitHub](https://github.com/Zuhaib-dev) · [Portfolio](https://zuhaibrashid.com/) · [LinkedIn](https://www.linkedin.com/in/zuhaib-rashid-661345318/) · [X](https://x.com/xuhaib_x9)

@@ -37,6 +37,7 @@ export * from "./lab-critical-contact.model.js";
 
 // Emergency Department models
 export * from "./emergency-case.model.js";
+export * from "./emergency-observation.model.js";
 export * from "./resus-bay.model.js";
 export * from "./inbound-ambulance.model.js";
 export * from "./major-incident.model.js";

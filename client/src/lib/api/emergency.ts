@@ -126,6 +126,52 @@ export interface EmergencyClinicianData {
   role: "DOCTOR" | "EMERGENCY_DOCTOR";
 }
 
+export interface EmergencyObservationData {
+  _id: string;
+  recordedBy: { _id: string; name: string } | string;
+  recordedAt: string;
+  heartRate?: number;
+  systolicBP?: number;
+  diastolicBP?: number;
+  respiratoryRate?: number;
+  oxygenSaturation?: number;
+  temperatureC?: number;
+  glasgowComaScale?: number;
+  painScore?: number;
+  note?: string;
+}
+
+export interface CreateEmergencyObservationPayload {
+  heartRate?: number;
+  systolicBP?: number;
+  diastolicBP?: number;
+  respiratoryRate?: number;
+  oxygenSaturation?: number;
+  temperatureC?: number;
+  glasgowComaScale?: number;
+  painScore?: number;
+  note?: string;
+}
+
+export async function fetchEmergencyObservationsApi(caseId: string) {
+  const response = await apiClient.get<{
+    success: boolean;
+    observations: EmergencyObservationData[];
+  }>(`/emergency/cases/${encodeURIComponent(caseId)}/observations`);
+  return response.data;
+}
+
+export async function createEmergencyObservationApi(
+  caseId: string,
+  payload: CreateEmergencyObservationPayload,
+) {
+  const response = await apiClient.post<{
+    success: boolean;
+    observation: EmergencyObservationData;
+  }>(`/emergency/cases/${encodeURIComponent(caseId)}/observations`, payload);
+  return response.data;
+}
+
 export async function fetchEmergencyCliniciansApi() {
   const response = await apiClient.get<{
     success: boolean;

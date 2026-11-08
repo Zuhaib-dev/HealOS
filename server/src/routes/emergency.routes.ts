@@ -8,6 +8,8 @@ import {
   getEmergencyClinicians,
   getMyEmergencyCases,
   assignEmergencyCase,
+  getEmergencyObservations,
+  createEmergencyObservation,
   createEmergencyCase,
   updateEmergencyCase,
   dischargeEmergencyCase,
@@ -54,6 +56,8 @@ emergencyRouter.patch(
   requireRole([UserRole.EMERGENCY_DOCTOR, UserRole.DOCTOR, UserRole.ADMIN]),
   assignEmergencyCase,
 );
+emergencyRouter.get("/cases/:id/observations", getEmergencyObservations);
+emergencyRouter.post("/cases/:id/observations", createEmergencyObservation);
 emergencyRouter.patch("/cases/:id", updateEmergencyCase);
 emergencyRouter.delete("/cases/:id", dischargeEmergencyCase);
 

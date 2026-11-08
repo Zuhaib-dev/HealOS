@@ -6,6 +6,7 @@ import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
 import {
   EmergencyCase,
+  EmergencyObservation,
   ResusBay,
   InboundAmbulance,
   MajorIncident,
@@ -366,6 +367,196 @@ export const assignEmergencyCase = async (
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ success: false, message: "Failed to assign emergency case." });
+  }
+};
+
+const observationFields = {
+  heartRate: { min: 0, max: 300, integer: true },
+  systolicBP: { min: 0, max: 350, integer: true },
+  diastolicBP: { min: 0, max: 250, integer: true },
+  respiratoryRate: { min: 0, max: 100, integer: true },
+  oxygenSaturation: { min: 0, max: 100, integer: true },
+  temperatureC: { min: 25, max: 45, integer: false },
+  glasgowComaScale: { min: 3, max: 15, integer: true },
+  painScore: { min: 0, max: 10, integer: true },
+} as const;
+
+export const getEmergencyObservations = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    if (!mongoose.isValidObjectId(id)) {
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "Invalid emergency case ID." });
+      return;
+    }
+    const emergencyCase = await EmergencyCase.findOne({
+      _id: id,
+      isArchived: false,
+    });
+    if (!emergencyCase) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Active emergency case not found." });
+      return;
+    }
+    const observations = await EmergencyObservation.find({ emergencyCase: id })
+      .populate("recordedBy", "name")
+      .sort({ recordedAt: -1 })
+      .lean();
+    res.status(StatusCodes.OK).json({ success: true, observations });
+  } catch (error) {
+    console.error("Error in getEmergencyObservations:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to load nursing observations.",
+    });
+  }
+};
+
+export const createEmergencyObservation = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    if (!mongoose.isValidObjectId(id)) {
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "Invalid emergency case ID." });
+      return;
+    }
+    const emergencyCase = await EmergencyCase.findOne({
+      _id: id,
+      isArchived: false,
+    });
+    if (!emergencyCase) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Active emergency case not found." });
+      return;
+    }
+    const body =
+      req.body && typeof req.body === "object" && !Array.isArray(req.body)
+        ? req.body
+        : {};
+    const values: Record<string, number> = {};
+    for (const [field, range] of Object.entries(observationFields)) {
+      if (
+        body[field] === undefined ||
+        body[field] === null ||
+        body[field] === ""
+      )
+        continue;
+      const value = Number(body[field]);
+      if (
+        !Number.isFinite(value) ||
+        value < range.min ||
+        value > range.max ||
+        (range.integer && !Number.isInteger(value))
+      ) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: `${field} is outside the accepted range.`,
+        });
+        return;
+      }
+      values[field] = value;
+    }
+    const note = typeof body.note === "string" ? body.note.trim() : "";
+    if (Object.keys(values).length === 0 && !note) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Enter at least one observation or a nursing note.",
+      });
+      return;
+    }
+    if (note.length > 1000) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Nursing note must be 1000 characters or fewer.",
+      });
+      return;
+    }
+    if (
+      (values.systolicBP === undefined) !==
+      (values.diastolicBP === undefined)
+    ) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Enter both systolic and diastolic blood pressure values.",
+      });
+      return;
+    }
+    if (
+      values.systolicBP !== undefined &&
+      values.diastolicBP !== undefined &&
+      values.systolicBP < values.diastolicBP
+    ) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Systolic blood pressure must be greater than diastolic.",
+      });
+      return;
+    }
+
+    const observation = await EmergencyObservation.create({
+      emergencyCase: emergencyCase._id,
+      recordedBy: req.user?._id,
+      ...values,
+      ...(note ? { note } : {}),
+    });
+    const summaryParts = [
+      values.heartRate !== undefined ? `HR ${values.heartRate}` : undefined,
+      values.systolicBP !== undefined
+        ? `BP ${values.systolicBP}/${values.diastolicBP}`
+        : undefined,
+      values.oxygenSaturation !== undefined
+        ? `SpO₂ ${values.oxygenSaturation}%`
+        : undefined,
+      values.respiratoryRate !== undefined
+        ? `RR ${values.respiratoryRate}`
+        : undefined,
+      values.temperatureC !== undefined
+        ? `Temp ${values.temperatureC}°C`
+        : undefined,
+      values.glasgowComaScale !== undefined
+        ? `GCS ${values.glasgowComaScale}`
+        : undefined,
+      values.painScore !== undefined
+        ? `Pain ${values.painScore}/10`
+        : undefined,
+    ].filter(Boolean);
+    emergencyCase.observations =
+      [summaryParts.join(" · "), note].filter(Boolean).join(" — ") ||
+      emergencyCase.observations;
+    await emergencyCase.save();
+    const populatedObservation = await EmergencyObservation.findById(
+      observation._id,
+    )
+      .populate("recordedBy", "name")
+      .lean();
+    broadcastEmergencyEvent("emergency:triage_updated", {
+      action: "observation_recorded",
+      case: formatEmergencyCase(emergencyCase),
+    });
+    await logAudit(
+      req.user?.name || "emergency_staff",
+      `Recorded nursing observations for ED case ${emergencyCase.caseId}`,
+      emergencyCase.caseId,
+      "info",
+    );
+    res
+      .status(StatusCodes.CREATED)
+      .json({ success: true, observation: populatedObservation });
+  } catch (error) {
+    console.error("Error in createEmergencyObservation:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to save nursing observation." });
   }
 };
 

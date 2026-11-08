@@ -21,10 +21,14 @@ import {
   dischargeEmergencyCaseApi,
   fetchEmergencyCliniciansApi,
   assignEmergencyCaseApi,
+  fetchEmergencyObservationsApi,
+  createEmergencyObservationApi,
   type EmergencyCaseData,
   type EmergencyDisposition,
   type EsiLevel,
   type EmergencyClinicianData,
+  type EmergencyObservationData,
+  type CreateEmergencyObservationPayload,
 } from "@/lib/api/emergency";
 
 const esiTone = (e: EsiLevel): Tone =>
@@ -48,10 +52,35 @@ export function TriageBoardPanel() {
   const [clinicians, setClinicians] = useState<EmergencyClinicianData[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
+  const [observingCase, setObservingCase] = useState<EmergencyCaseData | null>(
+    null,
+  );
+  const [observationHistory, setObservationHistory] = useState<
+    EmergencyObservationData[]
+  >([]);
+  const [isLoadingObservations, setIsLoadingObservations] = useState(false);
+  const [isSavingObservation, setIsSavingObservation] = useState(false);
+  const [observationForm, setObservationForm] = useState({
+    heartRate: "",
+    systolicBP: "",
+    diastolicBP: "",
+    respiratoryRate: "",
+    oxygenSaturation: "",
+    temperatureC: "",
+    glasgowComaScale: "",
+    painScore: "",
+    note: "",
+  });
   const currentUser = useAuthStore((state) => state.user);
   const canAssign = ["ADMIN", "DOCTOR", "EMERGENCY_DOCTOR"].includes(
     currentUser?.role || "",
   );
+  const canRecordObservations = [
+    "ADMIN",
+    "DOCTOR",
+    "EMERGENCY_DOCTOR",
+    "NURSE",
+  ].includes(currentUser?.role || "");
   const [feedback, setFeedback] = useState<{
     type: "ok" | "err";
     msg: string;
@@ -137,6 +166,98 @@ export function TriageBoardPanel() {
       });
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const openObservations = async (emergencyCase: EmergencyCaseData) => {
+    setObservingCase(emergencyCase);
+    setObservationForm({
+      heartRate: "",
+      systolicBP: "",
+      diastolicBP: "",
+      respiratoryRate: "",
+      oxygenSaturation: "",
+      temperatureC: "",
+      glasgowComaScale: "",
+      painScore: "",
+      note: "",
+    });
+    setIsLoadingObservations(true);
+    try {
+      const response = await fetchEmergencyObservationsApi(emergencyCase._id);
+      setObservationHistory(response.observations || []);
+    } catch {
+      setObservationHistory([]);
+      setFeedback({ type: "err", msg: "Could not load observation history." });
+    } finally {
+      setIsLoadingObservations(false);
+    }
+  };
+
+  const handleSaveObservation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!observingCase) return;
+    const payload: CreateEmergencyObservationPayload = {
+      ...(observationForm.heartRate
+        ? { heartRate: Number(observationForm.heartRate) }
+        : {}),
+      ...(observationForm.systolicBP
+        ? { systolicBP: Number(observationForm.systolicBP) }
+        : {}),
+      ...(observationForm.diastolicBP
+        ? { diastolicBP: Number(observationForm.diastolicBP) }
+        : {}),
+      ...(observationForm.respiratoryRate
+        ? { respiratoryRate: Number(observationForm.respiratoryRate) }
+        : {}),
+      ...(observationForm.oxygenSaturation
+        ? { oxygenSaturation: Number(observationForm.oxygenSaturation) }
+        : {}),
+      ...(observationForm.temperatureC
+        ? { temperatureC: Number(observationForm.temperatureC) }
+        : {}),
+      ...(observationForm.glasgowComaScale
+        ? { glasgowComaScale: Number(observationForm.glasgowComaScale) }
+        : {}),
+      ...(observationForm.painScore
+        ? { painScore: Number(observationForm.painScore) }
+        : {}),
+      ...(observationForm.note.trim()
+        ? { note: observationForm.note.trim() }
+        : {}),
+    };
+    if (Object.keys(payload).length === 0) {
+      setFeedback({
+        type: "err",
+        msg: "Enter at least one observation or a nursing note.",
+      });
+      return;
+    }
+    setIsSavingObservation(true);
+    setFeedback(null);
+    try {
+      await createEmergencyObservationApi(observingCase._id, payload);
+      const history = await fetchEmergencyObservationsApi(observingCase._id);
+      setObservationHistory(history.observations || []);
+      setObservationForm({
+        heartRate: "",
+        systolicBP: "",
+        diastolicBP: "",
+        respiratoryRate: "",
+        oxygenSaturation: "",
+        temperatureC: "",
+        glasgowComaScale: "",
+        painScore: "",
+        note: "",
+      });
+      await loadData();
+    } catch (err: any) {
+      setFeedback({
+        type: "err",
+        msg: err.response?.data?.message || "Could not save observation.",
+      });
+    } finally {
+      setIsSavingObservation(false);
     }
   };
 
@@ -565,6 +686,165 @@ export function TriageBoardPanel() {
         </div>
       )}
 
+      {observingCase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="bg-background hairline max-h-[92vh] w-full max-w-3xl overflow-y-auto p-5 shadow-2xl sm:p-6">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <p className="mono-label text-accent text-xs font-bold">
+                  {observingCase.id}
+                </p>
+                <h3 className="font-mono text-lg font-bold">
+                  Nursing observations
+                </h3>
+              </div>
+              <button
+                type="button"
+                aria-label="Close observations"
+                onClick={() => setObservingCase(null)}
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveObservation} className="mt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {(
+                  [
+                    ["heartRate", "Heart rate", "bpm", 0, 300, 1],
+                    ["systolicBP", "Systolic BP", "mmHg", 0, 350, 1],
+                    ["diastolicBP", "Diastolic BP", "mmHg", 0, 250, 1],
+                    ["respiratoryRate", "Resp. rate", "/min", 0, 100, 1],
+                    ["oxygenSaturation", "SpO₂", "%", 0, 100, 1],
+                    ["temperatureC", "Temperature", "°C", 25, 45, 0.1],
+                    ["glasgowComaScale", "GCS", "/15", 3, 15, 1],
+                    ["painScore", "Pain score", "/10", 0, 10, 1],
+                  ] as const
+                ).map(([field, label, unit, min, max, step]) => (
+                  <label
+                    key={field}
+                    className="mono-label text-xs text-muted-foreground"
+                  >
+                    {label}
+                    <span className="ml-1 opacity-70">{unit}</span>
+                    <input
+                      type="number"
+                      min={min}
+                      max={max}
+                      step={step}
+                      value={observationForm[field]}
+                      onChange={(e) =>
+                        setObservationForm({
+                          ...observationForm,
+                          [field]: e.target.value,
+                        })
+                      }
+                      className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm text-foreground"
+                    />
+                  </label>
+                ))}
+              </div>
+              <label className="mono-label block text-xs text-muted-foreground">
+                Nursing note
+                <textarea
+                  maxLength={1000}
+                  rows={2}
+                  value={observationForm.note}
+                  onChange={(e) =>
+                    setObservationForm({
+                      ...observationForm,
+                      note: e.target.value,
+                    })
+                  }
+                  className="hairline bg-foreground/3 mt-1 w-full p-2 text-sm text-foreground"
+                  placeholder="Optional context; record only what was observed"
+                />
+              </label>
+              {feedback?.type === "err" && (
+                <p role="alert" className="text-sm text-destructive">
+                  {feedback.msg}
+                </p>
+              )}
+              <div className="flex justify-end gap-2 border-b pb-4">
+                <ActionButton
+                  type="submit"
+                  tone="solid"
+                  disabled={isSavingObservation}
+                >
+                  {isSavingObservation ? "Saving…" : "Record observation"}
+                </ActionButton>
+              </div>
+            </form>
+            <div className="mt-4">
+              <h4 className="mono-label text-xs font-bold">
+                Observation history
+              </h4>
+              {isLoadingObservations ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Loading history…
+                </p>
+              ) : observationHistory.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  No observations recorded yet.
+                </p>
+              ) : (
+                <ol className="mt-3 space-y-2">
+                  {observationHistory.map((observation) => {
+                    const values = [
+                      observation.heartRate !== undefined
+                        ? `HR ${observation.heartRate}`
+                        : null,
+                      observation.systolicBP !== undefined
+                        ? `BP ${observation.systolicBP}/${observation.diastolicBP}`
+                        : null,
+                      observation.oxygenSaturation !== undefined
+                        ? `SpO₂ ${observation.oxygenSaturation}%`
+                        : null,
+                      observation.respiratoryRate !== undefined
+                        ? `RR ${observation.respiratoryRate}`
+                        : null,
+                      observation.temperatureC !== undefined
+                        ? `Temp ${observation.temperatureC}°C`
+                        : null,
+                      observation.glasgowComaScale !== undefined
+                        ? `GCS ${observation.glasgowComaScale}`
+                        : null,
+                      observation.painScore !== undefined
+                        ? `Pain ${observation.painScore}/10`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ");
+                    const by =
+                      typeof observation.recordedBy === "object"
+                        ? observation.recordedBy.name
+                        : "Clinical staff";
+                    return (
+                      <li
+                        key={observation._id}
+                        className="hairline bg-foreground/2 p-3"
+                      >
+                        <p className="text-sm font-medium">
+                          {values || observation.note}
+                        </p>
+                        {values && observation.note && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {observation.note}
+                          </p>
+                        )}
+                        <p className="mono-label mt-2 text-xs text-muted-foreground">
+                          {new Date(observation.recordedAt).toLocaleString()} ·{" "}
+                          {by}
+                        </p>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Table */}
       <div className="hairline-t overflow-x-auto">
         <table className="w-full min-w-250">
@@ -673,6 +953,15 @@ export function TriageBoardPanel() {
                           className="mono-label text-xs underline hover:text-accent"
                         >
                           {t.assignedDoctorName ? "Reassign" : "Assign doctor"}
+                        </button>
+                      )}
+                      {canRecordObservations && (
+                        <button
+                          type="button"
+                          onClick={() => void openObservations(t)}
+                          className="mono-label text-xs underline hover:text-accent"
+                        >
+                          Record observations
                         </button>
                       )}
                       <button

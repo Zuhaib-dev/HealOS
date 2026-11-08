@@ -8,8 +8,8 @@ export interface IInboundAmbulance extends Document {
   crew: string;
   observations: string;
   prealert: boolean;
-  progress: number;
   assignedBay?: string;
+  emergencyCase?: mongoose.Types.ObjectId;
   status: "en_route" | "arrived" | "diverted" | "cancelled";
   createdAt: Date;
   updatedAt: Date;
@@ -55,15 +55,13 @@ const inboundAmbulanceSchema = new Schema<IInboundAmbulance>(
       default: false,
       index: true,
     },
-    progress: {
-      type: Number,
-      default: 0.5,
-      min: 0,
-      max: 1,
-    },
     assignedBay: {
       type: String,
       trim: true,
+    },
+    emergencyCase: {
+      type: Schema.Types.ObjectId,
+      ref: "EmergencyCase",
     },
     status: {
       type: String,

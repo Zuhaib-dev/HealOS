@@ -13,7 +13,9 @@ import {
   callResusTeam,
   handoverToIcu,
   getInboundAmbulances,
+  createInboundAmbulance,
   assignAmbulanceBay,
+  recordAmbulanceArrival,
   getMajorIncident,
   toggleMajorIncident,
   toggleCascadeStep,
@@ -55,7 +57,9 @@ emergencyRouter.post("/bays/:id/handover-icu", handoverToIcu);
 // 3. Inbound EMS / Ambulances
 // ---------------------------
 emergencyRouter.get("/inbound", getInboundAmbulances);
+emergencyRouter.post("/inbound", createInboundAmbulance);
 emergencyRouter.post("/inbound/:unit/assign-bay", assignAmbulanceBay);
+emergencyRouter.post("/inbound/:unit/arrive", recordAmbulanceArrival);
 
 // ---------------------------
 // 4. Major Incident / Disaster Mode

@@ -768,17 +768,349 @@ export const getInboundAmbulances = async (
   }
 };
 
+export const createInboundAmbulance = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const {
+      unit,
+      etaMinutes,
+      presentingComplaint,
+      esi,
+      crew,
+      observations,
+      prealert,
+    } = req.body ?? {};
+    const normalizedUnit = typeof unit === "string" ? unit.trim() : "";
+    const normalizedComplaint =
+      typeof presentingComplaint === "string" ? presentingComplaint.trim() : "";
+    const normalizedCrew = typeof crew === "string" ? crew.trim() : "";
+    const eta = Number(etaMinutes);
+    const acuity = Number(esi);
+    if (
+      !normalizedUnit ||
+      normalizedUnit.length > 40 ||
+      !Number.isInteger(eta) ||
+      eta < 0 ||
+      eta > 1440 ||
+      !normalizedComplaint ||
+      normalizedComplaint.length > 500 ||
+      !Number.isInteger(acuity) ||
+      acuity < 1 ||
+      acuity > 5 ||
+      !normalizedCrew ||
+      normalizedCrew.length > 120 ||
+      (observations !== undefined &&
+        (typeof observations !== "string" || observations.length > 1000)) ||
+      (prealert !== undefined && typeof prealert !== "boolean")
+    ) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message:
+          "Enter a unit, ETA from 0 to 1440 minutes, complaint, ESI 1–5, crew, and valid observations.",
+      });
+      return;
+    }
+
+    const unitRecord = await InboundAmbulance.create({
+      unit: normalizedUnit,
+      etaMinutes: eta,
+      presentingComplaint: normalizedComplaint,
+      esi: acuity,
+      crew: normalizedCrew,
+      observations:
+        typeof observations === "string"
+          ? observations.trim() || "obs pending"
+          : "obs pending",
+      prealert: prealert === true,
+      status: "en_route",
+    });
+    broadcastEmergencyEvent("emergency:inbound_updated", unitRecord);
+    await logAudit(
+      req.user?.name || "emergency_staff",
+      `Registered inbound ambulance ${normalizedUnit} (ETA ${eta} min, ESI ${acuity})`,
+      normalizedUnit,
+      acuity <= 2 ? "warn" : "info",
+    );
+    res.status(StatusCodes.CREATED).json({ success: true, unit: unitRecord });
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: "That ambulance unit is already registered.",
+      });
+      return;
+    }
+    console.error("Error in createInboundAmbulance:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to register inbound ambulance",
+    });
+  }
+};
+
+export const recordAmbulanceArrival = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const unit = typeof req.params.unit === "string" ? req.params.unit : "";
+    const inbound = await InboundAmbulance.findOne({ unit });
+    if (!inbound) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Ambulance unit not found." });
+      return;
+    }
+    if (inbound.emergencyCase) {
+      const existingCase = await EmergencyCase.findById(inbound.emergencyCase);
+      if (existingCase) {
+        res.status(StatusCodes.OK).json({
+          success: true,
+          message: "Arrival already recorded.",
+          case: formatEmergencyCase(existingCase),
+          unit: inbound,
+        });
+        return;
+      }
+    }
+
+    const recoveredCase = await EmergencyCase.findOne({
+      sourceAmbulance: inbound._id,
+    });
+    if (recoveredCase) {
+      const updatedInbound = await InboundAmbulance.findByIdAndUpdate(
+        inbound._id,
+        {
+          $set: {
+            status: "arrived",
+            emergencyCase: recoveredCase._id,
+            etaMinutes: 0,
+          },
+        },
+        { new: true },
+      );
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Arrival already recorded.",
+        case: formatEmergencyCase(recoveredCase),
+        unit: updatedInbound,
+      });
+      return;
+    }
+    if (inbound.status !== "en_route") {
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: `This unit is marked ${inbound.status} and cannot be received as an arrival.`,
+      });
+      return;
+    }
+
+    if (inbound.assignedBay) {
+      const receivingBay = await ResusBay.findOne({
+        bayId: inbound.assignedBay,
+      });
+      if (!receivingBay || receivingBay.state !== "ready") {
+        res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          message:
+            "The assigned bay is no longer ready. Reassign this unit before recording arrival.",
+        });
+        return;
+      }
+    }
+
+    const { patientName, age, sex } = req.body ?? {};
+    const normalizedName =
+      typeof patientName === "string" ? patientName.trim() : "";
+    const normalizedAge = typeof age === "number" ? age : Number(age);
+    if (
+      !normalizedName ||
+      normalizedName.length > 120 ||
+      age === undefined ||
+      age === null ||
+      age === "" ||
+      !Number.isInteger(normalizedAge) ||
+      normalizedAge < 0 ||
+      normalizedAge > 130 ||
+      !(["M", "F", "O"] as string[]).includes(sex)
+    ) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message:
+          "Enter a patient name (use Unknown patient if unidentified), age from 0 to 130, and valid sex.",
+      });
+      return;
+    }
+
+    let emergencyCase = await EmergencyCase.findOne({
+      sourceAmbulance: inbound._id,
+    });
+    if (!emergencyCase) {
+      emergencyCase = await EmergencyCase.create({
+        caseId: await allocateEmergencyCaseId(),
+        patientName: normalizedName,
+        age: normalizedAge,
+        sex,
+        presentingComplaint: inbound.presentingComplaint,
+        esi: inbound.esi,
+        area: inbound.assignedBay || (inbound.esi <= 2 ? "Resus" : "Waiting"),
+        observations: inbound.observations || "obs pending",
+        disposition: "awaiting triage",
+        sourceAmbulance: inbound._id,
+      });
+    }
+
+    let bayAvailable = true;
+    if (inbound.assignedBay) {
+      const occupiedBay = await ResusBay.findOneAndUpdate(
+        { bayId: inbound.assignedBay, state: "ready" },
+        {
+          $set: {
+            state: "occupied",
+            patientSummary: `${normalizedName} · ${inbound.presentingComplaint}`,
+            team: inbound.crew,
+            occupiedAt: new Date(),
+            nextIntervention: "Initial clinical assessment",
+          },
+        },
+        { new: true },
+      );
+      bayAvailable = Boolean(occupiedBay);
+      if (occupiedBay) {
+        emergencyCase.area = occupiedBay.bayId;
+        emergencyCase.disposition = "in bay";
+        await emergencyCase.save();
+        broadcastEmergencyEvent("emergency:bay_updated", occupiedBay);
+      } else {
+        emergencyCase.area = "Waiting";
+        emergencyCase.disposition = "awaiting triage";
+        await emergencyCase.save();
+      }
+    }
+
+    const updatedInbound = await InboundAmbulance.findByIdAndUpdate(
+      inbound._id,
+      {
+        $set: {
+          status: "arrived",
+          emergencyCase: emergencyCase._id,
+          etaMinutes: 0,
+        },
+        ...(!bayAvailable ? { $unset: { assignedBay: 1 } } : {}),
+      },
+      { new: true },
+    );
+    broadcastEmergencyEvent("emergency:inbound_updated", updatedInbound);
+    broadcastEmergencyEvent("emergency:triage_updated", {
+      action: "created",
+      case: emergencyCase,
+    });
+    await logAudit(
+      req.user?.name || "emergency_staff",
+      `Ambulance ${unit} arrived and patient registered as ${emergencyCase.caseId}`,
+      emergencyCase.caseId,
+      emergencyCase.esi <= 2 ? "warn" : "info",
+    );
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: bayAvailable
+        ? `Arrival recorded as ${emergencyCase.caseId}`
+        : `Arrival recorded as ${emergencyCase.caseId}; the bay became unavailable, so the case is awaiting triage.`,
+      case: formatEmergencyCase(emergencyCase),
+      unit: updatedInbound,
+    });
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      const unit = typeof req.params.unit === "string" ? req.params.unit : "";
+      const inbound = await InboundAmbulance.findOne({ unit });
+      const existingCase = inbound
+        ? await EmergencyCase.findOne({ sourceAmbulance: inbound._id })
+        : null;
+      if (existingCase) {
+        const updatedInbound = await InboundAmbulance.findByIdAndUpdate(
+          inbound?._id,
+          {
+            $set: {
+              status: "arrived",
+              emergencyCase: existingCase._id,
+              etaMinutes: 0,
+            },
+          },
+          { new: true },
+        );
+        res.status(StatusCodes.OK).json({
+          success: true,
+          message: "Arrival already recorded.",
+          case: formatEmergencyCase(existingCase),
+          unit: updatedInbound,
+        });
+        return;
+      }
+    }
+    console.error("Error in recordAmbulanceArrival:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to record ambulance arrival" });
+  }
+};
+
 export const assignAmbulanceBay = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const { unit } = req.params;
+    const unit = typeof req.params.unit === "string" ? req.params.unit : "";
     const { bay } = req.body;
+    if (typeof bay !== "string" || !bay.trim()) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Select a configured receiving bay.",
+      });
+      return;
+    }
+    const configuredBay = await ResusBay.findOne({ bayId: bay.trim() });
+    if (!configuredBay) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "That bay is not configured in the emergency department.",
+      });
+      return;
+    }
+    if (
+      configuredBay.state === "occupied" ||
+      configuredBay.state === "maintenance"
+    ) {
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: "That bay is not available to receive an ambulance.",
+      });
+      return;
+    }
+    if (configuredBay.state !== "ready") {
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: "That bay must be marked ready before assignment.",
+      });
+      return;
+    }
+    const otherReservation = await InboundAmbulance.exists({
+      unit: { $ne: unit },
+      assignedBay: bay.trim(),
+      status: "en_route",
+    });
+    if (otherReservation) {
+      res.status(StatusCodes.CONFLICT).json({
+        success: false,
+        message: "That bay is already assigned to another inbound unit.",
+      });
+      return;
+    }
 
     const assigned = await InboundAmbulance.findOneAndUpdate(
       { unit },
-      { $set: { assignedBay: bay || "Resus 1" } },
+      { $set: { assignedBay: bay.trim() } },
       { new: true },
     );
 

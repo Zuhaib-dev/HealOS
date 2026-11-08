@@ -72,9 +72,18 @@ export interface InboundAmbulanceData {
   crew: string;
   observations: string;
   prealert: boolean;
-  progress: number;
   assignedBay?: string;
   status: "en_route" | "arrived" | "diverted" | "cancelled";
+}
+
+export interface CreateInboundAmbulancePayload {
+  unit: string;
+  etaMinutes: number;
+  presentingComplaint: string;
+  esi: EsiLevel;
+  crew: string;
+  observations?: string;
+  prealert: boolean;
 }
 
 export interface CascadeStepData {
@@ -233,6 +242,29 @@ export async function fetchInboundAmbulancesApi() {
   return response.data;
 }
 
+export async function createInboundAmbulanceApi(
+  payload: CreateInboundAmbulancePayload,
+) {
+  const response = await apiClient.post<{
+    success: boolean;
+    unit: InboundAmbulanceData;
+  }>("/emergency/inbound", payload);
+  return response.data;
+}
+
+export async function recordAmbulanceArrivalApi(
+  unit: string,
+  payload: { patientName: string; age: number; sex: "M" | "F" | "O" },
+) {
+  const response = await apiClient.post<{
+    success: boolean;
+    message: string;
+    case: EmergencyCaseData;
+    unit: InboundAmbulanceData;
+  }>(`/emergency/inbound/${encodeURIComponent(unit)}/arrive`, payload);
+  return response.data;
+}
+
 /**
  * Assign a receiving bay to an incoming EMS ambulance unit
  */
@@ -241,7 +273,7 @@ export async function assignAmbulanceBayApi(unit: string, bay: string) {
     success: boolean;
     message: string;
     unit: InboundAmbulanceData;
-  }>(`/emergency/inbound/${unit}/assign-bay`, { bay });
+  }>(`/emergency/inbound/${encodeURIComponent(unit)}/assign-bay`, { bay });
   return response.data;
 }
 

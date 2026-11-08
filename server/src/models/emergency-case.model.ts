@@ -15,6 +15,7 @@ export interface IEmergencyCase extends Document {
   caseId: string;
   patientName: string;
   patientRef?: mongoose.Types.ObjectId;
+  sourceAmbulance?: mongoose.Types.ObjectId;
   age: number;
   sex: "M" | "F" | "O";
   presentingComplaint: string;
@@ -48,6 +49,12 @@ const emergencyCaseSchema = new Schema<IEmergencyCase>(
     patientRef: {
       type: Schema.Types.ObjectId,
       ref: "User",
+    },
+    sourceAmbulance: {
+      type: Schema.Types.ObjectId,
+      ref: "InboundAmbulance",
+      unique: true,
+      sparse: true,
     },
     age: {
       type: Number,

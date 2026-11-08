@@ -8,6 +8,7 @@ export enum ConsultationStatus {
 export interface IMedicine {
   name: string;
   dosage: string;
+  route?: string;
   frequency: string;
   duration: string;
   instructions?: string;
@@ -15,11 +16,13 @@ export interface IMedicine {
 }
 
 export interface IConsultation extends Document {
-  patient: mongoose.Types.ObjectId;
+  patient?: mongoose.Types.ObjectId;
+  emergencyCase?: mongoose.Types.ObjectId;
   doctor: mongoose.Types.ObjectId;
   appointment?: mongoose.Types.ObjectId;
   chiefComplaint?: string;
   diagnosis?: string;
+  assessment?: string;
   advice?: string; // diet, lifestyle, etc.
   medicines: IMedicine[];
   diagnosticOrders?: {
@@ -37,6 +40,7 @@ const medicineSchema = new Schema<IMedicine>(
   {
     name: { type: String, required: true },
     dosage: { type: String, required: true },
+    route: { type: String, trim: true },
     frequency: { type: String, required: true },
     duration: { type: String, required: true },
     instructions: { type: String },
@@ -47,11 +51,13 @@ const medicineSchema = new Schema<IMedicine>(
 
 const consultationSchema = new Schema<IConsultation>(
   {
-    patient: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    patient: { type: Schema.Types.ObjectId, ref: "User" },
+    emergencyCase: { type: Schema.Types.ObjectId, ref: "EmergencyCase" },
     doctor: { type: Schema.Types.ObjectId, ref: "User", required: true },
     appointment: { type: Schema.Types.ObjectId, ref: "Appointment" },
     chiefComplaint: { type: String },
     diagnosis: { type: String },
+    assessment: { type: String },
     advice: { type: String },
     followUpDate: { type: Date },
     medicines: { type: [medicineSchema], default: [] },
@@ -77,6 +83,12 @@ const consultationSchema = new Schema<IConsultation>(
 consultationSchema.index({ patient: 1, createdAt: -1 });
 consultationSchema.index({ doctor: 1, createdAt: -1 });
 consultationSchema.index({ appointment: 1 });
+consultationSchema.index({ emergencyCase: 1 }, { unique: true, sparse: true });
+consultationSchema.pre("validate", function () {
+  if (!this.patient && !this.emergencyCase) {
+    this.invalidate("patient", "A patient or emergency case is required");
+  }
+});
 
 export const Consultation = mongoose.model<IConsultation>(
   "Consultation",

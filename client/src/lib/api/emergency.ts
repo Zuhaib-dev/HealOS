@@ -37,6 +37,9 @@ export interface EmergencyCaseData {
   disposition: EmergencyDisposition;
   assignedDoctorName?: string;
   assignedDoctorId?: string;
+  clinicianAssignedAt?: string;
+  encounterStatus?: "DRAFT" | "COMPLETED";
+  diagnosisSummary?: string;
   triageNotes?: string;
 }
 
@@ -50,6 +53,56 @@ export interface CreateEmergencyCasePayload {
   observations?: string;
   disposition?: EmergencyDisposition;
   triageNotes?: string;
+}
+
+export interface EmergencyEncounterMedicine {
+  _id?: string;
+  name: string;
+  dosage: string;
+  route: string;
+  frequency: string;
+  duration: string;
+  instructions?: string;
+  isDispensed?: boolean;
+}
+
+export interface EmergencyEncounterData {
+  _id?: string;
+  chiefComplaint: string;
+  assessment: string;
+  diagnosis: string;
+  advice: string;
+  medicines: EmergencyEncounterMedicine[];
+  status: "DRAFT" | "COMPLETED";
+}
+
+export async function fetchEmergencyCaseApi(caseId: string) {
+  const response = await apiClient.get<{
+    success: boolean;
+    case: EmergencyCaseData;
+  }>(`/emergency/cases/${encodeURIComponent(caseId)}`);
+  return response.data;
+}
+
+export async function fetchEmergencyEncounterApi(caseId: string) {
+  const response = await apiClient.get<{
+    success: boolean;
+    case: EmergencyCaseData;
+    encounter: EmergencyEncounterData | null;
+  }>(`/emergency/cases/${encodeURIComponent(caseId)}/encounter`);
+  return response.data;
+}
+
+export async function saveEmergencyEncounterApi(
+  caseId: string,
+  encounter: EmergencyEncounterData,
+) {
+  const response = await apiClient.put<{
+    success: boolean;
+    case: EmergencyCaseData;
+    consultation: EmergencyEncounterData;
+  }>(`/emergency/cases/${encodeURIComponent(caseId)}/encounter`, encounter);
+  return response.data;
 }
 
 export interface ResusBayData {

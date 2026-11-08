@@ -12,6 +12,9 @@ import {
   MajorIncident,
   User,
   UserRole,
+  Consultation,
+  ConsultationStatus,
+  PharmacySale,
 } from "../models";
 import { logAudit } from "../utils/audit.js";
 import { getIO } from "../socket.js";
@@ -65,6 +68,9 @@ const formatEmergencyCase = (record: any) => {
     disposition: record.disposition,
     assignedDoctorName: record.assignedDoctorName,
     assignedDoctorId: record.assignedDoctor?.toString(),
+    clinicianAssignedAt: record.clinicianAssignedAt?.toISOString(),
+    encounterStatus: record.encounterStatus,
+    diagnosisSummary: record.diagnosisSummary,
     triageNotes: record.triageNotes,
   };
 };
@@ -327,6 +333,7 @@ export const assignEmergencyCase = async (
     if (doctorId === null) {
       emergencyCase.assignedDoctor = undefined;
       emergencyCase.assignedDoctorName = undefined;
+      emergencyCase.clinicianAssignedAt = undefined;
     } else {
       const clinician = await User.findOne({
         _id: doctorId,
@@ -342,6 +349,7 @@ export const assignEmergencyCase = async (
       }
       emergencyCase.assignedDoctor = clinician._id;
       emergencyCase.assignedDoctorName = clinician.name;
+      emergencyCase.clinicianAssignedAt = new Date();
     }
     await emergencyCase.save();
     const formattedCase = formatEmergencyCase(emergencyCase);
@@ -367,6 +375,279 @@ export const assignEmergencyCase = async (
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ success: false, message: "Failed to assign emergency case." });
+  }
+};
+
+export const getEmergencyCaseById = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    if (!mongoose.isValidObjectId(id)) {
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "Invalid emergency case ID." });
+      return;
+    }
+    const emergencyCase = await EmergencyCase.findOne({
+      _id: id,
+      isArchived: false,
+    });
+    if (!emergencyCase) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Active emergency case not found." });
+      return;
+    }
+    res
+      .status(StatusCodes.OK)
+      .json({ success: true, case: formatEmergencyCase(emergencyCase) });
+  } catch (error) {
+    console.error("Error in getEmergencyCaseById:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to load emergency case." });
+  }
+};
+
+const getAssignedEmergencyCase = async (
+  id: string,
+  req: Request,
+  res: Response,
+) => {
+  if (!mongoose.isValidObjectId(id)) {
+    res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ success: false, message: "Invalid emergency case ID." });
+    return null;
+  }
+  const emergencyCase = await EmergencyCase.findOne({
+    _id: id,
+    isArchived: false,
+  });
+  if (!emergencyCase) {
+    res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ success: false, message: "Active emergency case not found." });
+    return null;
+  }
+  if (emergencyCase.assignedDoctor?.toString() !== req.user?._id?.toString()) {
+    res.status(StatusCodes.FORBIDDEN).json({
+      success: false,
+      message: "This encounter is available only to its assigned clinician.",
+    });
+    return null;
+  }
+  return emergencyCase;
+};
+
+export const getEmergencyEncounter = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    const emergencyCase = await getAssignedEmergencyCase(id, req, res);
+    if (!emergencyCase) return;
+    const consultation = await Consultation.findOne({
+      emergencyCase: emergencyCase._id,
+    }).lean();
+    res.status(StatusCodes.OK).json({
+      success: true,
+      case: formatEmergencyCase(emergencyCase),
+      encounter: consultation,
+    });
+  } catch (error) {
+    console.error("Error in getEmergencyEncounter:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to load ED encounter." });
+  }
+};
+
+export const saveEmergencyEncounter = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    const emergencyCase = await getAssignedEmergencyCase(id, req, res);
+    if (!emergencyCase) return;
+    const body =
+      req.body && typeof req.body === "object" && !Array.isArray(req.body)
+        ? req.body
+        : {};
+    const assessment =
+      typeof body.assessment === "string" ? body.assessment.trim() : "";
+    const diagnosis =
+      typeof body.diagnosis === "string" ? body.diagnosis.trim() : "";
+    const advice = typeof body.advice === "string" ? body.advice.trim() : "";
+    const status = body.status;
+    const medicines = body.medicines;
+    if (
+      assessment.length > 4000 ||
+      diagnosis.length > 2000 ||
+      advice.length > 4000 ||
+      ![ConsultationStatus.DRAFT, ConsultationStatus.COMPLETED].includes(
+        status,
+      ) ||
+      !Array.isArray(medicines) ||
+      medicines.length > 50
+    ) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Check the encounter fields and medicine list.",
+      });
+      return;
+    }
+    if (status === ConsultationStatus.COMPLETED && diagnosis.length < 2) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Enter a diagnosis before signing the encounter.",
+      });
+      return;
+    }
+    const normalizedMedicines: {
+      name: string;
+      dosage: string;
+      route: string;
+      frequency: string;
+      duration: string;
+      instructions?: string;
+    }[] = [];
+    for (const medicine of medicines) {
+      if (!medicine || typeof medicine !== "object") {
+        res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ success: false, message: "Invalid medicine order." });
+        return;
+      }
+      const name =
+        typeof medicine.name === "string" ? medicine.name.trim() : "";
+      const dosage =
+        typeof medicine.dosage === "string" ? medicine.dosage.trim() : "";
+      const route =
+        typeof medicine.route === "string" ? medicine.route.trim() : "";
+      const frequency =
+        typeof medicine.frequency === "string" ? medicine.frequency.trim() : "";
+      const duration =
+        typeof medicine.duration === "string" ? medicine.duration.trim() : "";
+      const instructions =
+        typeof medicine.instructions === "string"
+          ? medicine.instructions.trim()
+          : "";
+      if (
+        !name &&
+        !dosage &&
+        !route &&
+        !frequency &&
+        !duration &&
+        !instructions
+      )
+        continue;
+      if (
+        !name ||
+        !dosage ||
+        !route ||
+        !frequency ||
+        !duration ||
+        name.length > 160 ||
+        dosage.length > 120 ||
+        route.length > 80 ||
+        frequency.length > 120 ||
+        duration.length > 120 ||
+        instructions.length > 500
+      ) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message:
+            "Each medicine order needs a name, dose, route, frequency, and duration.",
+        });
+        return;
+      }
+      normalizedMedicines.push({
+        name,
+        dosage,
+        route,
+        frequency,
+        duration,
+        ...(instructions ? { instructions } : {}),
+      });
+    }
+    let consultation = await Consultation.findOne({
+      emergencyCase: emergencyCase._id,
+    });
+    if (consultation) {
+      if (consultation.status === ConsultationStatus.COMPLETED) {
+        res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          message: "A signed ED encounter cannot be changed.",
+        });
+        return;
+      }
+      const sale = await PharmacySale.findOne({
+        consultation: consultation._id,
+      });
+      if (
+        sale ||
+        consultation.medicines.some((medicine) => medicine.isDispensed)
+      ) {
+        res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          message:
+            "This prescription has entered pharmacy processing and can no longer be edited.",
+        });
+        return;
+      }
+    } else {
+      consultation = new Consultation({
+        ...(emergencyCase.patientRef
+          ? { patient: emergencyCase.patientRef }
+          : {}),
+        emergencyCase: emergencyCase._id,
+        doctor: req.user?._id,
+      });
+    }
+    if (emergencyCase.patientRef)
+      consultation.patient = emergencyCase.patientRef;
+    consultation.emergencyCase = emergencyCase._id;
+    consultation.doctor = emergencyCase.assignedDoctor!;
+    consultation.chiefComplaint = emergencyCase.presentingComplaint;
+    consultation.assessment = assessment;
+    consultation.diagnosis = diagnosis;
+    consultation.advice = advice;
+    consultation.medicines = normalizedMedicines;
+    consultation.status = status;
+    await consultation.save();
+    emergencyCase.encounterStatus = status;
+    emergencyCase.diagnosisSummary = diagnosis || undefined;
+    await emergencyCase.save();
+    const io = getIO();
+    io?.emit("consultation_saved", { consultation });
+    io?.emit("emergency:triage_updated", {
+      action: "encounter_saved",
+      case: formatEmergencyCase(emergencyCase),
+    });
+    if (
+      status === ConsultationStatus.COMPLETED &&
+      normalizedMedicines.length > 0
+    ) {
+      io?.emit("prescription_created", {
+        consultationId: consultation._id,
+        emergencyCaseId: emergencyCase._id,
+      });
+    }
+    res.status(StatusCodes.OK).json({
+      success: true,
+      consultation,
+      case: formatEmergencyCase(emergencyCase),
+    });
+  } catch (error) {
+    console.error("Error in saveEmergencyEncounter:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Failed to save ED encounter." });
   }
 };
 

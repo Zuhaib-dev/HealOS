@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { RefreshCw, Clock3, UserRound } from "lucide-react";
 import { ActionButton, PanelHeader } from "@/components/admin/admin-shell";
 import { Pill } from "@/components/workspace/ui";
@@ -109,6 +110,20 @@ export function EmergencyWorklistPanel() {
                   {emergencyCase.waitMin}m
                 </span>
               </div>
+              {emergencyCase.encounterStatus && (
+                <p className="mono-label mt-3 text-xs text-accent">
+                  Encounter {emergencyCase.encounterStatus.toLowerCase()}
+                  {emergencyCase.diagnosisSummary
+                    ? ` · ${emergencyCase.diagnosisSummary}`
+                    : ""}
+                </p>
+              )}
+              <Link
+                href={`/emergency/encounters/${encodeURIComponent(emergencyCase._id)}`}
+                className="mt-4 inline-flex h-10 items-center bg-foreground px-3 text-sm font-medium text-background hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Open ED encounter
+              </Link>
             </li>
           ))}
         </ul>

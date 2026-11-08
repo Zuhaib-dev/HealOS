@@ -26,6 +26,9 @@ export interface IEmergencyCase extends Document {
   disposition: EmergencyDisposition;
   assignedDoctor?: mongoose.Types.ObjectId;
   assignedDoctorName?: string;
+  clinicianAssignedAt?: Date;
+  encounterStatus?: "DRAFT" | "COMPLETED";
+  diagnosisSummary?: string;
   triageNotes?: string;
   isArchived: boolean;
   createdAt: Date;
@@ -117,6 +120,9 @@ const emergencyCaseSchema = new Schema<IEmergencyCase>(
       type: String,
       trim: true,
     },
+    clinicianAssignedAt: { type: Date },
+    encounterStatus: { type: String, enum: ["DRAFT", "COMPLETED"] },
+    diagnosisSummary: { type: String, trim: true, maxlength: 2000 },
     triageNotes: {
       type: String,
       trim: true,

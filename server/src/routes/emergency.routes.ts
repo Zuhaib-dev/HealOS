@@ -8,6 +8,9 @@ import {
   getEmergencyClinicians,
   getMyEmergencyCases,
   assignEmergencyCase,
+  getEmergencyCaseById,
+  getEmergencyEncounter,
+  saveEmergencyEncounter,
   getEmergencyObservations,
   createEmergencyObservation,
   createEmergencyCase,
@@ -49,12 +52,23 @@ emergencyRouter.use(
 emergencyRouter.get("/stats", getEmergencyStats);
 emergencyRouter.get("/clinicians", getEmergencyClinicians);
 emergencyRouter.get("/cases/mine", getMyEmergencyCases);
+emergencyRouter.get("/cases/:id", getEmergencyCaseById);
 emergencyRouter.get("/cases", getTriageCases);
 emergencyRouter.post("/cases", createEmergencyCase);
 emergencyRouter.patch(
   "/cases/:id/assignment",
   requireRole([UserRole.EMERGENCY_DOCTOR, UserRole.DOCTOR, UserRole.ADMIN]),
   assignEmergencyCase,
+);
+emergencyRouter.get(
+  "/cases/:id/encounter",
+  requireRole([UserRole.EMERGENCY_DOCTOR, UserRole.DOCTOR]),
+  getEmergencyEncounter,
+);
+emergencyRouter.put(
+  "/cases/:id/encounter",
+  requireRole([UserRole.EMERGENCY_DOCTOR, UserRole.DOCTOR]),
+  saveEmergencyEncounter,
 );
 emergencyRouter.get("/cases/:id/observations", getEmergencyObservations);
 emergencyRouter.post("/cases/:id/observations", createEmergencyObservation);

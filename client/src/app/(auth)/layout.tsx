@@ -1,16 +1,17 @@
 import { Suspense } from "react";
-import { Metadata } from "next";
+import type { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo/metadata";
 import { HealOSLogo } from "@/components/brand/heal-os-logo";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ArrowLeft } from "lucide-react";
 import { GuestGuard } from "@/components/auth/guest-guard";
 
-export const metadata: Metadata = {
-  title: "Authenticate | HealOS",
-  description:
-    "Secure login and registration for HealOS, the operating system for healthcare.",
-};
+export const metadata: Metadata = createPageMetadata(
+  "Account Access",
+  "Sign in or create an account to access HealOS.",
+  { noIndex: true },
+);
 
 export default function AuthLayout({
   children,

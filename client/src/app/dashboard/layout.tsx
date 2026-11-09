@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo/metadata";
 // ============================================
 // This layout wraps ALL dashboard pages across all roles.
 // It will include the sidebar navigation and top bar.
@@ -9,6 +11,12 @@
 //   /dashboard/pharmacy/*
 //   /dashboard/billing/*
 //   /dashboard/admin/*
+
+export const metadata: Metadata = createPageMetadata(
+  "HealOS Dashboard",
+  "HealOS Dashboard workspace in HealOS.",
+  { noIndex: true },
+);
 
 export default function DashboardLayout({
   children,

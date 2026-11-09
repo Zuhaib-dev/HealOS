@@ -3,8 +3,9 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthSessionBridge } from "@/components/auth/auth-session-bridge";
 import { CommandMenu } from "@/components/command-menu";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Work_Sans, JetBrains_Mono } from "next/font/google";
+import { HEALOS_SITE_URL } from "@/lib/seo/metadata";
 import "./globals.css";
 
 const workSans = Work_Sans({
@@ -18,25 +19,27 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://healos-theta.vercel.app"),
-  alternates: { canonical: "https://healos-theta.vercel.app/" },
+  metadataBase: new URL(HEALOS_SITE_URL),
   title: {
-    default: "HealOS | Modern Healthcare Management",
+    default: "HealOS — Hospital Operations and Patient Care",
     template: "%s | HealOS",
   },
   description:
-    "HealOS unifies patient records, clinician onboarding, radiology, scheduling and revenue analytics in one secure hospital management platform.",
+    "HealOS brings patient access, appointments, clinical workspaces, diagnostics, pharmacy, billing, and emergency department operations into one hospital platform.",
+  applicationName: "HealOS",
+  category: "Health",
   keywords: [
-    "hospital management",
-    "clinic management",
-    "healthcare",
-    "appointments",
+    "hospital operations software",
+    "hospital management system",
     "patient portal",
-    "doctor dashboard",
-    "radiology",
+    "clinical workflow software",
+    "emergency department workflow",
+    "laboratory information system",
+    "radiology workflow",
+    "pharmacy management",
     "HealOS",
   ],
-  authors: [{ name: "Zuhaib Rashid", url: "https://zuhaibrashid.com" }],
+  authors: [{ name: "Zuhaib Rashid", url: "https://zuhaibrashid.com/" }],
   creator: "Zuhaib Rashid",
   publisher: "Zuhaib Rashid",
   formatDetection: {
@@ -45,29 +48,31 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "HealOS | Modern Healthcare Management",
+    title: "HealOS — Hospital Operations and Patient Care",
     description:
-      "The Operating System for Modern Hospitals. Seamlessly unified patient records, revenue analytics, and clinician workflows.",
-    url: "https://healos-theta.vercel.app",
+      "A connected platform for patient access, clinical teams, diagnostics, pharmacy, billing, and emergency workflows.",
+    url: HEALOS_SITE_URL,
     siteName: "HealOS",
     locale: "en_US",
     type: "website",
-    images: [{ url: "/og-image.jpg" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "HealOS | Modern Healthcare Management",
-    description: "The Operating System for Modern Hospitals.",
-    creator: "@zuhiabrashid", // Optional, adjust if different handle
+    title: "HealOS — Hospital Operations and Patient Care",
+    description:
+      "A connected platform for patient access, clinical teams, diagnostics, pharmacy, billing, and emergency workflows.",
+    creator: "@xuhaib_x9",
   },
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
     apple: "/icon.svg",
   },
-  verification: {
-    google: "terZRkP5xAisMxUTVWZ_rW6MXSuOeuAFITryD0CBDxA",
-  },
+};
+
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: "#10b981",
 };
 
 import { RealtimeSocketProvider } from "@/components/providers/socket-provider";
@@ -87,39 +92,10 @@ export default function RootLayout({
         "@type": "Person",
         "@id": "https://healos-theta.vercel.app/#creator",
         name: "Zuhaib Rashid",
-        description: "Full Stack Developer & Lead Architect of HealOS",
-        jobTitle: "Full Stack Developer & Founder",
-        email: "mailto:zuhaibrashid01@gmail.com",
-        url: "https://zuhaibrashid.com",
-        sameAs: [
-          "https://github.com/Zuhaib-dev",
-          "https://www.linkedin.com/in/zuhaib-rashid-661345318/",
-          "https://x.com/xuhaib_x9",
-        ],
-      },
-      {
-        "@type": "Organization",
-        "@id": "https://healos-theta.vercel.app/#organization",
-        name: "HealOS",
-        url: "https://healos-theta.vercel.app",
-        logo: "https://healos-theta.vercel.app/icon.svg",
-        founder: {
-          "@id": "https://healos-theta.vercel.app/#creator",
-        },
-        contactPoint: {
-          "@type": "ContactPoint",
-          telephone: "+1-800-555-1234",
-          contactType: "customer service",
-          email: "hello@healos.com",
-        },
-        address: {
-          "@type": "PostalAddress",
-          streetAddress: "123 HealOS Ave",
-          addressLocality: "San Francisco",
-          addressRegion: "CA",
-          postalCode: "94105",
-          addressCountry: "US",
-        },
+        jobTitle: "Full Stack Developer & Healthcare Systems Architect",
+        description:
+          "Full Stack Developer and Healthcare Systems Architect building HealOS.",
+        url: "https://zuhaibrashid.com/",
         sameAs: [
           "https://github.com/Zuhaib-dev",
           "https://www.linkedin.com/in/zuhaib-rashid-661345318/",
@@ -129,81 +105,30 @@ export default function RootLayout({
       {
         "@type": "WebSite",
         "@id": "https://healos-theta.vercel.app/#website",
-        url: "https://healos-theta.vercel.app",
+        url: "https://healos-theta.vercel.app/",
         name: "HealOS",
         description:
-          "The Operating System for Modern Hospitals. Seamlessly unified patient records, revenue analytics, and clinician workflows.",
-        publisher: {
-          "@id": "https://healos-theta.vercel.app/#organization",
-        },
-        author: {
-          "@id": "https://healos-theta.vercel.app/#creator",
-        },
+          "Hospital operations and patient care software for connected clinical and administrative workflows.",
+        inLanguage: "en",
+        author: { "@id": "https://healos-theta.vercel.app/#creator" },
       },
       {
         "@type": "SoftwareApplication",
         "@id": "https://healos-theta.vercel.app/#softwareapplication",
-        name: "HealOS Healthcare Platform",
-        operatingSystem: "All",
+        name: "HealOS",
         applicationCategory: "HealthApplication",
-        url: "https://healos-theta.vercel.app",
+        operatingSystem: "Web",
+        url: "https://healos-theta.vercel.app/",
         description:
-          "Hospital operating system unifying clinical scheduling, EHR records, emergency triage, radiology PACS, and pharmacy dispensing.",
-        author: {
-          "@id": "https://healos-theta.vercel.app/#creator",
-        },
-        publisher: {
-          "@id": "https://healos-theta.vercel.app/#organization",
-        },
-        offers: {
-          "@type": "Offer",
-          price: "0",
-          priceCurrency: "USD",
-          availability: "https://schema.org/InStock",
-        },
+          "A hospital operations platform with patient access, clinical workspaces, diagnostics, pharmacy, billing, and emergency department workflows.",
+        author: { "@id": "https://healos-theta.vercel.app/#creator" },
         featureList: [
-          "Real-time Emergency Department Triage",
-          "Physiological Bedside Vitals Telemetry",
-          "Longitudinal Patient EHR Records",
-          "Radiology PACS Modality Worklists",
-          "Model Context Protocol (MCP) Agent Interface",
-          "REST API 3.1 & OAuth 2.0 Security",
+          "Patient appointment and records portal",
+          "Role-based doctor, nurse, reception, and administration workspaces",
+          "Laboratory and radiology order workflows",
+          "Emergency department triage and case records",
+          "Pharmacy prescription and dispensing workflows",
         ],
-      },
-      {
-        "@type": ["MedicalOrganization", "Hospital"],
-        "@id": "https://healos-theta.vercel.app/#medicalorganization",
-        name: "HealOS Clinical Medical Center",
-        url: "https://healos-theta.vercel.app",
-        medicalSpecialty: [
-          "Emergency",
-          "Radiology",
-          "Cardiology",
-          "Pathology",
-          "GeneralPractice",
-        ],
-        hasMap: "https://healos-theta.vercel.app",
-        parentOrganization: {
-          "@id": "https://healos-theta.vercel.app/#organization",
-        },
-        department: [
-          { "@type": "MedicalClinic", name: "Emergency Department" },
-          { "@type": "MedicalClinic", name: "Radiology PACS" },
-          { "@type": "MedicalClinic", name: "Outpatient Clinic" },
-          { "@type": "MedicalClinic", name: "Pathology Diagnostics" },
-        ],
-      },
-      {
-        "@type": "WebAPI",
-        "@id": "https://healos-theta.vercel.app/#webapi",
-        name: "HealOS Clinical API",
-        description:
-          "HIPAA-compliant RESTful and MCP clinical API for healthcare applications and autonomous agents.",
-        documentation: "https://healos-theta.vercel.app/developers",
-        termsOfService: "https://healos-theta.vercel.app/about",
-        provider: {
-          "@id": "https://healos-theta.vercel.app/#organization",
-        },
       },
     ],
   };
@@ -235,7 +160,9 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://lh3.googleusercontent.com" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+          }}
         />
         <script
           id="webmcp-registration"

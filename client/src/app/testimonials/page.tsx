@@ -1,16 +1,13 @@
-import { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo/metadata";
 import { SiteHeader } from "@/components/landing/site-header";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { TestimonialMarquee } from "@/components/landing/testimonial-marquee";
 
-export const metadata: Metadata = {
-  title: "Testimonials | HealOS",
-  description:
-    "See why top healthcare professionals trust HealOS with their clinical infrastructure.",
-  alternates: {
-    canonical: "/testimonials",
-  },
-};
+export const metadata = createPageMetadata(
+  "HealOS Testimonials",
+  "Read feedback and stories about the HealOS hospital operations platform.",
+  { canonical: "/testimonials" },
+);
 
 export default function TestimonialsPage() {
   return (

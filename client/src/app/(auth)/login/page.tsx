@@ -1,19 +1,12 @@
-import { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo/metadata";
 import { Suspense } from "react";
 import LoginClient from "./login-client";
 
-export const metadata: Metadata = {
-  title: "Sign In | HealOS",
-  description: "Sign in to your HealOS clinical workspace or patient portal.",
-  alternates: {
-    canonical: "https://healos-theta.vercel.app/login",
-  },
-  openGraph: {
-    title: "Sign In | HealOS",
-    description: "Sign in to your HealOS clinical workspace or patient portal.",
-    url: "https://healos-theta.vercel.app/login",
-  },
-};
+export const metadata = createPageMetadata(
+  "Sign In",
+  "Sign In workspace in HealOS for hospital care and operations.",
+  { noIndex: true },
+);
 
 export default function LoginPage() {
   return (

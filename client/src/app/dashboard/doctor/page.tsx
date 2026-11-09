@@ -1,3 +1,9 @@
+import { createPageMetadata } from "@/lib/seo/metadata";
+export const metadata = createPageMetadata(
+  "Doctor Dashboard",
+  "Doctor Dashboard workspace in HealOS for hospital care and operations.",
+);
+
 export default function DoctorDashboard() {
   return (
     <div>

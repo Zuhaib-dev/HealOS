@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Welcome to HealOS | HealOS",
-  description: "Complete your profile setup and onboarding.",
-};
-
+import { createPageMetadata } from "@/lib/seo/metadata";
+export const metadata: Metadata = createPageMetadata(
+  "HealOS Onboarding",
+  "Complete your account profile and workspace setup.",
+  { noIndex: true },
+);
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return children;
 }

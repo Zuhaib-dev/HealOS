@@ -1,39 +1,13 @@
-"use client";
+import type { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo/metadata";
+import WorkspaceLayoutClient from "./workspace-layout-client";
 
-import { Pill, CheckCircle } from "lucide-react";
+export const metadata: Metadata = createPageMetadata(
+  "Pharmacy Dashboard",
+  "Pharmacy Dashboard workspace in HealOS.",
+  { noIndex: true },
+);
 
-import { RoleGuard } from "@/components/auth/role-guard";
-import { WorkspaceShell } from "@/components/workspace/workspace-shell";
-
-const sections = [
-  { id: "queue", label: "Scripts", shortLabel: "Scripts", icon: Pill },
-  {
-    id: "history",
-    label: "Dispensed",
-    shortLabel: "Ledger",
-    icon: CheckCircle,
-  },
-];
-
-export default function WorkspaceLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <RoleGuard allowedRoles={["PHARMACIST"]}>
-      <WorkspaceShell
-        navId="pharmacy"
-        breadcrumb="Medicines management / Pharmacy"
-        searchPlaceholder="Search script, drug, SKU"
-        sections={sections}
-
-        statusTitle="Dispensary"
-        statusLine="Main pharmacy open"
-        statusNote="Connected to backend"
-      >
-        {children}
-      </WorkspaceShell>
-    </RoleGuard>
-  );
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <WorkspaceLayoutClient>{children}</WorkspaceLayoutClient>;
 }

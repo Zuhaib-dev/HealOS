@@ -1,48 +1,17 @@
-import { MetadataRoute } from "next";
+import type { MetadataRoute } from "next";
+import { HEALOS_SITE_URL } from "@/lib/seo/metadata";
+
+const publicPages = [
+  "",
+  "/about",
+  "/features",
+  "/developers",
+  "/testimonials",
+  "/contact",
+];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    {
-      url: "https://healos-theta.vercel.app",
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 1,
-    },
-    {
-      url: "https://healos-theta.vercel.app/about",
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: "https://healos-theta.vercel.app/features",
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
-      url: "https://healos-theta.vercel.app/developers",
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
-      url: "https://healos-theta.vercel.app/testimonials",
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: "https://healos-theta.vercel.app/login",
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.5,
-    },
-    {
-      url: "https://healos-theta.vercel.app/register",
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.5,
-    },
-  ];
+  return publicPages.map((path) => ({
+    url: new URL(path, HEALOS_SITE_URL).toString(),
+  }));
 }

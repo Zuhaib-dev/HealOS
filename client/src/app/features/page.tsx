@@ -1,16 +1,13 @@
-import { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo/metadata";
 import { SiteHeader } from "@/components/landing/site-header";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { WorkbenchFeatures } from "@/components/landing/workbench-features";
 
-export const metadata: Metadata = {
-  title: "Platform Features | HealOS",
-  description:
-    "Explore the comprehensive modules of the HealOS hospital management system, from Radiology to Pharmacy.",
-  alternates: {
-    canonical: "/features",
-  },
-};
+export const metadata = createPageMetadata(
+  "Hospital Management Platform Features",
+  "Explore patient, clinical, diagnostic, pharmacy, billing, and emergency department workflows in HealOS.",
+  { canonical: "/features" },
+);
 
 export default function FeaturesPage() {
   return (

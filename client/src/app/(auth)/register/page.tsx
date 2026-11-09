@@ -1,20 +1,11 @@
-import { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo/metadata";
 import RegisterClient from "./register-client";
 
-export const metadata: Metadata = {
-  title: "Create Account | HealOS",
-  description:
-    "Join HealOS, the unified healthcare operating system for your clinic or hospital.",
-  alternates: {
-    canonical: "https://healos-theta.vercel.app/register",
-  },
-  openGraph: {
-    title: "Create Account | HealOS",
-    description:
-      "Join HealOS, the unified healthcare operating system for your clinic or hospital.",
-    url: "https://healos-theta.vercel.app/register",
-  },
-};
+export const metadata = createPageMetadata(
+  "Create Your Account",
+  "Create Your Account workspace in HealOS for hospital care and operations.",
+  { noIndex: true },
+);
 
 export default function RegisterPage() {
   return <RegisterClient />;

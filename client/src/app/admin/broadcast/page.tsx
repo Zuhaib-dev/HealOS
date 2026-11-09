@@ -1,10 +1,9 @@
+import { createPageMetadata } from "@/lib/seo/metadata";
 import { BroadcastPanel } from "@/components/admin/panels/broadcast-panel";
-import { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Broadcast | HealOS Admin",
-  description: "Send push notifications across the system.",
-};
+export const metadata = createPageMetadata(
+  "System Broadcasts",
+  "System Broadcasts workspace in HealOS for hospital care and operations.",
+);
 
 export default function BroadcastPage() {
   return <BroadcastPanel />;

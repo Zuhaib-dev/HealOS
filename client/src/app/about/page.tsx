@@ -1,16 +1,13 @@
-import { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo/metadata";
 import { SiteHeader } from "@/components/landing/site-header";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { EditorialMission } from "@/components/landing/editorial-mission";
 
-export const metadata: Metadata = {
-  title: "About Us | HealOS",
-  description:
-    "Read about the clinical mission driving the development of HealOS.",
-  alternates: {
-    canonical: "/about",
-  },
-};
+export const metadata = createPageMetadata(
+  "About HealOS",
+  "Learn about HealOS, a hospital operations platform connecting patient access with clinical and administrative workflows.",
+  { canonical: "/about" },
+);
 
 export default function AboutPage() {
   return (

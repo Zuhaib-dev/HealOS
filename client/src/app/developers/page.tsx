@@ -1,16 +1,13 @@
-import type { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo/metadata";
 import Link from "next/link";
 import { SiteHeader } from "@/components/landing/site-header";
 import { SiteFooter } from "@/components/landing/site-footer";
 
-export const metadata: Metadata = {
-  title: "Developer Portal & API Docs | HealOS",
-  description:
-    "Explore the HealOS developer documentation, OpenAPI 3.1 specifications, Model Context Protocol (MCP) tool bindings, and OAuth 2.0 authentication guides.",
-  alternates: {
-    canonical: "https://healos-theta.vercel.app/developers",
-  },
-};
+export const metadata = createPageMetadata(
+  "HealOS Developer Portal",
+  "Developer documentation and integration resources for the HealOS healthcare platform.",
+  { canonical: "/developers" },
+);
 
 export default function DevelopersPage() {
   return (

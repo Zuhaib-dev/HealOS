@@ -459,6 +459,7 @@ export async function fetchTriageCasesApi(
     success: boolean;
     cases: EmergencyCaseData[];
     count: number;
+    stats: EmergencyStatsData;
   }>("/emergency/cases", {
     params: filter && filter !== "all" ? { filter } : undefined,
   });

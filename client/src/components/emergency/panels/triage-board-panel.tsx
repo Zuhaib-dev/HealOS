@@ -16,7 +16,6 @@ import {
 import { getSocket } from "@/lib/socket";
 import { useAuthStore } from "@/store/use-auth-store";
 import {
-  fetchEmergencyStatsApi,
   fetchTriageCasesApi,
   createEmergencyCaseApi,
   updateEmergencyCaseApi,
@@ -101,14 +100,9 @@ export function TriageBoardPanel() {
 
   const loadData = useCallback(async () => {
     try {
-      const [statsRes, casesRes] = await Promise.all([
-        fetchEmergencyStatsApi(),
-        fetchTriageCasesApi(filter),
-      ]);
+      const casesRes = await fetchTriageCasesApi(filter);
 
-      if (statsRes.success && statsRes.stats) {
-        setStats(statsRes.stats);
-      }
+      if (casesRes.success && casesRes.stats) setStats(casesRes.stats);
       if (casesRes.success && casesRes.cases) {
         setCases(casesRes.cases);
       }

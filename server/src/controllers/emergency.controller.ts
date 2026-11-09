@@ -194,39 +194,44 @@ const removeLegacyEmergencyDemoData = async () => {
 // 1. Triage Board Operations
 // ============================================
 
+const getEmergencyStatsData = async () => {
+  const activeFilter = {
+    isArchived: false,
+    disposition: { $ne: "admitted" },
+  };
+  // Match the previous whole-minute calculation: a case breaches once its
+  // floored wait is greater than 240 minutes (at 241 elapsed minutes).
+  const breachCutoff = new Date(Date.now() - 241 * 60 * 1000);
+  const [totalInDept, awaitingTriage, fourHourBreaches] = await Promise.all([
+    EmergencyCase.countDocuments(activeFilter),
+    EmergencyCase.countDocuments({
+      ...activeFilter,
+      disposition: "awaiting triage",
+    }),
+    EmergencyCase.countDocuments({
+      ...activeFilter,
+      arrivedAt: { $lt: breachCutoff },
+    }),
+  ]);
+  return {
+    totalInDept,
+    awaitingTriage,
+    medianTimeToClinician: "—",
+    fourHourBreaches,
+  };
+};
+
 export const getEmergencyStats = async (
   _req: Request,
   res: Response,
 ): Promise<void> => {
   try {
     await removeLegacyEmergencyDemoData();
-    const activeFilter = {
-      isArchived: false,
-      disposition: { $ne: "admitted" },
-    };
-    // Match the previous whole-minute calculation: a case breaches once its
-    // floored wait is greater than 240 minutes (at 241 elapsed minutes).
-    const breachCutoff = new Date(Date.now() - 241 * 60 * 1000);
-    const [totalInDept, awaitingTriage, fourHourBreaches] = await Promise.all([
-      EmergencyCase.countDocuments(activeFilter),
-      EmergencyCase.countDocuments({
-        ...activeFilter,
-        disposition: "awaiting triage",
-      }),
-      EmergencyCase.countDocuments({
-        ...activeFilter,
-        arrivedAt: { $lt: breachCutoff },
-      }),
-    ]);
+    const stats = await getEmergencyStatsData();
 
     res.status(StatusCodes.OK).json({
       success: true,
-      stats: {
-        totalInDept,
-        awaitingTriage,
-        medianTimeToClinician: "—",
-        fourHourBreaches,
-      },
+      stats,
     });
   } catch (error) {
     console.error("Error in getEmergencyStats:", error);
@@ -252,12 +257,15 @@ export const getTriageCases = async (
       query.disposition = "awaiting triage";
     }
 
-    const cases = await EmergencyCase.find(query)
-      .select(
-        "caseId patientName age sex presentingComplaint esi arrivedAt area observations disposition assignedDoctor assignedDoctorName clinicianAssignedAt encounterStatus diagnosisSummary dischargedAt triageNotes",
-      )
-      .sort({ esi: 1, arrivedAt: 1 })
-      .lean();
+    const [cases, stats] = await Promise.all([
+      EmergencyCase.find(query)
+        .select(
+          "caseId patientName age sex presentingComplaint esi arrivedAt area observations disposition assignedDoctor assignedDoctorName clinicianAssignedAt encounterStatus diagnosisSummary dischargedAt triageNotes",
+        )
+        .sort({ esi: 1, arrivedAt: 1 })
+        .lean(),
+      getEmergencyStatsData(),
+    ]);
 
     const formattedCases = cases.map(formatEmergencyCase);
 
@@ -265,6 +273,7 @@ export const getTriageCases = async (
       success: true,
       cases: formattedCases,
       count: formattedCases.length,
+      stats,
     });
   } catch (error) {
     console.error("Error in getTriageCases:", error);

@@ -525,44 +525,52 @@ export const getEmergencyRecords = async (req: Request, res: Response) => {
 export const getEmergencyPendingWork = async (_req: Request, res: Response) => {
   try {
     const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
-    const [cases, orders, consultations, sales, admissions] = await Promise.all(
-      [
-        EmergencyCase.find({ arrivedAt: { $gte: since } })
-          .select(
-            "caseId patientName esi arrivedAt disposition assignedDoctor assignedDoctorName clinicianAssignedAt encounterStatus updatedAt",
-          )
-          .sort({ esi: 1, arrivedAt: 1 })
-          .limit(1000)
-          .lean(),
-        DiagnosticOrder.find({
-          emergencyCase: { $exists: true },
-          status: { $in: ["PENDING", "IN_PROGRESS", "REPORTED"] },
-          createdAt: { $gte: since },
-        })
-          .select("emergencyCase testName testType priority status createdAt")
-          .lean(),
-        Consultation.find({
-          emergencyCase: { $exists: true },
-          status: "COMPLETED",
-          createdAt: { $gte: since },
-        })
-          .select("emergencyCase medicines createdAt")
-          .lean(),
-        PharmacySale.find({
-          emergencyCase: { $exists: true },
-          status: { $in: ["AWAITING_PAYMENT", "DISPENSING"] },
-          createdAt: { $gte: since },
-        })
-          .select("emergencyCase consultation status createdAt")
-          .lean(),
-        EmergencyAdmission.find({
-          status: "ACTIVE",
-          createdAt: { $gte: since },
-        })
-          .select("emergencyCase")
-          .lean(),
-      ],
-    );
+    const cases = await EmergencyCase.find({ arrivedAt: { $gte: since } })
+      .select(
+        "caseId patientName esi arrivedAt disposition assignedDoctor assignedDoctorName clinicianAssignedAt encounterStatus updatedAt",
+      )
+      .sort({ esi: 1, arrivedAt: 1 })
+      .limit(1000)
+      .lean();
+    if (cases.length === 0) {
+      return void res.status(StatusCodes.OK).json({
+        success: true,
+        tasks: [],
+        counts: {},
+        total: 0,
+        lookbackDays: 180,
+      });
+    }
+    const caseIds = cases.map((emergencyCase) => emergencyCase._id);
+    const [orders, consultations, sales, admissions] = await Promise.all([
+      DiagnosticOrder.find({
+        emergencyCase: { $in: caseIds },
+        status: { $in: ["PENDING", "IN_PROGRESS", "REPORTED"] },
+        createdAt: { $gte: since },
+      })
+        .select("emergencyCase testName testType priority status createdAt")
+        .lean(),
+      Consultation.find({
+        emergencyCase: { $in: caseIds },
+        status: "COMPLETED",
+        createdAt: { $gte: since },
+      })
+        .select("emergencyCase medicines createdAt")
+        .lean(),
+      PharmacySale.find({
+        emergencyCase: { $in: caseIds },
+        status: { $in: ["AWAITING_PAYMENT", "DISPENSING"] },
+        createdAt: { $gte: since },
+      })
+        .select("emergencyCase consultation status createdAt")
+        .lean(),
+      EmergencyAdmission.find({
+        emergencyCase: { $in: caseIds },
+        status: "ACTIVE",
+      })
+        .select("emergencyCase")
+        .lean(),
+    ]);
     const byId = new Map(cases.map((c) => [c._id.toString(), c]));
     const admissionCaseIds = new Set(
       admissions.map((admission) => admission.emergencyCase.toString()),

@@ -140,6 +140,9 @@ const emergencyCaseSchema = new Schema<IEmergencyCase>(
   { timestamps: true },
 );
 
+emergencyCaseSchema.index({ isArchived: 1, esi: 1, arrivedAt: 1 });
+emergencyCaseSchema.index({ isArchived: 1, disposition: 1, arrivedAt: 1 });
+
 export const EmergencyCase = mongoose.model<IEmergencyCase>(
   "EmergencyCase",
   emergencyCaseSchema,

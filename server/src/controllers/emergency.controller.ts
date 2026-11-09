@@ -200,21 +200,24 @@ export const getEmergencyStats = async (
 ): Promise<void> => {
   try {
     await removeLegacyEmergencyDemoData();
-    const activeCases = (
-      await EmergencyCase.find({ isArchived: false })
-    ).filter((emergencyCase) => emergencyCase.disposition !== "admitted");
-    const totalInDept = activeCases.length;
-    const awaitingTriage = activeCases.filter(
-      (c) => c.disposition === "awaiting triage",
-    ).length;
-
-    const now = Date.now();
-    const waitTimes = activeCases.map((c) =>
-      Math.max(0, Math.floor((now - new Date(c.arrivedAt).getTime()) / 60000)),
-    );
-
-    // 4-hour breaches (> 240 mins)
-    const fourHourBreaches = waitTimes.filter((w) => w > 240).length;
+    const activeFilter = {
+      isArchived: false,
+      disposition: { $ne: "admitted" },
+    };
+    // Match the previous whole-minute calculation: a case breaches once its
+    // floored wait is greater than 240 minutes (at 241 elapsed minutes).
+    const breachCutoff = new Date(Date.now() - 241 * 60 * 1000);
+    const [totalInDept, awaitingTriage, fourHourBreaches] = await Promise.all([
+      EmergencyCase.countDocuments(activeFilter),
+      EmergencyCase.countDocuments({
+        ...activeFilter,
+        disposition: "awaiting triage",
+      }),
+      EmergencyCase.countDocuments({
+        ...activeFilter,
+        arrivedAt: { $lt: breachCutoff },
+      }),
+    ]);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -249,10 +252,12 @@ export const getTriageCases = async (
       query.disposition = "awaiting triage";
     }
 
-    const cases = await EmergencyCase.find(query).sort({
-      esi: 1,
-      arrivedAt: 1,
-    });
+    const cases = await EmergencyCase.find(query)
+      .select(
+        "caseId patientName age sex presentingComplaint esi arrivedAt area observations disposition assignedDoctor assignedDoctorName clinicianAssignedAt encounterStatus diagnosisSummary dischargedAt triageNotes",
+      )
+      .sort({ esi: 1, arrivedAt: 1 })
+      .lean();
 
     const formattedCases = cases.map(formatEmergencyCase);
 

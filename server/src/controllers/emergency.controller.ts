@@ -519,6 +519,9 @@ export const getEmergencyPendingWork = async (_req: Request, res: Response) => {
     const [cases, orders, consultations, sales, admissions] = await Promise.all(
       [
         EmergencyCase.find({ arrivedAt: { $gte: since } })
+          .select(
+            "caseId patientName esi arrivedAt disposition assignedDoctor assignedDoctorName clinicianAssignedAt encounterStatus updatedAt",
+          )
           .sort({ esi: 1, arrivedAt: 1 })
           .limit(1000)
           .lean(),
@@ -534,7 +537,7 @@ export const getEmergencyPendingWork = async (_req: Request, res: Response) => {
           status: "COMPLETED",
           createdAt: { $gte: since },
         })
-          .select("emergencyCase medicines")
+          .select("emergencyCase medicines createdAt")
           .lean(),
         PharmacySale.find({
           emergencyCase: { $exists: true },
@@ -552,6 +555,9 @@ export const getEmergencyPendingWork = async (_req: Request, res: Response) => {
       ],
     );
     const byId = new Map(cases.map((c) => [c._id.toString(), c]));
+    const admissionCaseIds = new Set(
+      admissions.map((admission) => admission.emergencyCase.toString()),
+    );
     const tasks: any[] = [];
     const add = (
       c: any,
@@ -596,7 +602,7 @@ export const getEmergencyPendingWork = async (_req: Request, res: Response) => {
         );
       if (
         c.disposition === "awaiting bed" &&
-        !admissions.some((a) => a.emergencyCase.toString() === c._id.toString())
+        !admissionCaseIds.has(c._id.toString())
       )
         add(
           c,
@@ -613,6 +619,15 @@ export const getEmergencyPendingWork = async (_req: Request, res: Response) => {
           .select("order state")
           .lean()
       : [];
+    const unverifiedReportByOrder = new Map<string, boolean>();
+    for (const report of reports) {
+      const orderId = report.order.toString();
+      unverifiedReportByOrder.set(
+        orderId,
+        (unverifiedReportByOrder.get(orderId) ?? false) ||
+          report.state !== "verified",
+      );
+    }
     for (const order of orders) {
       const c = byId.get(order.emergencyCase?.toString() || "");
       if (order.status === "PENDING" || order.status === "IN_PROGRESS")
@@ -626,11 +641,7 @@ export const getEmergencyPendingWork = async (_req: Request, res: Response) => {
         );
       if (
         order.status === "REPORTED" &&
-        reports.some(
-          (r) =>
-            r.order.toString() === order._id.toString() &&
-            r.state !== "verified",
-        )
+        unverifiedReportByOrder.get(order._id.toString())
       )
         add(
           c,
@@ -741,10 +752,13 @@ export const getEmergencyCaseRecord = async (req: Request, res: Response) => {
           )
           .lean()
       : [];
+    const reportByOrder = new Map<string, (typeof reports)[number]>();
+    for (const report of reports) {
+      const orderId = report.order.toString();
+      if (!reportByOrder.has(orderId)) reportByOrder.set(orderId, report);
+    }
     const diagnosticHistory = orders.map((order) => {
-      const report: any = reports.find(
-        (r) => r.order.toString() === order._id.toString(),
-      );
+      const report: any = reportByOrder.get(order._id.toString());
       const safeReport =
         report?.state === "verified"
           ? report

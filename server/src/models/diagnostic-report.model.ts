@@ -150,6 +150,7 @@ const diagnosticReportSchema = new Schema<IDiagnosticReport>(
 );
 
 diagnosticReportSchema.index({ patient: 1, createdAt: -1 });
+diagnosticReportSchema.index({ order: 1 });
 
 export const DiagnosticReport = mongoose.model<IDiagnosticReport>(
   "DiagnosticReport",

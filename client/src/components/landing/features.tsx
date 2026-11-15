@@ -73,7 +73,7 @@ export function Features() {
           </p>
         </div>
 
-        <div className="hairline-t grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+        <div className="hairline-t grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 xl:auto-rows-[minmax(13rem,auto)]">
           {modules.map((m, i) => (
             <motion.article
               key={m.id}
@@ -81,14 +81,18 @@ export function Features() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.6, delay: (i % 3) * 0.08 }}
-              className="hairline-b hairline-l group relative -ml-px p-7 lg:p-9"
+              className={`hairline-b hairline-l group relative -ml-px flex flex-col p-7 lg:p-9 ${
+                i === 0 ? "xl:col-span-8 xl:row-span-2" : "xl:col-span-4"
+              }`}
             >
               <div className="mono-label text-muted-foreground flex items-center justify-between">
                 <span className="text-brass">{m.id}</span>
                 <span>{m.meta}</span>
               </div>
 
-              <div className="text-foreground mt-8 h-24">
+              <div
+                className={`text-foreground mt-8 ${i === 0 ? "h-32" : "h-24"}`}
+              >
                 <m.Glyph className="h-full w-auto transition-transform duration-700 group-hover:scale-[1.04]" />
               </div>
 
@@ -98,6 +102,25 @@ export function Features() {
               <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
                 {m.body}
               </p>
+
+              {i === 0 && (
+                <div className="mt-auto grid grid-cols-3 gap-3 border-t border-border/60 pt-5">
+                  {[
+                    ["PATIENT CONTEXT", "One shared record"],
+                    ["CLINICAL HISTORY", "At the point of care"],
+                    ["AUDIT TRAIL", "Every change attributable"],
+                  ].map(([label, value]) => (
+                    <div className="min-w-0" key={label}>
+                      <span className="mono-label text-muted-foreground block truncate text-[0.5rem] tracking-[0.12em]">
+                        {label}
+                      </span>
+                      <span className="mt-2 block text-xs font-medium text-foreground">
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <span className="bg-accent absolute bottom-0 left-0 h-px w-0 transition-all duration-500 group-hover:w-full" />
             </motion.article>

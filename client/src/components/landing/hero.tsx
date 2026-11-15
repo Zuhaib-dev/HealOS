@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { VitalsInstrument } from "./illustrations";
+import { ClinicalCommandStage } from "./clinical-command-stage";
 import { useAuthStore } from "@/store/use-auth-store";
 import {
   Calendar,
@@ -112,9 +112,9 @@ export function Hero() {
                 transition={{ duration: 0.7, delay: 0.55 }}
                 className="text-muted-foreground mt-8 max-w-xl text-[1.0625rem] leading-relaxed"
               >
-                HealOS connects patient scheduling, doctor consultations, DICOM
-                radiology imaging, and hospital billing into one unified
-                calibrated surface for clinicians and patients.
+                One connected workspace for patient access, clinical teams,
+                diagnostics and hospital operations. See the next step clearly,
+                then move care forward with the full context in view.
               </motion.p>
 
               {/* Action Buttons */}
@@ -195,14 +195,11 @@ export function Hero() {
               transition={{ duration: 0.9, delay: 0.35 }}
               className="pt-12 lg:pt-24"
             >
-              <div className="plate p-5">
-                <div className="mono-label text-muted-foreground mb-4 flex items-center justify-between">
-                  <span>Ward telemetry</span>
-                  <span className="text-brass animate-blink flex items-center gap-2">
-                    <span className="bg-accent inline-block h-1.5 w-1.5" /> live
-                  </span>
-                </div>
-                <VitalsInstrument className="h-40 w-full" />
+              <div className="relative -mx-2 sm:-mx-4 lg:mx-0">
+                <ClinicalCommandStage />
+                <span className="mono-label text-muted-foreground mt-2 block text-right text-[0.55rem] tracking-[0.14em]">
+                  Product preview · illustrative data
+                </span>
               </div>
 
               <div className="mt-0">

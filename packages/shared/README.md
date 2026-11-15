@@ -1,54 +1,90 @@
 # `@healos/shared`
 
-The shared workspace contains a small set of TypeScript constants, types, and Zod validators used by HealOS packages. It is part of the npm/Turborepo monorepo; it is not a separately published npm package.
+Shared TypeScript utilities for the HealOS monorepo — constants, types, and Zod validators consumed by both the Next.js client and the Express API server.
 
-## Exports
+This is **not** a published npm package. It is a private workspace resolved via npm workspaces and built by Turborepo before dependent packages compile.
 
-The package entry point re-exports:
+---
 
-```text
+## What's in here
+
+```
 packages/shared/src/
-├── index.ts                 Public barrel
-├── constants/index.ts       App metadata, API prefix, defaults, limits
-├── types/index.ts           Base/user/appointment/API transport types
-└── validators/index.ts      Email, password, phone, pagination, ObjectId schemas
+├── index.ts                 Public re-export barrel
+├── constants/
+│   └── index.ts             App metadata, API prefix, pagination defaults, limits
+├── types/
+│   └── index.ts             Base types, User, Appointment, API transport shapes
+└── validators/
+    └── index.ts             Zod schemas: email, password, phone, pagination, ObjectId
 ```
 
-Import from the package root:
+---
+
+## Usage
+
+Import from the package root in any workspace:
 
 ```ts
-import { API_PREFIX, paginationSchema, type ApiResponse } from "@healos/shared";
+import {
+  API_PREFIX,
+  paginationSchema,
+  type ApiResponse,
+  type PaginationInput,
+} from "@healos/shared";
 
+// Parse and coerce pagination query params
 const page = paginationSchema.parse({ page: "2", limit: "25" });
+// → { page: 2, limit: 25 }
+
+// Type an API response wrapper
+function wrap<T>(data: T): ApiResponse<T> {
+  return { success: true, data };
+}
 ```
 
-The package is compiled with TypeScript (`tsc`). `main` and `types` point to generated files in `dist/`; build the shared workspace before consuming it in isolation. Root Turborepo tasks declare the shared build as a dependency for dependent workspace tasks.
+---
 
-## Build and typecheck
+## Build
 
-From the repository root:
+The package compiles with `tsc`. `main` and `types` in `package.json` point to files in `dist/`. Turborepo declares the shared build as a dependency for all consuming workspace tasks — you normally do not need to build it manually during development.
 
 ```bash
+# From the monorepo root
 npm run build -w @healos/shared
 npm run typecheck -w @healos/shared
 ```
 
-The workspace has `zod` as its runtime dependency. Keep browser/server-neutral code here: avoid importing Next.js, Express, Mongoose, filesystem, or server secrets.
+---
 
-## Domain model boundary
+## Authoring rules
 
-This package is a shared utility and type surface, not yet the single authoritative domain schema for the whole product. The Express server's Mongoose schemas and server role enum define persisted API behavior. In particular, `UserRole` in this package is a legacy generic role list and does not exactly match the server's current `UserRole` values. Do not use the shared enum as a substitute for server authorization or assume it is synchronized with the backend. If roles or API DTOs are unified later, update both sides intentionally and add compatibility checks.
+> [!IMPORTANT]
+> Keep this package **browser/server-neutral**. Do not import Next.js, Express, Mongoose, `fs`, or any server secret here. The package runs in both environments.
 
-## Related documentation
+- Add types that describe API transport shapes (request bodies, response envelopes)
+- Add Zod schemas for inputs that need validation in both client and server (pagination, IDs, email format)
+- Add string constants used in both environments (API prefix, app name, limits)
+- Do **not** add domain business logic, database models, or UI components
+
+---
+
+## Important caveat on roles
+
+> [!WARNING]
+> `UserRole` exported from this package is a legacy generic list and does **not** exactly match the Express server's current `UserRole` values. Do not use the shared enum as a substitute for server-side authorization checks. If you unify roles across packages, update both sides intentionally and add compatibility tests.
+
+---
+
+## Related Documentation
 
 - [Monorepo architecture](../../README.md)
 - [Client workspace](../../client/README.md)
 - [Server workspace](../../server/README.md)
 
+---
+
 ## Author
 
-**Zuhaib Rashid**<br>
-_Full Stack Developer & Healthcare Systems Architect_<br>
-UI/UX Obsessive · Real-time Systems Engineer · Autonomous Agent Protocols
-
-**Zuhaib Rashid** · [GitHub](https://github.com/Zuhaib-dev) · [Portfolio](https://zuhaibrashid.com/) · [LinkedIn](https://www.linkedin.com/in/zuhaib-rashid-661345318/) · [X](https://x.com/xuhaib_x9)
+**Zuhaib Rashid** — Full Stack Developer & Healthcare Systems Architect  
+[GitHub](https://github.com/Zuhaib-dev) · [Portfolio](https://zuhaibrashid.com/) · [LinkedIn](https://www.linkedin.com/in/zuhaib-rashid-661345318/) · [X / Twitter](https://x.com/xuhaib_x9)

@@ -1,133 +1,346 @@
-# HealOS API server
+# HealOS — API Server
 
-The `@healos/server` workspace is the Node.js API and real-time service. It is a TypeScript/Express modular monolith backed by MongoDB through Mongoose. It owns the main application API under `/api/v1`; the Next.js client is documented in [client/README.md](../client/README.md).
+> `@healos/server` · Node.js 20 · Express · TypeScript · MongoDB / Mongoose
+
+The `@healos/server` workspace is the Node.js REST API and real-time service for HealOS. It owns all business logic, authorization, persistence, and clinical domain workflows. The Next.js client is documented in [`client/README.md`](../client/README.md).
+
+---
 
 ## Architecture
 
-```text
-HTTP request
-  -> app.ts: security headers, CORS, compression, request parsing, logging
-  -> routes/index.ts: mount domain router beneath /api/v1
-  -> verifyToken: verify JWT, reload user and validate token version
-  -> requireRole / validation middleware
-  -> controller: validate workflow and coordinate domain records
-  -> Mongoose model(s) -> MongoDB
-  -> JSON response and, where needed, Socket.IO event
+### Request lifecycle
+
+```
+Incoming HTTP request
+  → app.ts
+      Helmet security headers
+      CORS (CLIENT_URL allowlist)
+      Compression
+      JSON / urlencoded body parsing
+      Morgan request logging
+      Rate limiting
+  → routes/index.ts  (mount all domain routers at /api/v1)
+  → verifyToken      (decode JWT → reload User → check token version)
+  → requireRole      (RBAC enforcement at route level)
+  → Controller       (parse input → enforce domain rules → persist)
+  → Mongoose Model   → MongoDB
+  → JSON response
+  → (optional) Socket.IO event emit
 ```
 
-`app.ts` creates the Express app and Node HTTP server, initializes Socket.IO, connects MongoDB, and installs not-found and error handlers. Domain routes are mounted from `routes/index.ts`. Each router is responsible for its endpoint namespace and route-level role restrictions; controllers implement request and workflow behavior; models define persisted data and indexes.
+`app.ts` creates the Express application and Node HTTP server, initializes Socket.IO, connects MongoDB, mounts domain routers, and registers 404 and global error handlers. Each domain router owns its URL namespace and route-level role restrictions. Controllers handle request parsing, enforce workflow rules, and coordinate persistence. Models define schemas, indexes, and status enumerations.
 
-| Directory                       | Responsibility                                                      |
-| ------------------------------- | ------------------------------------------------------------------- |
-| `src/routes/`                   | API paths, authentication and role middleware                       |
-| `src/controllers/`              | Request parsing, domain rules, persistence and response shapes      |
-| `src/models/`                   | Mongoose schemas, relationships, status enums and indexes           |
-| `src/middleware/`               | JWT/RBAC, rate limits, request validation and error handling        |
-| `src/config/`                   | Environment validation and MongoDB connection                       |
-| `src/services/`                 | Reusable service operations                                         |
-| `src/utils/`                    | Audit, local date handling, billing, mail and report access helpers |
-| `src/sockets/`, `src/socket.ts` | Socket.IO setup and event helpers                                   |
-| `src/__tests__/`                | Jest/Supertest tests and database setup                             |
+---
 
-### API modules
+## Directory Layout
 
-The root API router mounts `/auth`, `/onboarding`, `/appointments`, `/admin`, `/doctor`, `/patient`, `/radiology`, `/reception`, `/pharmacy`, `/nurse`, `/payment`, `/lab`, `/ai`, `/emergency`, `/notifications`, `/system`, and `/reports`.
+```
+server/src/
+├── app.ts                    Express + Socket.IO bootstrap, middleware chain
+├── server.ts                 HTTP server entry point
+├── config/
+│   ├── env.ts                Zod-validated environment loading
+│   └── database.ts           Mongoose connection + retry logic
+├── routes/                   16 domain routers
+│   ├── auth.routes.ts
+│   ├── appointment.routes.ts
+│   ├── doctor.routes.ts
+│   ├── nurse.routes.ts
+│   ├── lab.routes.ts
+│   ├── radiology.routes.ts
+│   ├── pharmacy.routes.ts
+│   ├── reception.routes.ts
+│   ├── patient.routes.ts
+│   ├── emergency.routes.ts
+│   ├── payment.routes.ts
+│   ├── admin.routes.ts
+│   ├── ai.routes.ts
+│   ├── notification.routes.ts
+│   ├── report.routes.ts
+│   └── system.routes.ts
+├── controllers/              Business logic per domain
+├── models/                   30+ Mongoose schemas with compound indexes
+├── middleware/
+│   ├── auth.middleware.ts    JWT decode, user reload, token-version check
+│   ├── role.middleware.ts    requireRole RBAC enforcement
+│   ├── validate.middleware.ts Zod request schema validation
+│   ├── rate-limit.middleware.ts Express-rate-limit per endpoint group
+│   └── error.middleware.ts   Global error handler + not-found handler
+├── services/                 Reusable service-layer operations
+├── utils/
+│   ├── audit.ts              Audit log creation helpers
+│   ├── localDate.ts          IST-aware date utilities
+│   ├── billing.ts            Invoice + payment calculation helpers
+│   ├── mailer.ts             SMTP / Gmail / Resend email dispatch
+│   └── reportAccess.ts       Protected report file serving
+├── sockets/                  Socket.IO event handler modules
+│   └── socket.ts             Connection auth, room management, event helpers
+└── __tests__/
+    ├── setup.ts              mongodb-memory-server test database
+    └── *.test.ts             Jest + Supertest API tests
+```
 
-The Mongoose domain includes accounts and profiles, appointments and doctor availability, consultations and notes, diagnostic orders and reports, invoices, inventory and pharmacy sales, nursing records, wards, radiology/lab operations, and emergency cases, observations, admissions and medication-administration events.
+---
 
-## Algorithms and consistency
+## Domain Models (Mongoose)
 
-### Appointment booking
+| Model                               | Description                            |
+| ----------------------------------- | -------------------------------------- |
+| `User`                              | Accounts, roles, auth tokens           |
+| `PatientProfile`                    | Demographic + medical history          |
+| `ProfessionalProfile`               | Staff credentials + specialisation     |
+| `Appointment`                       | Scheduled / walk-in visits             |
+| `DoctorAvailability`                | Working hours + slot configuration     |
+| `Consultation`                      | Clinical encounter record              |
+| `ClinicalNote`                      | SOAP/APSO structured notes             |
+| `DiagnosticOrder`                   | Lab / radiology requisitions           |
+| `DiagnosticReport`                  | Test results (linked to order)         |
+| `LabAnalyser`                       | Analyser machine configuration         |
+| `LabAnalyte`                        | Per-analyte result values              |
+| `LabCriticalContact`                | Critical-value callback records        |
+| `ModalityMachine`                   | Radiology scanner telemetry            |
+| `RadiologyBooking`                  | Imaging slot reservations              |
+| `ReportTemplate`                    | Structured report templates            |
+| `Invoice`                           | Billing records                        |
+| `PharmacySale`                      | Dispensing transaction                 |
+| `Inventory`                         | Drug / consumable stock                |
+| `Vitals`                            | Nursing observation records            |
+| `FluidBalance`                      | Fluid input/output tracking            |
+| `Wound`                             | Wound care records                     |
+| `MARDose`                           | Medication administration events       |
+| `Handover`                          | Shift handover notes                   |
+| `CallBell`                          | Patient call events                    |
+| `EmergencyCase`                     | ED presentation + triage               |
+| `EmergencyObservation`              | ED clinical observations               |
+| `EmergencyAdmission`                | ED-to-ward admission                   |
+| `EmergencyMedicationAdministration` | ED MAR events                          |
+| `InboundAmbulance`                  | Pre-hospital notification              |
+| `MajorIncident`                     | Mass-casualty / major incident records |
+| `ResusBay`                          | Resuscitation bay status               |
+| `Ward`                              | Ward + bed configuration               |
+| `Schedule`                          | Staff rota                             |
+| `AuditLog`                          | Immutable action audit trail           |
+| `Notification`                      | In-app notification records            |
+| `Integration`                       | External service credentials           |
+| `OTP`                               | One-time password records              |
 
-The server validates doctor eligibility, schedule day, working hours, slot alignment, slot duration, date/time, and remaining daily capacity. It computes the possible intervals from the doctor's working window, checks persisted appointments for the selected day, and rejects occupied or exhausted slots. Reception walk-in bookings use the same server-owned availability concepts while enforcing same-day and not-in-the-past rules. Client availability is advisory; the write endpoint performs its own validation.
+---
 
-### ED prioritization and pending work
+## Domain Logic & Algorithms
 
-The active ED board sorts cases by ESI acuity and then arrival time. The ED records endpoint pages visit history by arrival date and supports text/status filtering. The pending-work endpoint aggregates persisted case, order, report, consultation, pharmacy, and admission state over a bounded recent work window. Result content is only exposed after report verification. These are domain rules, not a general-purpose task scheduler.
+### Appointment availability engine
 
-### Diagnostics, prescriptions and medication events
+The booking endpoint validates:
 
-Diagnostic orders and reports are separate linked records with explicit lifecycle states. A report can exist before it is verified, but result details must remain behind the relevant verification/access rules. A prescription, pharmacy payment/dispensing sale, and nurse medication-administration event represent different stages and should not be conflated.
+1. Doctor exists and is active in the system
+2. Requested date falls on a configured working day
+3. Requested time falls within working hours
+4. Slot aligns with the doctor's slot duration setting
+5. Remaining daily capacity has not been exhausted
+6. The specific slot is not already occupied
 
-### Persistence and indexes
+The engine computes all possible intervals from the doctor's configured window, queries existing appointments for the day, and rejects collisions. Walk-in reception bookings use the same server-side logic while adding same-day and not-in-the-past constraints. The client availability display is advisory — the write endpoint validates independently.
 
-MongoDB collections are defined by Mongoose models. Models add indexes for frequent lookup paths such as appointment status/date, user role, patient and case history, diagnostic status/type, and pharmacy sale status. Unique indexes protect selected identifiers and relationships (for example, case IDs, appointment slot uniqueness, and one consultation per ED case). Indexes speed reads and enforce database-level constraints, but they do not replace request validation or authorization.
+### Emergency triage board
 
-The app opens one Mongoose connection with a bounded connection pool. Transactions should be added only where a multi-document operation needs atomicity and the deployment supports MongoDB transactions (replica set/sharded cluster); do not imply that every workflow currently executes inside a transaction.
+Active ED cases are sorted by **ESI acuity level** (1 = most critical) and then by arrival time. The pending-work endpoint aggregates active case, diagnostic order, consultation, pharmacy, and admission state over a bounded recent window. Diagnostic result details are blocked behind the report verification gate even when fetched via the ED API.
 
-## Authentication and API security
+### Diagnostic lifecycle
 
-- Protected API routers use JWT bearer verification. The middleware reloads the user and compares the token version before attaching the user to the request.
-- `requireRole` enforces allowed backend roles at route level. A client-side role guard is only a navigation aid.
-- Authentication and OTP endpoints use rate limiting.
-- Helmet, CORS allowlists, JSON/form body limits, and request logging are configured in `app.ts`.
-- Production environment validation rejects weak/default JWT secrets and missing auth-sync secret.
-- Report files are served through authenticated report routes rather than the general static upload path.
+```
+Order placed (PENDING)
+  → Sample collected (COLLECTED)
+  → Analyser / manual result entry (RESULTED)
+  → Clinician verification (VERIFIED)
+  → Critical value? → callback workflow triggered
+```
 
-Never log credentials, bearer tokens, payment secrets, or unnecessary patient details. Add resource ownership checks to controllers when access should be scoped to one user or care relationship; broad role access alone may not be sufficient.
+A `DiagnosticReport` is a separate record linked to its `DiagnosticOrder`. Reports can exist before verification; result details are access-restricted until the appropriate verification step completes. This state machine is enforced in controllers — not just on the client.
 
-## Real-time and external integrations
+### Prescription & medication lifecycle
 
-Socket.IO runs on the same HTTP server as Express. The server validates the JWT cookie during connection and validates room-join requests for user and role rooms. Feature controllers emit events for subscribed clients; clients should refetch persisted API state after receiving an event. WebRTC signaling events support teleconsultation rooms.
+These are **three distinct record types** representing different workflow stages:
 
-Razorpay keys are optional environment settings for payment flows. Email delivery can be configured via SMTP, Gmail API, or Resend, depending on the deployment and configured credentials. Redis is defined in Docker Compose and `REDIS_URL` is accepted by configuration, but no Redis application client is currently wired into this server; queues, distributed cache, and Socket.IO adapter/pub-sub are not enabled by that configuration alone.
+1. **Prescription** — written by the doctor (Consultation)
+2. **PharmacySale** — dispensed by the pharmacist (inventory deducted)
+3. **MARDose** — administered by the nurse (time + dose documented)
+
+Do not conflate these when querying medication history.
+
+### Persistence & indexes
+
+Models add indexes for high-frequency access patterns:
+
+- Appointment status + date composite
+- User role + active status
+- Diagnostic order status + type + date
+- Pharmacy sale status + date
+- Emergency case status + acuity
+- Lab result + verification state
+
+Unique indexes protect slot uniqueness (appointment per doctor+time+date), one consultation per ED case, and case ID uniqueness.
+
+---
+
+## Real-Time with Socket.IO
+
+Socket.IO runs on the same HTTP server as Express (`app.ts` passes the server to `socket.ts`).
+
+**Connection security:**
+
+- JWT cookie validated on `connection` event
+- Room joins (`user:<id>`, `role:<ROLE>`) validated before acceptance
+- Clients that fail auth are disconnected immediately
+
+**Event pattern:**
+
+1. Controller completes a write → emits targeted room event
+2. Client receives event → triggers API refetch
+3. API response updates UI state
+
+> [!IMPORTANT]
+> Socket events are notification signals, not data payloads. The database is always the source of truth.
+
+**WebRTC signaling** events (`offer`, `answer`, `ice-candidate`) are relayed through the socket for teleconsultation room participants.
+
+---
+
+## Security
+
+> [!WARNING]
+> Server authorization is the security boundary. Never rely on client-side guards for access control.
+
+- **JWT verification** (`verifyToken` middleware): decodes and validates the access token, reloads the User document, and checks the token version field (invalidating old tokens on password change / forced logout)
+- **RBAC** (`requireRole` middleware): enforces allowed roles at the route level before any controller code runs
+- **Rate limiting**: stricter limits on auth endpoints; general API limits applied globally
+- **Helmet**: sets security-relevant HTTP response headers
+- **CORS**: scoped to configured `CLIENT_URL`
+- **Body limits**: JSON and form body sizes bounded in `app.ts`
+- **Report access**: diagnostic report files served through authenticated protected routes, not the general static upload path
+- **Production env validation**: rejects deployments with weak/default JWT secrets or missing `AUTH_SYNC_SECRET`
+
+**Never log bearer tokens, payment secrets, or unnecessary patient details.** Add resource ownership checks in controllers when access should be scoped beyond role membership.
+
+---
+
+## External Integrations
+
+| Integration             | Variables                                                       | Status                                        |
+| ----------------------- | --------------------------------------------------------------- | --------------------------------------------- |
+| **Razorpay** (payments) | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`                        | Optional                                      |
+| **SMTP email**          | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`              | Optional                                      |
+| **Gmail API**           | `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` | Optional                                      |
+| **Resend**              | `RESEND_API_KEY`                                                | Optional                                      |
+| **Google OAuth**        | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`                          | Optional                                      |
+| **Gemini AI**           | `GEMINI_API_KEY`                                                | Optional                                      |
+| **Redis**               | `REDIS_URL`                                                     | Configured but not yet wired to an app client |
+
+> [!NOTE]
+> `REDIS_URL` is present in Docker Compose and env config for future use. No application Redis client (session store, queue, pub-sub adapter) is currently connected. Enabling Redis features requires wiring a client in `app.ts`.
+
+---
 
 ## Configuration
 
-The root [`.env.example`](../.env.example) is the canonical template. `src/config/env.ts` loads a repository-root `.env` and then `server/.env` for server-specific values, and validates runtime settings with Zod.
+Configuration is loaded and validated with Zod in `src/config/env.ts`. It reads the repository-root `.env` and optionally `server/.env` for server-specific overrides.
 
-Common settings:
+| Variable                 | Required | Purpose                                           |
+| ------------------------ | -------- | ------------------------------------------------- |
+| `NODE_ENV`               | ✅       | `development` / `production` / `test`             |
+| `PORT`                   | —        | Listen port (default `5001`)                      |
+| `CLIENT_URL`             | ✅       | Browser origin allowed by CORS                    |
+| `MONGODB_URI`            | ✅       | MongoDB connection string                         |
+| `JWT_SECRET`             | ✅       | Access token signing (use 64+ char random string) |
+| `JWT_EXPIRES_IN`         | —        | Access token TTL (default `7d`)                   |
+| `JWT_REFRESH_SECRET`     | ✅       | Refresh token signing                             |
+| `JWT_REFRESH_EXPIRES_IN` | —        | Refresh TTL (default `30d`)                       |
+| `AUTH_SYNC_SECRET`       | ✅ prod  | Required by production env validation             |
+| `ADMIN_EMAIL`            | optional | Bootstrap admin configuration                     |
 
-| Variable                                            | Required / use                                           |
-| --------------------------------------------------- | -------------------------------------------------------- |
-| `NODE_ENV`, `PORT`, `CLIENT_URL`                    | Runtime mode, listen port and browser origin             |
-| `MONGODB_URI`                                       | MongoDB connection string                                |
-| `JWT_SECRET`, `JWT_REFRESH_SECRET`                  | Signing secrets; production must use long random secrets |
-| `AUTH_SYNC_SECRET`                                  | Required by production environment validation            |
-| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`            | Optional payment provider credentials                    |
-| `SMTP_*`, `GMAIL_*`, `RESEND_API_KEY`, `EMAIL_FROM` | Optional mail delivery configuration                     |
-| `ADMIN_EMAIL`                                       | Optional bootstrap/admin configuration                   |
+See [`.env.example`](../.env.example) for the complete variable list.
 
-Do not commit real `.env` files. `REDIS_URL` is present for local infrastructure/configuration but is not currently consumed by an application Redis client.
+---
 
-## Local development
-
-From the repository root:
+## Local Development
 
 ```bash
+# From the monorepo root
 npm ci
 cp .env.example .env
-# Start MongoDB locally, or use: npm run services:up
+
+# Start MongoDB (or use Docker)
+docker compose up -d mongodb
+
+# Start the API server
 npm run dev:server
+# → API: http://localhost:5001
+# → Health: http://localhost:5001/health
+# → REST: http://localhost:5001/api/v1/*
 ```
 
-The API listens on port `5001` by default. Check `GET http://localhost:5001/health`; API routes are prefixed with `/api/v1`. To start all workspaces, use `npm run dev` from the root. See [the root README](../README.md) for the complete local setup and environment details.
-
-## Commands and tests
+To run the full stack together:
 
 ```bash
-npm run build -w @healos/server
-npm run typecheck -w @healos/server
-npm run lint -w @healos/server
-npm run test -w @healos/server
+npm run dev
 ```
 
-Tests are configured with Jest and `ts-jest`; Supertest is available for HTTP-level tests, and the test setup uses `mongodb-memory-server`. CI runs backend tests with Jest in-band and configures the MongoDB binary version. The GitHub Actions workflow also runs monorepo lint, typecheck, and build.
+---
+
+## Commands & Testing
+
+```bash
+# From the monorepo root
+npm run build -w @healos/server       # Compile TypeScript to dist/
+npm run typecheck -w @healos/server   # tsc --noEmit
+npm run lint -w @healos/server        # ESLint
+npm run test -w @healos/server        # Jest (uses mongodb-memory-server)
+```
+
+The test suite uses:
+
+- **Jest** as the test runner
+- **ts-jest** for TypeScript compilation
+- **Supertest** for HTTP-level API assertions
+- **mongodb-memory-server** for isolated, in-memory database per test run
+
+GitHub Actions CI runs lint, typecheck, build, and backend tests on every push.
+
+---
 
 ## Deployment
 
-The server Dockerfile uses Node 20 multi-stage builds and builds `@healos/shared` before the API. **Check the current container entrypoint before deploying:** the Dockerfile runs `server/dist/server.js`, while the TypeScript build and `npm start` target `dist/app.js`. Configure environment variables in the target deployment and provide a reachable production MongoDB URI. Production must use unique, strong JWT secrets, a trusted `CLIENT_URL`, and real provider credentials when enabling integrations. Do not expose server credentials to the client or embed them in a Docker image.
+The server Dockerfile:
 
-## Related documentation
+1. Builds `@healos/shared` (TypeScript compile)
+2. Builds `@healos/server` (`tsc` → `dist/`)
+3. Copies output into a minimal Node 20 runtime image
 
-- [Monorepo architecture and system workflows](../README.md)
-- [Client API integration and UI conventions](../client/README.md)
-- [Shared package exports](../packages/shared/README.md)
+> [!CAUTION]
+> Verify the Dockerfile `CMD` matches the compiled entry point. The TypeScript build produces `dist/app.js`; ensure the container runs the correct file.
+
+**Production checklist:**
+
+- Set `NODE_ENV=production`
+- Use long, randomly generated `JWT_SECRET` and `JWT_REFRESH_SECRET` (never the example values)
+- Set `AUTH_SYNC_SECRET` (required by production env validation)
+- Configure `CLIENT_URL` to your exact browser origin
+- Provide a production MongoDB URI with appropriate credentials
+- Supply real payment/email/AI credentials if those features are enabled
+- Never embed server secrets in Docker image layers or client bundles
+
+---
+
+## Related Documentation
+
+- [Monorepo architecture & system design](../README.md)
+- [Client API integration & UI conventions](../client/README.md)
+- [Shared types & validators](../packages/shared/README.md)
+
+---
 
 ## Author
 
-**Zuhaib Rashid**<br>
-_Full Stack Developer & Healthcare Systems Architect_<br>
-UI/UX Obsessive · Real-time Systems Engineer · Autonomous Agent Protocols
+**Zuhaib Rashid** — Full Stack Developer & Healthcare Systems Architect  
+UI/UX Engineering · Real-time Systems · Autonomous Agent Protocols
 
-**Zuhaib Rashid** · [GitHub](https://github.com/Zuhaib-dev) · [Portfolio](https://zuhaibrashid.com/) · [LinkedIn](https://www.linkedin.com/in/zuhaib-rashid-661345318/) · [X](https://x.com/xuhaib_x9)
+[GitHub](https://github.com/Zuhaib-dev) · [Portfolio](https://zuhaibrashid.com/) · [LinkedIn](https://www.linkedin.com/in/zuhaib-rashid-661345318/) · [X / Twitter](https://x.com/xuhaib_x9)

@@ -23,17 +23,17 @@ HealOS is a production-grade hospital information system that unifies every oper
 
 **Nine distinct role workspaces. One platform.**
 
-| Role | Workspace | Key workflows |
-|------|-----------|--------------|
-| 🏥 **Patient** | Self-service portal | Book appointments, view records, pay bills, chat |
-| 🛎 **Receptionist** | Front desk | Walk-in registration, appointment scheduling, billing |
-| 👨‍⚕️ **Doctor** | Clinical workspace | Patient rounds, consultations, orders, e-prescriptions, notes |
-| 👩‍⚕️ **Nurse** | Ward station | eMAR, vitals, wound care, fluid balance, call bells, handover |
-| 💊 **Pharmacist** | Dispensary | Prescription queue, inventory dispensing, medication history |
-| 🧪 **Lab Technician** | LIS | Sample collection, auto-analyzers, result validation, critical callback |
-| 🩻 **Radiologist** | PACS/RIS | Study worklist, DICOM upload, structured reporting, slot booking |
-| 🚨 **Emergency Doctor** | ED Board | Triage, ESI acuity, resus bay, trauma cases, ambulance inbound |
-| ⚙️ **Admin** | Control panel | Staff management, ward config, system monitoring, broadcast |
+| Role                    | Workspace           | Key workflows                                                           |
+| ----------------------- | ------------------- | ----------------------------------------------------------------------- |
+| 🏥 **Patient**          | Self-service portal | Book appointments, view records, pay bills, chat                        |
+| 🛎 **Receptionist**      | Front desk          | Walk-in registration, appointment scheduling, billing                   |
+| 👨‍⚕️ **Doctor**           | Clinical workspace  | Patient rounds, consultations, orders, e-prescriptions, notes           |
+| 👩‍⚕️ **Nurse**            | Ward station        | eMAR, vitals, wound care, fluid balance, call bells, handover           |
+| 💊 **Pharmacist**       | Dispensary          | Prescription queue, inventory dispensing, medication history            |
+| 🧪 **Lab Technician**   | LIS                 | Sample collection, auto-analyzers, result validation, critical callback |
+| 🩻 **Radiologist**      | PACS/RIS            | Study worklist, DICOM upload, structured reporting, slot booking        |
+| 🚨 **Emergency Doctor** | ED Board            | Triage, ESI acuity, resus bay, trauma cases, ambulance inbound          |
+| ⚙️ **Admin**            | Control panel       | Staff management, ward config, system monitoring, broadcast             |
 
 ---
 
@@ -119,51 +119,51 @@ healos/
 
 ### API Domain Coverage
 
-| Domain router | Key responsibilities |
-|---------------|---------------------|
-| `/auth` | JWT auth, refresh, Google OAuth, MFA |
-| `/appointments` | Availability engine, slot booking, cancellation |
-| `/doctor` | Consultations, orders, prescriptions, rounds |
-| `/nurse` | eMAR, vitals, wounds, fluids, call bells, handover |
-| `/lab` | Diagnostic orders, sample tracking, result validation, critical findings |
-| `/radiology` | Imaging orders, DICOM uploads, reporting, slot booking |
-| `/pharmacy` | Prescription dispensing, inventory management |
-| `/reception` | Walk-in registration, same-day scheduling |
-| `/patient` | Self-service portal, medical history, messages |
-| `/emergency` | Triage board, ESI, resus, ambulance, major incidents |
-| `/payment` | Razorpay integration, invoice management |
-| `/admin` | User management, ward config, system settings |
-| `/ai` | Gemini-powered clinical documentation assist |
-| `/notifications` | Real-time notification delivery |
-| `/reports` | Protected diagnostic report file access |
-| `/system` | Health checks, audit logs |
+| Domain router    | Key responsibilities                                                     |
+| ---------------- | ------------------------------------------------------------------------ |
+| `/auth`          | JWT auth, refresh, Google OAuth, MFA                                     |
+| `/appointments`  | Availability engine, slot booking, cancellation                          |
+| `/doctor`        | Consultations, orders, prescriptions, rounds                             |
+| `/nurse`         | eMAR, vitals, wounds, fluids, call bells, handover                       |
+| `/lab`           | Diagnostic orders, sample tracking, result validation, critical findings |
+| `/radiology`     | Imaging orders, DICOM uploads, reporting, slot booking                   |
+| `/pharmacy`      | Prescription dispensing, inventory management                            |
+| `/reception`     | Walk-in registration, same-day scheduling                                |
+| `/patient`       | Self-service portal, medical history, messages                           |
+| `/emergency`     | Triage board, ESI, resus, ambulance, major incidents                     |
+| `/payment`       | Razorpay integration, invoice management                                 |
+| `/admin`         | User management, ward config, system settings                            |
+| `/ai`            | Gemini-powered clinical documentation assist                             |
+| `/notifications` | Real-time notification delivery                                          |
+| `/reports`       | Protected diagnostic report file access                                  |
+| `/system`        | Health checks, audit logs                                                |
 
 ---
 
 ## Technology Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend framework** | Next.js 16, React 19, App Router |
-| **Styling** | Tailwind CSS 4, Radix UI primitives |
-| **Animations** | Motion (Framer Motion) |
-| **Icons** | Lucide React |
-| **State** | Zustand (session/UI), TanStack Query (server state) |
-| **Forms** | React Hook Form + Zod |
-| **HTTP client** | Axios with interceptors |
-| **Real-time** | Socket.IO (server + client) |
-| **Backend** | Node.js 20, Express, TypeScript |
-| **Database** | MongoDB, Mongoose ODM |
-| **Validation** | Zod (shared + server) |
-| **Auth** | JWT (access + refresh), NextAuth.js, Google OAuth |
-| **Payments** | Razorpay |
-| **Email** | SMTP / Gmail API / Resend |
-| **AI** | Google Gemini API |
-| **Teleconsult** | WebRTC + TURN relay (Metered) |
-| **Monitoring** | Sentry (client + server) |
-| **Build system** | Turborepo + npm workspaces |
-| **Testing** | Jest, Supertest, mongodb-memory-server, Cypress |
-| **CI** | GitHub Actions |
+| Layer                  | Technology                                          |
+| ---------------------- | --------------------------------------------------- |
+| **Frontend framework** | Next.js 16, React 19, App Router                    |
+| **Styling**            | Tailwind CSS 4, Radix UI primitives                 |
+| **Animations**         | Motion (Framer Motion)                              |
+| **Icons**              | Lucide React                                        |
+| **State**              | Zustand (session/UI), TanStack Query (server state) |
+| **Forms**              | React Hook Form + Zod                               |
+| **HTTP client**        | Axios with interceptors                             |
+| **Real-time**          | Socket.IO (server + client)                         |
+| **Backend**            | Node.js 20, Express, TypeScript                     |
+| **Database**           | MongoDB, Mongoose ODM                               |
+| **Validation**         | Zod (shared + server)                               |
+| **Auth**               | JWT (access + refresh), NextAuth.js, Google OAuth   |
+| **Payments**           | Razorpay                                            |
+| **Email**              | SMTP / Gmail API / Resend                           |
+| **AI**                 | Google Gemini API                                   |
+| **Teleconsult**        | WebRTC + TURN relay (Metered)                       |
+| **Monitoring**         | Sentry (client + server)                            |
+| **Build system**       | Turborepo + npm workspaces                          |
+| **Testing**            | Jest, Supertest, mongodb-memory-server, Cypress     |
+| **CI**                 | GitHub Actions                                      |
 
 ---
 
@@ -227,21 +227,21 @@ npm run dev:server    # → http://localhost:5001
 > [!CAUTION]
 > Never commit real `.env` files. Never use the example JWT secrets in any deployed environment.
 
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `MONGODB_URI` | ✅ | MongoDB connection string |
-| `JWT_SECRET` | ✅ | Access token signing key (use a 64+ char random string) |
-| `JWT_REFRESH_SECRET` | ✅ | Refresh token signing key |
-| `AUTH_SYNC_SECRET` | ✅ prod | Required by production env validation |
-| `PORT` | — | API listen port (default: `5001`) |
-| `CLIENT_URL` | — | Allowed browser origin for CORS |
-| `NEXT_PUBLIC_API_URL` | ✅ client | API base URL embedded in Next.js build |
-| `RAZORPAY_KEY_ID` / `_SECRET` | optional | Payment integration |
-| `SMTP_*` / `RESEND_API_KEY` | optional | Email delivery |
-| `AUTH_GOOGLE_ID` / `_SECRET` | optional | Google OAuth |
-| `GEMINI_API_KEY` | optional | AI clinical documentation |
-| `IMAGEKIT_*` | optional | Media storage for reports |
-| `NEXT_PUBLIC_TURN_*` / `METERED_*` | optional | TURN relay for teleconsultation |
+| Variable                           | Required  | Purpose                                                 |
+| ---------------------------------- | --------- | ------------------------------------------------------- |
+| `MONGODB_URI`                      | ✅        | MongoDB connection string                               |
+| `JWT_SECRET`                       | ✅        | Access token signing key (use a 64+ char random string) |
+| `JWT_REFRESH_SECRET`               | ✅        | Refresh token signing key                               |
+| `AUTH_SYNC_SECRET`                 | ✅ prod   | Required by production env validation                   |
+| `PORT`                             | —         | API listen port (default: `5001`)                       |
+| `CLIENT_URL`                       | —         | Allowed browser origin for CORS                         |
+| `NEXT_PUBLIC_API_URL`              | ✅ client | API base URL embedded in Next.js build                  |
+| `RAZORPAY_KEY_ID` / `_SECRET`      | optional  | Payment integration                                     |
+| `SMTP_*` / `RESEND_API_KEY`        | optional  | Email delivery                                          |
+| `AUTH_GOOGLE_ID` / `_SECRET`       | optional  | Google OAuth                                            |
+| `GEMINI_API_KEY`                   | optional  | AI clinical documentation                               |
+| `IMAGEKIT_*`                       | optional  | Media storage for reports                               |
+| `NEXT_PUBLIC_TURN_*` / `METERED_*` | optional  | TURN relay for teleconsultation                         |
 
 > [!TIP]
 > `NEXT_PUBLIC_*` variables are embedded in the client bundle **at build time**. Set them before running `next build` for production.
@@ -289,15 +289,19 @@ npm run lint -w @healos/client
 ## Domain Logic Highlights
 
 ### Appointment Availability Engine
+
 The server validates doctor eligibility, working hours, slot alignment, duration, and remaining daily capacity — computing available intervals from the doctor's configured schedule and comparing against persisted appointments. Walk-in bookings at reception enforce same-day, not-in-the-past rules through the same server-side logic.
 
 ### Emergency Triage Board
+
 Active ED cases sort by ESI acuity then arrival time. The pending-work endpoint aggregates case, diagnostic order, consultation, and pharmacy state over a bounded recent window. Result details are blocked until report verification completes.
 
 ### Diagnostic & Medication Lifecycle
+
 Diagnostic orders and reports are separate linked records with explicit lifecycle states (`PENDING` → `COLLECTED` → `RESULTED` → `VERIFIED`). Prescriptions, pharmacy dispensing sales, and nurse MAR dose events represent different stages and are stored as distinct records.
 
 ### Real-time Events
+
 Socket.IO runs on the same HTTP server as Express. The server validates the JWT cookie at connection time and validates room-join requests for user and role rooms. Controllers emit targeted events after writes; clients refetch authoritative API state after receiving them. The database is always the source of truth.
 
 ---
@@ -317,12 +321,12 @@ Socket.IO runs on the same HTTP server as Express. The server validates the JWT 
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [`client/README.md`](./client/README.md) | Frontend architecture, source map, component conventions |
-| [`server/README.md`](./server/README.md) | API architecture, models, algorithms, deployment |
-| [`packages/shared/README.md`](./packages/shared/README.md) | Shared types, validators, usage |
-| [`.env.example`](./.env.example) | Full environment variable reference |
+| Document                                                   | Description                                              |
+| ---------------------------------------------------------- | -------------------------------------------------------- |
+| [`client/README.md`](./client/README.md)                   | Frontend architecture, source map, component conventions |
+| [`server/README.md`](./server/README.md)                   | API architecture, models, algorithms, deployment         |
+| [`packages/shared/README.md`](./packages/shared/README.md) | Shared types, validators, usage                          |
+| [`.env.example`](./.env.example)                           | Full environment variable reference                      |
 
 ---
 
